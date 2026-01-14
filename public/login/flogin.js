@@ -11,55 +11,121 @@ import {
 
 let auth;
 
-// Fetch keys from your hidden backend API
-async function startApp() {
+// 1. FETCH CONFIG FROM BACKEND API
+async function initFirebase() {
   try {
     const response = await fetch('/api/login');
-    const config = await response.json();
+    const firebaseConfig = await response.json();
     
-    const app = initializeApp(config);
+    const app = initializeApp(firebaseConfig);
     auth = getAuth(app);
 
-    // Watch for login state
+    // After auth is ready, listen for state changes
     onAuthStateChanged(auth, (user) => {
-      if (user) window.location.href = "/home";
+      if (user) {
+        window.location.href = "/home";
+      }
     });
-  } catch (error) {
-    console.error("Configuration failed to load.");
+  } catch (err) {
+    console.error("Failed to load Firebase config:", err);
   }
 }
 
-startApp();
+initFirebase();
 
-// UI Elements & Logic (rest of your existing code...)
+// UI ELEMENTS
+const overlay = document.getElementById("loginOverlay");
+const closeBtn = document.getElementById("closeOverlayBtn");
+const getStartedBtn = document.getElementById("getStartedBtn");
+const heroGetStartedBtn = document.getElementById("heroGetStartedBtn");
+const toggleAuthBtn = document.getElementById("toggleAuth");
+
+// FORM ELEMENTS
+const authTitle = document.getElementById("authTitle");
 const btnSubmit = document.getElementById("btnSubmit");
+const groupName = document.getElementById("groupName");
+const inputName = document.getElementById("inputName");
 const inputEmail = document.getElementById("inputEmail");
 const inputPass = document.getElementById("inputPass");
-const inputName = document.getElementById("inputName");
+const authAvatar = document.getElementById("authAvatar");
 
+let isSignup = false;
+
+function openOverlay() {
+  if(overlay) {
+    overlay.classList.add("active");
+    document.body.style.overflow = "hidden";
+    isSignup = false;
+    updateUI();
+  }
+}
+
+function closeOverlay() {
+  if(overlay) {
+    overlay.classList.remove("active");
+    document.body.style.overflow = "auto";
+  }
+}
+
+if (getStartedBtn) getStartedBtn.onclick = openOverlay;
+if (heroGetStartedBtn) heroGetStartedBtn.onclick = openOverlay;
+if (closeBtn) closeBtn.onclick = closeOverlay;
+
+if (toggleAuthBtn) {
+  toggleAuthBtn.onclick = () => {
+    isSignup = !isSignup;
+    updateUI();
+  };
+}
+
+function updateUI() {
+  if (!authTitle || !btnSubmit || !toggleAuthBtn) return;
+  if (isSignup) {
+    authTitle.innerText = "Create Account";
+    btnSubmit.innerText = "Sign Up";
+    toggleAuthBtn.innerHTML = 'Already have an account? <span>Log in</span>';
+    groupName.classList.remove("hidden");
+  } else {
+    authTitle.innerText = "Welcome back";
+    btnSubmit.innerText = "Log in";
+    toggleAuthBtn.innerHTML = "Don't have an account? <span>Create one</span>";
+    groupName.classList.add("hidden");
+  }
+}
+
+// HANDLE SUBMIT
 if (btnSubmit) {
   btnSubmit.onclick = async () => {
-    if (!auth) return; // Wait for the backend to provide the keys
+    if (!auth) return; // Wait for config to load
 
     const email = inputEmail.value.trim();
     const pass = inputPass.value.trim();
-    
+    const name = inputName.value.trim();
+
+    if (!email || !pass) {
+      alert("Please fill in email and password");
+      return;
+    }
+
     btnSubmit.innerText = "Processing...";
     btnSubmit.disabled = true;
 
     try {
-      if (document.getElementById("authTitle").innerText === "Create Account") {
+      if (isSignup) {
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
-        await updateProfile(cred.user, { displayName: inputName.value.trim() });
+        await updateProfile(cred.user, {
+          displayName: name,
+          photoURL: `https://api.dicebear.com/9.x/lorelei/svg?seed=${name}&backgroundColor=transparent`,
+        });
       } else {
         await signInWithEmailAndPassword(auth, email, pass);
       }
       window.location.href = "/home";
     } catch (err) {
-      alert(err.message);
+      alert("Error: " + err.message);
     } finally {
       btnSubmit.disabled = false;
-      btnSubmit.innerText = "Submit";
+      btnSubmit.innerText = isSignup ? "Sign Up" : "Log in";
     }
   };
 }
