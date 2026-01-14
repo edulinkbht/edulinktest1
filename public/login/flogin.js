@@ -1,9 +1,6 @@
 lucide.createIcons();
 
-// IMPORT FIREBASE
-import {
-  initializeApp
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -12,19 +9,29 @@ import {
   onAuthStateChanged,
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// FIREBASE CONFIG
-const firebaseConfig = {
-  apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
-  authDomain: "edulinki.firebaseapp.com",
-  projectId: "edulinki",
-  storageBucket: "edulinki.firebasestorage.app",
-  messagingSenderId: "248886466474",
-  appId: "1:248886466474:web:160043201a6b28bafbbdd3",
-  measurementId: "G-MQBH12VL7N",
-};
+let auth;
 
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// 1. FETCH CONFIG FROM BACKEND API
+async function initFirebase() {
+  try {
+    const response = await fetch('/api/login');
+    const firebaseConfig = await response.json();
+    
+    const app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+
+    // After auth is ready, listen for state changes
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        window.location.href = "/home";
+      }
+    });
+  } catch (err) {
+    console.error("Failed to load Firebase config:", err);
+  }
+}
+
+initFirebase();
 
 // UI ELEMENTS
 const overlay = document.getElementById("loginOverlay");
@@ -64,7 +71,6 @@ if (getStartedBtn) getStartedBtn.onclick = openOverlay;
 if (heroGetStartedBtn) heroGetStartedBtn.onclick = openOverlay;
 if (closeBtn) closeBtn.onclick = closeOverlay;
 
-// TOGGLE LOGIN / SIGNUP
 if (toggleAuthBtn) {
   toggleAuthBtn.onclick = () => {
     isSignup = !isSignup;
@@ -74,34 +80,24 @@ if (toggleAuthBtn) {
 
 function updateUI() {
   if (!authTitle || !btnSubmit || !toggleAuthBtn) return;
-  
   if (isSignup) {
     authTitle.innerText = "Create Account";
     btnSubmit.innerText = "Sign Up";
     toggleAuthBtn.innerHTML = 'Already have an account? <span>Log in</span>';
     groupName.classList.remove("hidden");
-    authAvatar.src = "https://api.dicebear.com/9.x/lorelei/svg?seed=NewUser&backgroundColor=transparent";
   } else {
     authTitle.innerText = "Welcome back";
     btnSubmit.innerText = "Log in";
     toggleAuthBtn.innerHTML = "Don't have an account? <span>Create one</span>";
     groupName.classList.add("hidden");
-    authAvatar.src = "https://api.dicebear.com/9.x/lorelei/svg?seed=User&backgroundColor=transparent";
   }
-}
-
-// DYNAMIC AVATAR
-if (inputName) {
-  inputName.addEventListener("input", (e) => {
-    if (isSignup && e.target.value.length > 1) {
-      authAvatar.src = `https://api.dicebear.com/9.x/lorelei/svg?seed=${e.target.value}&backgroundColor=transparent`;
-    }
-  });
 }
 
 // HANDLE SUBMIT
 if (btnSubmit) {
   btnSubmit.onclick = async () => {
+    if (!auth) return; // Wait for config to load
+
     const email = inputEmail.value.trim();
     const pass = inputPass.value.trim();
     const name = inputName.value.trim();
@@ -112,18 +108,10 @@ if (btnSubmit) {
     }
 
     btnSubmit.innerText = "Processing...";
-    btnSubmit.style.opacity = "0.7";
     btnSubmit.disabled = true;
 
     try {
       if (isSignup) {
-        if (!name) {
-          alert("Please enter your name");
-          btnSubmit.innerText = "Sign Up";
-          btnSubmit.disabled = false;
-          btnSubmit.style.opacity = "1";
-          return;
-        }
         const cred = await createUserWithEmailAndPassword(auth, email, pass);
         await updateProfile(cred.user, {
           displayName: name,
@@ -132,25 +120,12 @@ if (btnSubmit) {
       } else {
         await signInWithEmailAndPassword(auth, email, pass);
       }
-
-      // REDIRECT TO FOLDER ONLY FOR CLEAN URL
       window.location.href = "/home";
-
     } catch (err) {
-      console.error(err);
       alert("Error: " + err.message);
     } finally {
-      btnSubmit.style.opacity = "1";
       btnSubmit.disabled = false;
       btnSubmit.innerText = isSignup ? "Sign Up" : "Log in";
     }
   };
 }
-
-// AUTH LISTENER
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    // REDIRECT TO FOLDER ONLY FOR CLEAN URL
-    window.location.href = "/home";
-  }
-});
