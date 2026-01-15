@@ -1,6 +1,6 @@
 // api/login.js
 export default function handler(req, res) {
-  // Pulling from Vercel Environment Variables
+  // This pulls from the vercel environment
   const firebaseConfig = {
     apiKey: process.env.FIREBASE_API_KEY,
     authDomain: process.env.FIREBASE_AUTH_DOMAIN,
@@ -10,8 +10,6 @@ export default function handler(req, res) {
     appId: process.env.FIREBASE_APP_ID,
     measurementId: process.env.FIREBASE_MEASUREMENT_ID,
   };
-
-  // Check if critical variables are missing (helpful for debugging)
   if (!firebaseConfig.apiKey) {
     console.error("Missing Environment Variables in Vercel!");
     return res.status(500).json({ error: "Firebase configuration is missing on server." });
