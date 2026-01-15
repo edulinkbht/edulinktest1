@@ -8,37 +8,49 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 // Initialize Lucide icons
-lucide.createIcons();
+if (window.lucide) {
+  lucide.createIcons();
+}
 
-let auth = null; // Start as null
+let auth = null; 
 
 // 1. FETCH CONFIG FROM BACKEND API
 async function initFirebase() {
   try {
     const response = await fetch('/api/login');
-    if (!response.ok) throw new Error("Could not fetch config from API");
     
+    if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+    }
+
     const firebaseConfig = await response.json();
-    
+
+    // Check if the API actually returned data
+    if (!firebaseConfig.apiKey) {
+      throw new Error("API returned empty config. Check Vercel Environment Variables.");
+    }
+
     const app = initializeApp(firebaseConfig);
     auth = getAuth(app);
 
-    // After auth is ready, listen for state changes
+    // Listen for state changes (auto-redirect if already logged in)
     onAuthStateChanged(auth, (user) => {
       if (user) {
         window.location.href = "/home";
       }
     });
-    console.log("Firebase initialized successfully");
+
+    console.log("✅ Firebase connection established via API");
+
   } catch (err) {
-    console.error("Failed to load Firebase config:", err);
-    alert("Connection Error: Server config is missing.");
+    console.error("❌ Failed to load Firebase config:", err);
+    alert("Connection Error: Server config is missing. Please ensure Environment Variables are set in Vercel.");
   }
 }
 
 initFirebase();
 
-// UI ELEMENTS
+// --- UI ELEMENTS ---
 const overlay = document.getElementById("loginOverlay");
 const btnSubmit = document.getElementById("btnSubmit");
 const inputEmail = document.getElementById("inputEmail");
@@ -50,41 +62,44 @@ const groupName = document.getElementById("groupName");
 
 let isSignup = false;
 
-// UI TOGGLE LOGIC
+// --- UI TOGGLE LOGIC ---
 if (toggleAuthBtn) {
-  toggleAuthBtn.onclick = () => {
+  toggleAuthBtn.onclick = (e) => {
+    e.preventDefault();
     isSignup = !isSignup;
     updateUI();
   };
 }
 
 function updateUI() {
+  if (!authTitle || !btnSubmit) return;
+  
   if (isSignup) {
     authTitle.innerText = "Create Account";
     btnSubmit.innerText = "Sign Up";
-    groupName.classList.remove("hidden");
+    groupName?.classList.remove("hidden");
   } else {
     authTitle.innerText = "Welcome back";
     btnSubmit.innerText = "Log in";
-    groupName.classList.add("hidden");
+    groupName?.classList.add("hidden");
   }
 }
 
-// HANDLE SUBMIT
+// --- HANDLE SUBMIT ---
 if (btnSubmit) {
   btnSubmit.onclick = async () => {
-    // CRITICAL: Check if auth is loaded from the API first
+    // Check if API fetch has finished
     if (!auth) {
-      alert("System is still connecting... please try again in 2 seconds.");
+      alert("Still connecting to server... please wait a moment.");
       return;
     }
 
     const email = inputEmail.value.trim();
     const pass = inputPass.value.trim();
-    const name = inputName.value.trim();
+    const name = inputName ? inputName.value.trim() : "";
 
     if (!email || !pass) {
-      alert("Please fill in email and password");
+      alert("Please fill in all fields.");
       return;
     }
 
@@ -101,10 +116,10 @@ if (btnSubmit) {
       } else {
         await signInWithEmailAndPassword(auth, email, pass);
       }
-      window.location.href = "/home";
+      // Successful login/signup will trigger onAuthStateChanged redirect
     } catch (err) {
+      console.error(err);
       alert("Auth Error: " + err.message);
-    } finally {
       btnSubmit.disabled = false;
       btnSubmit.innerText = isSignup ? "Sign Up" : "Log in";
     }
