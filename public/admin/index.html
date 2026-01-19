@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EduLink Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f9fafb; color: #1f1f1f; }
+        .btn { padding: 8px 16px; border-radius: 8px; font-weight: 600; font-size: 14px; transition: all 0.2s; }
+        .btn-primary { background: #0b57d0; color: white; }
+        .btn-primary:hover { background: #0946a8; }
+        .btn-danger { background: #fee2e2; color: #dc2626; }
+        .btn-danger:hover { background: #fecaca; }
+        .card { background: white; border: 1px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .badge { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 12px; }
+        .badge-verified { background: #dbeafe; color: #1e40af; }
+        .badge-banned { background: #fee2e2; color: #991b1b; }
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #0b57d0; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- Auth Loading / Checking -->
+    <div id="auth-loading" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center">
+        <div class="loader mb-4"></div>
+        <p class="text-gray-500 font-medium">Verifying access...</p>
+    </div>
+
+    <!-- Access Denied -->
+    <div id="access-denied" class="fixed inset-0 bg-white z-40 flex flex-col items-center justify-center hidden">
+        <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mb-4">
+            <i data-lucide="shield-alert" class="w-8 h-8"></i>
+        </div>
+        <h1 class="text-2xl font-bold mb-2">Access Denied</h1>
+        <p class="text-gray-500 mb-6 text-center max-w-md px-4">You do not have permission to view this page. This area is restricted to administrators only.</p>
+        <a href="index.html" class="btn btn-primary">Return to App</a>
+    </div>
+
+    <!-- Password Wall -->
+    <div id="password-wall" class="fixed inset-0 bg-gray-50 z-30 flex flex-col items-center justify-center hidden">
+        <div class="card p-8 w-full max-w-sm">
+            <h2 class="text-xl font-bold mb-1 text-center">Admin Login</h2>
+            <p class="text-sm text-gray-500 mb-6 text-center">Enter security password to continue.</p>
+            <form onsubmit="event.preventDefault(); checkAdminPassword();">
+                <div class="mb-4">
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-1">Password</label>
+                    <input type="password" id="admin-password" class="w-full border border-gray-300 rounded-lg p-3 outline-none focus:border-blue-500 transition-colors" placeholder="••••••••">
+                    <p id="password-error" class="text-xs text-red-500 mt-2 hidden">Incorrect password.</p>
+                </div>
+                <button type="submit" class="w-full btn btn-primary py-3">Access Dashboard</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="admin-dashboard" class="flex-1 flex flex-col hidden">
+        <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                    <i data-lucide="shield" class="w-6 h-6"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight">Admin Console</h1>
+                    <p class="text-xs text-gray-500">edulinkbht@gmail.com</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="text-sm font-medium text-gray-600 hover:text-gray-900">Back to App</a>
+                <button onclick="logout()" class="btn bg-gray-100 text-gray-700 hover:bg-gray-200">Logout</button>
+            </div>
+        </header>
+
+        <main class="flex-1 p-6 max-w-6xl mx-auto w-full">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">User Management</h2>
+                    <p class="text-sm text-gray-500">Manage permissions, bans, and deletions.</p>
+                </div>
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="absolute left-3 top-3 w-4 h-4 text-gray-400"></i>
+                    <input type="text" id="user-search" oninput="filterUsers(this.value)" placeholder="Search users by name or email..." class="w-full bg-white border border-gray-200 rounded-lg py-2.5 pl-10 pr-4 text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500">
+                </div>
+            </div>
+
+            <div class="card overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="px-6 py-4 font-semibold text-gray-700">User</th>
+                                <th class="px-6 py-4 font-semibold text-gray-700">Status</th>
+                                <th class="px-6 py-4 font-semibold text-gray-700">Joined</th>
+                                <th class="px-6 py-4 font-semibold text-gray-700 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-table-body" class="divide-y divide-gray-100">
+                            <!-- User rows will be injected here -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="empty-state" class="hidden p-12 text-center">
+                    <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-400">
+                        <i data-lucide="users" class="w-6 h-6"></i>
+                    </div>
+                    <p class="text-gray-500">No users found.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-6 py-3 rounded-full text-sm font-medium shadow-lg opacity-0 transition-opacity pointer-events-none z-50 flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4 text-green-400"></i>
+        <span id="toast-message">Action completed</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, where, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        const firebaseConfig = {apiKey:"AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",authDomain:"edulinkbht.firebaseapp.com",projectId:"edulinkbht",storageBucket:"edulinkbht.firebasestorage.app",messagingSenderId:"248886466474",appId:"1:248886466474:web:160043201a6b28bafbbdd3",measurementId:"G-MQBH12VL7N"};
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let allUsers = [];
+        const ADMIN_EMAIL = "edulinkbht@gmail.com";
+        
+        // Initial Auth Check
+        onAuthStateChanged(auth, async (user) => {
+            const loading = document.getElementById('auth-loading');
+            
+            if (!user) {
+                // Not logged in, redirect to login page (index.html will handle login if we send them there, or we assume they must be logged in first)
+                window.location.href = 'index.html';
+                return;
+            }
+
+            if (user.email !== ADMIN_EMAIL) {
+                loading.classList.add('hidden');
+                document.getElementById('access-denied').classList.remove('hidden');
+                lucide.createIcons();
+                return;
+            }
+
+            // Valid admin user
+            loading.classList.add('hidden');
+            document.getElementById('password-wall').classList.remove('hidden');
+        });
+
+        window.checkAdminPassword = () => {
+            const pwd = document.getElementById('admin-password').value;
+            // Simple hardcoded check as requested by "adding its password" in frontend context
+            // In a real production app, this should be a secondary auth provider re-authentication or backend check.
+            if (pwd === "admin123") {
+                document.getElementById('password-wall').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                loadUsers();
+            } else {
+                document.getElementById('password-error').classList.remove('hidden');
+            }
+        };
+
+        window.logout = () => {
+            signOut(auth).then(() => window.location.href = 'index.html');
+        };
+
+        async function loadUsers() {
+            try {
+                const q = query(collection(db, "users"));
+                const snapshot = await getDocs(q);
+                allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderUsers(allUsers);
+            } catch (error) {
+                console.error("Error loading users:", error);
+                showToast("Failed to load users");
+            }
+        }
+
+        window.renderUsers = (usersList) => {
+            const tbody = document.getElementById('user-table-body');
+            const empty = document.getElementById('empty-state');
+            tbody.innerHTML = '';
+
+            if (usersList.length === 0) {
+                empty.classList.remove('hidden');
+                return;
+            }
+            empty.classList.add('hidden');
+
+            usersList.forEach(user => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-50 group";
+                
+                const isVerified = user.isOfficial;
+                const isBanned = user.isBanned;
+                const joined = user.joinedAt ? new Date(user.joinedAt.toDate()).toLocaleDateString() : 'Unknown';
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <img src="${user.avatar || 'https://api.dicebear.com/9.x/lorelei/svg'}" class="w-10 h-10 rounded-full bg-gray-200 object-cover border border-gray-200">
+                            <div>
+                                <div class="font-bold text-gray-900 flex items-center gap-1">
+                                    ${user.name || 'No Name'}
+                                    ${isVerified ? '<i data-lucide="badge-check" class="w-4 h-4 text-blue-600 fill-blue-50"></i>' : ''}
+                                </div>
+                                <div class="text-xs text-gray-500">${user.email}</div>
+                                <div class="text-xs text-gray-400">@${user.username || 'user'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex flex-col gap-1 items-start">
+                            ${isVerified ? '<span class="badge badge-verified">Verified</span>' : ''}
+                            ${isBanned ? '<span class="badge badge-banned">Banned</span>' : '<span class="text-xs text-green-600 font-medium px-2 py-0.5 bg-green-50 rounded-full">Active</span>'}
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500">
+                        ${joined}
+                    </td>
+                    <td class="px-6 py-4 text-right">
+                        <div class="flex items-center justify-end gap-2 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity">
+                            <button onclick="toggleVerify('${user.id}', ${isVerified})" class="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors" title="${isVerified ? 'Unverify' : 'Verify'}">
+                                <i data-lucide="${isVerified ? 'badge-x' : 'badge-check'}" class="w-5 h-5"></i>
+                            </button>
+                            <button onclick="toggleBan('${user.id}', ${isBanned})" class="p-2 rounded-lg hover:bg-orange-50 text-orange-600 transition-colors" title="${isBanned ? 'Unban' : 'Ban'}">
+                                <i data-lucide="${isBanned ? 'check-circle' : 'ban'}" class="w-5 h-5"></i>
+                            </button>
+                            <button onclick="confirmDelete('${user.id}')" class="p-2 rounded-lg hover:bg-red-50 text-red-600 transition-colors" title="Delete User">
+                                <i data-lucide="trash-2" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            lucide.createIcons();
+        };
+
+        window.filterUsers = (term) => {
+            const t = term.toLowerCase();
+            const filtered = allUsers.filter(u => 
+                (u.name || '').toLowerCase().includes(t) || 
+                (u.email || '').toLowerCase().includes(t) || 
+                (u.username || '').toLowerCase().includes(t)
+            );
+            renderUsers(filtered);
+        };
+
+        window.toggleVerify = async (uid, currentStatus) => {
+            if (uid === auth.currentUser.uid) return showToast("Cannot change own status");
+            try {
+                await updateDoc(doc(db, "users", uid), { isOfficial: !currentStatus });
+                
+                // Update local state
+                const idx = allUsers.findIndex(u => u.id === uid);
+                if (idx > -1) allUsers[idx].isOfficial = !currentStatus;
+                
+                renderUsers(allUsers);
+                showToast(currentStatus ? "User unverified" : "User verified");
+            } catch (e) {
+                console.error(e);
+                showToast("Error updating status");
+            }
+        };
+
+        window.toggleBan = async (uid, currentStatus) => {
+            if (uid === auth.currentUser.uid) return showToast("Cannot ban yourself");
+            const action = currentStatus ? "Unban" : "Ban";
+            if (!confirm(`${action} this user?`)) return;
+
+            try {
+                await updateDoc(doc(db, "users", uid), { isBanned: !currentStatus });
+                
+                // Update local state
+                const idx = allUsers.findIndex(u => u.id === uid);
+                if (idx > -1) allUsers[idx].isBanned = !currentStatus;
+                
+                renderUsers(allUsers);
+                showToast(`User ${currentStatus ? 'unbanned' : 'banned'}`);
+            } catch (e) {
+                console.error(e);
+                showToast("Error updating status");
+            }
+        };
+
+        window.confirmDelete = (uid) => {
+            if (uid === auth.currentUser.uid) return showToast("Cannot delete yourself");
+            if (confirm("Are you sure? This will delete the user's account, profile, and all their posts permanently.")) {
+                deleteUserComplete(uid);
+            }
+        };
+
+        async function deleteUserComplete(uid) {
+            const btn = event.currentTarget;
+            btn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;"></div>';
+            
+            try {
+                const batch = writeBatch(db);
+                
+                // 1. Delete User Profile
+                const userRef = doc(db, "users", uid);
+                batch.delete(userRef);
+
+                // 2. Delete User Posts
+                const postsQ = query(collection(db, "posts"), where("authorId", "==", uid));
+                const postsSnap = await getDocs(postsQ);
+                postsSnap.forEach(doc => {
+                    batch.delete(doc.ref);
+                });
+
+                // 3. Delete Notifications related to user (Sent by them or Received by them is tricky in batch due to limits, 
+                // but we will do what we can. Ideally a backend function handles this.
+                // We will skip comprehensive notification cleanup to avoid batch limits > 500, focusing on posts/profile as requested).
+
+                await batch.commit();
+
+                // Remove from local list
+                allUsers = allUsers.filter(u => u.id !== uid);
+                filterUsers(document.getElementById('user-search').value);
+                
+                showToast("User deleted successfully");
+            } catch (e) {
+                console.error(e);
+                showToast("Error deleting user");
+                btn.innerHTML = '<i data-lucide="trash-2" class="w-5 h-5"></i>';
+                lucide.createIcons();
+            }
+        }
+
+        window.showToast = (msg) => {
+            const t = document.getElementById('toast');
+            document.getElementById('toast-message').innerText = msg;
+            t.classList.remove('opacity-0');
+            setTimeout(() => t.classList.add('opacity-0'), 3000);
+        };
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
