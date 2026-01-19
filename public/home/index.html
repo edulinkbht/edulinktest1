@@ -133,6 +133,18 @@ body.modal-open #mobile-bottom-nav{display:none!important}
 #adjust-image-wrapper:active{cursor:grabbing;}
 .comment-actions-float { float: right; margin-left: 8px; margin-bottom: 2px; }
 .clearfix::after { content: ""; clear: both; display: table; }
+
+/* Swipe Animations */
+.slide-in-right { animation: slideInRight 0.25s cubic-bezier(0.2, 0, 0, 1) forwards; }
+.slide-in-left { animation: slideInLeft 0.25s cubic-bezier(0.2, 0, 0, 1) forwards; }
+@keyframes slideInRight {
+  from { transform: translateX(20px); opacity: 0.8; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(-20px); opacity: 0.8; }
+  to { transform: translateX(0); opacity: 1; }
+}
 </style>
 </head>
 <body class="h-screen flex overflow-hidden p-0 md:p-3 gap-4 bg-white">
@@ -192,7 +204,7 @@ let currentEventCoverBlob=null,currentAvatarBlob=null,currentBannerBlob=null;win
 window.notifSelectionMode=false;window.selectedNotifs=new Set();window.notifSearchTerm='';window.selectedCollaborators=[];
 window.currentSharePid=null;window.activeFeedFilter='all';window.currentSuggestionIds=[];window.lastSuggestionRefresh=0;
 window.composeStep=1;window.composeImages=[null,null,null,null];window.composeImageBlobs=[...window.composeImages];
-window.expandedTexts=new Set();
+window.expandedTexts=new Set();window.currentViewName='feed';
 let lastScrollTop=0,lastExploreScrollTop=0,html5QrCode,ptrStartY=0,ptrDist=0,isPtr=false,isRefreshing=false,exitAttempt=false;
 window.profileSort='latest';window.isDesktopThreadMode=false;
 window.currentDownloadImages=[];window.selectedDownloadIndices=new Set();
@@ -271,7 +283,19 @@ window.updatePrivacySetting=async k=>{const el=k==='privateNetwork'?document.get
 window.openProfileFilter=()=>{manageHistory('profile-filter-overlay');toggleModalAnim('profile-filter-overlay','profile-filter-modal',!0);['latest','oldest','popular'].forEach(s=>{const el=document.getElementById(`sort-check-${s}`);if(window.profileSort===s)el.classList.remove('hidden');else el.classList.add('hidden')})};window.closeProfileFilter=()=>toggleModalAnim('profile-filter-overlay','profile-filter-modal',!1);
 window.setProfileSort=s=>{window.profileSort=s;renderProfileContent(window.currentViewingProfileId,window.currentProfileTab);closeProfileFilter()};
 window.togglePrivacy=async()=>{const t=document.getElementById('toggle-privacy'),p=!t.classList.contains('active');t.classList.toggle('active');const s=currentUser.settings||{};s.privateNetwork=p;await updateDoc(doc(db,"users",currentUser.id),{settings:s});currentUser.settings=s;showToast(`Account is ${p?'Private':'Public'}`)};
-window.switchView=async v=>{['feed','events','saved','network','profile','explore','notifications','announcements'].forEach(n=>{const e=document.getElementById(`view-${n}`);if(e)e.classList.add('hidden')});const tp=document.getElementById('trending-panel'),mh=document.getElementById('main-header'),mbn=document.getElementById('mobile-bottom-nav'),mnh=document.getElementById('mobile-notifications-header');if(mh){mh.classList.remove('hidden');mh.style.transform='translateY(0)'}if(mbn)mbn.classList.remove('hidden');if(mnh)mnh.classList.add('hidden','flex');if(v==='profile'&&mh)mh.classList.add('hidden');if(window.innerWidth<768){if(v==='notifications'){if(mh)mh.classList.add('hidden');if(mnh)mnh.classList.remove('hidden'),mnh.classList.add('flex')}else if(v==='explore'&&mh)mh.classList.add('hidden')}if(window.innerWidth>=1280)tp.classList.remove('hidden'),tp.classList.add('xl:flex');if(v!=='ai')document.getElementById(`view-${v}`)?.classList.remove('hidden');document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e=>e.classList.remove('active'));const nav=document.getElementById(`nav-${v}`),mnav=document.querySelectorAll('.mobile-nav-item');if(nav)nav.classList.add('active');if(v==='feed'){mnav[0]?.classList.add('active');if(document.getElementById('feed-container').children.length===0)renderFeed()}else if(v==='explore'){mnav[1]?.classList.add('active');switchExploreMainTab('explore')}else if(v==='network'){if(nav)nav.classList.add('active');if(document.getElementById('network-content').children.length===0)renderNetwork()}else if(v==='notifications'){if(nav)nav.classList.add('active');mnav[3]?.classList.add('active');renderNotifications();const un=notifications.filter(n=>!n.read);if(un.length>0){const b=writeBatch(db);un.forEach(n=>b.update(doc(db,"notifications",n.id),{read:!0}));await b.commit()}}else if(v==='saved'){if(nav)nav.classList.add('active');if(document.getElementById('saved-container').children.length===0)renderSaved()}setTimeout(()=>refreshIcons(),10)};
+window.switchView=async (v, direction = 'none')=>{
+  ['feed','events','saved','network','profile','explore','notifications','announcements'].forEach(n=>{const e=document.getElementById(`view-${n}`);if(e)e.classList.add('hidden','slide-in-right','slide-in-left')});
+  const tp=document.getElementById('trending-panel'),mh=document.getElementById('main-header'),mbn=document.getElementById('mobile-bottom-nav'),mnh=document.getElementById('mobile-notifications-header');
+  window.currentViewName = v;
+  if(mh){mh.classList.remove('hidden');mh.style.transform='translateY(0)'}if(mbn)mbn.classList.remove('hidden');if(mnh)mnh.classList.add('hidden','flex');if(v==='profile'&&mh)mh.classList.add('hidden');if(window.innerWidth<768){if(v==='notifications'){if(mh)mh.classList.add('hidden');if(mnh)mnh.classList.remove('hidden'),mnh.classList.add('flex')}else if(v==='explore'&&mh)mh.classList.add('hidden')}if(window.innerWidth>=1280)tp.classList.remove('hidden'),tp.classList.add('xl:flex');if(v!=='ai') {
+    const el = document.getElementById(`view-${v}`);
+    if(el) {
+      el.classList.remove('hidden');
+      if (direction === 'left') el.classList.add('slide-in-left');
+      if (direction === 'right') el.classList.add('slide-in-right');
+    }
+  }
+  document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e=>e.classList.remove('active'));const nav=document.getElementById(`nav-${v}`),mnav=document.querySelectorAll('.mobile-nav-item');if(nav)nav.classList.add('active');if(v==='feed'){mnav[0]?.classList.add('active');if(document.getElementById('feed-container').children.length===0)renderFeed()}else if(v==='explore'){mnav[1]?.classList.add('active');switchExploreMainTab('explore')}else if(v==='network'){if(nav)nav.classList.add('active');if(document.getElementById('network-content').children.length===0)renderNetwork()}else if(v==='notifications'){if(nav)nav.classList.add('active');mnav[3]?.classList.add('active');renderNotifications();const un=notifications.filter(n=>!n.read);if(un.length>0){const b=writeBatch(db);un.forEach(n=>b.update(doc(db,"notifications",n.id),{read:!0}));await b.commit()}}else if(v==='saved'){if(nav)nav.classList.add('active');if(document.getElementById('saved-container').children.length===0)renderSaved()}else if(v==='profile'){mnav[4]?.classList.add('active');}setTimeout(()=>refreshIcons(),10)};
 window.switchNetworkTab=t=>{activeNetworkTab=t;document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.getElementById(`net-tab-${t}`)?.classList.add('active');renderNetwork()};
 window.renderNetwork=()=>{const c=document.getElementById('network-content'),isP=activeNetworkTab==='people';c.innerHTML="";if(isP){const f=users.filter(u=>currentUser.following.includes(u.id));if(!f.length)c.innerHTML='<div class="flex flex-col items-center justify-center py-10 opacity-60"><p>You aren\'t following anyone yet.</p></div>';else{const g=document.createElement('div');g.className="grid grid-cols-1 md:grid-cols-2 gap-4 px-4 md:px-0";f.forEach(u=>{const d=document.createElement('div');d.className="bg-white p-4 rounded-xl border border-gray-100 flex items-center gap-4 hover:shadow-md transition-all cursor-pointer";d.onclick=()=>showProfile(u.id);d.innerHTML=`<img src="${u.avatar}" class="w-12 h-12 rounded-full border border-gray-100 bg-gray-50 object-cover"><div><h4 class="font-bold text-gray-900">${u.name} ${u.isOfficial?'<i data-lucide="badge-check" class="w-4 h-4 inline official-badge"></i>':''}</h4><p class="text-xs text-gray-500 line-clamp-1">${u.bio}</p></div><button onclick="event.stopPropagation(); toggleFollow('${u.id}')" class="ml-auto text-xs border border-gray-200 px-3 py-1 rounded-full hover:bg-gray-50">Unfollow</button>`;g.appendChild(d)});c.appendChild(g)}}else{const fp=posts.filter(p=>currentUser.following.includes(p.authorId));if(!fp.length)c.innerHTML='<div class="text-center py-10 text-gray-400">No posts.</div>';else{const pc=document.createElement('div');pc.className="space-y-4 px-4 md:px-0";fp.forEach(p=>pc.appendChild(createPostElement(p,'network')));c.appendChild(pc)}}refreshIcons()};
 window.renderFeed=t=>{const c=document.getElementById('feed-container');c.innerHTML="";posts.filter(p=>{const a=users.find(u=>u.id===p.authorId),priv=a?.settings?.privateNetwork,fol=currentUser.following.includes(p.authorId);let pf=true;if(window.activeFeedFilter==='following')pf=fol;else if(window.activeFeedFilter==='friends'){const isF=fol&&(a.following&&a.following.includes(currentUser.id));pf=isF}const iv=(p.authorId===currentUser.id||(priv?fol:((!p.settings||p.settings.privacy==='public')||fol))),ms=(!t||p.content.toLowerCase().includes(t.toLowerCase()));return iv&&ms&&pf}).forEach(p=>c.appendChild(createPostElement(p,'feed')));refreshIcons()};
