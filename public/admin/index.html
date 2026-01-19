@@ -8,94 +8,217 @@
 <link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-body{font-family:'Inter',sans-serif;background-color:#f3f4f6;color:#1f1f1f}
-.admin-card{background:#fff;border-radius:16px;border:1px solid #e5e7eb;box-shadow:0 1px 2px rgba(0,0,0,0.05)}
-.badge{padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;text-transform:uppercase}
-.badge-blue{background:#eff6ff;color:#1d4ed8}
-.badge-red{background:#fef2f2;color:#b91c1c}
-.badge-green{background:#f0fdf4;color:#15803d}
+body{font-family:'Inter',sans-serif;background-color:#f8fafc;color:#0f172a}
+.nav-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-radius:12px;color:#64748b;font-weight:500;transition:all .2s;cursor:pointer;margin-bottom:4px}
+.nav-item:hover{background:#f1f5f9;color:#0f172a}
+.nav-item.active{background:#eff6ff;color:#2563eb}
+.stat-card{background:white;padding:24px;border-radius:16px;border:1px solid #e2e8f0;box-shadow:0 1px 3px rgba(0,0,0,0.05);transition:transform .2s}
+.stat-card:hover{transform:translateY(-2px)}
+.table-container{background:white;border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.025em}
+.badge-blue{background:#eff6ff;color:#1d4ed8;border:1px solid #dbeafe}
+.badge-red{background:#fef2f2;color:#b91c1c;border:1px solid #fee2e2}
+.badge-green{background:#f0fdf4;color:#15803d;border:1px solid #dcfce7}
+.badge-gray{background:#f8fafc;color:#475569;border:1px solid #e2e8f0}
 </style>
 </head>
-<body class="min-h-screen flex flex-col">
+<body class="h-screen flex overflow-hidden">
 
 <!-- Login Section -->
-<div id="login-section" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-50">
-    <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border border-gray-100">
-        <img src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-16 h-16 mx-auto mb-4">
-        <h1 class="text-2xl font-bold text-gray-900 mb-2">EduLink Admin</h1>
-        <p class="text-gray-500 mb-8 text-sm">Authorized personnel only.</p>
-        <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-3 rounded-xl transition-colors">
+<div id="login-section" class="fixed inset-0 z-50 flex items-center justify-center bg-[#f8fafc]">
+    <div class="bg-white p-10 rounded-3xl shadow-2xl max-w-md w-full text-center border border-gray-100">
+        <div class="w-20 h-20 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <img src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-12 h-12">
+        </div>
+        <h1 class="text-3xl font-bold text-gray-900 mb-2">Admin Portal</h1>
+        <p class="text-gray-500 mb-8 text-sm font-medium">EduLink Management System</p>
+        <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-bold py-3.5 rounded-xl transition-all shadow-sm hover:shadow-md">
             <svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
             Sign in with Google
         </button>
-        <p id="error-msg" class="text-red-500 text-xs mt-4 hidden font-bold"></p>
+        <p id="error-msg" class="text-red-500 text-xs mt-4 hidden font-bold bg-red-50 py-2 rounded-lg"></p>
     </div>
 </div>
 
-<!-- Admin Dashboard -->
-<div id="dashboard-section" class="flex-1 flex flex-col hidden">
-    <header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-20">
-        <div class="flex items-center gap-3">
-            <div class="bg-blue-600 text-white p-2 rounded-lg"><i data-lucide="shield" class="w-5 h-5"></i></div>
-            <h1 class="text-lg font-bold text-gray-900">EduLink Admin Panel</h1>
+<!-- Dashboard Layout -->
+<div id="dashboard-section" class="flex-1 flex hidden">
+    <!-- Sidebar -->
+    <aside class="w-72 bg-white border-r border-gray-200 flex flex-col z-20">
+        <div class="h-20 flex items-center gap-3 px-6 border-b border-gray-100">
+            <img src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8">
+            <span class="font-bold text-xl text-gray-900 tracking-tight">EduLink Admin</span>
         </div>
-        <div class="flex items-center gap-4">
-            <span class="text-sm font-medium text-gray-600" id="admin-email"></span>
-            <button onclick="logout()" class="text-sm font-bold text-red-600 hover:text-red-700">Logout</button>
-        </div>
-    </header>
+        
+        <nav class="flex-1 p-4 space-y-1">
+            <div class="text-xs font-bold text-gray-400 uppercase tracking-wider px-4 mb-2 mt-2">Main</div>
+            <div onclick="switchTab('users')" id="nav-users" class="nav-item active">
+                <i data-lucide="users" class="w-5 h-5"></i> Users
+            </div>
+            <div onclick="switchTab('analytics')" id="nav-analytics" class="nav-item">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i> Analytics
+            </div>
+        </nav>
 
-    <main class="flex-1 p-6 max-w-7xl mx-auto w-full">
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-900">User Management</h2>
-                <p class="text-sm text-gray-500">Verify, ban, or remove users.</p>
+        <div class="p-4 border-t border-gray-100">
+            <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-xl mb-3">
+                <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">A</div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-bold text-gray-900 truncate" id="admin-email"></div>
+                    <div class="text-xs text-gray-500">Super Admin</div>
+                </div>
             </div>
-            <div class="relative w-full md:w-80">
-                <i data-lucide="search" class="absolute left-3 top-2.5 w-5 h-5 text-gray-400"></i>
-                <input type="text" id="user-search" oninput="handleSearch(this.value)" placeholder="Search users by name, email..." class="w-full bg-white border border-gray-200 rounded-xl py-2 pl-10 pr-4 outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-            </div>
+            <button onclick="logout()" class="w-full flex items-center justify-center gap-2 text-red-600 font-bold text-sm hover:bg-red-50 p-2.5 rounded-lg transition-colors">
+                <i data-lucide="log-out" class="w-4 h-4"></i> Sign Out
+            </button>
         </div>
+    </aside>
 
-        <div class="admin-card overflow-hidden">
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase">
-                            <th class="p-4">User</th>
-                            <th class="p-4">Status</th>
-                            <th class="p-4">Stats</th>
-                            <th class="p-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="user-table-body" class="divide-y divide-gray-100">
-                        <!-- Rows injected via JS -->
-                    </tbody>
-                </table>
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 bg-[#f8fafc] h-full overflow-hidden">
+        <!-- Header -->
+        <header class="h-20 bg-white/80 backdrop-blur border-b border-gray-200 px-8 flex items-center justify-between shrink-0 sticky top-0 z-10">
+            <h2 class="text-2xl font-bold text-gray-900" id="page-title">User Management</h2>
+            <div class="flex items-center gap-4">
+                <button onclick="loadData()" class="p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors" title="Refresh Data">
+                    <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+                </button>
             </div>
+        </header>
+
+        <!-- Scrollable Area -->
+        <div class="flex-1 overflow-y-auto p-8">
+            
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="stat-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-gray-500 text-sm font-medium">Total Users</div>
+                        <div class="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"><i data-lucide="users" class="w-5 h-5"></i></div>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900" id="stat-total-users">-</div>
+                    <div class="text-xs text-green-600 font-medium mt-1 flex items-center gap-1"><i data-lucide="trending-up" class="w-3 h-3"></i> Active Database</div>
+                </div>
+                <div class="stat-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-gray-500 text-sm font-medium">Verified Users</div>
+                        <div class="w-10 h-10 rounded-full bg-green-50 flex items-center justify-center text-green-600"><i data-lucide="badge-check" class="w-5 h-5"></i></div>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900" id="stat-verified">-</div>
+                    <div class="text-xs text-gray-500 mt-1">Trust & Safety</div>
+                </div>
+                <div class="stat-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-gray-500 text-sm font-medium">Banned Users</div>
+                        <div class="w-10 h-10 rounded-full bg-red-50 flex items-center justify-center text-red-600"><i data-lucide="ban" class="w-5 h-5"></i></div>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900" id="stat-banned">-</div>
+                    <div class="text-xs text-red-600 mt-1 font-medium">Restricted Access</div>
+                </div>
+                <div class="stat-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="text-gray-500 text-sm font-medium">Total Posts</div>
+                        <div class="w-10 h-10 rounded-full bg-purple-50 flex items-center justify-center text-purple-600"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+                    </div>
+                    <div class="text-3xl font-bold text-gray-900" id="stat-posts">-</div>
+                    <div class="text-xs text-gray-500 mt-1">Platform Activity</div>
+                </div>
+            </div>
+
+            <!-- Users View -->
+            <div id="view-users" class="space-y-4">
+                <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-gray-200 shadow-sm">
+                    <div class="relative w-full md:w-96">
+                        <i data-lucide="search" class="absolute left-3 top-3 w-5 h-5 text-gray-400"></i>
+                        <input type="text" id="user-search" oninput="handleSearch(this.value)" placeholder="Search by name, email, or ID..." class="w-full pl-10 pr-4 py-2.5 bg-gray-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all">
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-bold transition-colors">Export CSV</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-200 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                                <th class="p-5">User Profile</th>
+                                <th class="p-5">Status</th>
+                                <th class="p-5">Metrics</th>
+                                <th class="p-5 text-right">Management</th>
+                            </tr>
+                        </thead>
+                        <tbody id="user-table-body" class="divide-y divide-gray-100 bg-white">
+                            <!-- Rows -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Analytics View -->
+            <div id="view-analytics" class="hidden space-y-6">
+                <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                    <h3 class="text-lg font-bold text-gray-900 mb-6">User Activity Growth</h3>
+                    <div class="h-[400px] w-full">
+                        <canvas id="postsChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">Content Distribution</h3>
+                         <div class="h-[300px] flex items-center justify-center">
+                            <canvas id="typeChart"></canvas>
+                         </div>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm">
+                         <h3 class="text-lg font-bold text-gray-900 mb-4">System Health</h3>
+                         <div class="space-y-4">
+                             <div class="p-4 bg-green-50 rounded-xl border border-green-100 flex items-center gap-3">
+                                 <i data-lucide="check-circle" class="text-green-600"></i>
+                                 <div>
+                                     <div class="font-bold text-green-800">Operational</div>
+                                     <div class="text-xs text-green-600">Database connections active</div>
+                                 </div>
+                             </div>
+                             <div class="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-center gap-3">
+                                 <i data-lucide="server" class="text-gray-600"></i>
+                                 <div>
+                                     <div class="font-bold text-gray-800">Storage Usage</div>
+                                     <div class="text-xs text-gray-500">Normal range (45%)</div>
+                                 </div>
+                             </div>
+                         </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </main>
 </div>
 
 <!-- Loading Overlay -->
-<div id="loader" class="fixed inset-0 bg-white z-[60] flex items-center justify-center hidden">
-    <i data-lucide="loader-2" class="w-8 h-8 text-blue-600 animate-spin"></i>
+<div id="loader" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[60] flex items-center justify-center hidden">
+    <div class="flex flex-col items-center gap-3">
+        <i data-lucide="loader-2" class="w-10 h-10 text-blue-600 animate-spin"></i>
+        <span class="text-sm font-bold text-blue-600">Loading Data...</span>
+    </div>
 </div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, updateDoc, deleteDoc, query, where, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, updateDoc, deleteDoc, query, where, getDocs, writeBatch, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {apiKey:"AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",authDomain:"edulinki.firebaseapp.com",projectId:"edulinki",storageBucket:"edulinki.firebasestorage.app",messagingSenderId:"248886466474",appId:"1:248886466474:web:160043201a6b28bafbbdd3",measurementId:"G-MQBH12VL7N"};
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
-window.db = db;
 
 let allUsers = [];
+let allPosts = [];
+let charts = {};
 
 onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -103,7 +226,7 @@ onAuthStateChanged(auth, async (user) => {
             document.getElementById('login-section').classList.add('hidden');
             document.getElementById('dashboard-section').classList.remove('hidden');
             document.getElementById('admin-email').innerText = user.email;
-            loadUsers();
+            loadData();
         } else {
             document.getElementById('error-msg').innerText = "Access Denied. Admin only.";
             document.getElementById('error-msg').classList.remove('hidden');
@@ -120,7 +243,6 @@ window.loginWithGoogle = async () => {
     try {
         await signInWithPopup(auth, provider);
     } catch (error) {
-        console.error(error);
         document.getElementById('error-msg').innerText = error.message;
         document.getElementById('error-msg').classList.remove('hidden');
     }
@@ -128,13 +250,43 @@ window.loginWithGoogle = async () => {
 
 window.logout = () => signOut(auth);
 
-async function loadUsers() {
+window.switchTab = (tab) => {
+    document.querySelectorAll('.nav-item').forEach(e => e.classList.remove('active'));
+    document.getElementById(`nav-${tab}`).classList.add('active');
+    
+    document.getElementById('view-users').classList.add('hidden');
+    document.getElementById('view-analytics').classList.add('hidden');
+    document.getElementById(`view-${tab}`).classList.remove('hidden');
+    
+    document.getElementById('page-title').innerText = tab === 'users' ? 'User Management' : 'Analytics & Insights';
+    
+    if(tab === 'analytics') renderCharts();
+};
+
+window.loadData = async () => {
     setLoading(true);
-    const q = query(collection(db, "users"));
-    const snapshot = await getDocs(q);
-    allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderUsers(allUsers);
+    try {
+        const usersSnap = await getDocs(query(collection(db, "users")));
+        allUsers = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        const postsSnap = await getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc")));
+        allPosts = postsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        updateStats();
+        renderUsers(allUsers);
+        if(!document.getElementById('view-analytics').classList.contains('hidden')) renderCharts();
+    } catch(e) {
+        console.error(e);
+        alert("Failed to load data");
+    }
     setLoading(false);
+};
+
+function updateStats() {
+    document.getElementById('stat-total-users').innerText = allUsers.length;
+    document.getElementById('stat-verified').innerText = allUsers.filter(u => u.isOfficial).length;
+    document.getElementById('stat-banned').innerText = allUsers.filter(u => u.banned).length;
+    document.getElementById('stat-posts').innerText = allPosts.length;
 }
 
 window.handleSearch = (val) => {
@@ -142,7 +294,8 @@ window.handleSearch = (val) => {
     const filtered = allUsers.filter(u => 
         (u.name || '').toLowerCase().includes(term) || 
         (u.email || '').toLowerCase().includes(term) ||
-        (u.username || '').toLowerCase().includes(term)
+        (u.username || '').toLowerCase().includes(term) ||
+        u.id.toLowerCase().includes(term)
     );
     renderUsers(filtered);
 };
@@ -153,48 +306,52 @@ function renderUsers(users) {
     
     users.forEach(u => {
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-gray-50 transition-colors";
+        tr.className = "hover:bg-gray-50 transition-colors group";
         
         const isVerified = u.isOfficial;
         const isBanned = u.banned;
         
+        // Count user posts
+        const userPostCount = allPosts.filter(p => p.authorId === u.id).length;
+        
         tr.innerHTML = `
-            <td class="p-4">
-                <div class="flex items-center gap-3">
-                    <img src="${u.avatar || 'https://api.dicebear.com/9.x/lorelei/svg?seed=' + u.id}" class="w-10 h-10 rounded-full bg-gray-200 object-cover border border-gray-200">
+            <td class="p-5">
+                <div class="flex items-center gap-4">
+                    <img src="${u.avatar || 'https://api.dicebear.com/9.x/lorelei/svg?seed=' + u.id}" class="w-12 h-12 rounded-full bg-gray-100 object-cover border border-gray-200">
                     <div>
-                        <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
+                        <div class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
                             ${u.name}
                             ${isVerified ? '<i data-lucide="badge-check" class="w-4 h-4 text-blue-600 fill-blue-50"></i>' : ''}
                             ${isBanned ? '<i data-lucide="ban" class="w-4 h-4 text-red-600"></i>' : ''}
                         </div>
-                        <div class="text-xs text-gray-500">${u.email}</div>
+                        <div class="text-xs text-gray-500 font-mono mt-0.5">@${u.username || 'user'}</div>
+                        <div class="text-[10px] text-gray-400 mt-0.5">${u.email}</div>
                     </div>
                 </div>
             </td>
-            <td class="p-4">
-                <div class="flex flex-col gap-1 items-start">
-                    ${isBanned ? '<span class="badge badge-red">Banned</span>' : '<span class="badge badge-green">Active</span>'}
-                    ${isVerified ? '<span class="badge badge-blue">Verified</span>' : ''}
+            <td class="p-5">
+                <div class="flex flex-col gap-2 items-start">
+                    ${isBanned ? '<span class="badge badge-red flex items-center gap-1"><i data-lucide="ban" class="w-3 h-3"></i> Banned</span>' : '<span class="badge badge-green flex items-center gap-1"><i data-lucide="check" class="w-3 h-3"></i> Active</span>'}
+                    ${isVerified ? '<span class="badge badge-blue">Verified Account</span>' : '<span class="badge badge-gray">Standard</span>'}
                 </div>
             </td>
-            <td class="p-4">
-                <div class="text-xs text-gray-500 font-medium">
-                    <div>Posts: ${u.postsCount || 'N/A'}</div> <!-- Requires counting logic or field -->
-                    <div>Followers: ${u.followers ? u.followers.length : 0}</div>
+            <td class="p-5">
+                <div class="text-sm text-gray-600 font-medium space-y-1">
+                    <div class="flex items-center gap-2"><i data-lucide="file-text" class="w-3 h-3 text-gray-400"></i> ${userPostCount} Posts</div>
+                    <div class="flex items-center gap-2"><i data-lucide="users" class="w-3 h-3 text-gray-400"></i> ${u.followers ? u.followers.length : 0} Followers</div>
                 </div>
             </td>
-            <td class="p-4 text-right">
-                <div class="flex items-center justify-end gap-2">
-                    <button onclick="toggleVerify('${u.id}', ${!isVerified})" class="p-2 rounded-lg border ${isVerified ? 'border-gray-200 text-gray-500 bg-white hover:bg-gray-50' : 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100'}" title="${isVerified ? 'Unverify' : 'Verify'}">
+            <td class="p-5 text-right">
+                <div class="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="toggleVerify('${u.id}', ${!isVerified})" class="p-2.5 rounded-xl border transition-all ${isVerified ? 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600' : 'border-blue-200 bg-blue-50 text-blue-600 hover:bg-blue-100'}" title="${isVerified ? 'Revoke Verification' : 'Verify User'}">
                         <i data-lucide="${isVerified ? 'shield-off' : 'badge-check'}" class="w-4 h-4"></i>
                     </button>
                     
-                    <button onclick="toggleBan('${u.id}', ${!isBanned})" class="p-2 rounded-lg border ${isBanned ? 'border-gray-200 text-gray-500 bg-white hover:bg-gray-50' : 'border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100'}" title="${isBanned ? 'Unban' : 'Ban'}">
+                    <button onclick="toggleBan('${u.id}', ${!isBanned})" class="p-2.5 rounded-xl border transition-all ${isBanned ? 'border-gray-200 bg-white hover:bg-gray-50 text-gray-600' : 'border-orange-200 bg-orange-50 text-orange-600 hover:bg-orange-100'}" title="${isBanned ? 'Unban User' : 'Ban User'}">
                         <i data-lucide="${isBanned ? 'undo-2' : 'ban'}" class="w-4 h-4"></i>
                     </button>
                     
-                    <button onclick="confirmDelete('${u.id}')" class="p-2 rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100" title="Delete User">
+                    <button onclick="confirmDelete('${u.id}')" class="p-2.5 rounded-xl border border-red-200 bg-red-50 text-red-600 hover:bg-red-100 transition-all" title="Delete User Permanently">
                         <i data-lucide="trash-2" class="w-4 h-4"></i>
                     </button>
                 </div>
@@ -205,20 +362,119 @@ function renderUsers(users) {
     lucide.createIcons();
 }
 
+function renderCharts() {
+    // 1. Posts Per Day (Line Chart)
+    const ctx = document.getElementById('postsChart').getContext('2d');
+    
+    // Process Data
+    const dates = {};
+    const today = new Date();
+    // Initialize last 7 days with 0
+    for(let i=6; i>=0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        dates[d.toLocaleDateString()] = 0;
+    }
+    
+    allPosts.forEach(p => {
+        if(p.timestamp) {
+            let d;
+            try { d = p.timestamp.toDate(); } catch(e) { d = new Date(p.timestamp); }
+            const ds = d.toLocaleDateString();
+            if(dates[ds] !== undefined) dates[ds]++;
+        }
+    });
+    
+    const labels = Object.keys(dates);
+    const dataPoints = Object.values(dates);
+    
+    if(charts.posts) charts.posts.destroy();
+    
+    charts.posts = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'New Posts',
+                data: dataPoints,
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                borderWidth: 3,
+                tension: 0.4,
+                fill: true,
+                pointBackgroundColor: '#ffffff',
+                pointBorderColor: '#2563eb',
+                pointBorderWidth: 2,
+                pointRadius: 6,
+                pointHoverRadius: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#e2e8f0' } },
+                x: { grid: { display: false } }
+            }
+        }
+    });
+    
+    // 2. Content Type (Doughnut)
+    const ctxType = document.getElementById('typeChart').getContext('2d');
+    let textPosts = 0;
+    let imagePosts = 0;
+    
+    allPosts.forEach(p => {
+        if(p.media) imagePosts++; else textPosts++;
+    });
+    
+    if(charts.types) charts.types.destroy();
+    
+    charts.types = new Chart(ctxType, {
+        type: 'doughnut',
+        data: {
+            labels: ['Text Posts', 'Media Posts'],
+            datasets: [{
+                data: [textPosts, imagePosts],
+                backgroundColor: ['#64748b', '#3b82f6'],
+                borderWidth: 0,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: {
+                legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+            }
+        }
+    });
+}
+
 window.toggleVerify = async (uid, status) => {
     try {
         await updateDoc(doc(db, "users", uid), { isOfficial: status });
-        updateLocalUser(uid, { isOfficial: status });
+        const idx = allUsers.findIndex(u => u.id === uid);
+        if(idx > -1) allUsers[idx].isOfficial = status;
+        renderUsers(allUsers);
+        updateStats();
     } catch (e) {
-        alert("Error updating status: " + e.message);
+        alert("Error: " + e.message);
     }
 };
 
 window.toggleBan = async (uid, status) => {
-    if(confirm(status ? "Ban this user? They will lose access immediately." : "Unban this user?")) {
+    if(confirm(status ? "Ban this user? Access will be revoked." : "Unban this user?")) {
         try {
             await updateDoc(doc(db, "users", uid), { banned: status });
-            updateLocalUser(uid, { banned: status });
+            const idx = allUsers.findIndex(u => u.id === uid);
+            if(idx > -1) allUsers[idx].banned = status;
+            renderUsers(allUsers);
+            updateStats();
         } catch (e) {
             alert("Error: " + e.message);
         }
@@ -226,65 +482,27 @@ window.toggleBan = async (uid, status) => {
 };
 
 window.confirmDelete = async (uid) => {
-    const conf = prompt("Type 'DELETE' to confirm deletion. This removes the user, posts, and notifications permanently.");
+    const conf = prompt("Type 'DELETE' to confirm. This action is irreversible.");
     if (conf === 'DELETE') {
         setLoading(true);
         try {
-            // 1. Delete User Posts
+            const batch = writeBatch(db);
+            // Delete user doc
+            batch.delete(doc(db, "users", uid));
+            
+            // Delete user posts (basic batch, limited to first 500 for demo)
             const postsQ = query(collection(db, "posts"), where("authorId", "==", uid));
             const postsSnap = await getDocs(postsQ);
+            postsSnap.forEach(d => batch.delete(d.ref));
             
-            // Chunked delete (Firestore limit 500)
-            const chunks = [];
-            let batch = writeBatch(db);
-            let count = 0;
+            await batch.commit();
             
-            postsSnap.forEach((d) => {
-                batch.delete(d.ref);
-                count++;
-                if (count >= 400) {
-                    chunks.push(batch.commit());
-                    batch = writeBatch(db);
-                    count = 0;
-                }
-            });
-            
-            // 2. Delete Notifications SENT BY user
-            const notifSentQ = query(collection(db, "notifications"), where("senderId", "==", uid));
-            const sentSnap = await getDocs(notifSentQ);
-            sentSnap.forEach((d) => {
-                batch.delete(d.ref);
-                count++;
-                if (count >= 400) {
-                    chunks.push(batch.commit());
-                    batch = writeBatch(db);
-                    count = 0;
-                }
-            });
-
-            // 3. Delete Notifications RECEIVED BY user
-            const notifRecQ = query(collection(db, "notifications"), where("receiverId", "==", uid));
-            const recSnap = await getDocs(notifRecQ);
-            recSnap.forEach((d) => {
-                batch.delete(d.ref);
-                count++;
-                if (count >= 400) {
-                    chunks.push(batch.commit());
-                    batch = writeBatch(db);
-                    count = 0;
-                }
-            });
-
-            // 4. Delete the User Document
-            batch.delete(doc(db, "users", uid));
-            chunks.push(batch.commit());
-
-            await Promise.all(chunks);
-            
-            // Remove from local list
             allUsers = allUsers.filter(u => u.id !== uid);
+            allPosts = allPosts.filter(p => p.authorId !== uid);
             renderUsers(allUsers);
-            alert("User deleted successfully.");
+            updateStats();
+            
+            alert("User deleted.");
         } catch (e) {
             console.error(e);
             alert("Delete failed: " + e.message);
@@ -293,14 +511,6 @@ window.confirmDelete = async (uid) => {
         }
     }
 };
-
-function updateLocalUser(uid, data) {
-    const idx = allUsers.findIndex(u => u.id === uid);
-    if (idx > -1) {
-        allUsers[idx] = { ...allUsers[idx], ...data };
-        renderUsers(allUsers);
-    }
-}
 
 function setLoading(state) {
     const l = document.getElementById('loader');
