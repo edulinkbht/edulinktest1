@@ -327,7 +327,7 @@ function sd(e){if(e.target.closest('#banner-edit-area')){isDraggingBanner=!0;sta
 function dg(e){if(!isDraggingBanner)return;if(e.cancelable)e.preventDefault();const y=e.type.includes('mouse')?e.clientY:e.touches[0].clientY,d=startY-y,p=initialBannerPos+(d/2);currentBannerPos=Math.round(Math.max(0,Math.min(100,p)));document.getElementById('edit-banner-preview').style.objectPosition=`center ${currentBannerPos}%`;document.getElementById('banner-pos-hint').innerText=`${currentBannerPos}%`}
 function ed(){isDraggingBanner=!1}
 window.openSettings=()=>{manageHistory('settings-overlay');const c=document.getElementById('settings-content');let admBtn='';if(currentUser.email==='edulinkbht@gmail.com')admBtn=`<button onclick="openAnnouncement()" class="post-option-item group w-full"><div class="icon-circle"><i data-lucide="megaphone" class="w-5 h-5"></i></div><div class="flex-1"><div class="font-bold text-gray-900 text-[15px]">Broadcast Announcement</div><div class="text-xs text-gray-500">Send to all users</div></div></button>`;c.innerHTML=`<button onclick="openPrivacySettings()" class="post-option-item group w-full"><div class="icon-circle"><i data-lucide="lock" class="w-5 h-5"></i></div><div class="flex-1"><div class="font-bold text-gray-900 text-[15px]">Account Privacy</div><div class="text-xs text-gray-500">Manage visibility and data</div></div></button>${admBtn}<button onclick="showToast('EduLink Version 1.0')" class="post-option-item group w-full"><div class="icon-circle"><i data-lucide="info" class="w-5 h-5"></i></div><div class="flex-1"><div class="font-bold text-gray-900 text-[15px]">About Us</div><div class="text-xs text-gray-500">Learn more about EduLink</div></div></button><button onclick="showToast('Standard terms apply')" class="post-option-item group w-full"><div class="icon-circle"><i data-lucide="file-text" class="w-5 h-5"></i></div><div class="flex-1"><div class="font-bold text-gray-900 text-[15px]">Terms of Use</div><div class="text-xs text-gray-500">Policies and agreements</div></div></button><div class="h-px bg-gray-100 my-1"></div><button onclick="doLogout()" class="post-option-item group w-full"><div class="icon-circle bg-red-50 text-red-600"><i data-lucide="log-out" class="w-5 h-5"></i></div><div class="font-bold text-black text-[15px]">Log Out</div></button>`;toggleModalAnim('settings-overlay','settings-modal',!0);refreshIcons()};window.closeSettings=()=>toggleModalAnim('settings-overlay','settings-modal',!1);
-window.openPrivacySettings=()=>{manageHistory('privacy-overlay');closeSettings();document.getElementById('privacy-overlay').classList.remove('hidden');animModal('privacy-overlay','privacy-modal',!0);document.getElementById('privacy-user-avatar').src=currentUser.avatar;document.getElementById('privacy-user-name').innerText=currentUser.name;const s=currentUser.settings||{},pt=document.getElementById('toggle-privacy-main'),ht=document.getElementById('toggle-hide-connections');if(s.privateNetwork)pt.classList.add('active');else pt.classList.remove('active');if(s.hideConnections)ht.classList.add('active');else ht.classList.remove('active')};window.closePrivacySettings=()=>animModal('privacy-overlay','privacy-modal',!1);
+window.openPrivacySettings=()=>{manageHistory('privacy-overlay');closeSettings();document.getElementById('privacy-overlay').classList.remove('hidden');toggleModalAnim('privacy-overlay','privacy-modal',!0);document.getElementById('privacy-user-avatar').src=currentUser.avatar;document.getElementById('privacy-user-name').innerText=currentUser.name;const s=currentUser.settings||{},pt=document.getElementById('toggle-privacy-main'),ht=document.getElementById('toggle-hide-connections');if(s.privateNetwork)pt.classList.add('active');else pt.classList.remove('active');if(s.hideConnections)ht.classList.add('active');else ht.classList.remove('active')};window.closePrivacySettings=()=>toggleModalAnim('privacy-overlay','privacy-modal',!1);
 window.updatePrivacySetting=async k=>{const el=k==='privateNetwork'?document.getElementById('toggle-privacy-main'):document.getElementById('toggle-hide-connections'),ia=el.classList.contains('active'),nv=!ia;el.classList.toggle('active');const s=currentUser.settings||{},k2=k;s[k2]=nv;await updateDoc(doc(db,"users",currentUser.id),{settings:s});currentUser.settings=s;if(k==='privateNetwork')showToast(`Account is now ${nv?'Private':'Public'}`);else showToast("Settings saved")};
 window.openProfileFilter=()=>{manageHistory('profile-filter-overlay');toggleModalAnim('profile-filter-overlay','profile-filter-modal',!0);['latest','oldest','popular'].forEach(s=>{const el=document.getElementById(`sort-check-${s}`);if(window.profileSort===s)el.classList.remove('hidden');else el.classList.add('hidden')})};window.closeProfileFilter=()=>toggleModalAnim('profile-filter-overlay','profile-filter-modal',!1);
 window.setProfileSort=s=>{window.profileSort=s;renderProfileContent(window.currentViewingProfileId,window.currentProfileTab);closeProfileFilter()};
@@ -626,10 +626,11 @@ window.openEditProfile=()=>{
   document.getElementById('username-change-hint').className = canEditUser ? "text-[10px] text-gray-400" : "text-[10px] text-red-500 font-medium";
   document.getElementById('username-counter').innerText=`${(currentUser.username||"").length}/20`;
   
-  document.body.classList.add('modal-open');animModal('edit-profile-overlay','edit-profile-modal',!0)
+  document.body.classList.add('modal-open');
+  toggleModalAnim('edit-profile-overlay','edit-profile-modal',!0);
 };
 
-window.closeEditProfile=()=>{document.body.classList.remove('modal-open');animModal('edit-profile-overlay','edit-profile-modal',!1)};
+window.closeEditProfile=()=>{document.body.classList.remove('modal-open');toggleModalAnim('edit-profile-overlay','edit-profile-modal',!1)};
 window.handleEditAvatarSelect=e=>{const f=e.target.files[0];if(f){currentAvatarBlob=f;const r=new FileReader();r.onload=x=>document.getElementById('edit-avatar-preview').src=x.target.result;r.readAsDataURL(f)}};window.handleEditBannerSelect=e=>{const f=e.target.files[0];if(f){currentBannerBlob=f;const r=new FileReader();r.onload=x=>document.getElementById('edit-banner-preview').src=x.target.result;r.readAsDataURL(f)}};
 
 window.saveProfileChanges=async()=>{
@@ -653,8 +654,11 @@ window.saveProfileChanges=async()=>{
   if (userChanged) {
       const lastUserChange = currentUser.lastUsernameChange?.toDate?.()?.getTime() || 0;
       if (now - lastUserChange < ONE_WEEK) return showToast("Username limit reached", true);
-      if(un.length<3||un.length>20||!/^[a-z0-9_.]+$/.test(un)||!(await getDocs(query(collection(db,"users"),where("username","==",un)))).empty)
-        return showToast("Invalid/Taken username",true);
+      if(un.length<3||un.length>20||!/^[a-z0-9_.]+$/.test(un)) return showToast("Invalid username",true);
+      
+      const q = query(collection(db, "users"), where("username", "==", un));
+      const snap = await getDocs(q);
+      if(!snap.empty && snap.docs[0].id !== currentUser.id) return showToast("Username taken", true);
   }
   
   // Progress UI
