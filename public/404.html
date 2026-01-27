@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>404 Page Not Found</title>
+    <title>404 - Lost in Thought</title>
     <style>
         :root {
             --notion-blue: #2eaadc;
             --deep-atmosphere: #115c7a;
             --star-white: #ffffff;
-            --glass-border: rgba(255, 255, 255, 0.1);
         }
 
         body, html {
@@ -23,7 +22,7 @@
             overscroll-behavior: none;
         }
 
-        /* --- HEADER STYLES --- */
+        /* --- HEADER --- */
         header {
             position: absolute;
             top: 0;
@@ -34,46 +33,48 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            z-index: 1000; /* Above everything */
-            /* Subtle gradient fade from top */
-            background: linear-gradient(to bottom, rgba(16, 64, 88, 0.3) 0%, transparent 100%);
+            z-index: 1000;
+            background: linear-gradient(to bottom, rgba(16, 64, 88, 0.4) 0%, transparent 100%);
+            pointer-events: none; /* Let clicks pass through empty areas */
         }
 
         .header-logo {
-            height: 45px; /* Adjust size as needed */
+            height: 45px;
             width: auto;
             object-fit: contain;
-            /* Adds a soft glow to the logo to match the vibe */
             filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+            pointer-events: auto;
             transition: transform 0.3s ease;
-            cursor: pointer;
         }
 
         .header-logo:hover {
             transform: scale(1.05);
-            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.6));
+        }
+
+        .header-nav {
+            pointer-events: auto;
         }
 
         .header-nav a {
-            color: rgba(255, 255, 255, 0.8);
+            color: rgba(255, 255, 255, 0.9);
             text-decoration: none;
             text-transform: uppercase;
             font-size: 0.85rem;
             letter-spacing: 2px;
             padding: 10px 20px;
-            border: 1px solid transparent;
             border-radius: 30px;
             transition: all 0.3s ease;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         .header-nav a:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
             color: white;
             box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
         }
 
-        /* --- SCENE SETUP --- */
+        /* --- SCENE --- */
         .scene {
             position: relative;
             width: 100vw;
@@ -97,12 +98,12 @@
             position: absolute;
             inset: 0;
             z-index: 101;
-            opacity: 0.05;
+            opacity: 0.04;
             pointer-events: none;
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
-        /* --- LAYERS (CLOUDS & STARS) --- */
+        /* --- LAYERS --- */
         .layer {
             position: absolute;
             width: 100%;
@@ -110,19 +111,21 @@
             display: flex;
             justify-content: center;
             align-items: center;
+            /* GPU Acceleration */
             will-change: transform;
-            /* THIS CREATES THE SMOOTH MOUSE MOVEMENT */
-            transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+            /* We removed the CSS transition here to use JS Math for smoothness */
         }
 
         .smoke-puff {
             position: absolute;
             background: radial-gradient(closest-side, rgba(255,255,255,0.8), transparent);
             border-radius: 50%;
+            /* Optimization: slightly reduced blur radius for performance */
             filter: url(#cloud-filter);
         }
 
-        /* Cloud Animations - Slowed down for smoothness */
+        /* Cloud Animations */
+        /* Note: Animations are kept slow to prevent visual jitter */
         .layer-back .smoke-puff { opacity: 0.3; animation: drift 80s infinite ease-in-out alternate; }
         .b1 { width: 800px; height: 600px; top: -20%; left: -10%; }
         .b2 { width: 900px; height: 700px; bottom: -20%; right: -20%; }
@@ -131,7 +134,6 @@
         .m1 { width: 600px; height: 400px; top: 20%; left: 5%; opacity: 0.5; animation: float 20s infinite ease-in-out; }
         .m2 { width: 500px; height: 400px; bottom: 15%; right: 10%; opacity: 0.5; animation: float 25s infinite ease-in-out reverse; }
 
-        /* Central Clouds */
         .c1-center { 
             width: 800px; height: 600px; 
             top: 50%; left: 50%; 
@@ -144,12 +146,14 @@
             top: 65%; left: 45%; 
             transform: translate(-50%, -50%);
             opacity: 0.4; 
-            animation: drift 40s infinite alternate-reverse ease-in-out;
+            animation: drift 45s infinite alternate-reverse ease-in-out;
         }
 
         .layer-front { z-index: 50; pointer-events: none; }
-        .layer-front .smoke-puff { opacity: 0.3; filter: blur(30px) url(#cloud-filter); }
-        .f1 { width: 1100px; height: 400px; bottom: -15%; left: -20%; animation: drift 35s infinite alternate; }
+        /* Reduced blur from 30px to 20px for significant FPS boost */
+        .layer-front .smoke-puff { opacity: 0.3; filter: blur(20px) url(#cloud-filter); }
+        .f1 { width: 1100px; height: 400px; bottom: -15%; left: -20%; animation: drift 40s infinite alternate; }
+
 
         /* --- STARS --- */
         .star {
@@ -160,6 +164,7 @@
             box-shadow: 0 0 3px rgba(255, 255, 255, 0.9);
             animation: twinkle var(--duration) ease-in-out infinite;
             animation-delay: var(--delay);
+            will-change: opacity, transform;
         }
 
         @keyframes twinkle {
@@ -168,7 +173,6 @@
             100% { opacity: 0.2; transform: scale(0.8); }
         }
 
-        /* Shooting Star */
         .shooting-star {
             position: absolute;
             top: 50%;
@@ -181,6 +185,7 @@
             animation: shoot 3s linear infinite;
             opacity: 0;
             z-index: 5;
+            pointer-events: none;
         }
 
         .shooting-star::before {
@@ -257,15 +262,14 @@
         }
 
         /* --- ANIMATIONS --- */
-        @keyframes drift { from { transform: translateX(-150px); } to { transform: translateX(150px); } }
-        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-60px) scale(1.05); } }
+        @keyframes drift { from { transform: translateX(-100px); } to { transform: translateX(100px); } }
+        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-40px) scale(1.05); } }
         @keyframes float-center { 
             0%, 100% { transform: translate(-50%, -50%) scale(1); } 
             50% { transform: translate(-50%, -80px) scale(1.05); } 
         }
         @keyframes pulse-text { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.7; } }
 
-        /* --- RESPONSIVE --- */
         @media (max-width: 768px) {
             header { padding: 20px; }
             .header-logo { height: 35px; }
@@ -278,7 +282,6 @@
             .c1-center, .c2-center { opacity: 0.25 !important; }
             .f1 { bottom: -20%; }
             button { padding: 12px 30px; font-size: 0.8rem; margin-top: 30px; }
-            /* Hide nav link on very small screens to keep logo clean */
             .header-nav { display: none; }
         }
     </style>
@@ -287,7 +290,7 @@
 
     <svg style="display: none;">
         <filter id="cloud-filter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="4" result="turbulence"/>
+            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="3" result="turbulence"/>
             <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="80" xChannelSelector="R" yChannelSelector="G"/>
             <feGaussianBlur stdDeviation="3" />
         </filter>
@@ -305,19 +308,18 @@
         <div class="overlay-texture"></div>
         <div class="grain"></div>
 
-        <div class="layer" id="star-layer" data-speed="0.01">
+        <div class="layer" id="star-layer" data-speed="0.02">
             <div id="shooting-star-container"></div>
         </div>
 
-        <div class="layer layer-back" data-speed="-0.02">
+        <div class="layer layer-back" data-speed="-0.03">
             <div class="smoke-puff b1"></div>
             <div class="smoke-puff b2"></div>
         </div>
 
-        <div class="layer layer-mid" data-speed="0.04">
+        <div class="layer layer-mid" data-speed="0.06">
             <div class="smoke-puff m1"></div>
             <div class="smoke-puff m2"></div>
-            
             <div class="smoke-puff c1-center"></div>
             <div class="smoke-puff c2-center"></div>
         </div>
@@ -328,13 +330,12 @@
             <button onclick="window.history.back()">Return</button>
         </div>
 
-        <div class="layer layer-front" data-speed="0.08">
+        <div class="layer layer-front" data-speed="0.1">
             <div class="smoke-puff f1"></div>
         </div>
     </div>
 
     <script>
-        const scene = document.getElementById('scene');
         const layers = document.querySelectorAll('.layer');
         const starLayer = document.getElementById('star-layer');
         const shootingStarContainer = document.getElementById('shooting-star-container');
@@ -342,25 +343,21 @@
 
         // --- 1. CLEAN STAR GENERATION ---
         function createStars() {
-            const starCount = isMobile ? 80 : 200;
-
+            const starCount = isMobile ? 70 : 180;
             for (let i = 0; i < starCount; i++) {
                 const star = document.createElement('div');
                 star.classList.add('star');
-
                 const x = Math.random() * 100;
                 const y = Math.random() * 100;
                 const size = Math.random() * 2 + 1; 
                 const duration = Math.random() * 3 + 2 + 's';
                 const delay = Math.random() * 5 + 's';
-
                 star.style.left = `${x}%`;
                 star.style.top = `${y}%`;
                 star.style.width = `${size}px`;
                 star.style.height = `${size}px`;
                 star.style.setProperty('--duration', duration);
                 star.style.setProperty('--delay', delay);
-
                 starLayer.appendChild(star);
             }
         }
@@ -369,47 +366,62 @@
         function createShootingStar() {
             const star = document.createElement('div');
             star.classList.add('shooting-star');
-            
-            const startY = Math.random() * 50; 
-            const startX = Math.random() * 50 + 50;
-
+            const startY = Math.random() * 40; 
+            const startX = Math.random() * 40 + 60;
             star.style.top = startY + '%';
             star.style.left = startX + '%';
-            
-            star.style.animationDelay = (Math.random() * 5) + 's';
-
+            star.style.animationDelay = (Math.random() * 2) + 's';
             shootingStarContainer.appendChild(star);
-
             setTimeout(() => {
                 star.remove();
-                setTimeout(createShootingStar, Math.random() * 6000 + 2000); 
+                setTimeout(createShootingStar, Math.random() * 5000 + 2000); 
             }, 4000);
         }
 
         createStars();
         setTimeout(createShootingStar, 1000);
 
-        // --- 3. SMOOTH PARALLAX EFFECT ---
+        // --- 3. BUTTERY SMOOTH MOUSE PARALLAX (LERP) ---
+        // This decouples mouse movement from animation frames for smoothness
         if (!isMobile) {
+            let mouseX = 0;
+            let mouseY = 0;
+            let currentX = 0;
+            let currentY = 0;
+            // The lower the ease, the smoother/slower the follow effect (0.05 is very smooth)
+            const ease = 0.05; 
+
             document.addEventListener('mousemove', (e) => {
-                const x = (window.innerWidth - e.pageX * 2) / 100;
-                const y = (window.innerHeight - e.pageY * 2) / 100;
+                // Normalize mouse position from -1 to 1
+                mouseX = (window.innerWidth / 2 - e.clientX) / (window.innerWidth / 2);
+                mouseY = (window.innerHeight / 2 - e.clientY) / (window.innerHeight / 2);
+            });
+
+            function animate() {
+                // Linear Interpolation (Lerp)
+                currentX += (mouseX - currentX) * ease;
+                currentY += (mouseY - currentY) * ease;
 
                 layers.forEach(layer => {
-                    const speed = layer.getAttribute('data-speed');
-                    const xPos = x * speed * 100;
-                    const yPos = y * speed * 100;
+                    const speed = parseFloat(layer.getAttribute('data-speed'));
                     
+                    // Multiply by movement range (e.g., 50px)
+                    const xPos = currentX * speed * 100;
+                    const yPos = currentY * speed * 100;
+                    const rotate = currentX * speed * 2; // subtle rotation
+
+                    // Use translate3d for GPU acceleration
                     if(layer.id === 'star-layer') {
-                         // Stars just move, no rotate
-                         layer.style.transform = `translate(${xPos}px, ${yPos}px)`;
+                         layer.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
                     } else {
-                         // Clouds move and slightly rotate
-                         const rotate = x * speed * 2;
-                         layer.style.transform = `translate(${xPos}px, ${yPos}px) rotate(${rotate}deg)`;
+                         layer.style.transform = `translate3d(${xPos}px, ${yPos}px, 0) rotate(${rotate}deg)`;
                     }
                 });
-            });
+
+                requestAnimationFrame(animate);
+            }
+
+            animate();
         }
     </script>
 
