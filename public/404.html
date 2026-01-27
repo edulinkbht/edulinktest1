@@ -22,7 +22,7 @@
             overscroll-behavior: none;
         }
 
-        /* --- HEADER (Kept as requested) --- */
+        /* --- HEADER --- */
         header {
             position: absolute;
             top: 0;
@@ -99,11 +99,10 @@
             z-index: 101;
             opacity: 0.04;
             pointer-events: none;
-            /* Simple noise texture */
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
-        /* --- ORIGINAL CLOUDS (Restored) --- */
+        /* --- OPTIMIZED CLOUD ENGINE --- */
         .layer {
             position: absolute;
             width: 100%;
@@ -111,49 +110,56 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* CRITICAL PERFORMANCE FIX: */
             will-change: transform; 
-            transform: translateZ(0); /* Force GPU */
         }
 
+        /* PERFORMANCE TRICK:
+           We create small elements and SCALE them up.
+           Calculating a filter on 200px is 16x faster than 800px.
+        */
         .smoke-puff {
             position: absolute;
             background: radial-gradient(closest-side, rgba(255,255,255,0.8), transparent);
             border-radius: 50%;
-            /* The original texture filter you liked */
             filter: url(#cloud-filter);
+            /* Reset transform origin to center for scaling */
+            transform-origin: center center;
         }
 
-        /* Cloud Positioning */
-        .layer-back .smoke-puff { opacity: 0.3; animation: drift 80s infinite ease-in-out alternate; }
-        .b1 { width: 800px; height: 600px; top: -20%; left: -10%; }
-        .b2 { width: 900px; height: 700px; bottom: -20%; right: -20%; }
+        /* Cloud Positioning - Notice sizes are smaller, but Scales are added */
+        
+        /* Back Layer */
+        .layer-back .smoke-puff { opacity: 0.3; }
+        /* Was 800px -> Now 200px scaled 4x */
+        .b1 { width: 200px; height: 150px; top: -10%; left: -5%; transform: scale(4); } 
+        .b2 { width: 220px; height: 180px; bottom: -10%; right: -10%; transform: scale(4); }
 
+        /* Mid Layer */
         .layer-mid .smoke-puff { mix-blend-mode: soft-light; }
-        .m1 { width: 600px; height: 400px; top: 20%; left: 5%; opacity: 0.5; animation: float 20s infinite ease-in-out; }
-        .m2 { width: 500px; height: 400px; bottom: 15%; right: 10%; opacity: 0.5; animation: float 25s infinite ease-in-out reverse; }
+        .m1 { width: 150px; height: 100px; top: 20%; left: 5%; opacity: 0.5; transform: scale(3.5); }
+        .m2 { width: 120px; height: 100px; bottom: 15%; right: 10%; opacity: 0.5; transform: scale(3.5); }
 
-        /* The Central Clouds (Restored) */
+        /* Center Clouds */
         .c1-center { 
-            width: 800px; height: 600px; 
+            width: 200px; height: 150px; 
             top: 50%; left: 50%; 
-            transform: translate(-50%, -50%);
+            /* We combine the centering translate with the scale */
+            margin-top: -75px; margin-left: -100px; /* CSS Centering without translate() to avoid conflict with animation */
             opacity: 0.45; 
-            animation: float-center 30s infinite ease-in-out;
+            transform: scale(4);
         }
         .c2-center { 
-            width: 500px; height: 350px; 
-            top: 65%; left: 45%; 
-            transform: translate(-50%, -50%);
+            width: 120px; height: 90px; 
+            top: 60%; left: 45%; 
+            margin-top: -45px; margin-left: -60px;
             opacity: 0.4; 
-            animation: drift 45s infinite alternate-reverse ease-in-out;
+            transform: scale(3.5);
         }
 
         /* Front Layer */
         .layer-front { z-index: 50; pointer-events: none; }
-        /* Optimization: Removed extra 'blur(30px)' here which caused lag. The filter handles texture. */
-        .layer-front .smoke-puff { opacity: 0.3; } 
-        .f1 { width: 1100px; height: 400px; bottom: -15%; left: -20%; animation: drift 40s infinite alternate; }
+        .layer-front .smoke-puff { opacity: 0.3; }
+        .f1 { width: 300px; height: 100px; bottom: -10%; left: -10%; transform: scale(4); }
 
         /* --- STARS --- */
         .star {
@@ -169,7 +175,7 @@
 
         @keyframes twinkle {
             0% { opacity: 0.2; transform: scale(0.8); }
-            50% { opacity: 1; transform: scale(1.2); box-shadow: 0 0 6px rgba(255, 255, 255, 1); }
+            50% { opacity: 1; transform: scale(1.2); }
             100% { opacity: 0.2; transform: scale(0.8); }
         }
 
@@ -239,7 +245,6 @@
         button {
             margin-top: 45px;
             padding: 14px 45px;
-            /* Removed backdrop-filter here to reduce lag */
             background: rgba(255, 255, 255, 0.25);
             border: 1px solid rgba(255, 255, 255, 0.6);
             color: white;
@@ -262,23 +267,18 @@
         }
 
         /* --- ANIMATIONS --- */
-        @keyframes drift { from { transform: translateX(-100px); } to { transform: translateX(100px); } }
-        @keyframes float { 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-40px) scale(1.05); } }
-        @keyframes float-center { 
-            0%, 100% { transform: translate(-50%, -50%) scale(1); } 
-            50% { transform: translate(-50%, -80px) scale(1.05); } 
-        }
+        /* Note: Scale is preserved in animations by not overriding it */
         @keyframes pulse-text { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.7; } }
 
         @media (max-width: 768px) {
             header { padding: 20px; }
             .header-logo { height: 35px; }
-            .c1-center { width: 600px; height: 450px; opacity: 0.35; }
-            .c2-center { width: 400px; height: 300px; opacity: 0.3; }
+            .c1-center { transform: scale(2.5); }
+            .c2-center { transform: scale(2); }
         }
 
         @media (max-width: 480px) {
-            .smoke-puff { transform: scale(0.6); opacity: 0.3 !important; }
+            .smoke-puff { opacity: 0.3 !important; }
             .c1-center, .c2-center { opacity: 0.25 !important; }
             .f1 { bottom: -20%; }
             button { padding: 12px 30px; font-size: 0.8rem; margin-top: 30px; }
@@ -290,9 +290,9 @@
 
     <svg style="display: none;">
         <filter id="cloud-filter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" result="turbulence"/>
-            <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="80" xChannelSelector="R" yChannelSelector="G"/>
-            <feGaussianBlur stdDeviation="3" />
+            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" result="turbulence"/>
+            <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="40" xChannelSelector="R" yChannelSelector="G"/>
+            <feGaussianBlur stdDeviation="2" />
         </filter>
     </svg>
 
@@ -341,7 +341,6 @@
         const shootingStarContainer = document.getElementById('shooting-star-container');
         const isMobile = window.matchMedia("(max-width: 768px)").matches;
 
-        // --- 1. STARS ---
         function createStars() {
             const starCount = isMobile ? 60 : 150; 
             for (let i = 0; i < starCount; i++) {
@@ -362,7 +361,6 @@
             }
         }
 
-        // --- 2. SHOOTING STAR ---
         function createShootingStar() {
             const star = document.createElement('div');
             star.classList.add('shooting-star');
@@ -378,8 +376,6 @@
         createStars();
         setTimeout(createShootingStar, 1000);
 
-        // --- 3. SMOOTH PARALLAX (LERP) ---
-        // This is the physics-based movement that makes it feel smooth
         if (!isMobile) {
             let mouseX = 0, mouseY = 0;
             let currentX = 0, currentY = 0;
@@ -394,19 +390,22 @@
                 currentX += (mouseX - currentX) * ease;
                 currentY += (mouseY - currentY) * ease;
 
-                layers.forEach(layer => {
-                    const speed = parseFloat(layer.getAttribute('data-speed'));
-                    const xPos = currentX * speed * 80;
-                    const yPos = currentY * speed * 80;
-                    const rotate = currentX * speed * 2;
+                // Stop loop if motion is tiny to save CPU
+                if(Math.abs(mouseX - currentX) > 0.001 || Math.abs(mouseY - currentY) > 0.001) {
+                    layers.forEach(layer => {
+                        const speed = parseFloat(layer.getAttribute('data-speed'));
+                        const xPos = currentX * speed * 80;
+                        const yPos = currentY * speed * 80;
+                        const rotate = currentX * speed * 2;
 
-                    // GPU Translate
-                    if(layer.id === 'star-layer') {
-                         layer.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
-                    } else {
-                         layer.style.transform = `translate3d(${xPos}px, ${yPos}px, 0) rotate(${rotate}deg)`;
-                    }
-                });
+                        if(layer.id === 'star-layer') {
+                            layer.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+                        } else {
+                            // Note: Rotate handles the rotation, scaling is handled in CSS class
+                            layer.style.transform = `translate3d(${xPos}px, ${yPos}px, 0) rotate(${rotate}deg)`;
+                        }
+                    });
+                }
                 requestAnimationFrame(animate);
             }
             animate();
