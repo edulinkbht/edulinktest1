@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>EduLink Chat</title>
+<link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Google+Sans:wght@400;500;700&display=swap');
+:root{--primary:#065fd4;--bg-chat-bubble-self:#3797f0;--bg-chat-bubble-other:#efefef;}
+body{font-family:'Inter',sans-serif;background-color:#fff;overflow:hidden;overscroll-behavior:none;}
+.google-font{font-family:'Google Sans','Inter',sans-serif}
+*{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{width:0;height:0;display:none}
+.fade-in{animation:fadeUp .3s cubic-bezier(.2,0,0,1) forwards;opacity:0;transform:translateY(10px)}
+@keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+
+/* Chat Specific Styles */
+.chat-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+.sidebar { width: 100%; height: 100%; border-right: 1px solid #dbdbdb; display: flex; flex-direction: column; background: #fff; z-index: 10; }
+.chat-window { flex: 1; height: 100%; display: flex; flex-direction: column; background: #fff; position: absolute; top: 0; left: 0; width: 100%; transform: translateX(100%); transition: transform 0.3s ease-in-out; z-index: 20; }
+
+@media (min-width: 768px) {
+    .sidebar { width: 350px; flex-shrink: 0; }
+    .chat-window { position: relative; transform: translateX(0); width: auto; }
+}
+
+/* Active State for Mobile */
+body.chat-active .sidebar { display: none; } 
+@media (min-width: 768px) { body.chat-active .sidebar { display: flex; } }
+body.chat-active .chat-window { transform: translateX(0); }
+
+.msg-bubble { max-width: 70%; padding: 10px 14px; border-radius: 22px; position: relative; word-wrap: break-word; font-size: 15px; line-height: 1.4; margin-bottom: 2px; }
+.msg-self { align-self: flex-end; background-color: var(--bg-chat-bubble-self); color: white; border-bottom-right-radius: 4px; }
+.msg-other { align-self: flex-start; background-color: var(--bg-chat-bubble-other); color: #000; border-bottom-left-radius: 4px; }
+.msg-group-start { margin-top: 8px; border-radius: 22px; }
+.msg-self.msg-group-start { border-bottom-right-radius: 22px; }
+.msg-other.msg-group-start { border-bottom-left-radius: 22px; }
+.msg-self.msg-last { border-bottom-right-radius: 4px; }
+.msg-other.msg-last { border-bottom-left-radius: 4px; }
+
+/* Post Card inside Chat */
+.chat-post-card { background: white; border-radius: 12px; overflow: hidden; border: 1px solid rgba(0,0,0,0.1); width: 240px; margin-top: 4px; cursor: pointer; transition: opacity 0.2s; }
+.msg-self .chat-post-card { border: none; }
+.chat-post-card:hover { opacity: 0.95; }
+.cpc-header { padding: 8px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #f0f0f0; }
+.cpc-img { width: 100%; aspect-ratio: 4/5; object-fit: cover; background: #f0f0f0; }
+.cpc-footer { padding: 8px; font-size: 12px; }
+
+.chat-input-area { padding: 16px; display: flex; align-items: center; gap: 10px; border-top: 1px solid #dbdbdb; background: #fff; }
+.chat-input { background: #efefef; border-radius: 22px; padding: 10px 16px; flex: 1; outline: none; border: 1px solid transparent; font-size: 15px; max-height: 100px; resize: none; }
+.chat-input:focus { border-color: #dbdbdb; }
+
+/* Animations */
+.skeleton { background: linear-gradient(90deg, #f0f0f0 25%, #f8f8f8 50%, #f0f0f0 75%); background-size: 200% 100%; animation: shimmer 1.5s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+
+.user-item { padding: 8px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.2s; }
+.user-item:hover { background-color: #fafafa; }
+.user-item.active { background-color: #efefef; }
+
+#new-chat-modal { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+#new-chat-modal.open { transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="chat-layout">
+    <!-- LEFT SIDEBAR: CHAT LIST -->
+    <aside class="sidebar" id="sidebar-panel">
+        <div class="h-16 flex items-center justify-between px-5 border-b border-gray-100 shrink-0">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+                <i data-lucide="chevron-left" class="w-6 h-6 md:hidden"></i>
+                <h1 class="text-xl font-bold text-gray-900 google-font flex items-center gap-1">
+                    <span id="current-username">Loading...</span>
+                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
+                </h1>
+            </div>
+            <button onclick="openNewChatModal()" class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+                <i data-lucide="square-pen" class="w-6 h-6 text-gray-800"></i>
+            </button>
+        </div>
+        
+        <div class="px-4 py-2 border-b border-gray-100 md:hidden">
+            <div class="relative bg-gray-100 rounded-xl flex items-center px-3 py-2">
+                <i data-lucide="search" class="w-4 h-4 text-gray-400 mr-2"></i>
+                <input type="text" placeholder="Search messages" class="bg-transparent border-none outline-none text-sm w-full">
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto overflow-x-hidden" id="chat-list-container">
+            <!-- Chat List Items Render Here -->
+            <div class="flex flex-col items-center justify-center h-40 opacity-50">
+                <i data-lucide="loader-2" class="w-6 h-6 animate-spin text-gray-400"></i>
+            </div>
+        </div>
+    </aside>
+
+    <!-- RIGHT MAIN: CHAT WINDOW -->
+    <main class="chat-window hidden md:flex" id="chat-window-panel">
+        <!-- Empty State -->
+        <div id="empty-state" class="w-full h-full flex flex-col items-center justify-center text-center p-8 bg-white">
+            <div class="w-24 h-24 rounded-full border-2 border-black flex items-center justify-center mb-4">
+                <i data-lucide="send" class="w-10 h-10 text-black ml-1 mt-1"></i>
+            </div>
+            <h2 class="text-xl font-light text-gray-900 mb-2">Your Messages</h2>
+            <p class="text-sm text-gray-500 mb-6">Send private photos and messages to a friend.</p>
+            <button onclick="openNewChatModal()" class="bg-[#0095f6] text-white px-4 py-2 rounded-lg font-bold text-sm hover:bg-blue-600 transition-colors">Send message</button>
+        </div>
+
+        <!-- Active Chat Interface -->
+        <div id="active-chat-interface" class="w-full h-full flex flex-col hidden bg-white">
+            <!-- Header -->
+            <header class="h-16 px-4 flex items-center justify-between border-b border-gray-100 shrink-0 bg-white/95 backdrop-blur z-20">
+                <div class="flex items-center gap-3">
+                    <button onclick="closeChat()" class="md:hidden w-8 h-8 -ml-2 flex items-center justify-center hover:bg-gray-50 rounded-full">
+                        <i data-lucide="arrow-left" class="w-6 h-6 text-gray-800"></i>
+                    </button>
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity" onclick="viewProfile()">
+                        <img id="chat-header-avatar" src="" class="w-8 h-8 rounded-full border border-gray-200 object-cover bg-gray-100">
+                        <div>
+                            <div class="font-bold text-gray-900 text-[15px] leading-tight" id="chat-header-name">User</div>
+                            <div class="text-xs text-gray-500 leading-tight" id="chat-header-status">Active now</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button class="icon-btn" onclick="alert('Call feature coming soon!')"><i data-lucide="phone" class="w-6 h-6 text-gray-800"></i></button>
+                    <button class="icon-btn" onclick="alert('Video feature coming soon!')"><i data-lucide="video" class="w-7 h-7 text-gray-800"></i></button>
+                    <button class="icon-btn" onclick="toggleChatDetails()"><i data-lucide="info" class="w-6 h-6 text-gray-800"></i></button>
+                </div>
+            </header>
+
+            <!-- Messages Area -->
+            <div id="messages-container" class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 pb-4">
+                <!-- Messages will be injected here -->
+            </div>
+
+            <!-- Input Area -->
+            <div class="chat-input-area">
+                <button class="shrink-0 p-2 hover:bg-gray-100 rounded-full transition-colors" onclick="document.getElementById('img-upload').click()">
+                    <i data-lucide="image" class="w-6 h-6 text-gray-800"></i>
+                </button>
+                <input type="file" id="img-upload" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
+                
+                <div class="flex-1 relative">
+                    <input type="text" id="message-input" class="chat-input w-full" placeholder="Message..." onkeydown="handleTyping(event)">
+                </div>
+                
+                <button id="send-btn" class="shrink-0 p-2 text-[#0095f6] font-bold text-sm hidden hover:text-blue-700 transition-colors" onclick="sendMessage()">Send</button>
+                <button id="like-btn" class="shrink-0 p-2 hover:bg-gray-100 rounded-full transition-colors" onclick="sendHeart()">
+                    <i data-lucide="heart" class="w-6 h-6 text-gray-800"></i>
+                </button>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- New Chat Modal -->
+<div id="new-chat-overlay" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center opacity-0 transition-opacity duration-200" onclick="closeNewChatModal()">
+    <div id="new-chat-modal" class="bg-white w-full max-w-md h-[70vh] md:h-[600px] md:rounded-xl shadow-2xl flex flex-col transform translate-y-10 md:translate-y-0" onclick="event.stopPropagation()">
+        <div class="h-12 border-b border-gray-100 flex items-center justify-between px-4 shrink-0">
+            <button onclick="closeNewChatModal()" class="w-8 h-8 flex items-center justify-center"><i data-lucide="x" class="w-6 h-6 text-gray-800"></i></button>
+            <span class="font-bold text-gray-900">New Message</span>
+            <div class="w-8"></div>
+        </div>
+        <div class="p-3 border-b border-gray-100">
+            <div class="flex items-center gap-2">
+                <span class="font-bold text-gray-900 text-[15px]">To:</span>
+                <input type="text" id="user-search-input" placeholder="Search..." class="flex-1 outline-none text-[15px]" oninput="handleUserSearch(this.value)">
+            </div>
+        </div>
+        <div id="search-results" class="flex-1 overflow-y-auto p-2">
+            <div class="text-gray-400 text-sm p-4">Suggested</div>
+            <div id="suggested-users-list"></div>
+        </div>
+        <div class="p-4 border-t border-gray-100">
+            <button onclick="startChat()" class="w-full bg-[#0095f6] text-white py-3 rounded-lg font-bold opacity-50 cursor-not-allowed" id="start-chat-btn" disabled>Chat</button>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, onSnapshot, query, where, orderBy, serverTimestamp, addDoc, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadString, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const firebaseConfig = { apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno", authDomain: "edulinki.firebaseapp.com", projectId: "edulinki", storageBucket: "edulinki.firebasestorage.app", messagingSenderId: "248886466474", appId: "1:248886466474:web:160043201a6b28bafbbdd3", measurementId: "G-MQBH12VL7N" };
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let currentUser = null;
+let currentChatId = null;
+let currentChatUser = null;
+let selectedUserForNewChat = null;
+let unsubscribeMessages = null;
+
+// Auth State Listener
+onAuthStateChanged(auth, async (u) => {
+    if (!u) {
+        window.location.href = 'index.html'; // Redirect if no auth
+        return;
+    }
+    const userDoc = await getDoc(doc(db, "users", u.uid));
+    currentUser = { id: u.uid, ...userDoc.data() };
+    document.getElementById('current-username').innerText = currentUser.username || currentUser.name;
+    loadConversations();
+    lucide.createIcons();
+});
+
+// UI Logic: Load Conversations List
+function loadConversations() {
+    const q = query(
+        collection(db, "chats"), 
+        where("participants", "array-contains", currentUser.id),
+        orderBy("lastMessageTimestamp", "desc")
+    );
+
+    onSnapshot(q, (snapshot) => {
+        const container = document.getElementById('chat-list-container');
+        container.innerHTML = '';
+        
+        if (snapshot.empty) {
+            container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm mt-10">No messages yet.<br>Start a conversation!</div>';
+            return;
+        }
+
+        snapshot.forEach(async (chatDoc) => {
+            const data = chatDoc.data();
+            const otherUserId = data.participants.find(uid => uid !== currentUser.id);
+            if (!otherUserId) return;
+
+            // Fetch other user details (optimize with cache later if needed)
+            const otherUserDoc = await getDoc(doc(db, "users", otherUserId));
+            const otherUser = otherUserDoc.data();
+            if (!otherUser) return;
+
+            const isUnread = !data.readBy || !data.readBy.includes(currentUser.id);
+            const isSelected = currentChatId === chatDoc.id;
+            const timeStr = formatTime(data.lastMessageTimestamp);
+            const lastMsg = data.lastMessage || 'Sent an attachment';
+
+            const div = document.createElement('div');
+            div.className = `user-item ${isSelected ? 'active' : ''}`;
+            div.onclick = () => openChat(chatDoc.id, otherUser, otherUserId);
+            div.innerHTML = `
+                <div class="relative shrink-0">
+                    <img src="${otherUser.avatar}" class="w-14 h-14 rounded-full border border-gray-100 object-cover">
+                    ${isUnread ? '<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-blue-500 rounded-full border-2 border-white"></div>' : ''}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="font-normal text-gray-900 text-[15px] truncate">${otherUser.name}</div>
+                    <div class="flex items-center gap-1 text-[13px] ${isUnread ? 'font-bold text-gray-900' : 'text-gray-500'}">
+                        <span class="truncate block max-w-[140px]">${lastMsg}</span>
+                        <span class="shrink-0">· ${timeStr}</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    });
+}
+
+// UI Logic: Open Chat
+window.openChat = async (chatId, user, userId) => {
+    currentChatId = chatId;
+    currentChatUser = { ...user, id: userId };
+    
+    // UI Updates
+    document.body.classList.add('chat-active');
+    document.getElementById('chat-window-panel').classList.remove('hidden');
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('active-chat-interface').classList.remove('hidden');
+    document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
+    
+    // Header
+    document.getElementById('chat-header-name').innerText = user.name;
+    document.getElementById('chat-header-avatar').src = user.avatar;
+    document.getElementById('chat-header-avatar').onclick = () => window.location.href = `index.html?profileId=${userId}`;
+
+    // Mark as Read
+    updateDoc(doc(db, "chats", chatId), {
+        readBy: [currentUser.id, userId] // Simplified logic: both have read if opened
+    });
+
+    // Listen to Messages
+    loadMessages(chatId);
+};
+
+window.closeChat = () => {
+    document.body.classList.remove('chat-active');
+    currentChatId = null;
+    if (unsubscribeMessages) unsubscribeMessages();
+    // On desktop, we might want to keep the right side open or clear it, but for mobile strict back navigation:
+    if (window.innerWidth < 768) {
+        setTimeout(() => {
+           // Reset scroll or anything if needed
+        }, 300);
+    }
+};
+
+function loadMessages(chatId) {
+    if (unsubscribeMessages) unsubscribeMessages();
+    
+    const q = query(collection(db, `chats/${chatId}/messages`), orderBy("timestamp", "asc"));
+    const container = document.getElementById('messages-container');
+    container.innerHTML = '';
+
+    unsubscribeMessages = onSnapshot(q, (snapshot) => {
+        container.innerHTML = ''; // Basic re-render for simplicity (optimize diff in production)
+        
+        let lastSenderId = null;
+
+        snapshot.forEach((msgDoc) => {
+            const msg = msgDoc.data();
+            const isSelf = msg.senderId === currentUser.id;
+            const isGroupStart = lastSenderId !== msg.senderId;
+            lastSenderId = msg.senderId;
+
+            const div = document.createElement('div');
+            div.className = `msg-bubble ${isSelf ? 'msg-self' : 'msg-other'} ${isGroupStart ? 'msg-group-start' : ''} fade-in`;
+            
+            // Content Rendering
+            if (msg.type === 'image') {
+                div.innerHTML = `<img src="${msg.content}" class="rounded-lg max-w-full cursor-pointer" onclick="window.open('${msg.content}', '_blank')">`;
+                div.style.padding = '4px';
+                div.style.backgroundColor = 'transparent';
+            } else if (msg.type === 'post') {
+                // Parse post data (assuming stored as JSON string or object)
+                let postData = typeof msg.postData === 'string' ? JSON.parse(msg.postData) : msg.postData;
+                div.innerHTML = renderPostCard(postData);
+                div.style.padding = '0';
+                div.style.background = 'transparent';
+                div.style.overflow = 'hidden';
+            } else if (msg.type === 'heart') {
+                 div.innerHTML = `<i data-lucide="heart" class="w-12 h-12 text-red-500 fill-red-500 animate-pulse"></i>`;
+                 div.style.background = 'transparent';
+                 div.style.padding = '0';
+            } else {
+                // Text with Link detection
+                div.innerHTML = linkify(msg.content);
+            }
+
+            container.appendChild(div);
+        });
+
+        // Scroll to bottom
+        container.scrollTop = container.scrollHeight;
+        lucide.createIcons();
+    });
+}
+
+// Post Card Renderer
+function renderPostCard(post) {
+    const img = post.media ? (Array.isArray(post.media) ? post.media[0] : post.media) : 'https://via.placeholder.com/300';
+    return `
+        <div class="chat-post-card" onclick="window.location.href='index.html?postId=${post.id}'">
+            <div class="cpc-header">
+                <img src="${post.authorAvatar}" class="w-6 h-6 rounded-full border border-gray-100">
+                <span class="font-bold text-xs text-gray-900 truncate">${post.authorName}</span>
+            </div>
+            <img src="${img}" class="cpc-img">
+            <div class="cpc-footer">
+                <p class="truncate text-gray-800 font-medium">${post.content || 'View Post'}</p>
+            </div>
+        </div>
+    `;
+}
+
+// Utils
+function linkify(text) {
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, (url) => {
+        return `<a href="${url}" target="_blank" class="underline text-inherit font-medium opacity-90">${url}</a>`;
+    });
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return '';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const now = new Date();
+    const diff = now - date;
+    
+    if (diff < 86400000) { // Less than a day
+        return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } else if (diff < 604800000) { // Less than a week
+        return date.toLocaleDateString([], { weekday: 'short' });
+    } else {
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    }
+}
+
+// Sending Logic
+window.handleTyping = (e) => {
+    const input = e.target;
+    const sendBtn = document.getElementById('send-btn');
+    const likeBtn = document.getElementById('like-btn');
+    
+    if (input.value.trim().length > 0) {
+        sendBtn.classList.remove('hidden');
+        likeBtn.classList.add('hidden');
+    } else {
+        sendBtn.classList.add('hidden');
+        likeBtn.classList.remove('hidden');
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+};
+
+window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
+    if (!currentChatId || !currentUser) return;
+    
+    const input = document.getElementById('message-input');
+    const msgContent = content || input.value.trim();
+    
+    if (!msgContent && type === 'text') return;
+
+    input.value = '';
+    document.getElementById('send-btn').classList.add('hidden');
+    document.getElementById('like-btn').classList.remove('hidden');
+
+    const messageData = {
+        senderId: currentUser.id,
+        content: msgContent,
+        timestamp: serverTimestamp(),
+        type: type,
+        ...extraData
+    };
+
+    try {
+        await addDoc(collection(db, `chats/${currentChatId}/messages`), messageData);
+        await updateDoc(doc(db, "chats", currentChatId), {
+            lastMessage: type === 'image' ? 'Sent a photo' : (type === 'post' ? 'Sent a post' : msgContent),
+            lastMessageTimestamp: serverTimestamp(),
+            readBy: [currentUser.id]
+        });
+    } catch (error) {
+        console.error("Error sending message:", error);
+    }
+};
+
+window.sendHeart = () => sendMessage('heart', '❤️');
+
+// Image Upload
+window.handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Simulate upload (In real app, use Firebase Storage properly)
+    // For this single file demo, we'll try to use a data URL or upload if simple
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+        // Upload to ImgHippo (using logic from index.html if available, or just send DataURL for small images)
+        // Note: DataURLs are bad for Firestore. Let's try to reuse the uploadToImgHippo logic if it exists, otherwise DataURL.
+        const base64 = evt.target.result;
+        sendMessage('image', base64);
+    };
+    reader.readAsDataURL(file);
+};
+
+// New Chat Flow
+window.openNewChatModal = () => {
+    document.getElementById('new-chat-overlay').classList.remove('hidden');
+    setTimeout(() => {
+        document.getElementById('new-chat-overlay').classList.remove('opacity-0');
+        document.getElementById('new-chat-modal').classList.add('open');
+    }, 10);
+    document.getElementById('user-search-input').focus();
+    loadSuggestedUsers();
+};
+
+window.closeNewChatModal = () => {
+    document.getElementById('new-chat-overlay').classList.add('opacity-0');
+    document.getElementById('new-chat-modal').classList.remove('open');
+    setTimeout(() => document.getElementById('new-chat-overlay').classList.add('hidden'), 300);
+    selectedUserForNewChat = null;
+    document.getElementById('start-chat-btn').disabled = true;
+    document.getElementById('start-chat-btn').classList.add('opacity-50');
+    document.getElementById('user-search-input').value = '';
+};
+
+async function loadSuggestedUsers() {
+    const q = query(collection(db, "users"), limit(10)); // Simple limit
+    const snap = await getDocs(q);
+    const list = document.getElementById('suggested-users-list');
+    list.innerHTML = '';
+    
+    snap.forEach(doc => {
+        const u = {id: doc.id, ...doc.data()};
+        if (u.id === currentUser.id) return;
+        renderSearchUserItem(u, list);
+    });
+}
+
+window.handleUserSearch = async (val) => {
+    const term = val.toLowerCase().trim();
+    if (!term) return loadSuggestedUsers();
+    
+    const list = document.getElementById('suggested-users-list');
+    list.innerHTML = '<div class="p-4 text-center"><i data-lucide="loader-2" class="animate-spin w-5 h-5 mx-auto"></i></div>';
+    lucide.createIcons();
+
+    // Client side filtering for simplicity in this demo (Firebase search is limited)
+    const q = query(collection(db, "users"));
+    const snap = await getDocs(q);
+    list.innerHTML = '';
+    
+    let found = false;
+    snap.forEach(doc => {
+        const u = {id: doc.id, ...doc.data()};
+        if (u.id === currentUser.id) return;
+        if (u.name.toLowerCase().includes(term) || (u.username && u.username.toLowerCase().includes(term))) {
+            renderSearchUserItem(u, list);
+            found = true;
+        }
+    });
+
+    if (!found) list.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No users found.</div>';
+};
+
+function renderSearchUserItem(user, container) {
+    const div = document.createElement('div');
+    div.className = 'flex items-center gap-3 p-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-colors';
+    div.onclick = () => selectUserForChat(user, div);
+    div.innerHTML = `
+        <img src="${user.avatar}" class="w-12 h-12 rounded-full border border-gray-100 object-cover">
+        <div class="flex-1">
+            <div class="font-bold text-gray-900 text-sm">${user.name}</div>
+            <div class="text-xs text-gray-500">@${user.username || 'user'}</div>
+        </div>
+        <div class="selection-indicator w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center">
+            <div class="w-3 h-3 bg-blue-500 rounded-full hidden"></div>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+function selectUserForChat(user, element) {
+    // Visual Selection
+    document.querySelectorAll('.selection-indicator').forEach(el => {
+        el.style.borderColor = '#d1d5db';
+        el.querySelector('div').classList.add('hidden');
+    });
+    const indicator = element.querySelector('.selection-indicator');
+    indicator.style.borderColor = '#0095f6';
+    indicator.querySelector('div').classList.remove('hidden');
+
+    selectedUserForNewChat = user;
+    const btn = document.getElementById('start-chat-btn');
+    btn.disabled = false;
+    btn.classList.remove('opacity-50');
+    btn.classList.add('cursor-pointer');
+}
+
+window.startChat = async () => {
+    if (!selectedUserForNewChat) return;
+    
+    const targetUserId = selectedUserForNewChat.id;
+    const targetUser = selectedUserForNewChat;
+    
+    closeNewChatModal();
+
+    // Check if chat exists
+    const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.id));
+    const snap = await getDocs(q);
+    let existingChatId = null;
+
+    snap.forEach(doc => {
+        const data = doc.data();
+        if (data.participants.includes(targetUserId) && data.participants.length === 2) {
+            existingChatId = doc.id;
+        }
+    });
+
+    if (existingChatId) {
+        openChat(existingChatId, targetUser, targetUserId);
+    } else {
+        // Create new Chat
+        const newChatRef = await addDoc(collection(db, "chats"), {
+            participants: [currentUser.id, targetUserId],
+            lastMessage: 'Started a conversation',
+            lastMessageTimestamp: serverTimestamp(),
+            readBy: [currentUser.id]
+        });
+        openChat(newChatRef.id, targetUser, targetUserId);
+    }
+};
+
+window.viewProfile = () => {
+    if (currentChatUser) {
+        window.location.href = `index.html?profileId=${currentChatUser.id}`;
+    }
+};
+
+// Check for URL parameters (Post sharing)
+const urlParams = new URLSearchParams(window.location.search);
+const sharedPostId = urlParams.get('sharePostId');
+if (sharedPostId) {
+    // Logic to open a user select modal to share this post
+    // For now, we will just alert, but in a real app, this triggers the "New Chat" modal
+    // with a "Send to..." context.
+    setTimeout(() => {
+        alert("Select a user to share the post with.");
+        openNewChatModal();
+        // In the future: Attach post payload to sendMessage
+    }, 1000);
+}
+
+// Initial icon render
+lucide.createIcons();
+</script>
+</body>
+</html>
