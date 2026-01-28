@@ -81,14 +81,14 @@ body.chat-active .chat-window { transform: translateX(0); }
 
 /* Profile Curve Style in Chat Details */
 .cd-curve-container { 
-    border-radius: 24px 24px 0 0; 
-    margin-top: -30px; 
+    border-radius: 32px 32px 0 0; 
+    margin-top: -32px; 
     position: relative; 
     z-index: 10; 
     background: white; 
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.05); 
-    min-height: calc(100% - 130px);
-    padding-bottom: 80px; /* Space for footer */
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.06); 
+    min-height: calc(100% - 160px);
+    padding-bottom: 80px;
 }
 
 .details-footer {
@@ -96,14 +96,15 @@ body.chat-active .chat-window { transform: translateX(0); }
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 60px;
+    height: 72px;
     background: white;
     border-top: 1px solid #f0f0f0;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 16px;
+    padding: 0 20px;
     z-index: 30;
+    gap: 16px;
 }
 
 </style>
@@ -199,13 +200,13 @@ body.chat-active .chat-window { transform: translateX(0); }
         <!-- Scrollable Content -->
         <div class="flex-1 overflow-y-auto bg-white">
              <!-- Banner -->
-             <div class="h-40 bg-gray-200 bg-cover bg-center" id="cd-banner"></div>
+             <div class="h-44 bg-gray-200 bg-cover bg-center" id="cd-banner"></div>
              
              <!-- Overlapping Curve Container -->
              <div class="cd-curve-container px-6 pt-0">
-                 <div class="flex justify-between items-end -mt-12 mb-3 px-2">
+                 <div class="flex justify-between items-end -mt-12 mb-3 px-1">
                      <div class="bg-white p-1 rounded-full">
-                        <img id="cd-avatar" src="" class="w-24 h-24 rounded-full border border-gray-100 bg-white object-cover shadow-sm">
+                        <img id="cd-avatar" src="" class="w-24 h-24 rounded-full border-2 border-gray-50 bg-white object-cover shadow-sm">
                      </div>
                  </div>
                  
@@ -213,7 +214,7 @@ body.chat-active .chat-window { transform: translateX(0); }
                      <h2 id="cd-name" class="text-2xl font-bold text-gray-900 flex items-center gap-1">User</h2>
                      <div id="cd-username" class="text-sm text-gray-500 font-medium">@username</div>
                      
-                     <div class="flex gap-6 mt-4 mb-4 text-sm">
+                     <div class="flex gap-6 mt-5 mb-5 text-sm border-b border-gray-100 pb-5">
                         <div class="flex flex-col items-center">
                             <strong class="text-gray-900 text-lg" id="cd-following">0</strong>
                             <span class="text-gray-500 text-xs">Following</span>
@@ -224,20 +225,17 @@ body.chat-active .chat-window { transform: translateX(0); }
                         </div>
                      </div>
 
+                     <div class="text-xs font-bold text-gray-500 uppercase mb-2">About</div>
                      <p id="cd-bio" class="text-gray-700 text-[15px] leading-relaxed"></p>
-                     
-                     <div class="mt-6">
-                        <button onclick="viewProfileFromDetails()" class="w-full py-3 bg-[#0095f6] hover:bg-blue-600 rounded-xl font-bold text-sm transition-colors text-white shadow-sm">View Profile</button>
-                     </div>
                  </div>
              </div>
         </div>
 
         <!-- Footer Header -->
         <div class="details-footer">
-            <span class="font-bold text-lg text-gray-900">Details</span>
-            <button onclick="closeChatDetails()" class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
-                <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+            <button onclick="viewProfileFromDetails()" class="flex-1 py-3 bg-[#0095f6] hover:bg-blue-600 rounded-xl font-bold text-sm transition-colors text-white shadow-sm text-center">View Profile</button>
+            <button onclick="closeChatDetails()" class="w-11 h-11 flex items-center justify-center hover:bg-gray-100 bg-gray-50 rounded-full transition-colors shrink-0">
+                <i data-lucide="x" class="w-5 h-5 text-gray-700"></i>
             </button>
         </div>
     </div>
@@ -322,10 +320,9 @@ onAuthStateChanged(auth, async (u) => {
 
 // Load Chats
 function loadConversations() {
-    // Clean up previous listener
     if (unsubscribeConversations) unsubscribeConversations();
     
-    // Clear the container immediately to prevent visual duplication on re-init
+    // Initial loading state
     const container = document.getElementById('chat-list-container');
     container.innerHTML = '<div class="flex flex-col items-center justify-center h-40 opacity-50"><i data-lucide="loader-2" class="w-6 h-6 animate-spin text-gray-400"></i></div>';
     
@@ -340,24 +337,24 @@ function loadConversations() {
             return;
         }
 
-        const chats = [];
-        snapshot.forEach(doc => chats.push({ id: doc.id, ...doc.data() }));
+        const chatsData = [];
+        snapshot.forEach(doc => chatsData.push({ id: doc.id, ...doc.data() }));
 
-        chats.sort((a, b) => {
+        // Sort by timestamp
+        chatsData.sort((a, b) => {
             const tA = a.lastMessageTimestamp?.toMillis() || 0;
             const tB = b.lastMessageTimestamp?.toMillis() || 0;
             return tB - tA; 
         });
 
-        // Clear container again before rendering the fresh list
-        container.innerHTML = '';
-        
-        for (const chat of chats) {
+        // Fetch all required data first (concurrently)
+        const renderedItems = await Promise.all(chatsData.map(async (chat) => {
             const otherUserId = chat.participants.find(uid => uid !== currentUser.id);
-            if (!otherUserId) continue;
+            if (!otherUserId) return '';
 
             let otherUser = { name: 'User', avatar: 'https://via.placeholder.com/150' };
             try {
+                // Fetch other user's data
                 const uSnap = await getDoc(doc(db, "users", otherUserId));
                 if (uSnap.exists()) otherUser = uSnap.data();
             } catch (e) {}
@@ -367,10 +364,12 @@ function loadConversations() {
             const timeStr = formatTime(chat.lastMessageTimestamp);
             const lastMsg = chat.lastMessage || 'Start chatting';
             
-            const div = document.createElement('div');
-            div.className = `user-item ${isSelected ? 'active' : ''}`;
-            div.onclick = () => openChat(chat.id, otherUser, otherUserId);
-            div.innerHTML = `
+            // Build the HTML for this item
+            // Note: We escape JSON to prevent syntax errors in the onclick
+            const userJson = JSON.stringify(otherUser).replace(/"/g, '&quot;');
+            
+            return `
+            <div class="user-item ${isSelected ? 'active' : ''}" onclick="openChat('${chat.id}', ${userJson}, '${otherUserId}')">
                 <div class="relative shrink-0">
                     <img src="${otherUser.avatar}" class="w-14 h-14 rounded-full border border-gray-100 object-cover">
                     ${isUnread ? '<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-blue-500 rounded-full border-2 border-white"></div>' : ''}
@@ -382,11 +381,48 @@ function loadConversations() {
                         <span class="shrink-0 text-gray-400 font-normal">· ${timeStr}</span>
                     </div>
                 </div>
-            `;
-            container.appendChild(div);
-        }
+            </div>`;
+        }));
+
+        // Render everything at once to prevent duplicates
+        container.innerHTML = renderedItems.join('');
     });
 }
+
+// Ensure openChat is globally accessible for the HTML strings
+window.openChat = async (chatId, user, userId) => {
+    currentChatId = chatId;
+    currentChatUser = { ...user, id: userId };
+    
+    document.body.classList.add('chat-active');
+    document.getElementById('chat-window-panel').classList.remove('hidden');
+    document.getElementById('empty-state').classList.add('hidden');
+    document.getElementById('active-chat-interface').classList.remove('hidden');
+    
+    // Highlight the selected item manually since we just re-rendered or clicked
+    document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
+    // (Optional: Add 'active' class to clicked element, but a re-render from onSnapshot might clear it, 
+    // however loadConversations handles the 'active' class based on currentChatId)
+    
+    document.getElementById('chat-header-name').innerText = user.name;
+    document.getElementById('chat-header-avatar').src = user.avatar;
+    
+    // Fetch latest user data silently for details panel
+    try {
+        const uSnap = await getDoc(doc(db, "users", userId));
+        if (uSnap.exists()) currentChatUser = { id: userId, ...uSnap.data() };
+    } catch(e) {}
+
+    // Mark as read
+    updateDoc(doc(db, "chats", chatId), {
+        readBy: [currentUser.id, userId]
+    }).catch(e => {});
+
+    loadMessages(chatId);
+    
+    // Trigger a refresh of the list to update "active" state visuals if needed
+    // (Though usually unnecessary if snapshots handle it)
+};
 
 async function checkForSharedPost() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -409,32 +445,6 @@ async function checkForSharedPost() {
         } catch (e) {}
     }
 }
-
-// Chat Window Logic
-window.openChat = async (chatId, user, userId) => {
-    currentChatId = chatId;
-    currentChatUser = { ...user, id: userId };
-    
-    document.body.classList.add('chat-active');
-    document.getElementById('chat-window-panel').classList.remove('hidden');
-    document.getElementById('empty-state').classList.add('hidden');
-    document.getElementById('active-chat-interface').classList.remove('hidden');
-    document.querySelectorAll('.user-item').forEach(el => el.classList.remove('active'));
-    
-    document.getElementById('chat-header-name').innerText = user.name;
-    document.getElementById('chat-header-avatar').src = user.avatar;
-    
-    try {
-        const uSnap = await getDoc(doc(db, "users", userId));
-        if (uSnap.exists()) currentChatUser = { id: userId, ...uSnap.data() };
-    } catch(e) {}
-
-    updateDoc(doc(db, "chats", chatId), {
-        readBy: [currentUser.id, userId]
-    }).catch(e => {});
-
-    loadMessages(chatId);
-};
 
 window.closeChat = () => {
     document.body.classList.remove('chat-active');
