@@ -96,7 +96,7 @@ body.chat-active .chat-window { transform: translateX(0); }
     <!-- LEFT SIDEBAR -->
     <aside class="sidebar" id="sidebar-panel">
         <div class="h-16 flex items-center justify-between px-5 border-b border-gray-100 shrink-0">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='index.html'">
+            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='/home'">
                 <i data-lucide="chevron-left" class="w-6 h-6 md:hidden"></i>
                 <h1 class="text-xl font-bold text-gray-900 google-font flex items-center gap-1">
                     <span id="current-username">Loading...</span>
@@ -224,7 +224,7 @@ body.chat-active .chat-window { transform: translateX(0); }
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, onSnapshot, query, where, orderBy, serverTimestamp, addDoc, limit, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, onSnapshot, query, where, orderBy, serverTimestamp, addDoc, limit, getDocs, deleteDoc, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = { apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno", authDomain: "edulinki.firebaseapp.com", projectId: "edulinki", storageBucket: "edulinki.firebasestorage.app", messagingSenderId: "248886466474", appId: "1:248886466474:web:160043201a6b28bafbbdd3", measurementId: "G-MQBH12VL7N" };
@@ -239,11 +239,10 @@ let currentChatUser = null;
 let selectedUserForNewChat = null;
 let unsubscribeMessages = null;
 let pendingSharePost = null;
-let alertConfirmAction = null;
 
 onAuthStateChanged(auth, async (u) => {
     if (!u) {
-        window.location.href = 'index.html'; 
+        window.location.href = '/home'; 
         return;
     }
     const userDoc = await getDoc(doc(db, "users", u.uid));
@@ -351,7 +350,7 @@ window.openChat = async (chatId, user, userId) => {
     
     document.getElementById('chat-header-name').innerText = user.name;
     document.getElementById('chat-header-avatar').src = user.avatar;
-    document.getElementById('chat-header-avatar').onclick = () => window.location.href = `index.html?profileId=${userId}`;
+    document.getElementById('chat-header-avatar').onclick = () => window.location.href = `/home?profileId=${userId}`;
 
     updateDoc(doc(db, "chats", chatId), {
         readBy: [currentUser.id, userId]
@@ -368,7 +367,7 @@ window.closeChat = () => {
 
 window.viewProfile = () => {
     if (currentChatUser) {
-        window.location.href = `index.html?profileId=${currentChatUser.id}`;
+        window.location.href = `/home?profileId=${currentChatUser.id}`;
     }
 };
 
@@ -381,6 +380,10 @@ function loadMessages(chatId) {
         container.innerHTML = ''; 
         snapshot.forEach((msgDoc) => {
             const msg = msgDoc.data();
+            
+            // Filter hidden messages
+            if (msg.hiddenBy && msg.hiddenBy.includes(currentUser.id)) return;
+
             const isSelf = msg.senderId === currentUser.id;
 
             const div = document.createElement('div');
@@ -404,10 +407,11 @@ function loadMessages(chatId) {
                 contentHtml = linkify(msg.content);
             }
 
+            // Only allow Unsend (Delete) for self, Hide (Delete for me) for others
             const actions = `
                 <div class="msg-actions">
-                    <div class="action-btn" onclick="deleteMessage('${msgDoc.id}', ${isSelf})" title="${isSelf ? 'Unsend' : 'Delete'}">
-                        <i data-lucide="${isSelf ? 'trash-2' : 'x'}" class="w-4 h-4"></i>
+                    <div class="action-btn" onclick="deleteMessage('${msgDoc.id}', ${isSelf})" title="${isSelf ? 'Unsend' : 'Delete for Me'}">
+                        <i data-lucide="${isSelf ? 'trash-2' : 'eye-off'}" class="w-4 h-4"></i>
                     </div>
                 </div>
             `;
@@ -430,15 +434,22 @@ function loadMessages(chatId) {
 }
 
 function renderPostCard(post, isSelf) {
-    let img = post.image || (post.media && post.media.length > 0 ? post.media[0] : null);
+    let img = null;
+    if (post.image) img = post.image;
+    else if (post.media && Array.isArray(post.media) && post.media.length > 0) img = post.media[0];
+    else if (typeof post.media === 'string') img = post.media;
+
+    // Check if the media is actually a video or empty, if so, don't show the image block if we want only images
+    // The user requirement: "if a post donest hve an image jsut dont show the image container"
     
-    // If we have an image URL
-    const imgHtml = img ? 
+    const hasImage = img && !img.includes('video') && !img.endsWith('.mp4');
+
+    const imgHtml = hasImage ? 
         `<div class="cpc-img-container"><img src="${img}" class="cpc-img"></div>` : 
-        `<div class="cpc-img-container bg-gray-100"><i data-lucide="file-text" class="w-8 h-8 text-gray-400"></i></div>`;
+        ``; // Empty string removes the container
 
     return `
-        <div class="chat-post-card" onclick="window.location.href='index.html?postId=${post.id}'">
+        <div class="chat-post-card" onclick="window.location.href='/home?postId=${post.id}'">
             <div class="cpc-header">
                 <img src="${post.authorAvatar || 'https://via.placeholder.com/50'}" class="w-6 h-6 rounded-full border border-white/20 object-cover">
                 <span class="font-bold text-xs truncate">${post.authorName || 'User'}</span>
@@ -579,7 +590,7 @@ window.handleImageUpload = async (e) => {
 };
 
 // Custom Alert Logic
-window.showCustomAlert = (title, message, onConfirm) => {
+window.showCustomAlert = (title, message, confirmText, isRed, onConfirm) => {
     const overlay = document.getElementById('custom-alert-overlay');
     document.getElementById('alert-title').innerText = title;
     document.getElementById('alert-msg').innerText = message;
@@ -588,6 +599,9 @@ window.showCustomAlert = (title, message, onConfirm) => {
     // Remove old listeners by cloning
     const newBtn = confirmBtn.cloneNode(true);
     confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
+    
+    newBtn.innerText = confirmText;
+    newBtn.className = `w-full py-3.5 font-bold border-b border-gray-200 active:bg-gray-50 text-[15px] ${isRed ? 'text-red-500' : 'text-blue-500'}`;
     
     newBtn.onclick = () => {
         onConfirm();
@@ -602,18 +616,26 @@ window.closeCustomAlert = () => {
 };
 
 window.deleteMessage = async (msgId, isSelf) => {
-    if (!isSelf) {
-        showCustomAlert("Cannot Delete", "You can only unsend your own messages.", () => {});
-        return;
+    if (isSelf) {
+        showCustomAlert("Unsend Message?", "This will remove the message for everyone.", "Unsend", true, async () => {
+            try {
+                await deleteDoc(doc(db, `chats/${currentChatId}/messages`, msgId));
+            } catch (error) {
+                console.error("Error deleting message", error);
+            }
+        });
+    } else {
+        showCustomAlert("Delete for Me?", "This message will be hidden from your view.", "Delete", true, async () => {
+            try {
+                // Update the message document to include current user in 'hiddenBy'
+                await updateDoc(doc(db, `chats/${currentChatId}/messages`, msgId), {
+                    hiddenBy: arrayUnion(currentUser.id)
+                });
+            } catch (error) {
+                console.error("Error hiding message", error);
+            }
+        });
     }
-
-    showCustomAlert("Unsend Message?", "This will unsend the message for everyone.", async () => {
-        try {
-            await deleteDoc(doc(db, `chats/${currentChatId}/messages`, msgId));
-        } catch (error) {
-            console.error("Error deleting message", error);
-        }
-    });
 };
 
 // Modal Logic
