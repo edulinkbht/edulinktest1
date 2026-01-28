@@ -43,17 +43,20 @@ body.chat-active .chat-window { transform: translateX(0); }
 .msg-self { background-color: var(--bg-chat-bubble-self); color: white; border-bottom-right-radius: 4px; }
 .msg-other { background-color: var(--bg-chat-bubble-other); color: #000; border-bottom-left-radius: 4px; }
 
-/* Grouping corners */
 .msg-group + .msg-group .msg-self { border-top-right-radius: 4px; }
 .msg-group + .msg-group .msg-other { border-top-left-radius: 4px; }
 
-/* Message Actions (Delete) */
-.msg-actions { opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; padding: 0 8px; }
-.msg-container.self .msg-actions { order: -1; } 
-.msg-container.other .msg-actions { order: 1; } 
+/* Message Actions */
+.msg-actions { opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; padding: 0 4px; }
+.msg-container.self .msg-actions { order: -1; margin-right: 4px; } 
+.msg-container.other .msg-actions { order: 1; margin-left: 4px; } 
+.msg-group:hover .msg-actions { opacity: 1; }
+/* On touch devices, keeping actions always visible or tap to show is better, 
+   but for consistency with requested "hold" behavior, we'll use a button */
+@media (max-width: 768px) { .msg-actions { opacity: 1; } }
 
-.action-btn { width: 24px; height: 24px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; }
-.action-btn:hover { background: #f0f0f0; color: #ff3b30; }
+.action-btn { width: 28px; height: 28px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; transition: background 0.2s; }
+.action-btn:hover { background: #f0f0f0; color: #555; }
 
 /* Post Card */
 .chat-post-card { background: #efefef; border-radius: 16px; overflow: hidden; width: 260px; margin-top: 4px; cursor: pointer; transition: opacity 0.2s; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05); }
@@ -67,7 +70,6 @@ body.chat-active .chat-window { transform: translateX(0); }
 .cpc-img { width: 100%; height: 100%; object-fit: cover; }
 .cpc-footer { padding: 12px; font-size: 13px; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; font-weight: 500; }
 
-/* Heart - Normal Icon */
 .heart-fixed { transition: transform 0.1s; }
 .heart-fixed:active { transform: scale(0.9); }
 
@@ -84,10 +86,10 @@ body.chat-active .chat-window { transform: translateX(0); }
 #new-chat-modal { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 #new-chat-modal.open { transform: translateY(0); }
 
-/* Custom Alert Overlay */
-#custom-alert-overlay { background-color: rgba(0, 0, 0, 0.65); backdrop-filter: blur(2px); }
-.custom-alert-box { animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-@keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+/* Details Overlay (Slide Over) */
+#chat-details-panel { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+#chat-details-overlay.open #chat-details-panel { transform: translateX(0); }
+
 </style>
 </head>
 <body>
@@ -132,13 +134,13 @@ body.chat-active .chat-window { transform: translateX(0); }
         </div>
 
         <!-- Chat Interface -->
-        <div id="active-chat-interface" class="w-full h-full flex flex-col hidden bg-white">
+        <div id="active-chat-interface" class="w-full h-full flex flex-col hidden bg-white relative">
             <header class="h-16 px-4 flex items-center justify-between border-b border-gray-100 shrink-0 bg-white/95 backdrop-blur z-20">
                 <div class="flex items-center gap-3">
                     <button onclick="closeChat()" class="md:hidden w-8 h-8 -ml-2 flex items-center justify-center hover:bg-gray-50 rounded-full">
                         <i data-lucide="arrow-left" class="w-6 h-6 text-gray-800"></i>
                     </button>
-                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity" onclick="viewProfile()">
+                    <div class="flex items-center gap-3 cursor-pointer hover:opacity-70 transition-opacity" onclick="openChatDetails()">
                         <img id="chat-header-avatar" src="" class="w-8 h-8 rounded-full border border-gray-200 object-cover bg-gray-100">
                         <div>
                             <div class="font-bold text-gray-900 text-[15px] leading-tight" id="chat-header-name">User</div>
@@ -147,7 +149,7 @@ body.chat-active .chat-window { transform: translateX(0); }
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button class="icon-btn"><i data-lucide="info" class="w-6 h-6 text-gray-800"></i></button>
+                    <button class="icon-btn" onclick="openChatDetails()"><i data-lucide="info" class="w-6 h-6 text-gray-800"></i></button>
                 </div>
             </header>
 
@@ -170,6 +172,44 @@ body.chat-active .chat-window { transform: translateX(0); }
             </div>
         </div>
     </main>
+</div>
+
+<!-- Chat Details Overlay -->
+<div id="chat-details-overlay" class="fixed inset-0 z-50 bg-black/40 hidden flex justify-end transition-opacity duration-200 opacity-0" onclick="closeChatDetails()">
+    <div id="chat-details-panel" class="bg-white w-full md:w-96 h-full shadow-2xl transform translate-x-full flex flex-col" onclick="event.stopPropagation()">
+        <!-- Header -->
+        <div class="h-16 flex items-center justify-between px-4 border-b border-gray-100 bg-white shrink-0">
+            <span class="font-bold text-lg text-gray-900">Details</span>
+            <button onclick="closeChatDetails()" class="p-2 hover:bg-gray-100 rounded-full transition-colors"><i data-lucide="x" class="w-6 h-6 text-gray-700"></i></button>
+        </div>
+        <!-- Content -->
+        <div class="flex-1 overflow-y-auto bg-white">
+             <div class="h-32 bg-gray-200 bg-cover bg-center" id="cd-banner"></div>
+             <div class="px-5 pb-6">
+                 <div class="flex justify-between items-end -mt-10 mb-3">
+                     <img id="cd-avatar" src="" class="w-20 h-20 rounded-full border-4 border-white bg-white object-cover shadow-sm">
+                 </div>
+                 <div class="mb-6">
+                     <h2 id="cd-name" class="text-xl font-bold text-gray-900 flex items-center gap-1">User</h2>
+                     <div id="cd-username" class="text-sm text-gray-500 font-medium">@username</div>
+                     <p id="cd-bio" class="text-sm text-gray-600 mt-2 line-clamp-3"></p>
+                 </div>
+                 <div class="space-y-1">
+                     <button onclick="viewProfileFromDetails()" class="w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-sm transition-colors text-gray-900">View Profile</button>
+                     <div class="h-4"></div>
+                     <button onclick="alert('Block feature coming soon')" class="w-full py-3 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-colors text-left px-4 flex items-center gap-2"><i data-lucide="ban" class="w-4 h-4"></i> Block User</button>
+                     <button onclick="alert('Report feature coming soon')" class="w-full py-3 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-colors text-left px-4 flex items-center gap-2"><i data-lucide="flag" class="w-4 h-4"></i> Report</button>
+                 </div>
+             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Message Options Modal (Bottom Sheet style on Mobile / Dialog on Desktop) -->
+<div id="msg-options-overlay" class="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200" onclick="closeMsgOptions()">
+    <div id="msg-options-modal" class="bg-white w-full md:w-[320px] md:rounded-2xl rounded-t-2xl shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden" onclick="event.stopPropagation()">
+        <!-- Content injected via JS -->
+    </div>
 </div>
 
 <!-- New Chat Modal -->
@@ -205,20 +245,6 @@ body.chat-active .chat-window { transform: translateX(0); }
     </div>
 </div>
 
-<!-- Custom Action Alert Modal (Instagram Style) -->
-<div id="custom-alert-overlay" class="hidden fixed inset-0 z-[100] flex items-center justify-center">
-    <div class="bg-white rounded-2xl w-[80%] max-w-[270px] overflow-hidden text-center shadow-2xl custom-alert-box" onclick="event.stopPropagation()">
-        <div class="p-5">
-            <h3 class="font-bold text-lg mb-1" id="alert-title">Unsend Message?</h3>
-            <p class="text-gray-500 text-[13px] leading-relaxed" id="alert-msg">This will remove the message for everyone.</p>
-        </div>
-        <div class="border-t border-gray-200 flex flex-col">
-            <button id="alert-confirm-btn" class="w-full py-3.5 text-red-500 font-bold border-b border-gray-200 active:bg-gray-50 text-[15px]">Unsend</button>
-            <button onclick="closeCustomAlert()" class="w-full py-3.5 text-gray-900 active:bg-gray-50 text-[15px]">Cancel</button>
-        </div>
-    </div>
-</div>
-
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
@@ -238,6 +264,7 @@ let selectedUserForNewChat = null;
 let unsubscribeMessages = null;
 let unsubscribeConversations = null;
 let pendingSharePost = null;
+let currentMsgContext = null;
 
 onAuthStateChanged(auth, async (u) => {
     if (!u) {
@@ -315,7 +342,6 @@ function loadConversations() {
     });
 }
 
-// Shared Post Check
 async function checkForSharedPost() {
     const urlParams = new URLSearchParams(window.location.search);
     const sharedPostId = urlParams.get('sharePostId');
@@ -351,7 +377,12 @@ window.openChat = async (chatId, user, userId) => {
     
     document.getElementById('chat-header-name').innerText = user.name;
     document.getElementById('chat-header-avatar').src = user.avatar;
-    document.getElementById('chat-header-avatar').onclick = () => window.location.href = `/home?profileId=${userId}`;
+    
+    // Ensure we fetch the latest profile data for details
+    try {
+        const uSnap = await getDoc(doc(db, "users", userId));
+        if (uSnap.exists()) currentChatUser = { id: userId, ...uSnap.data() };
+    } catch(e) {}
 
     updateDoc(doc(db, "chats", chatId), {
         readBy: [currentUser.id, userId]
@@ -392,27 +423,32 @@ function loadMessages(chatId) {
             
             let contentHtml = '';
             let bubbleStyle = '';
+            let rawContent = msg.content;
 
             if (msg.type === 'image') {
                 contentHtml = `<img src="${msg.content}" class="rounded-lg max-w-full cursor-pointer border border-gray-100" onclick="window.open('${msg.content}', '_blank')">`;
                 bubbleStyle = 'padding: 4px; background: transparent;';
+                rawContent = "Photo";
             } else if (msg.type === 'post') {
                 let postData = typeof msg.postData === 'string' ? JSON.parse(msg.postData) : msg.postData;
                 contentHtml = renderPostCard(postData, isSelf);
                 bubbleStyle = 'padding: 0; background: transparent; overflow: hidden;';
+                rawContent = "Post";
             } else if (msg.type === 'heart') {
-                 // Clean red heart icon
                  contentHtml = `<i data-lucide="heart" class="w-12 h-12 text-[#ff3040] fill-[#ff3040] heart-fixed"></i>`;
                  bubbleStyle = 'background: transparent; padding: 0;';
+                 rawContent = "";
             } else {
                 contentHtml = linkify(msg.content);
             }
 
-            // Only allow Unsend (Delete) for self, Hide (Delete for me) for others
+            // Msg Options Menu Button
+            // Using a button instead of long-press for reliable web/mobile behavior
+            // The functionality "holds the message" is mapped to clicking this menu button or dot icon
             const actions = `
                 <div class="msg-actions">
-                    <div class="action-btn" onclick="deleteMessage('${msgDoc.id}', ${isSelf})" title="${isSelf ? 'Unsend' : 'Delete for Me'}">
-                        <i data-lucide="${isSelf ? 'trash-2' : 'eye-off'}" class="w-4 h-4"></i>
+                    <div class="action-btn" onclick="openMsgOptions('${msgDoc.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}')" title="Options">
+                        <i data-lucide="more-vertical" class="w-4 h-4"></i>
                     </div>
                 </div>
             `;
@@ -434,6 +470,11 @@ function loadMessages(chatId) {
     });
 }
 
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
 function renderPostCard(post, isSelf) {
     let img = null;
     if (post.image) img = post.image;
@@ -444,7 +485,7 @@ function renderPostCard(post, isSelf) {
 
     const imgHtml = hasImage ? 
         `<div class="cpc-img-container"><img src="${img}" class="cpc-img"></div>` : 
-        ``; // Empty string removes the container
+        ``; 
 
     return `
         <div class="chat-post-card" onclick="window.location.href='/home?postId=${post.id}'">
@@ -512,7 +553,6 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
             const postSnap = await getDoc(doc(db, "posts", postId));
             if (postSnap.exists()) {
                 type = 'post';
-                // Fetch author info to ensure the card looks good immediately
                 const postRaw = postSnap.data();
                 if(!postRaw.authorAvatar || !postRaw.authorName) {
                     try {
@@ -527,7 +567,7 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
                 extraData = { postData: { id: postSnap.id, ...postRaw } };
                 msgContent = ''; 
             }
-        } catch (e) { console.log('Link expansion failed', e); }
+        } catch (e) {}
     }
 
     input.value = '';
@@ -577,8 +617,7 @@ window.handleImageUpload = async (e) => {
         const downloadURL = await getDownloadURL(snapshot.ref);
         await sendMessage('image', downloadURL);
     } catch (error) {
-        console.error("Upload failed", error);
-        alert("Failed to upload image. " + error.message);
+        alert("Failed to upload image.");
     } finally {
         btn.innerText = 'Send';
         btn.classList.add('hidden');
@@ -586,55 +625,110 @@ window.handleImageUpload = async (e) => {
     }
 };
 
-// Custom Alert Logic
-window.showCustomAlert = (title, message, confirmText, isRed, onConfirm) => {
-    const overlay = document.getElementById('custom-alert-overlay');
-    document.getElementById('alert-title').innerText = title;
-    document.getElementById('alert-msg').innerText = message;
+// --- Chat Details Logic ---
+window.openChatDetails = () => {
+    if(!currentChatUser) return;
+    const u = currentChatUser;
+    document.getElementById('cd-avatar').src = u.avatar;
+    document.getElementById('cd-banner').style.backgroundImage = `url(${u.banner || 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80'})`;
+    document.getElementById('cd-name').innerHTML = `${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 text-blue-500 fill-white"></i>' : ''}`;
+    document.getElementById('cd-username').innerText = `@${u.username || 'user'}`;
+    document.getElementById('cd-bio').innerText = u.bio || '';
     
-    const confirmBtn = document.getElementById('alert-confirm-btn');
-    const newBtn = confirmBtn.cloneNode(true);
-    confirmBtn.parentNode.replaceChild(newBtn, confirmBtn);
-    
-    newBtn.innerText = confirmText;
-    newBtn.className = `w-full py-3.5 font-bold border-b border-gray-200 active:bg-gray-50 text-[15px] ${isRed ? 'text-red-500' : 'text-blue-500'}`;
-    
-    newBtn.onclick = () => {
-        onConfirm();
-        closeCustomAlert();
-    };
-    
+    const overlay = document.getElementById('chat-details-overlay');
     overlay.classList.remove('hidden');
+    setTimeout(() => {
+        overlay.classList.remove('opacity-0');
+        overlay.classList.add('open');
+    }, 10);
+    lucide.createIcons();
 };
 
-window.closeCustomAlert = () => {
-    document.getElementById('custom-alert-overlay').classList.add('hidden');
+window.closeChatDetails = () => {
+    const overlay = document.getElementById('chat-details-overlay');
+    overlay.classList.remove('open');
+    overlay.classList.add('opacity-0');
+    setTimeout(() => overlay.classList.add('hidden'), 300);
 };
 
-window.deleteMessage = async (msgId, isSelf) => {
-    if (isSelf) {
-        showCustomAlert("Unsend Message?", "This will remove the message for everyone.", "Unsend", true, async () => {
-            try {
-                await deleteDoc(doc(db, `chats/${currentChatId}/messages`, msgId));
-                // Update the chat preview text to indicate deletion
-                updateDoc(doc(db, "chats", currentChatId), {
-                    lastMessage: "Message unsent"
-                }).catch(e=>{});
-            } catch (error) {
-                console.error("Error deleting message", error);
-            }
-        });
-    } else {
-        showCustomAlert("Delete for Me?", "This message will be hidden from your view.", "Delete", true, async () => {
-            try {
-                await updateDoc(doc(db, `chats/${currentChatId}/messages`, msgId), {
-                    hiddenBy: arrayUnion(currentUser.id)
-                });
-            } catch (error) {
-                console.error("Error hiding message", error);
-            }
-        });
+window.viewProfileFromDetails = () => {
+    closeChatDetails();
+    viewProfile();
+};
+
+// --- Message Options Logic ---
+window.openMsgOptions = (msgId, content, isSelf, type) => {
+    currentMsgContext = { msgId, content, isSelf, type };
+    const modal = document.getElementById('msg-options-modal');
+    
+    let html = `<div class="p-2 flex flex-col gap-1">`;
+    
+    // Copy
+    if (type === 'text') {
+         html += `<button onclick="copyMsgText()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="copy" class="w-5 h-5 text-gray-500"></i> Copy</button>`;
     }
+
+    // Unsend (Self only)
+    if (isSelf) {
+        html += `<button onclick="unsendMsg()" class="w-full text-left px-4 py-3 hover:bg-red-50 rounded-xl font-bold text-red-600 flex items-center gap-3 text-sm"><i data-lucide="trash-2" class="w-5 h-5"></i> Unsend</button>`;
+    }
+
+    // Delete for Me (Both)
+    // "with the unsent add the option of delete which doesnt unsend" -> This is Delete for Me.
+    // Available for everyone's messages including own.
+    html += `<button onclick="deleteForMe()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="eye-off" class="w-5 h-5 text-gray-500"></i> Delete for me</button>`;
+
+    html += `</div><div class="p-2 border-t border-gray-100"><button onclick="closeMsgOptions()" class="w-full py-3 font-bold text-gray-900 hover:bg-gray-50 rounded-xl text-sm">Cancel</button></div>`;
+    
+    modal.innerHTML = html;
+    lucide.createIcons();
+
+    const overlay = document.getElementById('msg-options-overlay');
+    overlay.classList.remove('hidden');
+    setTimeout(() => {
+        overlay.classList.remove('opacity-0');
+        modal.classList.remove('translate-y-full','md:scale-95');
+        modal.classList.add('translate-y-0','md:scale-100');
+    }, 10);
+};
+
+window.closeMsgOptions = () => {
+    const overlay = document.getElementById('msg-options-overlay');
+    const modal = document.getElementById('msg-options-modal');
+    overlay.classList.add('opacity-0');
+    modal.classList.add('translate-y-full','md:scale-95');
+    modal.classList.remove('translate-y-0','md:scale-100');
+    setTimeout(() => overlay.classList.add('hidden'), 200);
+    currentMsgContext = null;
+};
+
+window.copyMsgText = () => {
+    if (currentMsgContext && currentMsgContext.content) {
+        navigator.clipboard.writeText(currentMsgContext.content);
+        // Show toast or feedback? Just close for now.
+    }
+    closeMsgOptions();
+};
+
+window.unsendMsg = async () => {
+    if (!currentMsgContext) return;
+    const { msgId } = currentMsgContext;
+    closeMsgOptions();
+    try {
+        await deleteDoc(doc(db, `chats/${currentChatId}/messages`, msgId));
+        updateDoc(doc(db, "chats", currentChatId), { lastMessage: "Message unsent" }).catch(()=>{});
+    } catch(e) {}
+};
+
+window.deleteForMe = async () => {
+    if (!currentMsgContext) return;
+    const { msgId } = currentMsgContext;
+    closeMsgOptions();
+    try {
+        await updateDoc(doc(db, `chats/${currentChatId}/messages`, msgId), {
+            hiddenBy: arrayUnion(currentUser.id)
+        });
+    } catch(e) {}
 };
 
 // Modal Logic
