@@ -33,7 +33,8 @@ body.chat-active .sidebar { display: none; }
 body.chat-active .chat-window { transform: translateX(0); }
 
 /* Messages */
-.msg-group { display: flex; flex-direction: column; margin-bottom: 2px; position: relative; width: 100%; }
+.msg-group { display: flex; flex-direction: column; margin-bottom: 2px; position: relative; width: 100%; transition: margin 0.2s; }
+.msg-group.has-reaction { margin-bottom: 26px; } /* Fix overlap for reactions */
 
 .msg-container { display: flex; width: 100%; position: relative; align-items: flex-end; }
 .msg-container.self { justify-content: flex-end; }
@@ -44,9 +45,9 @@ body.chat-active .chat-window { transform: translateX(0); }
     position: relative;
     max-width: 70%;
     transition: transform 0.1s cubic-bezier(0,0,0.2,1);
-    touch-action: pan-y; /* Allow vertical scroll, handle horizontal in JS */
+    touch-action: pan-y; 
     display: flex;
-    align-items: center;
+    align-items: flex-end; /* Align bottom to keep bubbles aligned */
 }
 .msg-container.self .msg-swipe-wrapper { flex-direction: row-reverse; }
 
@@ -65,8 +66,39 @@ body.chat-active .chat-window { transform: translateX(0); }
 .msg-container.other .reply-icon-container { right: -40px; }
 .msg-container.self .reply-icon-container { left: -40px; }
 
-.msg-bubble { 
+/* Message Content Stack (Reply + Bubble) */
+.msg-content-stack {
+    display: flex;
+    flex-direction: column;
     width: 100%;
+}
+.msg-container.self .msg-content-stack { align-items: flex-end; }
+.msg-container.other .msg-content-stack { align-items: flex-start; }
+
+/* Reply Block (Above Bubble) */
+.reply-upper-block {
+    background-color: rgba(0,0,0,0.05);
+    color: #666;
+    border-radius: 12px;
+    padding: 8px 12px;
+    margin-bottom: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    max-width: 100%;
+    display: flex;
+    flex-direction: column;
+    border-left: 3px solid #ccc;
+    opacity: 0.9;
+    transition: opacity 0.2s;
+}
+.msg-container.self .reply-upper-block { background-color: #f0f0f0; border-left-color: #bbb; border-bottom-right-radius: 4px; }
+.msg-container.other .reply-upper-block { background-color: #f0f0f0; border-left-color: #bbb; border-bottom-left-radius: 4px; }
+
+.reply-upper-block:active { opacity: 0.7; }
+
+/* Main Bubble */
+.msg-bubble { 
+    width: fit-content;
     padding: 10px 14px; 
     border-radius: 22px; 
     position: relative; 
@@ -81,22 +113,9 @@ body.chat-active .chat-window { transform: translateX(0); }
 .msg-self { background-color: var(--bg-chat-bubble-self); color: white; border-bottom-right-radius: 4px; }
 .msg-other { background-color: var(--bg-chat-bubble-other); color: #000; border-bottom-left-radius: 4px; }
 
+/* Grouping Logic (Bubbles only) */
 .msg-group + .msg-group .msg-self { border-top-right-radius: 4px; }
 .msg-group + .msg-group .msg-other { border-top-left-radius: 4px; }
-
-/* Reply Quote Styles */
-.reply-quote {
-    border-left: 4px solid;
-    padding-left: 8px;
-    margin-bottom: 6px;
-    font-size: 13px;
-    opacity: 0.9;
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-}
-.msg-self .reply-quote { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); padding: 6px 8px; }
-.msg-other .reply-quote { border-color: #dbdbdb; background: rgba(0,0,0,0.05); padding: 6px 8px; }
 
 /* Seen Status */
 .seen-status {
@@ -112,7 +131,7 @@ body.chat-active .chat-window { transform: translateX(0); }
 }
 @keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
 
-/* Reply Context Banner */
+/* Reply Context Banner (Input Area) */
 #reply-context-bar {
     display: none;
     align-items: center;
@@ -141,9 +160,24 @@ body.chat-active .chat-window { transform: translateX(0); }
 .heart-fixed:active { transform: scale(0.9); }
 
 /* Message Reaction */
-.msg-reaction { position: absolute; bottom: -6px; right: 0; background: white; border-radius: 999px; padding: 2px; box-shadow: 0 1px 2px rgba(0,0,0,0.1); border: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; z-index: 10; }
-.msg-self .msg-reaction { right: 0; bottom: -8px; }
-.msg-other .msg-reaction { left: 0; bottom: -8px; right: auto; }
+.msg-reaction { 
+    position: absolute; 
+    bottom: -10px; /* Pushed down slightly */
+    right: 0; 
+    background: white; 
+    border-radius: 999px; 
+    padding: 2px; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15); 
+    border: 1px solid #f0f0f0; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    width: 24px; 
+    height: 24px; 
+    z-index: 10; 
+}
+.msg-self .msg-reaction { right: 0; }
+.msg-other .msg-reaction { left: 0; right: auto; }
 
 /* Input */
 .chat-input-area { padding: 16px; display: flex; align-items: center; gap: 12px; background: #fff; }
@@ -162,7 +196,7 @@ body.chat-active .chat-window { transform: translateX(0); }
 #chat-details-panel { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 #chat-details-overlay.open #chat-details-panel { transform: translateX(0); }
 
-/* Profile Design in Chat Details */
+/* Profile Design */
 .profile-banner { height: 160px; width: 100%; background-color: #e5e7eb; background-size: cover; background-position: center; }
 .profile-content-curve { border-radius: 30px 30px 0 0; margin-top: -24px; background: white; position: relative; z-index: 10; padding-top: 10px; min-height: 300px; padding-bottom: 80px; }
 .profile-avatar-wrapper { margin-top: -60px; margin-left: 20px; margin-bottom: 12px; position: relative; z-index: 20; width: 96px; height: 96px; }
@@ -237,7 +271,7 @@ body.chat-active .chat-window { transform: translateX(0); }
 
             <div id="messages-container" class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 pb-4 scroll-smooth"></div>
 
-            <!-- Reply Banner -->
+            <!-- Reply Banner (Input Area) -->
             <div id="reply-context-bar">
                 <div class="flex flex-col border-l-4 border-gray-300 pl-3">
                     <span class="text-[#0095f6] font-semibold text-xs mb-0.5" id="reply-to-user">Replying to...</span>
@@ -270,24 +304,17 @@ body.chat-active .chat-window { transform: translateX(0); }
 <!-- Chat Details Overlay -->
 <div id="chat-details-overlay" class="fixed inset-0 z-50 bg-black/40 hidden flex justify-end transition-opacity duration-200 opacity-0" onclick="closeChatDetails()">
     <div id="chat-details-panel" class="bg-white w-full md:w-96 h-full shadow-2xl transform translate-x-full flex flex-col relative" onclick="event.stopPropagation()">
-        
-        <!-- Scrollable Content -->
-        <div class="flex-1 overflow-y-auto bg-white">
-             <!-- Banner -->
+        <!-- Profile details content... (same as before) -->
+         <div class="flex-1 overflow-y-auto bg-white">
              <div class="profile-banner" id="cd-banner"></div>
-             
-             <!-- Content with overlapping curve and avatar -->
              <div class="profile-content-curve">
                  <div class="profile-avatar-wrapper">
                     <img id="cd-avatar" src="" class="w-full h-full rounded-full border-4 border-white bg-white object-cover shadow-sm">
                  </div>
-                 
                  <div class="px-6 mt-1">
                      <h2 id="cd-name" class="text-2xl font-bold text-gray-900 flex items-center gap-1">User</h2>
                      <div id="cd-username" class="text-sm text-gray-500 font-medium">@username</div>
-                     
                      <p id="cd-bio" class="text-gray-700 text-[15px] leading-relaxed mt-3"></p>
-
                      <div class="flex gap-4 mt-4 mb-6 text-sm text-gray-500 border-b border-gray-100 pb-6">
                         <div class="cursor-pointer hover:underline flex items-center gap-1">
                             <strong class="text-gray-900 text-base" id="cd-following">0</strong> Following
@@ -299,8 +326,6 @@ body.chat-active .chat-window { transform: translateX(0); }
                  </div>
              </div>
         </div>
-
-        <!-- Footer -->
         <div class="details-footer">
             <button onclick="viewProfileFromDetails()" class="flex-1 py-3 bg-[#0095f6] hover:bg-blue-600 rounded-xl font-bold text-sm transition-colors text-white shadow-sm text-center">View Profile</button>
             <button onclick="closeChatDetails()" class="w-12 h-12 flex items-center justify-center hover:bg-gray-100 bg-gray-50 rounded-full border border-gray-200 transition-colors shrink-0">
@@ -325,12 +350,10 @@ body.chat-active .chat-window { transform: translateX(0); }
             <span class="font-bold text-gray-900" id="modal-title">New Message</span>
             <div class="w-8"></div>
         </div>
-        
         <div class="p-3 border-b border-gray-100 flex items-center gap-2">
             <span class="font-bold text-gray-900 text-[15px]">To:</span>
             <input type="text" id="user-search-input" placeholder="Search..." class="flex-1 outline-none text-[15px]" oninput="handleUserSearch(this.value)">
         </div>
-
         <div id="share-preview-container" class="hidden p-3 bg-gray-50 border-b border-gray-100 flex items-center gap-3">
             <img id="share-preview-img" class="w-12 h-12 rounded object-cover bg-gray-200">
             <div class="flex-1 min-w-0">
@@ -338,12 +361,10 @@ body.chat-active .chat-window { transform: translateX(0); }
                 <div class="text-sm font-semibold truncate" id="share-preview-text">...</div>
             </div>
         </div>
-
         <div id="search-results" class="flex-1 overflow-y-auto p-2">
             <div class="text-gray-900 font-semibold text-sm px-4 py-3">Suggested</div>
             <div id="suggested-users-list"></div>
         </div>
-
         <div class="p-4 border-t border-gray-100 bg-white">
             <button onclick="startChat()" class="w-full bg-[#0095f6] text-white py-3 rounded-lg font-bold opacity-50 cursor-not-allowed transition-opacity" id="start-chat-btn" disabled>Chat</button>
         </div>
@@ -365,7 +386,7 @@ const storage = getStorage(app);
 let currentUser = null;
 let currentChatId = null;
 let currentChatUser = null;
-let currentChatData = null; // Store realtime chat metadata
+let currentChatData = null; 
 let selectedUserForNewChat = null;
 let unsubscribeMessages = null;
 let unsubscribeConversations = null;
@@ -400,7 +421,6 @@ onAuthStateChanged(auth, async (u) => {
     checkForSharedPost();
 });
 
-// Load Chats Sidebar
 function loadConversations() {
     if (unsubscribeConversations) unsubscribeConversations();
     
@@ -444,7 +464,6 @@ function loadConversations() {
             const timeStr = formatTime(chat.lastMessageTimestamp);
             const lastMsg = chat.lastMessage || 'Start chatting';
             
-            // Clean sidebar: Removed the seen status icon from here as requested
             let statusHtml = '';
             if (isUnread) {
                 statusHtml = `<div class="w-2.5 h-2.5 bg-[#0095f6] rounded-full shrink-0"></div>`;
@@ -477,7 +496,7 @@ function loadConversations() {
 window.openChat = async (chatId, user, userId) => {
     currentChatId = chatId;
     currentChatUser = { ...user, id: userId };
-    cancelReply(); // Clear reply context when changing chats
+    cancelReply(); 
 
     document.body.classList.add('chat-active');
     document.getElementById('chat-window-panel').classList.remove('hidden');
@@ -489,12 +508,11 @@ window.openChat = async (chatId, user, userId) => {
     document.getElementById('chat-header-name').innerText = user.name;
     document.getElementById('chat-header-avatar').src = user.avatar;
     
-    // Subscribe to chat metadata for real-time seen status
     if (unsubscribeChatMeta) unsubscribeChatMeta();
     unsubscribeChatMeta = onSnapshot(doc(db, "chats", chatId), (docSnap) => {
         if (docSnap.exists()) {
             currentChatData = docSnap.data();
-            renderSeenStatus(); // Attempt to re-render seen status if DOM exists
+            renderSeenStatus(); 
         }
     });
 
@@ -561,29 +579,29 @@ function loadMessages(chatId) {
             const isSelf = msg.senderId === currentUser.id;
             
             if (isSelf) lastMessageFromSelf = { id: msgDoc.id, ...msg };
-
-            const div = document.createElement('div');
-            div.className = `msg-group fade-in`;
             
             const hasReactions = msg.reactions && msg.reactions.length > 0;
-            const reactionHtml = hasReactions ? `<div class="msg-reaction like-animation"><i data-lucide="heart" class="w-3 h-3 fill-red-500 text-red-500"></i></div>` : '';
+            
+            // Add spacing class if has reactions
+            const div = document.createElement('div');
+            div.className = `msg-group fade-in ${hasReactions ? 'has-reaction' : ''}`;
+            
+            const reactionHtml = hasReactions ? `<div class="msg-reaction like-animation"><i data-lucide="heart" class="w-3.5 h-3.5 fill-red-500 text-red-500"></i></div>` : '';
 
-            // Handle reactions for hold menu
             const reactionsJson = JSON.stringify(msg.reactions || []).replace(/"/g, '&quot;');
 
             let contentHtml = '';
             let bubbleStyle = '';
             let rawContent = msg.content;
-            let displayContent = msg.content;
 
-            // Render Reply Quote
+            // Reply Block Logic (External to bubble now)
             let replyHtml = '';
             if (msg.replyTo) {
-                const isReplySelf = msg.replyTo.id === currentUser.id;
+                const isReplySelf = msg.replyTo.id === currentUser.id; // Did I send the original msg being replied to?
                 replyHtml = `
-                    <div class="reply-quote mb-1">
-                        <span class="font-bold text-xs ${isSelf ? 'text-white/90' : 'text-gray-800'} mb-0.5">${msg.replyTo.name || 'User'}</span>
-                        <span class="truncate text-xs ${isSelf ? 'text-white/80' : 'text-gray-500'} block max-w-full">${msg.replyTo.body || 'Message'}</span>
+                    <div class="reply-upper-block" onclick="scrollToMessage('${msg.replyTo.id}')">
+                        <span class="font-bold mb-0.5">${msg.replyTo.name || 'User'}</span>
+                        <span class="truncate block opacity-80">${msg.replyTo.body || 'Message'}</span>
                     </div>
                 `;
             }
@@ -606,14 +624,14 @@ function loadMessages(chatId) {
             }
 
             // Swipe Handlers
-            const touchHandlers = `
+            const swipeHandlers = `
                 ontouchstart="handleSwipeStart(event, '${msgDoc.id}', '${escapeHtml(rawContent)}', '${isSelf ? 'You' : (currentChatUser ? currentChatUser.name : 'User')}')"
                 ontouchmove="handleSwipeMove(event)"
                 ontouchend="handleSwipeEnd(event)"
             `;
 
-            // Mouse handlers for context menu / hold
-            const mouseHandlers = `
+            // Hold/Click Handlers on Bubble
+            const interactHandlers = `
                 ondblclick="toggleMessageLike('${msgDoc.id}')"
                 onmousedown="handlePressStart(event, '${msgDoc.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
                 ontouchstart="handlePressStart(event, '${msgDoc.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson}')"
@@ -624,21 +642,26 @@ function loadMessages(chatId) {
                 oncontextmenu="return false;"
             `;
 
+            // Structure: Wrapper -> Icon + ContentStack (Reply + Bubble)
             div.innerHTML = `
                 <div class="msg-container ${isSelf ? 'self' : 'other'}">
                     
-                    <div class="msg-swipe-wrapper" id="swipe-${msgDoc.id}" ${touchHandlers}>
+                    <div class="msg-swipe-wrapper" id="swipe-${msgDoc.id}" ${swipeHandlers}>
+                        
                         <div class="reply-icon-container">
                             <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shadow-sm">
                                 <i data-lucide="reply" class="w-4 h-4 text-gray-500"></i>
                             </div>
                         </div>
                         
-                        <div class="msg-bubble ${isSelf ? 'msg-self' : 'msg-other'} noselect" style="${bubbleStyle}" ${mouseHandlers}>
+                        <div class="msg-content-stack">
                             ${replyHtml}
-                            ${contentHtml}
-                            ${reactionHtml}
+                            <div class="msg-bubble ${isSelf ? 'msg-self' : 'msg-other'} noselect" style="${bubbleStyle}" ${interactHandlers}>
+                                ${contentHtml}
+                                ${reactionHtml}
+                            </div>
                         </div>
+
                     </div>
 
                 </div>
@@ -646,12 +669,10 @@ function loadMessages(chatId) {
             container.appendChild(div);
         });
 
-        // Add Seen Status Container
         const statusDiv = document.createElement('div');
         statusDiv.id = 'seen-status-container';
         container.appendChild(statusDiv);
         
-        // Render initial status
         if (lastMessageFromSelf) {
             renderSeenStatus(lastMessageFromSelf.id);
         }
@@ -665,21 +686,12 @@ function renderSeenStatus(lastSelfMsgId = null) {
     const container = document.getElementById('seen-status-container');
     if (!container) return;
     
-    // Logic: If last message sent by ME is read by OTHER
     if (!currentChatData || !currentChatData.readBy || !currentChatUser) {
         container.innerHTML = '';
         return;
     }
 
     const isReadByOther = currentChatData.readBy.includes(currentChatUser.id);
-    // Note: In a real app we'd verify the lastSelfMsgId is indeed the last message in the whole chat.
-    // For simplicity here, we assume if the lastSelfMsgId matches what we tracked, and it's read, we show it.
-    // A more robust check is: last message of chat is self AND chat.readBy includes other.
-    
-    // We can infer "last message of chat" from the snapshot iteration, but let's trust the logic:
-    // If "Seen" should be shown, it appears at the very bottom.
-    
-    // Check if the very last message rendered in DOM is from self
     const allMsgs = document.querySelectorAll('.msg-container');
     if (allMsgs.length === 0) return;
     const lastEl = allMsgs[allMsgs.length - 1];
@@ -693,7 +705,6 @@ function renderSeenStatus(lastSelfMsgId = null) {
 
 // Swipe to Reply Logic
 window.handleSwipeStart = (e, msgId, content, user) => {
-    // Only single touch
     if (e.touches.length > 1) return;
     
     activeSwipeEl = e.currentTarget;
@@ -701,12 +712,10 @@ window.handleSwipeStart = (e, msgId, content, user) => {
     swipeStartY = e.touches[0].clientY;
     isSwiping = false;
     
-    // Prepare data for potential reply
     activeSwipeEl.dataset.msgId = msgId;
     activeSwipeEl.dataset.content = content;
     activeSwipeEl.dataset.user = user;
     
-    // Reset transition for instant drag
     activeSwipeEl.style.transition = 'none';
 };
 
@@ -717,28 +726,26 @@ window.handleSwipeMove = (e) => {
     const diffX = currentX - swipeStartX;
     const diffY = currentY - swipeStartY;
 
-    // Detect horizontal swipe intent
     if (!isSwiping) {
         if (Math.abs(diffX) > 10 && Math.abs(diffX) > Math.abs(diffY)) {
             isSwiping = true;
+            // If swiping starts, cancel any long press on the bubble
+            if (pressTimer) {
+                clearTimeout(pressTimer);
+                pressTimer = null;
+            }
         } else {
-            return; // Vertical scroll, let browser handle it
+            return; 
         }
     }
 
     if (isSwiping) {
-        e.preventDefault(); // Stop scrolling
-        
-        // Resistance effect
+        e.preventDefault(); 
         let translate = diffX * 0.5;
-        
-        // Limit drag distance
         if (translate > 80) translate = 80 + (translate - 80) * 0.2;
         if (translate < -80) translate = -80 + (translate + 80) * 0.2;
-
         activeSwipeEl.style.transform = `translateX(${translate}px)`;
         
-        // Icon animation
         const icon = activeSwipeEl.querySelector('.reply-icon-container');
         if (icon) {
             const progress = Math.min(Math.abs(translate) / 50, 1);
@@ -762,7 +769,6 @@ window.handleSwipeEnd = (e) => {
 
     const diffX = e.changedTouches[0].clientX - swipeStartX;
 
-    // Trigger Reply if dragged enough
     if (isSwiping && Math.abs(diffX) > 50) {
         replyToMessage(
             activeSwipeEl.dataset.msgId, 
@@ -895,7 +901,6 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
     
     if (!msgContent && type === 'text') return;
 
-    // Check for Post Link
     const postLinkMatch = msgContent.match(/postId=([a-zA-Z0-9_-]+)/);
     if (type === 'text' && postLinkMatch) {
         const postId = postLinkMatch[1];
@@ -925,7 +930,6 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
     document.getElementById('like-btn').classList.remove('hidden');
     document.getElementById('message-input').focus();
 
-    // Prepare message data
     const messageData = {
         senderId: currentUser.id,
         content: msgContent,
@@ -934,7 +938,6 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
         ...extraData
     };
 
-    // Attach Reply Context if exists
     if (currentReplyContext) {
         messageData.replyTo = {
             id: currentReplyContext.msgId,
@@ -985,7 +988,6 @@ window.handleImageUpload = async (e) => {
     }
 };
 
-// --- Chat Details Logic ---
 window.openChatDetails = () => {
     if(!currentChatUser) return;
     const u = currentChatUser;
@@ -1023,22 +1025,28 @@ window.viewProfileFromDetails = () => {
 
 // --- Long Press Message Options Logic ---
 window.handlePressStart = (e, msgId, content, isSelf, type, reactions) => {
-    // Only trigger if left click or touch
     if (e.type === 'mousedown' && e.button !== 0) return;
+    
+    // Prevent default context menu on right click
+    if (e.type === 'contextmenu') e.preventDefault();
     
     pressStartX = e.touches ? e.touches[0].clientX : e.clientX;
     pressStartY = e.touches ? e.touches[0].clientY : e.clientY;
     
     pressTimer = setTimeout(() => {
         openMsgOptions(msgId, content, isSelf, type, reactions);
-    }, 500); // 500ms hold time
+    }, 500); 
 };
 
 window.handlePressMove = (e) => {
     if(!pressTimer) return;
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
-    if(Math.abs(x - pressStartX) > 10 || Math.abs(y - pressStartY) > 10) {
+    const diffX = Math.abs(x - pressStartX);
+    const diffY = Math.abs(y - pressStartY);
+    
+    // Increased tolerance (15px) for shaky fingers on mobile to prevent accidental cancellation
+    if(diffX > 15 || diffY > 15) {
         clearTimeout(pressTimer);
         pressTimer = null;
     }
@@ -1057,7 +1065,6 @@ window.openMsgOptions = (msgId, content, isSelf, type, reactions) => {
     
     let html = `<div class="p-2 flex flex-col gap-1">`;
     
-    // Reaction List
     if (reactions && reactions.length > 0) {
         let reactorHtml = '';
         reactions.forEach(uid => {
@@ -1085,20 +1092,16 @@ window.openMsgOptions = (msgId, content, isSelf, type, reactions) => {
         }
     }
 
-    // Reply Button
     html += `<button onclick="triggerReplyFromModal()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="reply" class="w-5 h-5 text-gray-500"></i> Reply</button>`;
 
-    // Copy
     if (type === 'text') {
          html += `<button onclick="copyMsgText()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="copy" class="w-5 h-5 text-gray-500"></i> Copy</button>`;
     }
 
-    // Unsend (Self only)
     if (isSelf) {
         html += `<button onclick="unsendMsg()" class="w-full text-left px-4 py-3 hover:bg-red-50 rounded-xl font-bold text-red-600 flex items-center gap-3 text-sm"><i data-lucide="trash-2" class="w-5 h-5"></i> Unsend</button>`;
     }
 
-    // Delete for Me (Both)
     html += `<button onclick="deleteForMe()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="eye-off" class="w-5 h-5 text-gray-500"></i> Delete for me</button>`;
 
     html += `</div><div class="p-2 border-t border-gray-100"><button onclick="closeMsgOptions()" class="w-full py-3 font-bold text-gray-900 hover:bg-gray-50 rounded-xl text-sm">Cancel</button></div>`;
@@ -1122,7 +1125,6 @@ window.closeMsgOptions = () => {
     modal.classList.add('translate-y-full','md:scale-95');
     modal.classList.remove('translate-y-0','md:scale-100');
     setTimeout(() => overlay.classList.add('hidden'), 200);
-    // don't null currentMsgContext yet if we need it for actions
 };
 
 window.triggerReplyFromModal = () => {
@@ -1160,7 +1162,6 @@ window.deleteForMe = async () => {
     } catch(e) {}
 };
 
-// Modal Logic
 window.openNewChatModal = () => {
     document.getElementById('new-chat-overlay').classList.remove('hidden');
     setTimeout(() => {
