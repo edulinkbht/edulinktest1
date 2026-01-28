@@ -15,6 +15,7 @@ body{font-family:'Inter',sans-serif;background-color:#fff;overflow:hidden;oversc
 *{scrollbar-width:none;-ms-overflow-style:none}*::-webkit-scrollbar{width:0;height:0;display:none}
 .fade-in{animation:fadeUp .3s cubic-bezier(.2,0,0,1) forwards;opacity:0;transform:translateY(10px)}
 @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+.noselect { -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
 
 /* Chat Layout */
 .chat-layout { display: flex; height: 100vh; width: 100vw; overflow: hidden; }
@@ -33,30 +34,18 @@ body.chat-active .chat-window { transform: translateX(0); }
 
 /* Messages */
 .msg-group { display: flex; flex-direction: column; margin-bottom: 2px; position: relative; width: 100%; }
-.msg-group:hover .msg-actions { opacity: 1; }
 
 .msg-container { display: flex; width: 100%; position: relative; }
 .msg-container.self { justify-content: flex-end; }
 .msg-container.other { justify-content: flex-start; }
 
-.msg-bubble { max-width: 70%; padding: 10px 14px; border-radius: 22px; position: relative; word-wrap: break-word; font-size: 15px; line-height: 1.4; transition: background-color 0.2s; }
+.msg-bubble { max-width: 70%; padding: 10px 14px; border-radius: 22px; position: relative; word-wrap: break-word; font-size: 15px; line-height: 1.4; transition: transform 0.1s; cursor: pointer; }
+.msg-bubble:active { transform: scale(0.98); }
 .msg-self { background-color: var(--bg-chat-bubble-self); color: white; border-bottom-right-radius: 4px; }
 .msg-other { background-color: var(--bg-chat-bubble-other); color: #000; border-bottom-left-radius: 4px; }
 
 .msg-group + .msg-group .msg-self { border-top-right-radius: 4px; }
 .msg-group + .msg-group .msg-other { border-top-left-radius: 4px; }
-
-/* Message Actions */
-.msg-actions { opacity: 0; transition: opacity 0.2s; display: flex; align-items: center; padding: 0 4px; }
-.msg-container.self .msg-actions { order: -1; margin-right: 4px; } 
-.msg-container.other .msg-actions { order: 1; margin-left: 4px; } 
-.msg-group:hover .msg-actions { opacity: 1; }
-/* On touch devices, keeping actions always visible or tap to show is better, 
-   but for consistency with requested "hold" behavior, we'll use a button */
-@media (max-width: 768px) { .msg-actions { opacity: 1; } }
-
-.action-btn { width: 28px; height: 28px; border-radius: 50%; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; transition: background 0.2s; }
-.action-btn:hover { background: #f0f0f0; color: #555; }
 
 /* Post Card */
 .chat-post-card { background: #efefef; border-radius: 16px; overflow: hidden; width: 260px; margin-top: 4px; cursor: pointer; transition: opacity 0.2s; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05); }
@@ -90,9 +79,12 @@ body.chat-active .chat-window { transform: translateX(0); }
 #chat-details-panel { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 #chat-details-overlay.open #chat-details-panel { transform: translateX(0); }
 
+/* Profile Curve Style in Chat Details */
+.cd-curve-container { border-radius: 30px 30px 0 0; margin-top: -24px; position: relative; z-index: 10; background: white; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); min-height: calc(100% - 160px); }
+
 </style>
 </head>
-<body>
+<body class="noselect">
 
 <div class="chat-layout">
     <!-- LEFT SIDEBAR -->
@@ -177,35 +169,38 @@ body.chat-active .chat-window { transform: translateX(0); }
 <!-- Chat Details Overlay -->
 <div id="chat-details-overlay" class="fixed inset-0 z-50 bg-black/40 hidden flex justify-end transition-opacity duration-200 opacity-0" onclick="closeChatDetails()">
     <div id="chat-details-panel" class="bg-white w-full md:w-96 h-full shadow-2xl transform translate-x-full flex flex-col" onclick="event.stopPropagation()">
-        <!-- Header -->
-        <div class="h-16 flex items-center justify-between px-4 border-b border-gray-100 bg-white shrink-0">
+        <!-- Header (Title Only) -->
+        <div class="h-16 flex items-center justify-between px-4 border-b border-gray-100 bg-white shrink-0 relative z-20">
             <span class="font-bold text-lg text-gray-900">Details</span>
             <button onclick="closeChatDetails()" class="p-2 hover:bg-gray-100 rounded-full transition-colors"><i data-lucide="x" class="w-6 h-6 text-gray-700"></i></button>
         </div>
         <!-- Content -->
-        <div class="flex-1 overflow-y-auto bg-white">
-             <div class="h-32 bg-gray-200 bg-cover bg-center" id="cd-banner"></div>
-             <div class="px-5 pb-6">
+        <div class="flex-1 overflow-y-auto bg-white relative">
+             <div class="h-40 bg-gray-200 bg-cover bg-center" id="cd-banner"></div>
+             <div class="cd-curve-container px-6 pb-20">
                  <div class="flex justify-between items-end -mt-10 mb-3">
-                     <img id="cd-avatar" src="" class="w-20 h-20 rounded-full border-4 border-white bg-white object-cover shadow-sm">
+                     <img id="cd-avatar" src="" class="w-24 h-24 rounded-full border-4 border-white bg-white object-cover shadow-sm">
                  </div>
                  <div class="mb-6">
-                     <h2 id="cd-name" class="text-xl font-bold text-gray-900 flex items-center gap-1">User</h2>
+                     <h2 id="cd-name" class="text-2xl font-bold text-gray-900 flex items-center gap-1">User</h2>
                      <div id="cd-username" class="text-sm text-gray-500 font-medium">@username</div>
-                     <p id="cd-bio" class="text-sm text-gray-600 mt-2 line-clamp-3"></p>
+                     <p id="cd-bio" class="text-gray-600 mt-3 text-sm leading-relaxed"></p>
+                     
+                     <div class="flex gap-4 mt-4 text-sm text-gray-500">
+                        <span class="cursor-default"><strong class="text-gray-900" id="cd-following">0</strong> Following</span>
+                        <span class="cursor-default"><strong class="text-gray-900" id="cd-followers">0</strong> Followers</span>
+                     </div>
                  </div>
-                 <div class="space-y-1">
-                     <button onclick="viewProfileFromDetails()" class="w-full py-3 bg-gray-100 hover:bg-gray-200 rounded-xl font-semibold text-sm transition-colors text-gray-900">View Profile</button>
-                     <div class="h-4"></div>
-                     <button onclick="alert('Block feature coming soon')" class="w-full py-3 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-colors text-left px-4 flex items-center gap-2"><i data-lucide="ban" class="w-4 h-4"></i> Block User</button>
-                     <button onclick="alert('Report feature coming soon')" class="w-full py-3 text-red-600 hover:bg-red-50 rounded-xl font-semibold text-sm transition-colors text-left px-4 flex items-center gap-2"><i data-lucide="flag" class="w-4 h-4"></i> Report</button>
-                 </div>
+             </div>
+             <!-- Footer Actions -->
+             <div class="absolute bottom-0 left-0 w-full p-4 bg-white border-t border-gray-100 z-30">
+                 <button onclick="viewProfileFromDetails()" class="w-full py-3 bg-[#0095f6] hover:bg-blue-600 rounded-xl font-bold text-sm transition-colors text-white">View Profile</button>
              </div>
         </div>
     </div>
 </div>
 
-<!-- Message Options Modal (Bottom Sheet style on Mobile / Dialog on Desktop) -->
+<!-- Message Options Modal -->
 <div id="msg-options-overlay" class="fixed inset-0 z-[100] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200" onclick="closeMsgOptions()">
     <div id="msg-options-modal" class="bg-white w-full md:w-[320px] md:rounded-2xl rounded-t-2xl shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden" onclick="event.stopPropagation()">
         <!-- Content injected via JS -->
@@ -266,6 +261,11 @@ let unsubscribeConversations = null;
 let pendingSharePost = null;
 let currentMsgContext = null;
 
+// Long Press Logic Variables
+let pressTimer = null;
+let pressStartX = 0;
+let pressStartY = 0;
+
 onAuthStateChanged(auth, async (u) => {
     if (!u) {
         window.location.href = '/home'; 
@@ -282,11 +282,7 @@ onAuthStateChanged(auth, async (u) => {
 // Load Chats
 function loadConversations() {
     if (unsubscribeConversations) unsubscribeConversations();
-    
-    const q = query(
-        collection(db, "chats"), 
-        where("participants", "array-contains", currentUser.id)
-    );
+    const q = query(collection(db, "chats"), where("participants", "array-contains", currentUser.id));
 
     unsubscribeConversations = onSnapshot(q, async (snapshot) => {
         const container = document.getElementById('chat-list-container');
@@ -378,7 +374,6 @@ window.openChat = async (chatId, user, userId) => {
     document.getElementById('chat-header-name').innerText = user.name;
     document.getElementById('chat-header-avatar').src = user.avatar;
     
-    // Ensure we fetch the latest profile data for details
     try {
         const uSnap = await getDoc(doc(db, "users", userId));
         if (uSnap.exists()) currentChatUser = { id: userId, ...uSnap.data() };
@@ -412,12 +407,8 @@ function loadMessages(chatId) {
         container.innerHTML = ''; 
         snapshot.forEach((msgDoc) => {
             const msg = msgDoc.data();
-            
-            // Filter hidden messages
             if (msg.hiddenBy && msg.hiddenBy.includes(currentUser.id)) return;
-
             const isSelf = msg.senderId === currentUser.id;
-
             const div = document.createElement('div');
             div.className = `msg-group fade-in`;
             
@@ -442,26 +433,25 @@ function loadMessages(chatId) {
                 contentHtml = linkify(msg.content);
             }
 
-            // Msg Options Menu Button
-            // Using a button instead of long-press for reliable web/mobile behavior
-            // The functionality "holds the message" is mapped to clicking this menu button or dot icon
-            const actions = `
-                <div class="msg-actions">
-                    <div class="action-btn" onclick="openMsgOptions('${msgDoc.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}')" title="Options">
-                        <i data-lucide="more-vertical" class="w-4 h-4"></i>
-                    </div>
-                </div>
+            // Bind Long Press Events
+            // We use onmousedown/touchstart to start timer
+            const eventHandlers = `
+                onmousedown="handlePressStart(event, '${msgDoc.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}')"
+                ontouchstart="handlePressStart(event, '${msgDoc.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}')"
+                onmouseup="handlePressEnd(event)"
+                ontouchend="handlePressEnd(event)"
+                onmousemove="handlePressMove(event)"
+                ontouchmove="handlePressMove(event)"
+                oncontextmenu="return false;"
             `;
 
             div.innerHTML = `
                 <div class="msg-container ${isSelf ? 'self' : 'other'}">
-                    <div class="msg-bubble ${isSelf ? 'msg-self' : 'msg-other'}" style="${bubbleStyle}">
+                    <div class="msg-bubble ${isSelf ? 'msg-self' : 'msg-other'} noselect" style="${bubbleStyle}" ${eventHandlers}>
                         ${contentHtml}
                     </div>
-                    ${actions}
                 </div>
             `;
-
             container.appendChild(div);
         });
 
@@ -482,10 +472,7 @@ function renderPostCard(post, isSelf) {
     else if (typeof post.media === 'string') img = post.media;
 
     const hasImage = img && !img.includes('video') && !img.endsWith('.mp4');
-
-    const imgHtml = hasImage ? 
-        `<div class="cpc-img-container"><img src="${img}" class="cpc-img"></div>` : 
-        ``; 
+    const imgHtml = hasImage ? `<div class="cpc-img-container"><img src="${img}" class="cpc-img"></div>` : ``; 
 
     return `
         <div class="chat-post-card" onclick="window.location.href='/home?postId=${post.id}'">
@@ -635,6 +622,9 @@ window.openChatDetails = () => {
     document.getElementById('cd-username').innerText = `@${u.username || 'user'}`;
     document.getElementById('cd-bio').innerText = u.bio || '';
     
+    document.getElementById('cd-followers').innerText = u.followers ? u.followers.length : 0;
+    document.getElementById('cd-following').innerText = u.following ? u.following.length : 0;
+
     const overlay = document.getElementById('chat-details-overlay');
     overlay.classList.remove('hidden');
     setTimeout(() => {
@@ -656,7 +646,34 @@ window.viewProfileFromDetails = () => {
     viewProfile();
 };
 
-// --- Message Options Logic ---
+// --- Long Press Message Options Logic ---
+window.handlePressStart = (e, msgId, content, isSelf, type) => {
+    // e.preventDefault(); // Optional: prevents default text selection on some browsers
+    pressStartX = e.touches ? e.touches[0].clientX : e.clientX;
+    pressStartY = e.touches ? e.touches[0].clientY : e.clientY;
+    
+    pressTimer = setTimeout(() => {
+        openMsgOptions(msgId, content, isSelf, type);
+    }, 500); // 500ms hold time
+};
+
+window.handlePressMove = (e) => {
+    if(!pressTimer) return;
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    if(Math.abs(x - pressStartX) > 10 || Math.abs(y - pressStartY) > 10) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+    }
+};
+
+window.handlePressEnd = (e) => {
+    if(pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+    }
+};
+
 window.openMsgOptions = (msgId, content, isSelf, type) => {
     currentMsgContext = { msgId, content, isSelf, type };
     const modal = document.getElementById('msg-options-modal');
@@ -674,8 +691,6 @@ window.openMsgOptions = (msgId, content, isSelf, type) => {
     }
 
     // Delete for Me (Both)
-    // "with the unsent add the option of delete which doesnt unsend" -> This is Delete for Me.
-    // Available for everyone's messages including own.
     html += `<button onclick="deleteForMe()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="eye-off" class="w-5 h-5 text-gray-500"></i> Delete for me</button>`;
 
     html += `</div><div class="p-2 border-t border-gray-100"><button onclick="closeMsgOptions()" class="w-full py-3 font-bold text-gray-900 hover:bg-gray-50 rounded-xl text-sm">Cancel</button></div>`;
@@ -705,7 +720,6 @@ window.closeMsgOptions = () => {
 window.copyMsgText = () => {
     if (currentMsgContext && currentMsgContext.content) {
         navigator.clipboard.writeText(currentMsgContext.content);
-        // Show toast or feedback? Just close for now.
     }
     closeMsgOptions();
 };
