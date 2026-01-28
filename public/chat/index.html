@@ -32,54 +32,101 @@ body.chat-active .sidebar { display: none; }
 @media (min-width: 768px) { body.chat-active .sidebar { display: flex; } }
 body.chat-active .chat-window { transform: translateX(0); }
 
-/* Messages Area */
+/* Messages */
 .msg-group { display: flex; flex-direction: column; margin-bottom: 2px; position: relative; width: 100%; }
 
-.msg-container { display: flex; width: 100%; position: relative; align-items: center; }
+.msg-container { display: flex; width: 100%; position: relative; align-items: flex-end; }
 .msg-container.self { justify-content: flex-end; }
 .msg-container.other { justify-content: flex-start; }
 
-/* Swipe & Hover Wrapper */
-.msg-wrapper { position: relative; display: flex; align-items: center; transition: transform 0.2s cubic-bezier(0.2, 0, 0, 1); touch-action: pan-y; }
-.msg-container.self .msg-wrapper { flex-direction: row-reverse; }
+/* Swipe Wrapper */
+.msg-swipe-wrapper {
+    position: relative;
+    max-width: 70%;
+    transition: transform 0.1s cubic-bezier(0,0,0.2,1);
+    touch-action: pan-y; /* Allow vertical scroll, handle horizontal in JS */
+    display: flex;
+    align-items: center;
+}
+.msg-container.self .msg-swipe-wrapper { flex-direction: row-reverse; }
 
-/* Hover Reply Button */
-.reply-btn-hover { opacity: 0; transition: opacity 0.2s; padding: 8px; cursor: pointer; }
-.msg-container:hover .reply-btn-hover { opacity: 1; }
-@media (hover: none) { .reply-btn-hover { display: none; } }
+.reply-icon-container {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%) scale(0);
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s;
+    opacity: 0;
+}
+.msg-container.other .reply-icon-container { right: -40px; }
+.msg-container.self .reply-icon-container { left: -40px; }
 
-/* Swipe Indicator Icon */
-.swipe-reply-icon { position: absolute; top: 50%; transform: translateY(-50%) scale(0); transition: transform 0.2s; opacity: 0; }
-.msg-container.other .swipe-reply-icon { left: -40px; }
-.msg-container.self .swipe-reply-icon { right: -40px; }
-.swiping .swipe-reply-icon { opacity: 1; }
+.msg-bubble { 
+    width: 100%;
+    padding: 10px 14px; 
+    border-radius: 22px; 
+    position: relative; 
+    word-wrap: break-word; 
+    font-size: 15px; 
+    line-height: 1.4; 
+    cursor: pointer;
+    z-index: 2;
+}
+.msg-bubble:active { transform: scale(0.98); transition: transform 0.1s; }
 
-.msg-bubble { max-width: 280px; padding: 10px 14px; border-radius: 22px; position: relative; word-wrap: break-word; font-size: 15px; line-height: 1.4; cursor: pointer; z-index: 2; }
-@media (min-width: 768px) { .msg-bubble { max-width: 400px; } }
-
-.msg-bubble:active { filter: brightness(0.95); }
 .msg-self { background-color: var(--bg-chat-bubble-self); color: white; border-bottom-right-radius: 4px; }
 .msg-other { background-color: var(--bg-chat-bubble-other); color: #000; border-bottom-left-radius: 4px; }
 
 .msg-group + .msg-group .msg-self { border-top-right-radius: 4px; }
 .msg-group + .msg-group .msg-other { border-top-left-radius: 4px; }
 
-/* Reply Context Inside Bubble */
-.reply-context-bubble {
-    border-left: 3px solid;
-    padding: 6px 10px;
+/* Reply Quote Styles */
+.reply-quote {
+    border-left: 4px solid;
+    padding-left: 8px;
     margin-bottom: 6px;
+    font-size: 13px;
+    opacity: 0.9;
     border-radius: 4px;
-    font-size: 12px;
-    background: rgba(0,0,0,0.05);
-    display: flex; flex-direction: column;
-    cursor: pointer;
+    display: flex;
+    flex-direction: column;
 }
-.msg-self .reply-context-bubble { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.9); }
-.msg-other .reply-context-bubble { border-color: #ccc; color: #666; }
+.msg-self .reply-quote { border-color: rgba(255,255,255,0.5); background: rgba(255,255,255,0.1); padding: 6px 8px; }
+.msg-other .reply-quote { border-color: #dbdbdb; background: rgba(0,0,0,0.05); padding: 6px 8px; }
+
+/* Seen Status */
+.seen-status {
+    font-size: 11px;
+    color: #8e8e8e;
+    font-weight: 500;
+    margin-top: 2px;
+    margin-bottom: 10px;
+    text-align: right;
+    width: 100%;
+    padding-right: 10px;
+    animation: fadeIn 0.3s ease;
+}
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+
+/* Reply Context Banner */
+#reply-context-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: #f9f9f9;
+    border-top: 1px solid #dbdbdb;
+    border-bottom: 1px solid #dbdbdb;
+    font-size: 14px;
+}
+#reply-context-bar.active { display: flex; }
 
 /* Post Card */
-.chat-post-card { background: #efefef; border-radius: 16px; overflow: hidden; width: 240px; margin-top: 4px; cursor: pointer; transition: opacity 0.2s; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05); }
+.chat-post-card { background: #efefef; border-radius: 16px; overflow: hidden; width: 260px; margin-top: 4px; cursor: pointer; transition: opacity 0.2s; display: flex; flex-direction: column; border: 1px solid rgba(0,0,0,0.05); }
 .msg-self .chat-post-card { background: #4db5f9; border: none; }
 .msg-self .cpc-footer { color: white; opacity: 0.95; }
 .msg-self .cpc-header span { color: white; }
@@ -98,21 +145,8 @@ body.chat-active .chat-window { transform: translateX(0); }
 .msg-self .msg-reaction { right: 0; bottom: -8px; }
 .msg-other .msg-reaction { left: 0; bottom: -8px; right: auto; }
 
-/* Seen Status (In-Message) */
-.seen-status-container {
-    width: 100%; display: flex; justify-content: flex-end; padding-right: 4px; margin-top: 2px; margin-bottom: 8px; height: 16px;
-}
-.seen-avatar { width: 14px; height: 14px; rounded-full: 50%; border-radius: 50%; object-fit: cover; }
-
-/* Reply Preview Bar */
-#reply-preview-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 16px; background: #f9f9f9; border-top: 1px solid #eee;
-    font-size: 13px; color: #666; border-left: 4px solid #0095f6;
-}
-
 /* Input */
-.chat-input-area { padding: 16px; display: flex; align-items: center; gap: 12px; border-top: 1px solid #dbdbdb; background: #fff; }
+.chat-input-area { padding: 16px; display: flex; align-items: center; gap: 12px; background: #fff; }
 .chat-input { background: #efefef; border-radius: 22px; padding: 11px 16px; flex: 1; outline: none; border: 1px solid transparent; font-size: 15px; max-height: 100px; resize: none; transition: border 0.2s; }
 .chat-input:focus { border-color: #dbdbdb; }
 
@@ -124,7 +158,7 @@ body.chat-active .chat-window { transform: translateX(0); }
 #new-chat-modal { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 #new-chat-modal.open { transform: translateY(0); }
 
-/* Details Overlay - Updated Width */
+/* Details Overlay */
 #chat-details-panel { transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 #chat-details-overlay.open #chat-details-panel { transform: translateX(0); }
 
@@ -133,7 +167,6 @@ body.chat-active .chat-window { transform: translateX(0); }
 .profile-content-curve { border-radius: 30px 30px 0 0; margin-top: -24px; background: white; position: relative; z-index: 10; padding-top: 10px; min-height: 300px; padding-bottom: 80px; }
 .profile-avatar-wrapper { margin-top: -60px; margin-left: 20px; margin-bottom: 12px; position: relative; z-index: 20; width: 96px; height: 96px; }
 .details-footer { position: absolute; bottom: 0; left: 0; width: 100%; height: 80px; background: white; border-top: 1px solid #f0f0f0; display: flex; align-items: center; padding: 0 20px; gap: 12px; z-index: 30; padding-bottom: env(safe-area-inset-bottom); }
-
 .like-animation { animation: popLike 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 @keyframes popLike { 0% { transform: scale(0); opacity: 0; } 50% { transform: scale(1.2); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
 
@@ -204,16 +237,16 @@ body.chat-active .chat-window { transform: translateX(0); }
 
             <div id="messages-container" class="flex-1 overflow-y-auto p-4 flex flex-col gap-1 pb-4 scroll-smooth"></div>
 
-            <!-- Reply Preview Bar -->
-            <div id="reply-preview-bar" class="hidden">
-                <div class="flex flex-col flex-1 min-w-0">
-                    <span class="font-semibold text-xs text-[#0095f6] mb-0.5" id="reply-preview-name">Replying to User</span>
-                    <span class="truncate text-xs text-gray-500" id="reply-preview-text">Message content...</span>
+            <!-- Reply Banner -->
+            <div id="reply-context-bar">
+                <div class="flex flex-col border-l-4 border-gray-300 pl-3">
+                    <span class="text-[#0095f6] font-semibold text-xs mb-0.5" id="reply-to-user">Replying to...</span>
+                    <span class="text-gray-500 text-xs truncate max-w-[250px]" id="reply-to-text">Message</span>
                 </div>
-                <button onclick="cancelReply()" class="p-2"><i data-lucide="x" class="w-4 h-4 text-gray-400"></i></button>
+                <button onclick="cancelReply()" class="p-2"><i data-lucide="x" class="w-5 h-5 text-gray-500"></i></button>
             </div>
 
-            <div class="chat-input-area">
+            <div class="chat-input-area border-t border-gray-100">
                 <button class="shrink-0 p-2 hover:bg-gray-100 rounded-full transition-colors" onclick="document.getElementById('img-upload').click()">
                     <i data-lucide="image" class="w-7 h-7 text-gray-800"></i>
                 </button>
@@ -234,9 +267,9 @@ body.chat-active .chat-window { transform: translateX(0); }
     </main>
 </div>
 
-<!-- Chat Details Overlay (Increased Width) -->
+<!-- Chat Details Overlay -->
 <div id="chat-details-overlay" class="fixed inset-0 z-50 bg-black/40 hidden flex justify-end transition-opacity duration-200 opacity-0" onclick="closeChatDetails()">
-    <div id="chat-details-panel" class="bg-white w-full md:w-[480px] h-full shadow-2xl transform translate-x-full flex flex-col relative" onclick="event.stopPropagation()">
+    <div id="chat-details-panel" class="bg-white w-full md:w-96 h-full shadow-2xl transform translate-x-full flex flex-col relative" onclick="event.stopPropagation()">
         
         <!-- Scrollable Content -->
         <div class="flex-1 overflow-y-auto bg-white">
@@ -332,19 +365,27 @@ const storage = getStorage(app);
 let currentUser = null;
 let currentChatId = null;
 let currentChatUser = null;
-let currentChatData = null; // Store realtime chat data for seen status
+let currentChatData = null; // Store realtime chat metadata
 let selectedUserForNewChat = null;
 let unsubscribeMessages = null;
 let unsubscribeConversations = null;
-let unsubscribeChatMeta = null; // Listener for active chat metadata
+let unsubscribeChatMeta = null;
 let pendingSharePost = null;
 let currentMsgContext = null;
+let currentReplyContext = null;
+
+// Gestures
 let pressTimer = null;
 let pressStartX = 0;
 let pressStartY = 0;
 let conversationRenderId = 0; 
-let postClickTimer = null; 
-let replyingTo = null; // State for reply
+let postClickTimer = null;
+
+// Swipe logic variables
+let swipeStartX = 0;
+let swipeStartY = 0;
+let activeSwipeEl = null;
+let isSwiping = false;
 
 onAuthStateChanged(auth, async (u) => {
     if (!u) {
@@ -359,9 +400,10 @@ onAuthStateChanged(auth, async (u) => {
     checkForSharedPost();
 });
 
-// Load Sidebar List
+// Load Chats Sidebar
 function loadConversations() {
     if (unsubscribeConversations) unsubscribeConversations();
+    
     const container = document.getElementById('chat-list-container');
     container.innerHTML = '<div class="flex flex-col items-center justify-center h-40 opacity-50"><i data-lucide="loader-2" class="w-6 h-6 animate-spin text-gray-400"></i></div>';
     
@@ -372,6 +414,7 @@ function loadConversations() {
 
     unsubscribeConversations = onSnapshot(q, async (snapshot) => {
         const currentRenderId = ++conversationRenderId;
+
         if (snapshot.empty) {
             container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm mt-10">No messages yet.<br>Start a conversation!</div>';
             return;
@@ -379,7 +422,12 @@ function loadConversations() {
 
         const chatsData = [];
         snapshot.forEach(doc => chatsData.push({ id: doc.id, ...doc.data() }));
-        chatsData.sort((a, b) => (b.lastMessageTimestamp?.toMillis() || 0) - (a.lastMessageTimestamp?.toMillis() || 0));
+
+        chatsData.sort((a, b) => {
+            const tA = a.lastMessageTimestamp?.toMillis() || 0;
+            const tB = b.lastMessageTimestamp?.toMillis() || 0;
+            return tB - tA; 
+        });
 
         const renderedItems = await Promise.all(chatsData.map(async (chat) => {
             const otherUserId = chat.participants.find(uid => uid !== currentUser.id);
@@ -396,11 +444,10 @@ function loadConversations() {
             const timeStr = formatTime(chat.lastMessageTimestamp);
             const lastMsg = chat.lastMessage || 'Start chatting';
             
-            // Sidebar status indicators (Sent/Delivered only, Seen handled in message)
+            // Clean sidebar: Removed the seen status icon from here as requested
             let statusHtml = '';
-            if (chat.lastSenderId === currentUser.id) {
-                // If it's my message, show simple sent status. Real seen is inside chat.
-                statusHtml = `<span class="text-gray-400 text-xs">Sent</span>`;
+            if (isUnread) {
+                statusHtml = `<div class="w-2.5 h-2.5 bg-[#0095f6] rounded-full shrink-0"></div>`;
             }
 
             const userJson = JSON.stringify(otherUser).replace(/"/g, '&quot;');
@@ -409,15 +456,15 @@ function loadConversations() {
             <div class="user-item ${isSelected ? 'active' : ''}" onclick="openChat('${chat.id}', ${userJson}, '${otherUserId}')">
                 <div class="relative shrink-0">
                     <img src="${otherUser.avatar}" class="w-14 h-14 rounded-full border border-gray-100 object-cover">
-                    ${isUnread ? '<div class="absolute bottom-0 right-0 w-3.5 h-3.5 bg-blue-500 rounded-full border-2 border-white"></div>' : ''}
                 </div>
                 <div class="flex-1 min-w-0">
                     <div class="font-normal text-gray-900 text-[15px] truncate">${otherUser.name}</div>
                     <div class="flex items-center gap-1 text-[13px] ${isUnread ? "font-bold text-gray-900" : "text-gray-500"}">
-                        <span class="truncate block max-w-[140px]">${lastMsg}</span>
+                        <span class="truncate block max-w-[170px]">${lastMsg}</span>
                         <span class="shrink-0 text-gray-400 font-normal">· ${timeStr}</span>
                     </div>
                 </div>
+                ${statusHtml}
             </div>`;
         }));
 
@@ -427,11 +474,11 @@ function loadConversations() {
     });
 }
 
-// Open Chat
 window.openChat = async (chatId, user, userId) => {
     currentChatId = chatId;
     currentChatUser = { ...user, id: userId };
-    
+    cancelReply(); // Clear reply context when changing chats
+
     document.body.classList.add('chat-active');
     document.getElementById('chat-window-panel').classList.remove('hidden');
     document.getElementById('empty-state').classList.add('hidden');
@@ -442,114 +489,61 @@ window.openChat = async (chatId, user, userId) => {
     document.getElementById('chat-header-name').innerText = user.name;
     document.getElementById('chat-header-avatar').src = user.avatar;
     
-    // Fetch latest user data
+    // Subscribe to chat metadata for real-time seen status
+    if (unsubscribeChatMeta) unsubscribeChatMeta();
+    unsubscribeChatMeta = onSnapshot(doc(db, "chats", chatId), (docSnap) => {
+        if (docSnap.exists()) {
+            currentChatData = docSnap.data();
+            renderSeenStatus(); // Attempt to re-render seen status if DOM exists
+        }
+    });
+
     try {
         const uSnap = await getDoc(doc(db, "users", userId));
         if (uSnap.exists()) currentChatUser = { id: userId, ...uSnap.data() };
     } catch(e) {}
 
-    // Mark as read
     updateDoc(doc(db, "chats", chatId), {
         readBy: arrayUnion(currentUser.id)
     }).catch(e => {});
 
-    // Listen to Chat Metadata (for Read Receipts)
-    if (unsubscribeChatMeta) unsubscribeChatMeta();
-    unsubscribeChatMeta = onSnapshot(doc(db, "chats", chatId), (snap) => {
-        if(snap.exists()) {
-            currentChatData = snap.data();
-            updateSeenStatusUI(); // Update UI when read status changes
-        }
-    });
-
     loadMessages(chatId);
 };
 
-// --- Reply & Swipe Logic ---
+async function checkForSharedPost() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedPostId = urlParams.get('sharePostId');
+    if (sharedPostId) {
+        try {
+            const postSnap = await getDoc(doc(db, "posts", sharedPostId));
+            if (postSnap.exists()) {
+                pendingSharePost = { id: postSnap.id, ...postSnap.data() };
+                openNewChatModal();
+                document.getElementById('modal-title').innerText = "Share Post";
+                document.getElementById('start-chat-btn').innerText = "Send";
+                const previewDiv = document.getElementById('share-preview-container');
+                previewDiv.classList.remove('hidden');
+                document.getElementById('share-preview-text').innerText = pendingSharePost.content || "Post";
+                let img = pendingSharePost.image || (pendingSharePost.media?.[0]) || 'https://via.placeholder.com/150';
+                document.getElementById('share-preview-img').src = img;
+                window.history.replaceState({}, document.title, "chat.html");
+            }
+        } catch (e) {}
+    }
+}
 
-// Reply Setup
-window.setReply = (msgData) => {
-    replyingTo = msgData;
-    const bar = document.getElementById('reply-preview-bar');
-    bar.classList.remove('hidden');
-    document.getElementById('reply-preview-name').innerText = `Replying to ${msgData.senderName}`;
-    
-    let content = msgData.content;
-    if(msgData.type === 'image') content = "Photo";
-    if(msgData.type === 'post') content = "Post";
-    if(msgData.type === 'heart') content = "❤️";
-    
-    document.getElementById('reply-preview-text').innerText = content;
-    document.getElementById('message-input').focus();
+window.closeChat = () => {
+    document.body.classList.remove('chat-active');
+    currentChatId = null;
+    if (unsubscribeMessages) unsubscribeMessages();
+    if (unsubscribeChatMeta) unsubscribeChatMeta();
 };
 
-window.cancelReply = () => {
-    replyingTo = null;
-    document.getElementById('reply-preview-bar').classList.add('hidden');
-};
-
-// Swipe Logic variables
-let touchStartX = 0;
-let activeSwipeElem = null;
-
-window.handleSwipeStart = (e, msgId, senderName, content, type) => {
-    // Only handle swipe if not checking long press
-    if (pressTimer) return;
-    touchStartX = e.touches ? e.touches[0].clientX : e.clientX;
-    const wrapper = e.currentTarget.closest('.msg-wrapper');
-    if (wrapper) {
-        activeSwipeElem = wrapper;
-        wrapper.classList.add('swiping');
+window.viewProfile = () => {
+    if (currentChatUser) {
+        window.location.href = `/home?profileId=${currentChatUser.id}`;
     }
 };
-
-window.handleSwipeMove = (e) => {
-    if (!activeSwipeElem || pressTimer) return;
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const delta = x - touchStartX;
-    const isSelf = activeSwipeElem.parentElement.classList.contains('self');
-    
-    // Logic: 
-    // If msg is OTHER (left), swipe RIGHT (delta > 0) to reply.
-    // If msg is SELF (right), swipe LEFT (delta < 0) to reply.
-    
-    let translate = 0;
-    if (!isSelf && delta > 0) translate = Math.min(delta, 60); // Cap at 60px
-    if (isSelf && delta < 0) translate = Math.max(delta, -60);
-
-    if (translate !== 0) {
-        activeSwipeElem.style.transform = `translateX(${translate}px)`;
-        // Scale icon based on pull distance
-        const icon = activeSwipeElem.querySelector('.swipe-reply-icon');
-        if(icon) {
-            const progress = Math.min(Math.abs(translate) / 40, 1);
-            icon.style.transform = `translateY(-50%) scale(${progress})`;
-        }
-    }
-};
-
-window.handleSwipeEnd = (e, msgId, senderName, content, type) => {
-    if (!activeSwipeElem) return;
-    const x = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
-    const delta = x - touchStartX;
-    const isSelf = activeSwipeElem.parentElement.classList.contains('self');
-    
-    activeSwipeElem.style.transform = '';
-    activeSwipeElem.classList.remove('swiping');
-    
-    // Threshold to trigger reply
-    if ((!isSelf && delta > 50) || (isSelf && delta < -50)) {
-        // Trigger Reply
-        navigator.vibrate?.(50); // Haptic feedback
-        setReply({ id: msgId, senderName, content, type });
-    }
-    
-    activeSwipeElem = null;
-};
-
-// --- Message Loading & Rendering ---
-
-let lastSelfMsgId = null; // Track ID of last message sent by me
 
 function loadMessages(chatId) {
     if (unsubscribeMessages) unsubscribeMessages();
@@ -557,20 +551,42 @@ function loadMessages(chatId) {
     const container = document.getElementById('messages-container');
 
     unsubscribeMessages = onSnapshot(q, (snapshot) => {
-        container.innerHTML = '';
-        lastSelfMsgId = null;
+        container.innerHTML = ''; 
+        
+        let lastMessageFromSelf = null;
 
         snapshot.forEach((msgDoc) => {
             const msg = msgDoc.data();
             if (msg.hiddenBy && msg.hiddenBy.includes(currentUser.id)) return;
-            
             const isSelf = msg.senderId === currentUser.id;
-            if (isSelf) lastSelfMsgId = msgDoc.id; // Update last self message
             
-            // Bubble Content Construction
+            if (isSelf) lastMessageFromSelf = { id: msgDoc.id, ...msg };
+
+            const div = document.createElement('div');
+            div.className = `msg-group fade-in`;
+            
+            const hasReactions = msg.reactions && msg.reactions.length > 0;
+            const reactionHtml = hasReactions ? `<div class="msg-reaction like-animation"><i data-lucide="heart" class="w-3 h-3 fill-red-500 text-red-500"></i></div>` : '';
+
+            // Handle reactions for hold menu
+            const reactionsJson = JSON.stringify(msg.reactions || []).replace(/"/g, '&quot;');
+
             let contentHtml = '';
             let bubbleStyle = '';
             let rawContent = msg.content;
+            let displayContent = msg.content;
+
+            // Render Reply Quote
+            let replyHtml = '';
+            if (msg.replyTo) {
+                const isReplySelf = msg.replyTo.id === currentUser.id;
+                replyHtml = `
+                    <div class="reply-quote mb-1">
+                        <span class="font-bold text-xs ${isSelf ? 'text-white/90' : 'text-gray-800'} mb-0.5">${msg.replyTo.name || 'User'}</span>
+                        <span class="truncate text-xs ${isSelf ? 'text-white/80' : 'text-gray-500'} block max-w-full">${msg.replyTo.body || 'Message'}</span>
+                    </div>
+                `;
+            }
 
             if (msg.type === 'image') {
                 contentHtml = `<img src="${msg.content}" class="rounded-lg max-w-full cursor-pointer border border-gray-100" onclick="window.open('${msg.content}', '_blank')">`;
@@ -584,141 +600,212 @@ function loadMessages(chatId) {
             } else if (msg.type === 'heart') {
                  contentHtml = `<i data-lucide="heart" class="w-12 h-12 text-[#ff3040] fill-[#ff3040] heart-fixed"></i>`;
                  bubbleStyle = 'background: transparent; padding: 0;';
-                 rawContent = "❤️";
+                 rawContent = "";
             } else {
                 contentHtml = linkify(msg.content);
             }
 
-            // Reply Context Bubble (if this message is a reply)
-            let replyContextHtml = '';
-            if (msg.replyTo) {
-                let rContent = msg.replyTo.content;
-                if (msg.replyTo.type === 'image') rContent = '📷 Photo';
-                if (msg.replyTo.type === 'post') rContent = '🔗 Post';
-                
-                replyContextHtml = `
-                <div class="reply-context-bubble" onclick="scrollToMessage('${msg.replyTo.id}')">
-                    <span class="font-bold mb-0.5">${msg.replyTo.senderName || 'User'}</span>
-                    <span class="truncate">${rContent}</span>
-                </div>`;
-            }
-
-            // Reactions
-            const hasReactions = msg.reactions && msg.reactions.length > 0;
-            const reactionHtml = hasReactions ? `<div class="msg-reaction like-animation"><i data-lucide="heart" class="w-3 h-3 fill-red-500 text-red-500"></i></div>` : '';
-
-            // Event Handlers for Long Press & Swipe
-            const senderName = isSelf ? 'You' : currentChatUser.name;
-            const safeContent = escapeHtml(rawContent);
-            
-            const pressHandlers = `
-                ondblclick="toggleMessageLike('${msgDoc.id}')"
-                onmousedown="handlePressStart(event, '${msgDoc.id}', '${safeContent}', ${isSelf}, '${msg.type}', ${JSON.stringify(msg.reactions || []).replace(/"/g, '&quot;')})"
-                ontouchstart="handlePressStart(event, '${msgDoc.id}', '${safeContent}', ${isSelf}, '${msg.type}', ${JSON.stringify(msg.reactions || []).replace(/"/g, '&quot;')})"
-                onmouseup="handlePressEnd(event)"
-                ontouchend="handlePressEnd(event)"
-            `;
-            
-            const swipeHandlers = `
-                ontouchstart="handleSwipeStart(event, '${msgDoc.id}', '${senderName}', '${safeContent}', '${msg.type}')"
+            // Swipe Handlers
+            const touchHandlers = `
+                ontouchstart="handleSwipeStart(event, '${msgDoc.id}', '${escapeHtml(rawContent)}', '${isSelf ? 'You' : (currentChatUser ? currentChatUser.name : 'User')}')"
                 ontouchmove="handleSwipeMove(event)"
-                ontouchend="handleSwipeEnd(event, '${msgDoc.id}', '${senderName}', '${safeContent}', '${msg.type}')"
+                ontouchend="handleSwipeEnd(event)"
             `;
 
-            // Hover Reply Button Logic
-            const replyBtn = `
-                <div class="reply-btn-hover text-gray-400 hover:text-gray-600" onclick="setReply({id:'${msgDoc.id}', senderName:'${senderName}', content:'${safeContent}', type:'${msg.type}'})">
-                    <i data-lucide="reply" class="w-5 h-5"></i>
-                </div>
+            // Mouse handlers for context menu / hold
+            const mouseHandlers = `
+                ondblclick="toggleMessageLike('${msgDoc.id}')"
+                onmousedown="handlePressStart(event, '${msgDoc.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
+                onmouseup="handlePressEnd(event)"
+                onmousemove="handlePressMove(event)"
+                oncontextmenu="return false;"
             `;
-            
-            // Swipe Icon
-            const swipeIcon = `<div class="swipe-reply-icon text-gray-400 bg-gray-100 rounded-full p-2"><i data-lucide="reply" class="w-4 h-4"></i></div>`;
-
-            const div = document.createElement('div');
-            div.className = `msg-group fade-in`;
-            div.id = `msg-${msgDoc.id}`;
 
             div.innerHTML = `
                 <div class="msg-container ${isSelf ? 'self' : 'other'}">
-                    ${!isSelf ? replyBtn : ''}
                     
-                    <div class="msg-wrapper" ${swipeHandlers}>
-                        ${swipeIcon}
-                        <div class="msg-bubble ${isSelf ? 'msg-self' : 'msg-other'} noselect" style="${bubbleStyle}" ${pressHandlers}>
-                            ${replyContextHtml}
+                    <div class="msg-swipe-wrapper" id="swipe-${msgDoc.id}" ${touchHandlers}>
+                        <div class="reply-icon-container">
+                            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shadow-sm">
+                                <i data-lucide="reply" class="w-4 h-4 text-gray-500"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="msg-bubble ${isSelf ? 'msg-self' : 'msg-other'} noselect" style="${bubbleStyle}" ${mouseHandlers}>
+                            ${replyHtml}
                             ${contentHtml}
                             ${reactionHtml}
                         </div>
                     </div>
-                    
-                    ${isSelf ? replyBtn : ''}
+
                 </div>
-                ${isSelf ? `<div class="seen-status-container" id="seen-${msgDoc.id}"></div>` : ''}
             `;
             container.appendChild(div);
         });
 
-        updateSeenStatusUI(); // Check if seen marker needs to be moved
+        // Add Seen Status Container
+        const statusDiv = document.createElement('div');
+        statusDiv.id = 'seen-status-container';
+        container.appendChild(statusDiv);
+        
+        // Render initial status
+        if (lastMessageFromSelf) {
+            renderSeenStatus(lastMessageFromSelf.id);
+        }
+
         setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
         lucide.createIcons();
     });
 }
 
-// Function to update the small "Seen" avatar
-function updateSeenStatusUI() {
-    // Clear old status
-    document.querySelectorAll('.seen-status-container').forEach(el => el.innerHTML = '');
+function renderSeenStatus(lastSelfMsgId = null) {
+    const container = document.getElementById('seen-status-container');
+    if (!container) return;
+    
+    // Logic: If last message sent by ME is read by OTHER
+    if (!currentChatData || !currentChatData.readBy || !currentChatUser) {
+        container.innerHTML = '';
+        return;
+    }
 
-    if (!lastSelfMsgId || !currentChatData || !currentChatUser) return;
+    const isReadByOther = currentChatData.readBy.includes(currentChatUser.id);
+    // Note: In a real app we'd verify the lastSelfMsgId is indeed the last message in the whole chat.
+    // For simplicity here, we assume if the lastSelfMsgId matches what we tracked, and it's read, we show it.
+    // A more robust check is: last message of chat is self AND chat.readBy includes other.
     
-    // Check if other user has read the chat
-    const isReadByOther = currentChatData.readBy && currentChatData.readBy.includes(currentChatUser.id);
+    // We can infer "last message of chat" from the snapshot iteration, but let's trust the logic:
+    // If "Seen" should be shown, it appears at the very bottom.
     
-    if (isReadByOther) {
-        const statusContainer = document.getElementById(`seen-${lastSelfMsgId}`);
-        if (statusContainer) {
-            statusContainer.innerHTML = `<img src="${currentChatUser.avatar}" class="seen-avatar" title="Seen by ${currentChatUser.name}">`;
-        }
+    // Check if the very last message rendered in DOM is from self
+    const allMsgs = document.querySelectorAll('.msg-container');
+    if (allMsgs.length === 0) return;
+    const lastEl = allMsgs[allMsgs.length - 1];
+    
+    if (isReadByOther && lastEl.classList.contains('self')) {
+         container.innerHTML = `<div class="seen-status">Seen</div>`;
+    } else {
+         container.innerHTML = '';
     }
 }
 
-window.scrollToMessage = (msgId) => {
-    const el = document.getElementById(`msg-${msgId}`);
-    if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        el.querySelector('.msg-bubble').style.transition = 'background 0.3s';
-        const originalBg = el.querySelector('.msg-bubble').style.backgroundColor;
-        el.querySelector('.msg-bubble').style.backgroundColor = '#f0f9ff'; // Highlight
-        setTimeout(() => { el.querySelector('.msg-bubble').style.backgroundColor = originalBg; }, 1000);
+// Swipe to Reply Logic
+window.handleSwipeStart = (e, msgId, content, user) => {
+    // Only single touch
+    if (e.touches.length > 1) return;
+    
+    activeSwipeEl = e.currentTarget;
+    swipeStartX = e.touches[0].clientX;
+    swipeStartY = e.touches[0].clientY;
+    isSwiping = false;
+    
+    // Prepare data for potential reply
+    activeSwipeEl.dataset.msgId = msgId;
+    activeSwipeEl.dataset.content = content;
+    activeSwipeEl.dataset.user = user;
+    
+    // Reset transition for instant drag
+    activeSwipeEl.style.transition = 'none';
+};
+
+window.handleSwipeMove = (e) => {
+    if (!activeSwipeEl) return;
+    const currentX = e.touches[0].clientX;
+    const currentY = e.touches[0].clientY;
+    const diffX = currentX - swipeStartX;
+    const diffY = currentY - swipeStartY;
+
+    // Detect horizontal swipe intent
+    if (!isSwiping) {
+        if (Math.abs(diffX) > 10 && Math.abs(diffX) > Math.abs(diffY)) {
+            isSwiping = true;
+        } else {
+            return; // Vertical scroll, let browser handle it
+        }
+    }
+
+    if (isSwiping) {
+        e.preventDefault(); // Stop scrolling
+        
+        // Resistance effect
+        let translate = diffX * 0.5;
+        
+        // Limit drag distance
+        if (translate > 80) translate = 80 + (translate - 80) * 0.2;
+        if (translate < -80) translate = -80 + (translate + 80) * 0.2;
+
+        activeSwipeEl.style.transform = `translateX(${translate}px)`;
+        
+        // Icon animation
+        const icon = activeSwipeEl.querySelector('.reply-icon-container');
+        if (icon) {
+            const progress = Math.min(Math.abs(translate) / 50, 1);
+            icon.style.opacity = progress;
+            icon.style.transform = `translateY(-50%) scale(${0.5 + progress * 0.5})`;
+        }
     }
 };
 
-// Utils
+window.handleSwipeEnd = (e) => {
+    if (!activeSwipeEl) return;
+    
+    activeSwipeEl.style.transition = 'transform 0.3s cubic-bezier(0.2, 0, 0, 1)';
+    activeSwipeEl.style.transform = 'translateX(0)';
+    
+    const icon = activeSwipeEl.querySelector('.reply-icon-container');
+    if (icon) {
+        icon.style.opacity = '0';
+        icon.style.transform = 'translateY(-50%) scale(0)';
+    }
+
+    const diffX = e.changedTouches[0].clientX - swipeStartX;
+
+    // Trigger Reply if dragged enough
+    if (isSwiping && Math.abs(diffX) > 50) {
+        replyToMessage(
+            activeSwipeEl.dataset.msgId, 
+            activeSwipeEl.dataset.content, 
+            activeSwipeEl.dataset.user
+        );
+    }
+    
+    activeSwipeEl = null;
+    isSwiping = false;
+};
+
+window.replyToMessage = (msgId, content, username) => {
+    currentReplyContext = { msgId, content, username };
+    
+    const banner = document.getElementById('reply-context-bar');
+    const userEl = document.getElementById('reply-to-user');
+    const textEl = document.getElementById('reply-to-text');
+    
+    userEl.innerText = `Replying to ${username}`;
+    textEl.innerText = content;
+    
+    banner.classList.add('active');
+    document.getElementById('message-input').focus();
+};
+
+window.cancelReply = () => {
+    currentReplyContext = null;
+    document.getElementById('reply-context-bar').classList.remove('active');
+};
+
 function escapeHtml(text) {
   if (!text) return '';
   return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
-function linkify(text) {
-    if(!text) return '';
-    const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlRegex, (url) => {
-        return `<a href="${url}" target="_blank" class="underline hover:opacity-80 break-all">${url}</a>`;
-    });
-}
-function formatTime(timestamp) {
-    if (!timestamp) return '';
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    const diff = new Date() - date;
-    if (diff < 86400000) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    if (diff < 604800000) return date.toLocaleDateString([], { weekday: 'short' });
-    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
-}
 
-// Post Card Logic
 window.handlePostClick = (postId) => {
-    if (postClickTimer) { clearTimeout(postClickTimer); postClickTimer = null; return; }
-    postClickTimer = setTimeout(() => { window.location.href = '/home?postId=' + postId; postClickTimer = null; }, 250);
+    if (postClickTimer) {
+        clearTimeout(postClickTimer);
+        postClickTimer = null;
+        return; 
+    }
+    postClickTimer = setTimeout(() => {
+        window.location.href = '/home?postId=' + postId;
+        postClickTimer = null;
+    }, 250); 
 };
 
 function renderPostCard(post, isSelf) {
@@ -729,6 +816,7 @@ function renderPostCard(post, isSelf) {
 
     const hasImage = img && !img.includes('video') && !img.endsWith('.mp4');
     const imgHtml = hasImage ? `<div class="cpc-img-container"><img src="${img}" class="cpc-img"></div>` : ``; 
+
     return `
         <div class="chat-post-card" onclick="window.handlePostClick('${post.id}')">
             <div class="cpc-header">
@@ -743,7 +831,23 @@ function renderPostCard(post, isSelf) {
     `;
 }
 
-// Interaction Handlers
+function linkify(text) {
+    if(!text) return '';
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    return text.replace(urlRegex, (url) => {
+        return `<a href="${url}" target="_blank" class="underline hover:opacity-80 break-all">${url}</a>`;
+    });
+}
+
+function formatTime(timestamp) {
+    if (!timestamp) return '';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    const diff = new Date() - date;
+    if (diff < 86400000) return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (diff < 604800000) return date.toLocaleDateString([], { weekday: 'short' });
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+}
+
 window.toggleMessageLike = async (msgId) => {
     if (!currentChatId || !currentUser) return;
     const msgRef = doc(db, `chats/${currentChatId}/messages`, msgId);
@@ -788,7 +892,7 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
     
     if (!msgContent && type === 'text') return;
 
-    // Detect Post Link
+    // Check for Post Link
     const postLinkMatch = msgContent.match(/postId=([a-zA-Z0-9_-]+)/);
     if (type === 'text' && postLinkMatch) {
         const postId = postLinkMatch[1];
@@ -797,7 +901,7 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
             if (postSnap.exists()) {
                 type = 'post';
                 const postRaw = postSnap.data();
-                if(!postRaw.authorAvatar) {
+                if(!postRaw.authorAvatar || !postRaw.authorName) {
                     try {
                         const authSnap = await getDoc(doc(db, "users", postRaw.authorId));
                         if(authSnap.exists()){
@@ -813,22 +917,12 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
         } catch (e) {}
     }
 
-    // Add Reply Context
-    if (replyingTo) {
-        extraData.replyTo = {
-            id: replyingTo.id,
-            content: replyingTo.content,
-            senderName: replyingTo.senderName,
-            type: replyingTo.type
-        };
-        cancelReply();
-    }
-
     input.value = '';
     document.getElementById('send-btn').classList.add('hidden');
     document.getElementById('like-btn').classList.remove('hidden');
     document.getElementById('message-input').focus();
 
+    // Prepare message data
     const messageData = {
         senderId: currentUser.id,
         content: msgContent,
@@ -836,6 +930,16 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
         type: type,
         ...extraData
     };
+
+    // Attach Reply Context if exists
+    if (currentReplyContext) {
+        messageData.replyTo = {
+            id: currentReplyContext.msgId,
+            body: currentReplyContext.content,
+            name: currentReplyContext.username
+        };
+        cancelReply();
+    }
 
     try {
         await addDoc(collection(db, `chats/${currentChatId}/messages`), messageData);
@@ -861,8 +965,10 @@ window.sendHeart = () => sendMessage('heart', '❤️');
 window.handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const btn = document.getElementById('send-btn');
     btn.classList.remove('hidden');
+    
     try {
         const storageRef = ref(storage, `chat_images/${currentChatId}/${Date.now()}_${file.name}`);
         const snapshot = await uploadBytes(storageRef, file);
@@ -876,30 +982,7 @@ window.handleImageUpload = async (e) => {
     }
 };
 
-// --- Shared Helper Functions ---
-async function checkForSharedPost() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const sharedPostId = urlParams.get('sharePostId');
-    if (sharedPostId) {
-        try {
-            const postSnap = await getDoc(doc(db, "posts", sharedPostId));
-            if (postSnap.exists()) {
-                pendingSharePost = { id: postSnap.id, ...postSnap.data() };
-                openNewChatModal();
-                document.getElementById('modal-title').innerText = "Share Post";
-                document.getElementById('start-chat-btn').innerText = "Send";
-                const previewDiv = document.getElementById('share-preview-container');
-                previewDiv.classList.remove('hidden');
-                document.getElementById('share-preview-text').innerText = pendingSharePost.content || "Post";
-                let img = pendingSharePost.image || (pendingSharePost.media?.[0]) || 'https://via.placeholder.com/150';
-                document.getElementById('share-preview-img').src = img;
-                window.history.replaceState({}, document.title, "chat.html");
-            }
-        } catch (e) {}
-    }
-}
-
-// --- Chat Details & Modals ---
+// --- Chat Details Logic ---
 window.openChatDetails = () => {
     if(!currentChatUser) return;
     const u = currentChatUser;
@@ -908,6 +991,7 @@ window.openChatDetails = () => {
     document.getElementById('cd-name').innerHTML = `${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 text-blue-500 fill-white"></i>' : ''}`;
     document.getElementById('cd-username').innerText = `@${u.username || 'user'}`;
     document.getElementById('cd-bio').innerText = u.bio || '';
+    
     document.getElementById('cd-followers').innerText = u.followers ? u.followers.length : 0;
     document.getElementById('cd-following').innerText = u.following ? u.following.length : 0;
 
@@ -929,25 +1013,39 @@ window.closeChatDetails = () => {
 
 window.viewProfileFromDetails = () => {
     closeChatDetails();
-    if (currentChatUser) window.location.href = `/home?profileId=${currentChatUser.id}`;
+    if (currentChatUser) {
+        window.location.href = `/home?profileId=${currentChatUser.id}`;
+    }
 };
 
-// Long Press
+// --- Long Press Message Options Logic ---
 window.handlePressStart = (e, msgId, content, isSelf, type, reactions) => {
-    // Prevent long press if swiping
-    if (activeSwipeElem) return;
-
+    // Only trigger if left click or touch
+    if (e.type === 'mousedown' && e.button !== 0) return;
+    
     pressStartX = e.touches ? e.touches[0].clientX : e.clientX;
     pressStartY = e.touches ? e.touches[0].clientY : e.clientY;
     
     pressTimer = setTimeout(() => {
         openMsgOptions(msgId, content, isSelf, type, reactions);
-        pressTimer = null; // Reset
-    }, 500); 
+    }, 500); // 500ms hold time
+};
+
+window.handlePressMove = (e) => {
+    if(!pressTimer) return;
+    const x = e.touches ? e.touches[0].clientX : e.clientX;
+    const y = e.touches ? e.touches[0].clientY : e.clientY;
+    if(Math.abs(x - pressStartX) > 10 || Math.abs(y - pressStartY) > 10) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+    }
 };
 
 window.handlePressEnd = (e) => {
-    if(pressTimer) { clearTimeout(pressTimer); pressTimer = null; }
+    if(pressTimer) {
+        clearTimeout(pressTimer);
+        pressTimer = null;
+    }
 };
 
 window.openMsgOptions = (msgId, content, isSelf, type, reactions) => {
@@ -955,22 +1053,51 @@ window.openMsgOptions = (msgId, content, isSelf, type, reactions) => {
     const modal = document.getElementById('msg-options-modal');
     
     let html = `<div class="p-2 flex flex-col gap-1">`;
+    
+    // Reaction List
     if (reactions && reactions.length > 0) {
-        // ... (Reaction rendering logic - Simplified for brevity) ...
-        // In full code, this is handled, assuming no changes needed to core logic here
-         html += `<div class="px-2 pt-2 pb-1 text-xs font-bold text-gray-500 uppercase tracking-wide">Reactions (${reactions.length})</div>`;
+        let reactorHtml = '';
+        reactions.forEach(uid => {
+            let u = null;
+            if(uid === currentUser.id) u = currentUser;
+            else if(uid === currentChatUser.id) u = currentChatUser;
+            
+            if(u) {
+                reactorHtml += `
+                <div class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50">
+                    <img src="${u.avatar}" class="w-6 h-6 rounded-full object-cover">
+                    <span class="text-xs font-bold text-gray-900">${u.name}</span>
+                    <i data-lucide="heart" class="w-3 h-3 text-red-500 fill-red-500 ml-auto"></i>
+                </div>`;
+            }
+        });
+        
+        if (reactorHtml) {
+            html += `
+            <div class="px-2 pt-2 pb-1 text-xs font-bold text-gray-500 uppercase tracking-wide">Reactions</div>
+            <div class="mb-2 bg-white rounded-xl border border-gray-100 p-1">
+                ${reactorHtml}
+            </div>
+            `;
+        }
     }
 
+    // Reply Button
+    html += `<button onclick="triggerReplyFromModal()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="reply" class="w-5 h-5 text-gray-500"></i> Reply</button>`;
+
+    // Copy
     if (type === 'text') {
          html += `<button onclick="copyMsgText()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="copy" class="w-5 h-5 text-gray-500"></i> Copy</button>`;
     }
-    
-    // Reply Option in Menu (for accessibility/desktop)
-    html += `<button onclick="setReplyFromMenu()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="reply" class="w-5 h-5 text-gray-500"></i> Reply</button>`;
 
-    if (isSelf) html += `<button onclick="unsendMsg()" class="w-full text-left px-4 py-3 hover:bg-red-50 rounded-xl font-bold text-red-600 flex items-center gap-3 text-sm"><i data-lucide="trash-2" class="w-5 h-5"></i> Unsend</button>`;
-    
+    // Unsend (Self only)
+    if (isSelf) {
+        html += `<button onclick="unsendMsg()" class="w-full text-left px-4 py-3 hover:bg-red-50 rounded-xl font-bold text-red-600 flex items-center gap-3 text-sm"><i data-lucide="trash-2" class="w-5 h-5"></i> Unsend</button>`;
+    }
+
+    // Delete for Me (Both)
     html += `<button onclick="deleteForMe()" class="w-full text-left px-4 py-3 hover:bg-gray-50 rounded-xl font-bold text-gray-700 flex items-center gap-3 text-sm"><i data-lucide="eye-off" class="w-5 h-5 text-gray-500"></i> Delete for me</button>`;
+
     html += `</div><div class="p-2 border-t border-gray-100"><button onclick="closeMsgOptions()" class="w-full py-3 font-bold text-gray-900 hover:bg-gray-50 rounded-xl text-sm">Cancel</button></div>`;
     
     modal.innerHTML = html;
@@ -992,19 +1119,20 @@ window.closeMsgOptions = () => {
     modal.classList.add('translate-y-full','md:scale-95');
     modal.classList.remove('translate-y-0','md:scale-100');
     setTimeout(() => overlay.classList.add('hidden'), 200);
-    currentMsgContext = null;
+    // don't null currentMsgContext yet if we need it for actions
 };
 
-window.setReplyFromMenu = () => {
-    if(!currentMsgContext) return;
-    const { msgId, content, isSelf, type } = currentMsgContext;
-    const senderName = isSelf ? 'You' : currentChatUser.name;
-    setReply({ id: msgId, senderName, content, type });
+window.triggerReplyFromModal = () => {
+    if(currentMsgContext) {
+        replyToMessage(currentMsgContext.msgId, currentMsgContext.content, currentMsgContext.isSelf ? 'You' : (currentChatUser ? currentChatUser.name : 'User'));
+    }
     closeMsgOptions();
-}
+};
 
 window.copyMsgText = () => {
-    if (currentMsgContext && currentMsgContext.content) navigator.clipboard.writeText(currentMsgContext.content);
+    if (currentMsgContext && currentMsgContext.content) {
+        navigator.clipboard.writeText(currentMsgContext.content);
+    }
     closeMsgOptions();
 };
 
@@ -1029,7 +1157,7 @@ window.deleteForMe = async () => {
     } catch(e) {}
 };
 
-// New Chat & Search Logic
+// Modal Logic
 window.openNewChatModal = () => {
     document.getElementById('new-chat-overlay').classList.remove('hidden');
     setTimeout(() => {
@@ -1152,17 +1280,11 @@ window.startChat = async () => {
     }
 
     await openChat(chatId, targetUser, targetUser.id);
+
     if (pendingSharePost) {
         await sendMessage('post', '', { postData: pendingSharePost });
         pendingSharePost = null;
     }
-};
-
-window.closeChat = () => {
-    document.body.classList.remove('chat-active');
-    currentChatId = null;
-    if (unsubscribeMessages) unsubscribeMessages();
-    if (unsubscribeChatMeta) unsubscribeChatMeta();
 };
 
 lucide.createIcons();
