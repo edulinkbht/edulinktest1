@@ -81,7 +81,7 @@ body.chat-active .chat-window { transform: translateX(0); }
 
 /* Reply Block - Integrated Style */
 .reply-upper-block {
-    padding: 10px 14px;
+    padding: 10px 12px;
     font-size: 13px;
     cursor: pointer;
     max-width: 100%;
@@ -89,28 +89,42 @@ body.chat-active .chat-window { transform: translateX(0); }
     flex-direction: column;
     position: relative;
     z-index: 1;
-    margin-bottom: 2px; 
+    margin-bottom: 0;
     transition: opacity 0.2s;
+    line-height: 1.3;
 }
 
 /* Rounded corners logic to attach to bubble */
 .reply-block-self {
-    background-color: #2b7de9; /* Darker blue shade */
-    color: rgba(255,255,255,0.9);
+    background-color: rgba(0, 0, 0, 0.15); /* Slightly darkened overlay on blue */
+    color: rgba(255,255,255,0.95);
     align-self: flex-end;
     margin-right: 0;
     border-radius: 18px 18px 4px 18px;
-    /* Optional: translucent look */
-    /* background-color: rgba(255, 255, 255, 0.2); backdrop-filter: blur(5px); */
+    border-bottom: 1px solid rgba(255,255,255,0.1);
 }
 
 .reply-block-other {
-    background-color: #e3e3e3; /* Slightly darker gray */
+    background-color: #e5e5e5; /* Slightly darker gray than bubble */
     color: #000;
     align-self: flex-start;
     margin-left: 0;
-    border-left: 3px solid #0095f6; /* Blue quote line like Instagram */
+    border-left: 3px solid #b0b0b0; /* Subtle grey accent line */
     border-radius: 18px 18px 18px 4px;
+}
+
+.reply-header {
+    font-size: 11px;
+    margin-bottom: 2px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+.reply-body {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    opacity: 0.95;
 }
 
 .reply-upper-block:active { opacity: 0.8; }
@@ -134,8 +148,8 @@ body.chat-active .chat-window { transform: translateX(0); }
 .msg-other { background-color: var(--bg-chat-bubble-other); color: #000; border-bottom-left-radius: 4px; }
 
 /* Connected Bubble Styling when Reply exists */
-.bubble-connected-self { border-top-right-radius: 4px; }
-.bubble-connected-other { border-top-left-radius: 4px; }
+.bubble-connected-self { border-top-right-radius: 4px; border-top-left-radius: 18px; margin-top: -4px; }
+.bubble-connected-other { border-top-left-radius: 4px; border-top-right-radius: 18px; margin-top: -4px; }
 
 /* Transparent Bubble for Hearts/Emojis - High Specificity */
 .bubble-transparent, .msg-container .bubble-transparent { 
@@ -435,6 +449,7 @@ let pressStartX = 0;
 let pressStartY = 0;
 let conversationRenderId = 0; 
 let postClickTimer = null;
+let messageClickTimer = null;
 
 // Swipe logic variables
 let swipeStartX = 0;
@@ -641,8 +656,8 @@ function loadMessages(chatId) {
                 const replyClass = isSelf ? 'reply-block-self' : 'reply-block-other';
                 replyHtml = `
                     <div class="reply-upper-block ${replyClass}" onclick="window.scrollToMessage('${msg.replyTo.id}')">
-                        <span class="font-bold mb-0.5">${msg.replyTo.name || 'User'}</span>
-                        <span class="truncate block opacity-90">${msg.replyTo.body || 'Message'}</span>
+                        <span class="reply-header">Replying to ${msg.replyTo.name || 'User'}</span>
+                        <span class="reply-body">${msg.replyTo.body || 'Message'}</span>
                     </div>
                 `;
                 
@@ -687,7 +702,8 @@ function loadMessages(chatId) {
                 ontouchend="handleSwipeEnd(event)"
             `;
 
-            // Interaction Handlers (Click + Hold)
+            // Interaction Handlers (Click + Hold + Double Click)
+            // handleMessageClick handles single tap with delay to wait for potential double tap
             const interactHandlers = `
                 ondblclick="toggleMessageLike('${msgDoc.id}')"
                 onclick="handleMessageClick(event, '${msgDoc.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
@@ -740,11 +756,16 @@ function loadMessages(chatId) {
 }
 
 window.handleMessageClick = (e, msgId, content, isSelf, type, reactions) => {
-    // Immediate click handler for single tap options
-    // Only fire if we are NOT in the middle of a hold/swipe
-    if(pressTimer === null && activeSwipeEl === null) {
+    // Debounce single click to allow double click to happen
+    if (messageClickTimer) clearTimeout(messageClickTimer);
+    
+    // If user is swiping or long pressing, don't trigger
+    if(pressTimer !== null || activeSwipeEl !== null) return;
+
+    messageClickTimer = setTimeout(() => {
         openMsgOptions(msgId, content, isSelf, type, reactions);
-    }
+        messageClickTimer = null;
+    }, 250); // 250ms wait for double click
 };
 
 window.scrollToMessage = (msgId) => {
@@ -937,6 +958,12 @@ function formatTime(timestamp) {
 }
 
 window.toggleMessageLike = async (msgId) => {
+    // Cancel any pending single click action
+    if(messageClickTimer) {
+        clearTimeout(messageClickTimer);
+        messageClickTimer = null;
+    }
+
     if (!currentChatId || !currentUser) return;
     const msgRef = doc(db, `chats/${currentChatId}/messages`, msgId);
     try {
@@ -1112,6 +1139,11 @@ window.handlePressStart = (e, msgId, content, isSelf, type, reactions) => {
     pressStartY = e.touches ? e.touches[0].clientY : e.clientY;
     
     pressTimer = setTimeout(() => {
+        // Clear click timer if a long press is detected
+        if(messageClickTimer) {
+             clearTimeout(messageClickTimer);
+             messageClickTimer = null;
+        }
         openMsgOptions(msgId, content, isSelf, type, reactions);
     }, 500); 
 };
