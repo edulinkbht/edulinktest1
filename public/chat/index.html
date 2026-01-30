@@ -719,171 +719,199 @@ function loadMessages(chatId) {
             }
         });
 
-        container.innerHTML = ''; 
+        // Track existing elements to handle removals
+        const existingIds = new Set();
+        container.querySelectorAll('.msg-group').forEach(el => existingIds.add(el.id));
+
         let lastMessageFromSelf = null;
+        let isAtBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 100;
+        let didAddMessage = false;
 
         messages.forEach((msg, index) => {
+            if (msg.senderId === currentUser.id) lastMessageFromSelf = { id: msg.id, ...msg };
+
             const isSelf = msg.senderId === currentUser.id;
-            
-            if (isSelf) lastMessageFromSelf = { id: msg.id, ...msg };
-            
-            // Avatar and Tail Logic
             let showAvatar = false;
             let showTail = false;
 
+            const nextMsg = messages[index + 1];
+            const isLastInGroup = !nextMsg || nextMsg.senderId !== msg.senderId;
+
             if (!isSelf) {
-                // ALWAYS show avatar for other users as requested
                 showAvatar = true; 
-                
-                const nextMsg = messages[index + 1];
-                if (!nextMsg || nextMsg.senderId !== msg.senderId) {
-                    showTail = true;
-                }
+                if (isLastInGroup) showTail = true;
             } else {
-                // Self Tail Logic: Show tail if it's the LAST message in a sequence of self-messages
-                const nextMsg = messages[index + 1];
-                if (!nextMsg || nextMsg.senderId !== msg.senderId) {
-                    showTail = true;
-                }
+                if (isLastInGroup) showTail = true;
             }
 
-            const hasReactions = msg.reactions && msg.reactions.length > 0;
+            const elementId = `msg-group-${msg.id}`;
+            let div = document.getElementById(elementId);
             
-            const div = document.createElement('div');
-            div.className = `msg-group fade-in ${hasReactions ? 'has-reaction' : ''}`;
-            div.id = `msg-group-${msg.id}`;
-            
-            const reactionHtml = hasReactions ? `<div class="msg-reaction like-animation"><i data-lucide="heart" class="w-3.5 h-3.5 fill-red-500 text-red-500"></i></div>` : '';
-
-            const reactionsJson = JSON.stringify(msg.reactions || []).replace(/"/g, '&quot;');
-
-            let contentHtml = '';
-            let bubbleStyle = '';
-            let rawContent = msg.content;
-            let bubbleClass = isSelf ? 'msg-self' : 'msg-other';
-            let isTransparent = false;
-            let replyHtml = '';
-            
-            // Emoji Detection
             const isEmojiOnly = msg.type === 'text' && 
                                 /^[ \p{Emoji_Presentation}\p{Extended_Pictographic}\u{1F3FB}-\u{1F3FF}\u{200D}]+$/u.test(msg.content) && 
                                 msg.content.length < 15;
             
-            // Only apply tail class if NOT transparent bubble
-            if (showTail && !isEmojiOnly && msg.type !== 'image' && msg.type !== 'post' && msg.type !== 'heart') {
-                bubbleClass += ' has-tail';
-            }
+            const effectivelyHasTail = showTail && !isEmojiOnly && msg.type !== 'image' && msg.type !== 'post' && msg.type !== 'heart';
 
-            // Reply Block Logic
-            if (msg.replyTo) {
-                const replyClass = isSelf ? 'reply-block-self' : 'reply-block-other';
-                replyHtml = `
-                    <div class="reply-upper-block ${replyClass}" onclick="window.scrollToMessage('${msg.replyTo.id}')">
-                        <span class="reply-header">Replying to ${msg.replyTo.name || 'User'}</span>
-                        <span class="reply-body">${msg.replyTo.body || 'Message'}</span>
-                    </div>
-                `;
+            // Generate signature to detect changes
+            const reactionsKey = (msg.reactions || []).sort().join(',');
+            const signature = `${effectivelyHasTail}|${reactionsKey}|${msg.content}|${msg.type}|${showAvatar}`;
+
+            if (!div) {
+                div = document.createElement('div');
+                div.id = elementId;
+                div.className = `msg-group fade-in ${msg.reactions?.length ? 'has-reaction' : ''}`;
+                div.innerHTML = generateMessageHTML(msg, isSelf, showAvatar, showTail, isEmojiOnly, effectivelyHasTail);
+                div.dataset.signature = signature;
                 
-                if (!isTransparent) {
-                   bubbleClass += isSelf ? ' bubble-connected-self' : ' bubble-connected-other';
+                // For new messages, append them.
+                // Note: If you were loading history in reverse, this would need 'insertBefore', but for standard chat flow, append is correct.
+                // We rely on Firestore sorting (asc) and iterate in order. 
+                // Any existing elements were marked in existingIds.
+                
+                // Insert specific logic: Since we iterate sorted messages, we can just append if it's new.
+                // If the message list was reordered (rare), this simplified logic might show out of order until refresh, but Firestore query is rigid.
+                container.appendChild(div);
+                didAddMessage = true;
+            } else {
+                existingIds.delete(elementId);
+                // Differential update
+                if (div.dataset.signature !== signature) {
+                    div.innerHTML = generateMessageHTML(msg, isSelf, showAvatar, showTail, isEmojiOnly, effectivelyHasTail);
+                    div.dataset.signature = signature;
+                    div.className = `msg-group fade-in ${msg.reactions?.length ? 'has-reaction' : ''}`;
                 }
             }
-
-            if (msg.type === 'image') {
-                contentHtml = `<img src="${msg.content}" class="rounded-lg max-w-full cursor-pointer border border-gray-100" onclick="window.open('${msg.content}', '_blank'); event.stopPropagation();">`;
-                bubbleStyle = 'padding: 4px; background: transparent;';
-                bubbleClass = 'bubble-transparent';
-                isTransparent = true;
-                rawContent = "Photo";
-            } else if (msg.type === 'post') {
-                let postData = typeof msg.postData === 'string' ? JSON.parse(msg.postData) : msg.postData;
-                contentHtml = renderPostCard(postData, isSelf);
-                bubbleStyle = 'padding: 0; background: transparent;';
-                bubbleClass = 'bubble-transparent';
-                isTransparent = true;
-                rawContent = "Post";
-            } else if (msg.type === 'heart') {
-                 contentHtml = `<i data-lucide="heart" class="w-12 h-12 text-[#ff3040] fill-[#ff3040] heart-fixed"></i>`;
-                 bubbleStyle = 'background: transparent; padding: 0;';
-                 bubbleClass = 'bubble-transparent';
-                 isTransparent = true;
-                 rawContent = "";
-            } else if (isEmojiOnly) {
-                contentHtml = `<div class="${msg.content.length <= 6 ? 'emoji-jumbo' : 'emoji-large'}">${msg.content}</div>`;
-                bubbleStyle = 'background: transparent; padding: 0;';
-                bubbleClass = 'bubble-transparent';
-                isTransparent = true;
-            } else {
-                contentHtml = linkify(msg.content);
-            }
-
-            // Swipe Handlers
-            const swipeHandlers = `
-                ontouchstart="handleSwipeStart(event, '${msg.id}', '${escapeHtml(rawContent)}', '${isSelf ? 'You' : (currentChatUser ? currentChatUser.name : 'User')}')"
-                ontouchmove="handleSwipeMove(event)"
-                ontouchend="handleSwipeEnd(event)"
-            `;
-
-            // Interaction Handlers (Click + Hold + Double Click)
-            const interactHandlers = `
-                ondblclick="toggleMessageLike('${msg.id}')"
-                onclick="handleMessageClick(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
-                onmousedown="handlePressStart(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
-                ontouchstart="handlePressStart(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson}')"
-                onmouseup="handlePressEnd(event)"
-                ontouchend="handlePressEnd(event)"
-                onmousemove="handlePressMove(event)"
-                ontouchmove="handlePressMove(event)"
-                oncontextmenu="return false;"
-            `;
-
-            // Avatar Rendering
-            let avatarElement = '';
-            if (!isSelf) {
-                // Now always show avatar for other messages
-                const avatarUrl = currentChatUser?.avatar || 'https://via.placeholder.com/150';
-                avatarElement = `<img src="${avatarUrl}" class="msg-avatar">`;
-            }
-
-            div.innerHTML = `
-                <div class="msg-container ${isSelf ? 'self' : 'other'}">
-                    
-                    ${!isSelf ? avatarElement : ''}
-
-                    <div class="msg-swipe-wrapper" id="swipe-${msg.id}" ${swipeHandlers}>
-                        
-                        <div class="reply-icon-container">
-                            <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shadow-sm">
-                                <i data-lucide="reply" class="w-4 h-4 text-gray-500"></i>
-                            </div>
-                        </div>
-                        
-                        <div class="msg-content-stack">
-                            ${replyHtml}
-                            <div class="msg-bubble ${bubbleClass} noselect" style="${bubbleStyle}" ${interactHandlers}>
-                                ${contentHtml}
-                                ${reactionHtml}
-                            </div>
-                        </div>
-
-                    </div>
-
-                </div>
-            `;
-            container.appendChild(div);
         });
 
-        const statusDiv = document.createElement('div');
-        statusDiv.id = 'seen-status-container';
-        container.appendChild(statusDiv);
+        // Cleanup deleted
+        existingIds.forEach(id => {
+            const el = document.getElementById(id);
+            if(el) el.remove();
+        });
+
+        // Handle Status Indicator - Ensure it's always last
+        let statusDiv = document.getElementById('seen-status-container');
+        if (!statusDiv) {
+            statusDiv = document.createElement('div');
+            statusDiv.id = 'seen-status-container';
+        }
+        container.appendChild(statusDiv); 
         
         if (lastMessageFromSelf) {
             renderSeenStatus(lastMessageFromSelf.id);
         }
 
-        setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
+        // Scroll logic: Scroll if we added something new OR if user was already at bottom
+        if (didAddMessage || isAtBottom) {
+             setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+        }
         lucide.createIcons();
     });
+}
+
+function generateMessageHTML(msg, isSelf, showAvatar, showTail, isEmojiOnly, effectivelyHasTail) {
+    const hasReactions = msg.reactions && msg.reactions.length > 0;
+    const reactionHtml = hasReactions ? `<div class="msg-reaction like-animation"><i data-lucide="heart" class="w-3.5 h-3.5 fill-red-500 text-red-500"></i></div>` : '';
+    const reactionsJson = JSON.stringify(msg.reactions || []).replace(/"/g, '&quot;');
+
+    let contentHtml = '';
+    let bubbleStyle = '';
+    let bubbleClass = isSelf ? 'msg-self' : 'msg-other';
+    let isTransparent = false;
+    let rawContent = msg.content;
+
+    // Content Processing
+    if (msg.type === 'image') {
+        contentHtml = `<img src="${msg.content}" class="rounded-lg max-w-full cursor-pointer border border-gray-100" onclick="window.open('${msg.content}', '_blank'); event.stopPropagation();">`;
+        bubbleStyle = 'padding: 4px; background: transparent;';
+        bubbleClass = 'bubble-transparent';
+        isTransparent = true;
+        rawContent = "Photo";
+    } else if (msg.type === 'post') {
+        let postData = typeof msg.postData === 'string' ? JSON.parse(msg.postData) : msg.postData;
+        contentHtml = renderPostCard(postData, isSelf);
+        bubbleStyle = 'padding: 0; background: transparent;';
+        bubbleClass = 'bubble-transparent';
+        isTransparent = true;
+        rawContent = "Post";
+    } else if (msg.type === 'heart') {
+        contentHtml = `<i data-lucide="heart" class="w-12 h-12 text-[#ff3040] fill-[#ff3040] heart-fixed"></i>`;
+        bubbleStyle = 'background: transparent; padding: 0;';
+        bubbleClass = 'bubble-transparent';
+        isTransparent = true;
+        rawContent = "";
+    } else if (isEmojiOnly) {
+        contentHtml = `<div class="${msg.content.length <= 6 ? 'emoji-jumbo' : 'emoji-large'}">${msg.content}</div>`;
+        bubbleStyle = 'background: transparent; padding: 0;';
+        bubbleClass = 'bubble-transparent';
+        isTransparent = true;
+    } else {
+        contentHtml = linkify(msg.content);
+    }
+
+    if (effectivelyHasTail) {
+        bubbleClass += ' has-tail';
+    }
+
+    let replyHtml = '';
+    if (msg.replyTo) {
+        const replyClass = isSelf ? 'reply-block-self' : 'reply-block-other';
+        replyHtml = `
+            <div class="reply-upper-block ${replyClass}" onclick="window.scrollToMessage('${msg.replyTo.id}')">
+                <span class="reply-header">Replying to ${msg.replyTo.name || 'User'}</span>
+                <span class="reply-body">${msg.replyTo.body || 'Message'}</span>
+            </div>
+        `;
+        if (!isTransparent) {
+            bubbleClass += isSelf ? ' bubble-connected-self' : ' bubble-connected-other';
+        }
+    }
+
+    const swipeHandlers = `
+        ontouchstart="handleSwipeStart(event, '${msg.id}', '${escapeHtml(rawContent)}', '${isSelf ? 'You' : (currentChatUser ? currentChatUser.name : 'User')}')"
+        ontouchmove="handleSwipeMove(event)"
+        ontouchend="handleSwipeEnd(event)"
+    `;
+
+    const interactHandlers = `
+        ondblclick="toggleMessageLike('${msg.id}')"
+        onclick="handleMessageClick(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
+        onmousedown="handlePressStart(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
+        ontouchstart="handlePressStart(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson}')"
+        onmouseup="handlePressEnd(event)"
+        ontouchend="handlePressEnd(event)"
+        onmousemove="handlePressMove(event)"
+        ontouchmove="handlePressMove(event)"
+        oncontextmenu="return false;"
+    `;
+
+    let avatarElement = '';
+    if (!isSelf) {
+        const avatarUrl = currentChatUser?.avatar || 'https://via.placeholder.com/150';
+        // Always show avatar for other users per requirement
+        avatarElement = `<img src="${avatarUrl}" class="msg-avatar">`;
+    }
+
+    return `
+        <div class="msg-container ${isSelf ? 'self' : 'other'}">
+            ${!isSelf ? avatarElement : ''}
+            <div class="msg-swipe-wrapper" id="swipe-${msg.id}" ${swipeHandlers}>
+                <div class="reply-icon-container">
+                    <div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center shadow-sm">
+                        <i data-lucide="reply" class="w-4 h-4 text-gray-500"></i>
+                    </div>
+                </div>
+                <div class="msg-content-stack">
+                    ${replyHtml}
+                    <div class="msg-bubble ${bubbleClass} noselect" style="${bubbleStyle}" ${interactHandlers}>
+                        ${contentHtml}
+                        ${reactionHtml}
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 }
 
 window.handleMessageClick = (e, msgId, content, isSelf, type, reactions) => {
