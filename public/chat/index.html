@@ -161,7 +161,7 @@ body.chat-active .chat-window { transform: translateX(0); }
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: width 0.4s, height 0.4s, border-radius 0.4s; /* Animate size only, position handled by js/css mix */
 }
 
 @media (min-width: 768px) {
@@ -205,6 +205,12 @@ body.chat-active .chat-window { transform: translateX(0); }
     box-shadow: 0 10px 40px rgba(0,0,0,0.4);
     pointer-events: auto; /* Re-enable clicks on the video itself */
     border: 1px solid rgba(255,255,255,0.2);
+    cursor: grab;
+    touch-action: none;
+}
+
+#video-call-overlay.minimized .vc-container:active {
+    cursor: grabbing;
 }
 
 @media (min-width: 768px) {
@@ -1143,9 +1149,19 @@ function listenForGlobalIncomingCalls() {
 
 window.toggleMinimize = () => {
     const overlay = document.getElementById('video-call-overlay');
-    overlay.classList.toggle('minimized');
-    interactionSound.play().catch(()=>{});
-    lucide.createIcons();
+    if(overlay.classList.contains('minimized')) {
+        // Maximizing
+        overlay.classList.remove('minimized');
+        const dragEl = document.querySelector('.vc-container');
+        dragEl.style.transform = ''; // Reset drag position
+        interactionSound.play().catch(()=>{});
+        lucide.createIcons();
+    } else {
+        // Minimizing
+        overlay.classList.add('minimized');
+        interactionSound.play().catch(()=>{});
+        lucide.createIcons();
+    }
 };
 
 window.startVideoCallInitiation = async () => {
@@ -1384,6 +1400,14 @@ window.rejectIncomingCall = async () => {
     incomingCallData = null;
 };
 
+function getReadableDuration(totalSeconds) {
+    if(!totalSeconds) return "0s";
+    const m = Math.floor(totalSeconds / 60);
+    const s = totalSeconds % 60;
+    if(m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+}
+
 window.endVideoCall = async (isRemote = false, reason = null) => {
     ringtone.pause();
     ringtone.currentTime = 0;
@@ -1403,8 +1427,9 @@ window.endVideoCall = async (isRemote = false, reason = null) => {
     document.getElementById('video-call-overlay').classList.add('hidden');
     document.getElementById('video-call-overlay').classList.remove('flex');
     document.getElementById('video-call-overlay').classList.remove('minimized'); // Reset minimize state
+    document.querySelector('.vc-container').style.transform = ''; // Reset drag pos
     
-    const duration = document.getElementById('vc-timer').innerText;
+    const durationReadable = getReadableDuration(callSeconds);
     stopCallTimer();
     
     // If I am ending it (not remote), I need to update DB
@@ -1413,7 +1438,7 @@ window.endVideoCall = async (isRemote = false, reason = null) => {
         
         // Logic for log message
         let status = 'ended';
-        let logMsg = `Video chat ended • ${duration}`;
+        let logMsg = `Video chat ended • ${durationReadable}`;
         let logStatus = 'ended';
 
         if (reason === 'no_answer') {
@@ -1439,7 +1464,7 @@ window.endVideoCall = async (isRemote = false, reason = null) => {
                  timestamp: serverTimestamp(), 
                  type: 'call_log',
                  status: logStatus,
-                 duration: isRinging ? null : duration
+                 duration: isRinging ? null : durationReadable
              });
              
              await updateDoc(doc(db, "chats", activeCallChatId), { 
@@ -1970,6 +1995,81 @@ window.startChat = async () => {
         pendingSharePost = null;
     }
 };
+
+// Drag functionality for Minimized Video Call
+let isDragging = false;
+let currentX;
+let currentY;
+let initialX;
+let initialY;
+let xOffset = 0;
+let yOffset = 0;
+
+const dragItem = document.querySelector(".vc-container");
+
+dragItem.addEventListener("mousedown", dragStart);
+dragItem.addEventListener("touchstart", dragStart);
+
+document.addEventListener("mouseup", dragEnd);
+document.addEventListener("touchend", dragEnd);
+
+document.addEventListener("mousemove", drag);
+document.addEventListener("touchmove", drag);
+
+function dragStart(e) {
+    if (!document.getElementById('video-call-overlay').classList.contains('minimized')) return;
+    
+    if (e.type === "touchstart") {
+        initialX = e.touches[0].clientX - xOffset;
+        initialY = e.touches[0].clientY - yOffset;
+    } else {
+        initialX = e.clientX - xOffset;
+        initialY = e.clientY - yOffset;
+    }
+
+    if (e.target.closest('.vc-container')) {
+        isDragging = true;
+    }
+}
+
+function drag(e) {
+    if (isDragging) {
+        e.preventDefault();
+        
+        // Disable click on maximize overlay if we are dragging
+        const maxOverlay = document.querySelector('.vc-maximize-overlay');
+        if(maxOverlay) maxOverlay.style.pointerEvents = 'none';
+
+        if (e.type === "touchmove") {
+            currentX = e.touches[0].clientX - initialX;
+            currentY = e.touches[0].clientY - initialY;
+        } else {
+            currentX = e.clientX - initialX;
+            currentY = e.clientY - initialY;
+        }
+
+        xOffset = currentX;
+        yOffset = currentY;
+
+        setTranslate(currentX, currentY, dragItem);
+    }
+}
+
+function setTranslate(xPos, yPos, el) {
+    el.style.transform = "translate3d(" + xPos + "px, " + yPos + "px, 0)";
+}
+
+function dragEnd(e) {
+    initialX = currentX;
+    initialY = currentY;
+    isDragging = false;
+    
+    // Re-enable pointer events after a short delay
+    setTimeout(() => {
+         const maxOverlay = document.querySelector('.vc-maximize-overlay');
+         if(maxOverlay) maxOverlay.style.pointerEvents = 'auto';
+    }, 100);
+}
 
 lucide.createIcons();
 </script>
