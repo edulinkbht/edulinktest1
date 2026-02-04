@@ -623,11 +623,25 @@ let isCamOff = false;
 let callTimeoutTimer = null; // For the 15s Missed Call logic
 
 // --- SOUNDS ---
-const ringtone = new Audio("https://alright-red-gyhy7mxafp.edgeone.app/FaceTime_calling_sound_effect_(fixed)_128k.mp3");
+const ringtone = new Audio("https://brief-bronze-e7fhvwyqck.edgeone.app/FaceTime_calling_sound_effect_(fixed)_128k.mp3");
 ringtone.loop = true;
 const hangupSound = new Audio("https://actions.google.com/sounds/v1/alarms/phone_hang_up.ogg");
 const interactionSound = new Audio("https://actions.google.com/sounds/v1/alarms/beep_short.ogg");
-const messageSound = new Audio("https://brainy-gray-yzknk6yg2d.edgeone.app/sound-7.mp3");
+const messageSound = new Audio("https://respectable-scarlet-ulwiaisn8a.edgeone.app/sound-7.mp3");
+
+// --- AUTO PIP LOGIC ---
+document.addEventListener("visibilitychange", async () => {
+    if (document.visibilityState === "hidden" && activeCallId && document.getElementById('remote-video').srcObject) {
+       try {
+           const video = document.getElementById('remote-video');
+           if (video && !document.pictureInPictureElement && document.pictureInPictureEnabled) {
+               await video.requestPictureInPicture();
+           }
+       } catch (e) {
+           console.log("Auto PiP blocked by browser policy (requires user gesture):", e);
+       }
+    }
+});
 
 const servers = {
     iceServers: [
@@ -1777,7 +1791,7 @@ window.sendMessage = async (type = 'text', content = null, extraData = {}) => {
     if (type === 'text' && postLinkMatch) {
         const postId = postLinkMatch[1];
         try {
-            const postSnap = await getDoc(doc(db, "posts", postId));
+            const postSnap = await getDoc(doc(db, "posts", sharedPostId));
             if (postSnap.exists()) {
                 type = 'post';
                 const postRaw = postSnap.data();
