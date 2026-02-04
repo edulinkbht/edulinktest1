@@ -347,6 +347,10 @@ body.chat-active .chat-window { transform: translateX(0); }
                     </div>
                 </div>
                 <div class="flex items-center gap-3">
+                    <!-- Voice Call Button -->
+                    <button class="icon-btn" onclick="startVoiceCallInitiation()">
+                        <i data-lucide="phone" class="w-6 h-6 text-gray-800"></i>
+                    </button>
                     <!-- Video Call Button -->
                     <button class="icon-btn" onclick="startVideoCallInitiation()">
                         <i data-lucide="video" class="w-7 h-7 text-gray-800"></i>
@@ -396,6 +400,14 @@ body.chat-active .chat-window { transform: translateX(0); }
         <!-- Remote Video (Full Screen in Container) -->
         <video id="remote-video" autoplay playsinline class="absolute inset-0 w-full h-full object-cover z-0 bg-zinc-900"></video>
         
+        <!-- Audio Only Placeholder (Show when remote track has no video) -->
+        <div id="audio-only-placeholder" class="absolute inset-0 flex items-center justify-center bg-zinc-900 z-0 hidden">
+             <div class="relative">
+                <div class="absolute inset-0 bg-blue-500/20 rounded-full animate-pulse transform scale-150"></div>
+                <img id="vc-avatar-audio-only" src="" class="w-32 h-32 rounded-full border-4 border-white/10 object-cover relative z-10 shadow-2xl">
+            </div>
+        </div>
+
         <!-- Maximize Overlay (Only visible when minimized) -->
         <div class="vc-maximize-overlay" onclick="toggleMinimize()">
             <i data-lucide="maximize-2" class="w-8 h-8 text-white drop-shadow-md"></i>
@@ -437,12 +449,16 @@ body.chat-active .chat-window { transform: translateX(0); }
         </div>
 
         <!-- Bottom Controls -->
-        <div class="absolute bottom-0 left-0 right-0 z-10 px-8 pb-10 pt-16 flex justify-center items-center gap-8 bg-gradient-to-t from-black/90 via-black/50 to-transparent vc-bottom-bar">
+        <div class="absolute bottom-0 left-0 right-0 z-10 px-8 pb-10 pt-16 flex justify-center items-center gap-6 bg-gradient-to-t from-black/90 via-black/50 to-transparent vc-bottom-bar">
             <button id="btn-toggle-cam" onclick="toggleCamera()" class="video-control-btn w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg">
                 <i data-lucide="video" class="w-6 h-6"></i>
             </button>
             <button id="btn-toggle-mic" onclick="toggleMic()" class="video-control-btn w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg">
                 <i data-lucide="mic" class="w-6 h-6"></i>
+            </button>
+            <!-- Screen Share Button -->
+            <button id="btn-share-screen" onclick="toggleScreenShare()" class="video-control-btn w-14 h-14 rounded-full flex items-center justify-center text-white shadow-lg hidden md:flex">
+                <i data-lucide="monitor-up" class="w-6 h-6"></i>
             </button>
             <button onclick="endVideoCall()" class="video-control-btn end-call w-16 h-16 rounded-full flex items-center justify-center shadow-xl transform hover:scale-105 transition-transform">
                 <i data-lucide="phone-off" class="w-8 h-8 fill-white"></i>
@@ -464,7 +480,7 @@ body.chat-active .chat-window { transform: translateX(0); }
             </div>
             <div class="text-center mt-2">
                 <h2 id="incoming-name" class="text-white text-3xl font-bold mb-2 tracking-tight">User</h2>
-                <p class="text-white/70 text-sm font-semibold uppercase tracking-widest">Incoming Video Call</p>
+                <p class="text-white/70 text-sm font-semibold uppercase tracking-widest" id="incoming-label">Incoming Video Call</p>
             </div>
         </div>
 
@@ -477,7 +493,7 @@ body.chat-active .chat-window { transform: translateX(0); }
             </div>
             <div class="flex flex-col items-center gap-4">
                 <button onclick="acceptIncomingCall()" class="call-btn-action w-20 h-20 rounded-full bg-green-500 hover:bg-green-600 flex items-center justify-center shadow-2xl text-white transition-colors">
-                    <i data-lucide="video" class="w-10 h-10 fill-current"></i>
+                    <i data-lucide="phone" class="w-10 h-10 fill-current"></i>
                 </button>
                 <span class="text-white/90 text-sm font-semibold">Accept</span>
             </div>
@@ -621,6 +637,8 @@ let incomingCallData = null;
 let isMicMuted = false;
 let isCamOff = false;
 let callTimeoutTimer = null; // For the 15s Missed Call logic
+let isScreenSharing = false;
+let screenStream = null;
 
 // --- SOUNDS ---
 const ringtone = new Audio("https://brief-bronze-e7fhvwyqck.edgeone.app/FaceTime_calling_sound_effect_(fixed)_128k.mp3");
@@ -634,7 +652,8 @@ document.addEventListener("visibilitychange", async () => {
     if (document.visibilityState === "hidden" && activeCallId && document.getElementById('remote-video').srcObject) {
        try {
            const video = document.getElementById('remote-video');
-           if (video && !document.pictureInPictureElement && document.pictureInPictureEnabled) {
+           // Only request PiP if video track is active and present
+           if (video && video.srcObject && video.srcObject.getVideoTracks().length > 0 && !document.pictureInPictureElement && document.pictureInPictureEnabled) {
                await video.requestPictureInPicture();
            }
        } catch (e) {
@@ -723,7 +742,7 @@ function loadConversations() {
             
             // Format Preview Text based on content
             if (lastMsg.includes("Video chat ended")) lastMsg = "Video call ended";
-            if (lastMsg.includes("Missed video call")) lastMsg = "Missed video call";
+            if (lastMsg.includes("Missed video call")) lastMsg = "Missed call";
             if (lastMsg.includes("Call declined")) lastMsg = "Call declined";
             
             let statusHtml = '';
@@ -1022,7 +1041,7 @@ function generateMessageHTML(msg, isSelf, showAvatar, showTail, isEmojiOnly, eff
         let text = "";
         
         if(msg.status === 'declined') text = "Call declined";
-        else if (msg.status === 'missed') text = "Missed video call";
+        else if (msg.status === 'missed') text = "Missed call";
         else text = `Video chat ended • ${msg.duration || '00:00'}`;
 
         return `
@@ -1151,6 +1170,7 @@ function listenForGlobalIncomingCalls() {
                     if (!document.getElementById('incoming-call-modal').classList.contains('hidden')) return; 
                     
                     const callerId = data.callState.callerId;
+                    const callType = data.callState.callType || 'video'; // 'video' or 'voice'
                     let callerName = "User";
                     let callerAvatar = "https://via.placeholder.com/150";
                     try {
@@ -1166,13 +1186,13 @@ function listenForGlobalIncomingCalls() {
                     ringtone.play().catch(e => console.log("Audio play failed interaction required"));
                     
                     if (document.hidden && Notification.permission === "granted") {
-                        new Notification("Incoming Video Call", { 
+                        new Notification(`Incoming ${callType === 'voice' ? 'Voice' : 'Video'} Call`, { 
                             body: `${callerName} is calling...`, 
                             icon: callerAvatar 
                         });
                     }
                     
-                    showIncomingCallModal(callerName, callerAvatar, change.doc.id, data.callState.callId);
+                    showIncomingCallModal(callerName, callerAvatar, change.doc.id, data.callState.callId, callType);
                 }
                 
                 // CALL CANCELED BY CALLER (Missed Call / Timeout)
@@ -1233,7 +1253,16 @@ window.toggleNativePiP = async () => {
     }
 };
 
-window.startVideoCallInitiation = async () => {
+window.startVoiceCallInitiation = () => {
+    startCallCommon('voice');
+};
+
+window.startVideoCallInitiation = () => {
+    startCallCommon('video');
+};
+
+// Common Call Logic
+async function startCallCommon(type) {
     if(!currentChatId || !currentChatUser) return;
     
     // 1. UI Setup
@@ -1241,23 +1270,49 @@ window.startVideoCallInitiation = async () => {
     document.getElementById('video-call-overlay').classList.add('flex');
     document.getElementById('vc-remote-name').innerText = currentChatUser.name;
     document.getElementById('vc-avatar-large').src = currentChatUser.avatar;
-    document.getElementById('vc-status-text').innerText = "Calling...";
+    document.getElementById('vc-avatar-audio-only').src = currentChatUser.avatar;
+    document.getElementById('vc-status-text').innerText = type === 'voice' ? "Audio Calling..." : "Video Calling...";
     document.getElementById('vc-status-msg').classList.remove('hidden');
+    document.getElementById('audio-only-placeholder').classList.add('hidden'); // Reset
     
-    // Play Call sound (simulated ringtone for caller)
+    // Adjust local video visibility based on call type
+    if(type === 'voice') {
+        document.querySelector('.local-video-container').classList.add('hidden');
+        document.getElementById('btn-toggle-cam').innerHTML = '<i data-lucide="video-off" class="w-6 h-6"></i>';
+        document.getElementById('btn-toggle-cam').classList.add('active');
+        isCamOff = true;
+    } else {
+        document.querySelector('.local-video-container').classList.remove('hidden');
+        document.getElementById('btn-toggle-cam').innerHTML = '<i data-lucide="video" class="w-6 h-6"></i>';
+        document.getElementById('btn-toggle-cam').classList.remove('active');
+        isCamOff = false;
+    }
+    lucide.createIcons();
+
+    // Play Call sound
     ringtone.currentTime = 0;
     ringtone.play().catch(e => {}); 
 
     activeCallChatId = currentChatId;
-    const callId = doc(collection(db, `chats/${currentChatId}/calls`)).id; // Generate ID
+    const callId = doc(collection(db, `chats/${currentChatId}/calls`)).id; 
     activeCallId = callId;
 
     // 2. Init Local Stream
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById('local-video').srcObject = localStream;
+        const constraints = { audio: true, video: type === 'video' };
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        // Show local video if video track exists
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            document.getElementById('local-video').srcObject = localStream;
+        } else {
+            // No video track (voice call)
+            document.getElementById('local-video').srcObject = null;
+        }
+        
     } catch (e) {
-        alert("Could not access camera/microphone.");
+        alert("Could not access microphone/camera.");
         ringtone.pause();
         document.getElementById('video-call-overlay').classList.add('hidden');
         document.getElementById('video-call-overlay').classList.remove('flex');
@@ -1275,6 +1330,24 @@ window.startVideoCallInitiation = async () => {
         const [remoteStreamObj] = event.streams;
         document.getElementById('remote-video').srcObject = remoteStreamObj;
         document.getElementById('vc-status-msg').classList.add('hidden'); 
+        
+        // Check if remote stream has video
+        const hasVideo = remoteStreamObj.getVideoTracks().length > 0 && remoteStreamObj.getVideoTracks()[0].enabled;
+        const placeholder = document.getElementById('audio-only-placeholder');
+        
+        if (hasVideo) {
+            placeholder.classList.add('hidden');
+        } else {
+            placeholder.classList.remove('hidden');
+        }
+        
+        // Listen for track changes (mute/unmute video)
+        remoteStreamObj.getVideoTracks().forEach(track => {
+            track.onmute = () => placeholder.classList.remove('hidden');
+            track.onunmute = () => placeholder.classList.add('hidden');
+            track.onended = () => placeholder.classList.remove('hidden');
+        });
+
         ringtone.pause();
         startCallTimer();
     };
@@ -1294,31 +1367,30 @@ window.startVideoCallInitiation = async () => {
         callerId: currentUser.id,
         calleeId: currentChatUser.id,
         offer: offer,
-        status: 'ringing'
+        status: 'ringing',
+        callType: type
     });
 
-    // Update Chat Doc for notification
     await updateDoc(doc(db, "chats", currentChatId), {
         callState: {
             status: 'ringing',
             callerId: currentUser.id,
             calleeId: currentChatUser.id,
             callId: callId,
+            callType: type,
             timestamp: serverTimestamp()
         }
     });
 
-    // *** 15 SECOND TIMEOUT LOGIC ***
+    // 15s Timeout
     if (callTimeoutTimer) clearTimeout(callTimeoutTimer);
     callTimeoutTimer = setTimeout(async () => {
-        // If still ringing after 15 seconds, cancel as Missed Call
         const currentCallSnap = await getDoc(callDocRef);
         if (currentCallSnap.exists() && currentCallSnap.data().status === 'ringing') {
             endVideoCall(false, 'no_answer');
         }
     }, 15000);
 
-    // 6. Handle ICE Candidates
     peerConnection.onicecandidate = (event) => {
         if (event.candidate) {
             const candidatesCollection = collection(callDocRef, 'offerCandidates');
@@ -1326,12 +1398,10 @@ window.startVideoCallInitiation = async () => {
         }
     };
 
-    // 7. Listen for Answer
     unsubscribeCall = onSnapshot(callDocRef, (snapshot) => {
         const data = snapshot.data();
         if (!peerConnection.currentRemoteDescription && data?.answer) {
-            // Call Answered
-            if (callTimeoutTimer) clearTimeout(callTimeoutTimer); // Clear timeout
+            if (callTimeoutTimer) clearTimeout(callTimeoutTimer);
             const answerDescription = new RTCSessionDescription(data.answer);
             peerConnection.setRemoteDescription(answerDescription);
             document.getElementById('vc-status-text').innerText = "Connecting...";
@@ -1339,7 +1409,6 @@ window.startVideoCallInitiation = async () => {
         }
     });
 
-    // Listen for remote ICE candidates
     const answerCandidates = collection(callDocRef, 'answerCandidates');
     onSnapshot(answerCandidates, (snapshot) => {
         snapshot.docChanges().forEach((change) => {
@@ -1349,12 +1418,13 @@ window.startVideoCallInitiation = async () => {
             }
         });
     });
-};
+}
 
-function showIncomingCallModal(name, avatar, chatId, callId) {
-    incomingCallData = { chatId, callId };
+function showIncomingCallModal(name, avatar, chatId, callId, callType = 'video') {
+    incomingCallData = { chatId, callId, callType };
     document.getElementById('incoming-name').innerText = name;
     document.getElementById('incoming-avatar').src = avatar;
+    document.getElementById('incoming-label').innerText = `Incoming ${callType === 'voice' ? 'Voice' : 'Video'} Call`;
     document.getElementById('incoming-call-modal').style.backgroundImage = `url(${avatar})`;
     document.getElementById('incoming-call-modal').classList.remove('hidden');
     document.getElementById('incoming-call-modal').classList.add('flex');
@@ -1364,7 +1434,7 @@ window.acceptIncomingCall = async () => {
     ringtone.pause();
     ringtone.currentTime = 0;
     
-    const { chatId, callId } = incomingCallData;
+    const { chatId, callId, callType } = incomingCallData;
     activeCallChatId = chatId;
     activeCallId = callId;
     
@@ -1376,7 +1446,22 @@ window.acceptIncomingCall = async () => {
     document.getElementById('video-call-overlay').classList.add('flex');
     document.getElementById('vc-remote-name').innerText = document.getElementById('incoming-name').innerText;
     document.getElementById('vc-avatar-large').src = document.getElementById('incoming-avatar').src;
+    document.getElementById('vc-avatar-audio-only').src = document.getElementById('incoming-avatar').src;
     document.getElementById('vc-status-text').innerText = "Connecting...";
+    document.getElementById('audio-only-placeholder').classList.add('hidden');
+
+    if(callType === 'voice') {
+        document.querySelector('.local-video-container').classList.add('hidden');
+        document.getElementById('btn-toggle-cam').innerHTML = '<i data-lucide="video-off" class="w-6 h-6"></i>';
+        document.getElementById('btn-toggle-cam').classList.add('active');
+        isCamOff = true;
+    } else {
+        document.querySelector('.local-video-container').classList.remove('hidden');
+        document.getElementById('btn-toggle-cam').innerHTML = '<i data-lucide="video" class="w-6 h-6"></i>';
+        document.getElementById('btn-toggle-cam').classList.remove('active');
+        isCamOff = false;
+    }
+    lucide.createIcons();
 
     const callDocRef = doc(db, `chats/${chatId}/calls`, callId);
     const callSnap = await getDoc(callDocRef);
@@ -1384,8 +1469,17 @@ window.acceptIncomingCall = async () => {
 
     // Init Local
     try {
-        localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-        document.getElementById('local-video').srcObject = localStream;
+        // If incoming is voice, we reply with voice only (usually). 
+        // If incoming is video, we reply with video (unless user overrides).
+        // For simplicity, match incoming type constraints.
+        const constraints = { audio: true, video: callType === 'video' };
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+        
+        if (localStream.getVideoTracks().length > 0) {
+            document.getElementById('local-video').srcObject = localStream;
+        } else {
+            document.getElementById('local-video').srcObject = null;
+        }
     } catch(e) {
         alert("Microphone/Camera access denied.");
         rejectIncomingCall();
@@ -1399,8 +1493,22 @@ window.acceptIncomingCall = async () => {
     });
 
     peerConnection.ontrack = (event) => {
-        document.getElementById('remote-video').srcObject = event.streams[0];
+        const [stream] = event.streams;
+        document.getElementById('remote-video').srcObject = stream;
         document.getElementById('vc-status-msg').classList.add('hidden');
+        
+        // Audio Only handling
+        const hasVideo = stream.getVideoTracks().length > 0 && stream.getVideoTracks()[0].enabled;
+        const placeholder = document.getElementById('audio-only-placeholder');
+        if (hasVideo) placeholder.classList.add('hidden');
+        else placeholder.classList.remove('hidden');
+        
+        stream.getVideoTracks().forEach(track => {
+            track.onmute = () => placeholder.classList.remove('hidden');
+            track.onunmute = () => placeholder.classList.add('hidden');
+            track.onended = () => placeholder.classList.remove('hidden');
+        });
+
         startCallTimer();
     };
 
@@ -1447,16 +1555,14 @@ window.rejectIncomingCall = async () => {
     document.getElementById('incoming-call-modal').classList.add('hidden');
     document.getElementById('incoming-call-modal').classList.remove('flex');
     
-    // Update DB to Rejected
     try {
         await updateDoc(doc(db, `chats/${chatId}/calls`, callId), { status: 'rejected' });
         await updateDoc(doc(db, "chats", chatId), { 
-            callState: { status: 'rejected', callerId: null }, // Reset state
+            callState: { status: 'rejected', callerId: null },
             lastMessage: "Call declined",
             lastMessageTimestamp: serverTimestamp()
         });
         
-        // Add log for receiver (User who declined)
         await addDoc(collection(db, `chats/${chatId}/messages`), {
              senderId: currentUser.id, 
              content: "Call declined", 
@@ -1492,6 +1598,10 @@ window.endVideoCall = async (isRemote = false, reason = null) => {
     if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
     }
+    if (screenStream) {
+        screenStream.getTracks().forEach(track => track.stop());
+        screenStream = null;
+    }
     if (peerConnection) {
         peerConnection.close();
     }
@@ -1518,6 +1628,7 @@ window.endVideoCall = async (isRemote = false, reason = null) => {
     localStream = null;
     activeCallId = null;
     activeCallChatId = null;
+    isScreenSharing = false;
     if(unsubscribeCall) unsubscribeCall();
 
     // LOGGING LOGIC
@@ -1537,12 +1648,9 @@ window.endVideoCall = async (isRemote = false, reason = null) => {
         }
 
         try {
-            // Update Call Doc
             await updateDoc(doc(db, `chats/${chatId}/calls`, callId), { status: status });
-            // Update Chat State (remove ringing flag)
             await updateDoc(doc(db, "chats", chatId), { callState: null });
             
-            // Insert System Message
              await addDoc(collection(db, `chats/${chatId}/messages`), {
                  senderId: currentUser.id, 
                  content: logMsg, 
@@ -1552,7 +1660,6 @@ window.endVideoCall = async (isRemote = false, reason = null) => {
                  duration: isRinging ? null : durationReadable
              });
              
-             // Update Last Message Preview
              await updateDoc(doc(db, "chats", chatId), { 
                 lastMessage: logMsg, 
                 lastMessageTimestamp: serverTimestamp()
@@ -1564,9 +1671,59 @@ window.endVideoCall = async (isRemote = false, reason = null) => {
     } 
 };
 
+window.toggleScreenShare = async () => {
+    if (!peerConnection) return;
+
+    if (!isScreenSharing) {
+        try {
+            screenStream = await navigator.mediaDevices.getDisplayMedia({ cursor: true });
+            const screenTrack = screenStream.getTracks()[0];
+            
+            // Replace local video track with screen track
+            const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+            if (sender) {
+                sender.replaceTrack(screenTrack);
+            }
+            
+            // Show screen on local view as well
+            document.getElementById('local-video').srcObject = screenStream;
+            
+            screenTrack.onended = () => {
+                // If user stops sharing via browser UI
+                if(isScreenSharing) toggleScreenShare(); 
+            };
+
+            isScreenSharing = true;
+            document.getElementById('btn-share-screen').classList.add('active', 'text-blue-500');
+        } catch (err) {
+            console.error("Error sharing screen:", err);
+        }
+    } else {
+        // Stop sharing, revert to camera
+        if(screenStream) {
+            screenStream.getTracks().forEach(track => track.stop());
+            screenStream = null;
+        }
+        
+        if (localStream) {
+            const videoTrack = localStream.getVideoTracks()[0];
+            const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+            if (sender && videoTrack) {
+                sender.replaceTrack(videoTrack);
+            }
+            document.getElementById('local-video').srcObject = localStream;
+        }
+        
+        isScreenSharing = false;
+        document.getElementById('btn-share-screen').classList.remove('active', 'text-blue-500');
+    }
+};
+
 window.toggleMic = () => {
     if (!localStream) return;
     const audioTrack = localStream.getAudioTracks()[0];
+    if(!audioTrack) return;
+    
     isMicMuted = !isMicMuted;
     audioTrack.enabled = !isMicMuted;
     const btn = document.getElementById('btn-toggle-mic');
@@ -1583,15 +1740,22 @@ window.toggleMic = () => {
 window.toggleCamera = () => {
     if (!localStream) return;
     const videoTrack = localStream.getVideoTracks()[0];
+    if(!videoTrack) return; 
+
     isCamOff = !isCamOff;
     videoTrack.enabled = !isCamOff;
     const btn = document.getElementById('btn-toggle-cam');
+    
+    const localVideoContainer = document.querySelector('.local-video-container');
+    
     if (isCamOff) {
         btn.classList.add('active');
         btn.innerHTML = '<i data-lucide="video-off" class="w-6 h-6"></i>';
+        localVideoContainer.classList.add('opacity-50'); 
     } else {
         btn.classList.remove('active');
         btn.innerHTML = '<i data-lucide="video" class="w-6 h-6"></i>';
+        localVideoContainer.classList.remove('opacity-50', 'hidden'); // Ensure visible
     }
     lucide.createIcons();
 };
