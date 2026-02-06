@@ -508,28 +508,30 @@
 
             // Prepare context
             const comments = post.comments || [];
-            const commentText = comments.slice(0, 5).map(c => c.content).join(" | ");
+            // Limit comments to avoid URL length issues
+            const commentText = comments.slice(0, 3).map(c => c.content).join(". "); 
             const likes = (post.likes || []).length;
-            
-            const prompt = `Act as a social media expert. Analyze this post.
-            Content: "${post.content || 'Image post'}"
-            Stats: ${likes} likes, ${comments.length} comments.
-            Recent comments: "${commentText}".
-            
-            Provide a short, 2-sentence insight on the sentiment and 1 actionable tip for the creator.`;
+            const content = post.content ? post.content.substring(0, 100) : "Image post"; // Limit content length
+
+            // Construct a cleaner prompt
+            const prompt = `Analyze social media post. Content: ${content}. Stats: ${likes} likes, ${comments.length} comments. Comments: ${commentText}. Give 1 sentiment insight and 1 tip.`;
 
             try {
                 // Using Pollinations AI Text Endpoint
-                const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}`);
-                if(!response.ok) throw new Error("AI Error");
+                // Adding a random seed to prevent caching issues
+                const seed = Math.floor(Math.random() * 1000);
+                const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?seed=${seed}`;
+                
+                const response = await fetch(url);
+                if(!response.ok) throw new Error("AI Service Error");
                 const text = await response.text();
                 
                 resultText.innerText = text;
                 resultContainer.classList.remove('hidden');
                 btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Analysis Complete`;
             } catch (err) {
-                console.error(err);
-                btn.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4"></i> Failed`;
+                console.error("Pollinations Error:", err);
+                btn.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4"></i> Failed. Try again.`;
                 setTimeout(() => { 
                     btn.disabled = false;
                     btn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 text-yellow-300"></i> Generate AI Analysis`;
