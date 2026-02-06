@@ -5,133 +5,86 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-    <title>EduLink Studio</title>
+    <title>Creator Studio</title>
     <link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Google+Sans:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
         :root {
-            --surface: #ffffff;
-            --background: #f8f9fa;
-            --on-surface: #0f0f0f;
-            --text-secondary: #5f6368;
-            --outline: #e5e7eb;
-            --primary: #0b57d0;
-            --primary-hover: #0842a0;
+            --bg-color: #fafafa;
+            --surface-color: #ffffff;
+            --border-color: #dbdbdb;
+            --text-primary: #262626;
+            --text-secondary: #8e8e8e;
+            --accent: #0095f6;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background);
-            color: var(--on-surface);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
             overflow-x: hidden;
         }
 
-        h1, h2, h3, .google-font {
-            font-family: 'Google Sans', 'Inter', sans-serif;
-        }
-
         .studio-card {
-            background: var(--surface);
-            border-radius: 16px;
-            border: 1px solid var(--outline);
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
         }
 
-        .studio-card:hover {
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-        }
-
-        .stat-value {
-            font-size: 28px;
-            font-weight: 700;
-            color: #1f1f1f;
-            letter-spacing: -0.5px;
-        }
-
-        .stat-label {
-            font-size: 13px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .nav-link {
+        /* Sidebar Navigation */
+        .sidebar-item {
             display: flex;
             align-items: center;
             gap: 12px;
             padding: 12px 16px;
-            border-radius: 12px;
-            color: var(--text-secondary);
+            margin-bottom: 4px;
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 16px;
             font-weight: 500;
-            font-size: 14px;
-            transition: all 0.2s;
+            transition: background 0.2s;
             cursor: pointer;
         }
 
-        .nav-link:hover {
-            background-color: #f1f3f4;
-            color: #1f1f1f;
+        .sidebar-item:hover {
+            background-color: #f2f2f2;
         }
 
-        .nav-link.active {
-            background-color: #e8f0fe;
-            color: var(--primary);
-            font-weight: 600;
+        .sidebar-item.active {
+            font-weight: 700;
+            background-color: #efefef;
         }
 
-        .table-row {
-            display: flex;
-            align-items: center;
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--outline);
-            transition: background 0.1s;
+        .sidebar-item i {
+            transition: transform 0.2s;
+        }
+        
+        .sidebar-item:hover i {
+            transform: scale(1.05);
         }
 
-        .table-row:last-child {
-            border-bottom: none;
-        }
-
-        .table-row:hover {
-            background: #f8f9fa;
-        }
-
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #dadce0;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #bdc1c6;
-        }
-
+        /* Loading Overlay */
         #loading-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(255,255,255,0.9);
-            z-index: 1000;
+            background: #ffffff;
+            z-index: 50;
             display: flex;
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            gap: 16px;
         }
-        
-        .loader-spinner {
+
+        .spinner {
             width: 40px;
             height: 40px;
-            border: 3px solid #e5e7eb;
-            border-top-color: var(--primary);
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #262626;
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
@@ -140,59 +93,144 @@
             to { transform: rotate(360deg); }
         }
 
-        .chart-container {
+        /* Post Grid */
+        .post-grid-item {
+            aspect-ratio: 1;
+            background: #000;
             position: relative;
-            height: 300px;
-            width: 100%;
+            cursor: pointer;
+            border-radius: 4px;
+            overflow: hidden;
         }
 
-        @media (max-width: 768px) {
-            .mobile-stack {
-                flex-direction: column;
+        .post-grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: opacity 0.2s;
+        }
+
+        .post-grid-item .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-weight: 700;
+        }
+
+        .post-grid-item:hover .overlay {
+            opacity: 1;
+        }
+        
+        .post-grid-item:hover img {
+            opacity: 0.9;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.65);
+            z-index: 40;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            display: flex;
+            overflow: hidden;
+            flex-direction: column;
+        }
+
+        @media (min-width: 768px) {
+            .modal-content {
+                flex-direction: row;
+                height: 80vh;
             }
-            .sidebar {
-                display: none;
-            }
-            .main-content {
-                padding-left: 0 !important;
-            }
+        }
+
+        .tab-btn {
+            padding: 12px;
+            flex: 1;
+            text-align: center;
+            border-bottom: 2px solid transparent;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .tab-btn.active {
+            border-bottom-color: var(--text-primary);
+            color: var(--text-primary);
+        }
+
+        /* Custom Scrollbar */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background-color: #dbdbdb;
+            border-radius: 3px;
         }
     </style>
 </head>
 
-<body class="h-screen flex flex-col md:flex-row">
-    
+<body class="h-screen flex">
+
+    <!-- Loading Screen -->
     <div id="loading-overlay">
-        <div class="loader-spinner"></div>
-        <div class="text-sm font-bold text-gray-500">Loading Studio...</div>
+        <div class="spinner mb-4"></div>
+        <div class="text-sm font-semibold text-gray-500">Loading Studio...</div>
     </div>
 
-    <!-- Sidebar -->
-    <aside class="sidebar w-64 bg-white border-r border-gray-200 h-full fixed left-0 top-0 z-20 flex flex-col flex-shrink-0">
-        <div class="h-16 flex items-center px-6 border-b border-gray-100">
-            <div class="flex items-center gap-2 text-xl font-bold text-gray-900 tracking-tight cursor-pointer" onclick="window.location.href='/'">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
-                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                </div>
-                <span>Studio</span>
-            </div>
+    <!-- Mobile Top Bar -->
+    <div class="md:hidden fixed top-0 w-full bg-white border-b border-gray-200 z-30 h-14 flex items-center justify-between px-4">
+        <span class="font-bold text-lg">Insights</span>
+        <button onclick="window.location.href='/'" class="text-sm font-semibold text-blue-500">Exit</button>
+    </div>
+
+    <!-- Desktop Sidebar -->
+    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 h-full fixed left-0 top-0 z-20">
+        <div class="h-16 flex items-center px-6 border-b border-gray-100 mb-2">
+            <span class="text-xl font-bold tracking-tight">Creator Studio</span>
         </div>
         
-        <div class="p-4 flex flex-col gap-1 flex-1 overflow-y-auto">
-            <div class="px-4 py-2 text-xs font-bold text-gray-400 uppercase tracking-wider">Overview</div>
-            <div class="nav-link active">
-                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Dashboard
+        <div class="p-3 flex-1">
+            <div class="sidebar-item active" onclick="switchView('overview')" id="nav-overview">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                Overview
             </div>
-            <div class="nav-link" onclick="window.location.href='/'">
-                <i data-lucide="arrow-left" class="w-5 h-5"></i> Back to EduLink
+            <div class="sidebar-item" onclick="switchView('content')" id="nav-content">
+                <i data-lucide="grid" class="w-5 h-5"></i>
+                Content
+            </div>
+            <div class="sidebar-item" onclick="window.location.href='/'">
+                <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                Back to App
             </div>
         </div>
 
         <div class="p-4 border-t border-gray-100">
-            <div class="flex items-center gap-3 px-2 py-2">
-                <img id="user-avatar" src="" class="w-9 h-9 rounded-full bg-gray-100 object-cover border border-gray-200">
+            <div class="flex items-center gap-3">
+                <img id="user-avatar" src="" class="w-8 h-8 rounded-full bg-gray-100 object-cover border border-gray-200">
                 <div class="min-w-0">
-                    <div id="user-name" class="text-sm font-bold text-gray-900 truncate">Loading...</div>
+                    <div id="user-name" class="text-sm font-bold truncate">Loading...</div>
                     <div id="user-handle" class="text-xs text-gray-500 truncate">@user</div>
                 </div>
             </div>
@@ -200,125 +238,150 @@
     </aside>
 
     <!-- Main Content -->
-    <main class="main-content flex-1 h-full md:pl-64 flex flex-col min-w-0 bg-[#f8f9fa]">
-        <!-- Mobile Header -->
-        <header class="md:hidden h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-10">
-            <div class="flex items-center gap-2 font-bold text-gray-900 text-lg">
-                <i data-lucide="bar-chart-2" class="text-blue-600 w-6 h-6"></i> Studio
-            </div>
-            <button onclick="window.location.href='/'" class="p-2 bg-gray-100 rounded-full">
-                <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
-            </button>
-        </header>
-
-        <div class="flex-1 overflow-y-auto p-4 md:p-8">
-            <div class="max-w-7xl mx-auto space-y-6">
-                
-                <!-- Welcome Section -->
-                <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Analytics Overview</h1>
-                        <p class="text-gray-500 mt-1">Track how your content is performing across EduLink.</p>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-bold text-gray-600 flex items-center gap-2">
-                            <i data-lucide="calendar" class="w-4 h-4"></i> Last 30 Days
-                        </div>
-                    </div>
+    <main class="flex-1 ml-0 md:ml-64 h-full bg-[#fafafa] overflow-y-auto pt-14 md:pt-0">
+        <div class="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
+            
+            <!-- VIEW: OVERVIEW -->
+            <div id="view-overview" class="space-y-6">
+                <div>
+                    <h1 class="text-2xl font-bold mb-1">Overview</h1>
+                    <p class="text-gray-500 text-sm">Account performance in the last 30 days.</p>
                 </div>
 
-                <!-- Key Metrics Grid -->
+                <!-- Big Stats -->
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
                     <div class="studio-card p-5">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="p-2 bg-red-50 rounded-lg text-red-600"><i data-lucide="heart" class="w-5 h-5"></i></div>
-                            <span class="text-xs font-bold text-green-600 flex items-center bg-green-50 px-2 py-1 rounded">+<span id="likes-growth">0</span>%</span>
+                        <div class="text-sm text-gray-500 font-medium mb-1">Total Likes</div>
+                        <div class="text-2xl font-bold" id="total-likes">0</div>
+                        <div class="text-xs text-green-600 font-medium mt-2 flex items-center">
+                            <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> <span id="likes-growth">0%</span>
                         </div>
-                        <div class="stat-value" id="total-likes">0</div>
-                        <div class="stat-label">Total Likes</div>
                     </div>
                     <div class="studio-card p-5">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="p-2 bg-blue-50 rounded-lg text-blue-600"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
-                            <span class="text-xs font-bold text-green-600 flex items-center bg-green-50 px-2 py-1 rounded">+<span id="comments-growth">0</span>%</span>
+                        <div class="text-sm text-gray-500 font-medium mb-1">Total Comments</div>
+                        <div class="text-2xl font-bold" id="total-comments">0</div>
+                        <div class="text-xs text-green-600 font-medium mt-2 flex items-center">
+                             <i data-lucide="trending-up" class="w-3 h-3 mr-1"></i> <span id="comments-growth">0%</span>
                         </div>
-                        <div class="stat-value" id="total-comments">0</div>
-                        <div class="stat-label">Total Comments</div>
                     </div>
                     <div class="studio-card p-5">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="p-2 bg-yellow-50 rounded-lg text-yellow-600"><i data-lucide="bookmark" class="w-5 h-5"></i></div>
-                            <span class="text-xs text-gray-400 font-medium">Lifetime</span>
-                        </div>
-                        <div class="stat-value text-gray-400" id="total-bookmarks">N/A</div>
-                        <div class="stat-label">Bookmarks (Private)</div>
+                        <div class="text-sm text-gray-500 font-medium mb-1">Bookmarks</div>
+                        <div class="text-2xl font-bold" id="total-bookmarks">0</div>
+                        <div class="text-xs text-gray-400 font-medium mt-2">Lifetime</div>
                     </div>
                     <div class="studio-card p-5">
-                        <div class="flex items-center justify-between mb-4">
-                            <div class="p-2 bg-purple-50 rounded-lg text-purple-600"><i data-lucide="file-text" class="w-5 h-5"></i></div>
-                        </div>
-                        <div class="stat-value" id="total-posts">0</div>
-                        <div class="stat-label">Total Posts</div>
+                        <div class="text-sm text-gray-500 font-medium mb-1">Posts</div>
+                        <div class="text-2xl font-bold" id="total-posts">0</div>
+                        <div class="text-xs text-gray-400 font-medium mt-2">Total</div>
                     </div>
                 </div>
 
+                <!-- Charts Row -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Engagement Chart -->
                     <div class="studio-card p-6 lg:col-span-2">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="font-bold text-lg text-gray-900">Content Performance</h3>
-                            <button class="text-sm text-blue-600 font-bold hover:underline">See Details</button>
-                        </div>
-                        <div class="chart-container">
+                        <h3 class="font-bold text-gray-900 mb-4">Interactions History</h3>
+                        <div class="h-64 relative w-full">
                             <canvas id="engagementChart"></canvas>
                         </div>
                     </div>
-
-                    <!-- Keyword Cloud / Bar -->
                     <div class="studio-card p-6">
-                        <h3 class="font-bold text-lg text-gray-900 mb-2">Top Keywords</h3>
-                        <p class="text-xs text-gray-500 mb-6">Most repeated words in your posts</p>
-                        <div class="chart-container" style="height: 250px;">
+                        <h3 class="font-bold text-gray-900 mb-4">Repeated Keywords</h3>
+                        <div class="h-64 relative w-full">
                             <canvas id="keywordChart"></canvas>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-10">
-                    <!-- Recent Interactions (Likes) -->
-                    <div class="studio-card flex flex-col h-[400px]">
-                        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
-                            <h3 class="font-bold text-lg text-gray-900 flex items-center gap-2">
-                                <i data-lucide="heart" class="w-4 h-4 text-red-500 fill-red-500"></i> Recent Likes
-                            </h3>
-                        </div>
-                        <div class="flex-1 overflow-y-auto" id="likes-list">
-                            <div class="flex flex-col items-center justify-center h-full text-gray-400">
-                                <div class="loader-spinner w-6 h-6 mb-2 border-2"></div>
-                                <span class="text-xs">Loading interactions...</span>
-                            </div>
-                        </div>
+            <!-- VIEW: CONTENT -->
+            <div id="view-content" class="hidden space-y-6">
+                <div>
+                    <h1 class="text-2xl font-bold mb-1">Your Content</h1>
+                    <p class="text-gray-500 text-sm">Select a post to view specific analytics.</p>
+                </div>
+                
+                <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1 md:gap-4" id="posts-grid">
+                    <!-- Posts injected via JS -->
+                    <div class="col-span-full py-12 text-center text-gray-400">
+                        Loading content...
                     </div>
+                </div>
+            </div>
 
-                    <!-- Recent Interactions (Comments) -->
-                    <div class="studio-card flex flex-col h-[400px]">
-                        <div class="p-5 border-b border-gray-100 flex items-center justify-between">
-                            <h3 class="font-bold text-lg text-gray-900 flex items-center gap-2">
-                                <i data-lucide="message-circle" class="w-4 h-4 text-blue-500 fill-blue-500"></i> Recent Comments
-                            </h3>
-                        </div>
-                        <div class="flex-1 overflow-y-auto" id="comments-list">
-                             <div class="flex flex-col items-center justify-center h-full text-gray-400">
-                                <div class="loader-spinner w-6 h-6 mb-2 border-2"></div>
-                                <span class="text-xs">Loading interactions...</span>
-                            </div>
-                        </div>
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Nav -->
+    <div class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 h-16 flex items-center justify-around z-30 pb-safe">
+        <button onclick="switchView('overview')" class="flex flex-col items-center gap-1 text-gray-900">
+            <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Overview</span>
+        </button>
+        <button onclick="switchView('content')" class="flex flex-col items-center gap-1 text-gray-400">
+            <i data-lucide="grid" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Content</span>
+        </button>
+    </div>
+
+    <!-- Post Details Modal -->
+    <div id="post-modal" class="modal-overlay">
+        <div class="modal-content shadow-2xl">
+            <!-- Left: Preview -->
+            <div class="hidden md:flex w-1/2 bg-black items-center justify-center relative overflow-hidden bg-gray-100">
+                <div id="modal-post-preview" class="p-8 text-center text-gray-500 text-sm">
+                    <!-- Image or Text -->
+                </div>
+                <img id="modal-post-image" class="absolute inset-0 w-full h-full object-cover hidden" />
+            </div>
+
+            <!-- Right: Stats & Lists -->
+            <div class="w-full md:w-1/2 flex flex-col bg-white h-full">
+                <!-- Header -->
+                <div class="p-4 border-b border-gray-100 flex items-center justify-between">
+                    <h3 class="font-bold">Post Analytics</h3>
+                    <button onclick="closeModal()" class="p-2 hover:bg-gray-100 rounded-full">
+                        <i data-lucide="x" class="w-5 h-5"></i>
+                    </button>
+                </div>
+
+                <!-- Stats Strip -->
+                <div class="flex border-b border-gray-100">
+                    <div class="flex-1 p-4 text-center border-r border-gray-100">
+                        <div class="text-xl font-bold" id="modal-likes-count">0</div>
+                        <div class="text-xs text-gray-500 uppercase font-semibold">Likes</div>
+                    </div>
+                    <div class="flex-1 p-4 text-center">
+                        <div class="text-xl font-bold" id="modal-comments-count">0</div>
+                        <div class="text-xs text-gray-500 uppercase font-semibold">Comments</div>
+                    </div>
+                    <div class="flex-1 p-4 text-center border-l border-gray-100">
+                        <div class="text-xl font-bold" id="modal-bookmarks-count">0</div>
+                        <div class="text-xs text-gray-500 uppercase font-semibold">Saved</div>
                     </div>
                 </div>
 
+                <!-- Tabs -->
+                <div class="flex border-b border-gray-100">
+                    <div class="tab-btn active" onclick="switchModalTab('likes')" id="tab-likes">Who Liked</div>
+                    <div class="tab-btn" onclick="switchModalTab('comments')" id="tab-comments">Comments</div>
+                </div>
+
+                <!-- List Container -->
+                <div class="flex-1 overflow-y-auto custom-scroll p-0 relative">
+                    
+                    <!-- Likes List -->
+                    <div id="modal-list-likes" class="p-2 space-y-1">
+                        <!-- Injected JS -->
+                    </div>
+
+                    <!-- Comments List -->
+                    <div id="modal-list-comments" class="hidden p-2 space-y-1">
+                        <!-- Injected JS -->
+                    </div>
+                </div>
             </div>
         </div>
-    </main>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -333,250 +396,347 @@
         let currentUser = null;
         let allUsersCache = [];
         let myPosts = [];
-        let engagementChart = null;
-        let keywordChart = null;
+        let engagementChartInstance = null;
+        let keywordChartInstance = null;
 
-        // Icons refresh wrapper
-        const refreshIcons = () => {
-            if (window.lucide) window.lucide.createIcons();
+        // --- GLOBAL UI HELPERS ---
+        window.switchView = (viewName) => {
+            // Hide all views
+            document.getElementById('view-overview').classList.add('hidden');
+            document.getElementById('view-content').classList.add('hidden');
+            
+            // Deactivate Navs
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            // Mobile Navs if we had explicit classes (optional)
+
+            // Show selected
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            
+            // Activate Nav
+            const navEl = document.getElementById(`nav-${viewName}`);
+            if(navEl) navEl.classList.add('active');
+
+            // Force Chart resize if overview
+            if(viewName === 'overview') {
+                if(engagementChartInstance) engagementChartInstance.resize();
+                if(keywordChartInstance) keywordChartInstance.resize();
+            }
         };
 
-        // Utility: Fetch all users for mapping IDs to names (since NoSQL structure here is loose)
-        async function fetchAllUsers() {
-            const snap = await getDocs(collection(db, "users"));
-            allUsersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        }
+        window.closeModal = () => {
+            document.getElementById('post-modal').classList.remove('open');
+        };
+
+        window.switchModalTab = (tabName) => {
+            document.getElementById('modal-list-likes').classList.add('hidden');
+            document.getElementById('modal-list-comments').classList.add('hidden');
+            document.getElementById('tab-likes').classList.remove('active');
+            document.getElementById('tab-comments').classList.remove('active');
+
+            document.getElementById(`modal-list-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+        };
+
+        // --- DATA LOGIC ---
 
         function getUserDetails(uid) {
-            return allUsersCache.find(u => u.id === uid) || { name: 'Unknown User', avatar: 'https://ui-avatars.com/api/?name=Unknown', username: 'unknown' };
+            const u = allUsersCache.find(u => u.id === uid);
+            if (u) return u;
+            return { name: 'Unknown', avatar: 'https://ui-avatars.com/api/?name=?', username: 'unknown' };
         }
 
-        function processAnalytics() {
+        async function fetchUsers() {
+            try {
+                const snap = await getDocs(collection(db, "users"));
+                allUsersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            } catch (e) {
+                console.error("Failed to fetch users (might be permission issue, using minimal info)", e);
+            }
+        }
+
+        function renderOverview() {
             let totalLikes = 0;
             let totalComments = 0;
-            const likeInteractions = []; // { uid, postId, timestamp (approx) }
-            const commentInteractions = []; // { uid, content, postId, timestamp }
+            let totalBookmarks = 0;
             const wordMap = {};
-            const stopWords = new Set(['the','and','a','to','of','in','i','is','that','it','on','you','this','for','but','with','are','have','be','at','or','as','was','so','if','out','not']);
+            const stopWords = new Set(['the','and','a','to','of','in','i','is','that','it','on','you','this','for','but','with','are','have','be','at','or','as','was','so','if','out','not','my','me','just','like']);
 
             myPosts.forEach(post => {
-                // Counts
-                const likes = post.likes || [];
-                const comments = post.comments || [];
-                totalLikes += likes.length;
-                totalComments += comments.length;
+                totalLikes += (post.likes || []).length;
+                totalComments += (post.comments || []).length;
+                totalBookmarks += (post.bookmarks || []).length; // Assuming bookmarks field exists
 
-                // Keyword Analysis
                 if (post.content) {
-                    const words = post.content.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/);
+                    const cleanText = post.content.toLowerCase().replace(/[^\w\s]/g, '');
+                    const words = cleanText.split(/\s+/);
                     words.forEach(w => {
                         if (w.length > 3 && !stopWords.has(w)) {
                             wordMap[w] = (wordMap[w] || 0) + 1;
                         }
                     });
                 }
-
-                // Interactions for lists
-                // Likes don't have timestamps in the provided schema (array of IDs), so we just list them.
-                // We'll reverse the array assuming newer likes might be appended last, but Firestore arrays are tricky.
-                // We'll just show the last 50 likes found.
-                likes.forEach(uid => {
-                    likeInteractions.push({ uid, postId: post.id, postContent: post.content });
-                });
-
-                // Comments have timestamps
-                comments.forEach(c => {
-                    commentInteractions.push({
-                        uid: c.authorId,
-                        content: c.content,
-                        timestamp: c.timestamp,
-                        postId: post.id,
-                        postContent: post.content
-                    });
-                });
             });
 
-            // Update UI Counters
+            // Update DOM Stats
             document.getElementById('total-likes').innerText = totalLikes.toLocaleString();
             document.getElementById('total-comments').innerText = totalComments.toLocaleString();
+            document.getElementById('total-bookmarks').innerText = totalBookmarks.toLocaleString();
             document.getElementById('total-posts').innerText = myPosts.length.toLocaleString();
 
-            // Growth simulation (since we don't have historical snapshots)
-            document.getElementById('likes-growth').innerText = (Math.random() * 5 + 1).toFixed(1);
-            document.getElementById('comments-growth').innerText = (Math.random() * 8 + 2).toFixed(1);
+            // Fake Growth for demo
+            document.getElementById('likes-growth').innerText = (myPosts.length > 0 ? "+12.5%" : "0%");
+            document.getElementById('comments-growth').innerText = (myPosts.length > 0 ? "+5.2%" : "0%");
 
+            // Render Charts
             renderCharts(wordMap);
-            renderLists(likeInteractions, commentInteractions);
         }
 
         function renderCharts(wordMap) {
-            // Keyword Chart data
-            const sortedWords = Object.entries(wordMap).sort((a,b) => b[1] - a[1]).slice(0, 8);
+            // 1. Engagement History
+            const ctxEng = document.getElementById('engagementChart').getContext('2d');
+            if(engagementChartInstance) engagementChartInstance.destroy();
             
-            // Engagement over time (Group posts by date)
-            // Since we don't have daily analytics snapshots, we'll graph interactions based on Post Creation Date as a proxy
-            const engagementByDate = {};
-            myPosts.sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0)).forEach(p => {
+            // Group by date
+            const dataByDate = {};
+            // Sort posts by date ascending for the chart
+            const sortedPosts = [...myPosts].sort((a,b) => (a.timestamp?.seconds || 0) - (b.timestamp?.seconds || 0));
+            
+            sortedPosts.forEach(p => {
                 if(!p.timestamp) return;
                 const d = new Date(p.timestamp.seconds * 1000).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-                const score = (p.likes?.length || 0) + (p.comments?.length || 0) * 2;
-                engagementByDate[d] = (engagementByDate[d] || 0) + score;
+                const eng = (p.likes?.length || 0) + (p.comments?.length || 0);
+                dataByDate[d] = (dataByDate[d] || 0) + eng;
             });
 
-            const dateLabels = Object.keys(engagementByDate).slice(-10); // Last 10 post days
-            const engagementData = dateLabels.map(d => engagementByDate[d]);
+            const labels = Object.keys(dataByDate).slice(-7); // Last 7 active days
+            const values = labels.map(l => dataByDate[l]);
 
-            // Render Engagement Chart
-            const ctxEng = document.getElementById('engagementChart').getContext('2d');
-            if(engagementChart) engagementChart.destroy();
-            
-            engagementChart = new Chart(ctxEng, {
+            engagementChartInstance = new Chart(ctxEng, {
                 type: 'line',
                 data: {
-                    labels: dateLabels,
+                    labels: labels.length ? labels : ['No Data'],
                     datasets: [{
-                        label: 'Engagement Score',
-                        data: engagementData,
-                        borderColor: '#0b57d0',
-                        backgroundColor: 'rgba(11, 87, 208, 0.1)',
-                        borderWidth: 3,
+                        label: 'Interactions',
+                        data: values.length ? values : [0],
+                        borderColor: '#262626',
+                        backgroundColor: 'rgba(0,0,0,0.05)',
+                        borderWidth: 2,
                         tension: 0.4,
                         fill: true,
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#0b57d0',
-                        pointBorderWidth: 2,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#262626',
                         pointRadius: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, grid: { borderDash: [2, 4] } },
+                        y: { beginAtZero: true, grid: { borderDash: [4, 4], color: '#f0f0f0' } },
                         x: { grid: { display: false } }
                     }
                 }
             });
 
-            // Render Keyword Chart
+            // 2. Keyword Chart
             const ctxKey = document.getElementById('keywordChart').getContext('2d');
-            if(keywordChart) keywordChart.destroy();
+            if(keywordChartInstance) keywordChartInstance.destroy();
 
-            keywordChart = new Chart(ctxKey, {
+            const sortedWords = Object.entries(wordMap).sort((a,b) => b[1] - a[1]).slice(0, 6);
+
+            keywordChartInstance = new Chart(ctxKey, {
                 type: 'bar',
                 data: {
                     labels: sortedWords.map(x => x[0]),
                     datasets: [{
-                        label: 'Frequency',
+                        label: 'Repeated',
                         data: sortedWords.map(x => x[1]),
-                        backgroundColor: [
-                            '#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', 
-                            '#818cf8', '#a5b4fc', '#c7d2fe', '#e0e7ff'
-                        ],
-                        borderRadius: 6
+                        backgroundColor: '#262626',
+                        borderRadius: 4,
+                        barThickness: 20
                     }]
                 },
                 options: {
                     indexAxis: 'y',
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false }
-                    },
+                    plugins: { legend: { display: false } },
                     scales: {
                         x: { display: false },
-                        y: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
+                        y: { grid: { display: false }, ticks: { font: { weight: '500' } } }
                     }
                 }
             });
         }
 
-        function renderLists(likes, comments) {
-            const likesContainer = document.getElementById('likes-list');
-            const commentsContainer = document.getElementById('comments-list');
-
-            // Process Likes
-            if (likes.length === 0) {
-                likesContainer.innerHTML = '<div class="p-6 text-center text-gray-400">No likes yet.</div>';
-            } else {
-                // Reverse to show "recent" (approx)
-                const recentLikes = likes.reverse().slice(0, 50);
-                likesContainer.innerHTML = recentLikes.map(l => {
-                    const u = getUserDetails(l.uid);
-                    return `
-                        <div class="table-row">
-                            <img src="${u.avatar}" class="w-10 h-10 rounded-full bg-gray-100 object-cover border border-gray-200">
-                            <div class="ml-3 flex-1 min-w-0">
-                                <div class="text-sm font-bold text-gray-900 truncate">${u.name}</div>
-                                <div class="text-xs text-gray-500 truncate">Liked post: "${l.postContent ? l.postContent.substring(0, 20) : 'Media'}..."</div>
-                            </div>
-                            <i data-lucide="heart" class="w-4 h-4 text-red-500 fill-red-500"></i>
-                        </div>
-                    `;
-                }).join('');
+        function renderContentGrid() {
+            const grid = document.getElementById('posts-grid');
+            if(myPosts.length === 0) {
+                grid.innerHTML = '<div class="col-span-full py-12 text-center text-gray-400">No posts yet.</div>';
+                return;
             }
 
-            // Process Comments
-            if (comments.length === 0) {
-                commentsContainer.innerHTML = '<div class="p-6 text-center text-gray-400">No comments yet.</div>';
-            } else {
-                // Sort by timestamp desc
-                comments.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                const recentComments = comments.slice(0, 50);
-                commentsContainer.innerHTML = recentComments.map(c => {
-                    const u = getUserDetails(c.uid);
-                    const date = c.timestamp ? new Date(c.timestamp.seconds * 1000).toLocaleDateString() : '';
-                    return `
-                        <div class="table-row items-start">
-                            <img src="${u.avatar}" class="w-10 h-10 rounded-full bg-gray-100 object-cover border border-gray-200 mt-1">
-                            <div class="ml-3 flex-1 min-w-0">
-                                <div class="flex justify-between items-center mb-0.5">
-                                    <div class="text-sm font-bold text-gray-900 truncate">${u.name}</div>
-                                    <div class="text-[10px] text-gray-400">${date}</div>
-                                </div>
-                                <div class="text-xs text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-100 italic">"${c.content}"</div>
-                                <div class="text-[10px] text-gray-400 mt-1 truncate">On: ${c.postContent ? c.postContent.substring(0, 30) : 'Post'}...</div>
-                            </div>
+            // Sort newest first
+            const sorted = [...myPosts].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            grid.innerHTML = sorted.map(post => {
+                const likes = (post.likes || []).length;
+                const comments = (post.comments || []).length;
+                const hasImage = post.imageUrl || post.image; // Robust check
+                
+                // Create thumbnail content
+                let innerHTML = '';
+                if(hasImage) {
+                    innerHTML = `<img src="${hasImage}" alt="Post">`;
+                } else {
+                    innerHTML = `<div class="w-full h-full flex items-center justify-center p-4 bg-gray-100 text-xs text-gray-500 text-center break-words overflow-hidden leading-tight">
+                        ${post.content ? post.content.substring(0, 60) : '...'}
+                    </div>`;
+                }
+
+                return `
+                    <div class="post-grid-item" onclick="openPostModal('${post.id}')">
+                        ${innerHTML}
+                        <div class="overlay flex-col gap-1">
+                            <div class="flex items-center gap-1"><i data-lucide="heart" class="w-4 h-4 fill-white"></i> ${likes}</div>
+                            <div class="flex items-center gap-1"><i data-lucide="message-circle" class="w-4 h-4 fill-white"></i> ${comments}</div>
                         </div>
-                    `;
-                }).join('');
-            }
-            refreshIcons();
+                    </div>
+                `;
+            }).join('');
+            
+            if(window.lucide) window.lucide.createIcons();
         }
+
+        // Make accessible globally
+        window.openPostModal = (postId) => {
+            const post = myPosts.find(p => p.id === postId);
+            if(!post) return;
+
+            // Update Counts
+            const likes = post.likes || [];
+            const comments = post.comments || [];
+            const bookmarks = post.bookmarks || [];
+
+            document.getElementById('modal-likes-count').innerText = likes.length;
+            document.getElementById('modal-comments-count').innerText = comments.length;
+            document.getElementById('modal-bookmarks-count').innerText = bookmarks.length;
+
+            // Preview
+            const imgEl = document.getElementById('modal-post-image');
+            const txtEl = document.getElementById('modal-post-preview');
+            const hasImage = post.imageUrl || post.image;
+
+            if(hasImage) {
+                imgEl.src = hasImage;
+                imgEl.classList.remove('hidden');
+                txtEl.classList.add('hidden');
+            } else {
+                imgEl.classList.add('hidden');
+                txtEl.classList.remove('hidden');
+                txtEl.innerText = post.content || "No content";
+            }
+
+            // Populate Likes List
+            const likesListEl = document.getElementById('modal-list-likes');
+            if(likes.length === 0) {
+                likesListEl.innerHTML = '<div class="text-center p-4 text-gray-400 text-sm">No likes yet.</div>';
+            } else {
+                likesListEl.innerHTML = likes.map(uid => {
+                    const u = getUserDetails(uid);
+                    return `
+                        <div class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-default">
+                            <img src="${u.avatar}" class="w-10 h-10 rounded-full border border-gray-200 object-cover">
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-sm text-gray-900 truncate">${u.name}</div>
+                                <div class="text-xs text-gray-500 truncate">@${u.username}</div>
+                            </div>
+                            <button class="px-3 py-1 bg-gray-100 rounded text-xs font-bold text-gray-600">View</button>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Populate Comments List
+            const commentsListEl = document.getElementById('modal-list-comments');
+            if(comments.length === 0) {
+                commentsListEl.innerHTML = '<div class="text-center p-4 text-gray-400 text-sm">No comments yet.</div>';
+            } else {
+                // Sort comments newest first if timestamp exists
+                const sortedComments = [...comments].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+                
+                commentsListEl.innerHTML = sortedComments.map(c => {
+                    const u = getUserDetails(c.authorId);
+                    const time = c.timestamp ? new Date(c.timestamp.seconds * 1000).toLocaleDateString() : '';
+                    return `
+                        <div class="flex gap-3 p-2 hover:bg-gray-50 rounded">
+                            <img src="${u.avatar}" class="w-8 h-8 rounded-full border border-gray-200 object-cover flex-shrink-0">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-baseline justify-between">
+                                    <span class="font-bold text-sm text-gray-900 truncate mr-2">${u.name}</span>
+                                    <span class="text-[10px] text-gray-400">${time}</span>
+                                </div>
+                                <p class="text-sm text-gray-700 mt-0.5 break-words">${c.content}</p>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Reset tabs
+            switchModalTab('likes');
+            
+            // Open Modal
+            document.getElementById('post-modal').classList.add('open');
+        };
+
+        // --- INIT ---
 
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 currentUser = user;
-                // Load User UI
-                const userDoc = await getDoc(doc(db, "users", user.uid));
-                if(userDoc.exists()) {
-                    const data = userDoc.data();
-                    document.getElementById('user-name').innerText = data.name;
-                    document.getElementById('user-handle').innerText = '@' + (data.username || 'user');
-                    document.getElementById('user-avatar').src = data.avatar;
-                }
                 
-                // Fetch Data
-                await fetchAllUsers();
-                
-                // Realtime Posts Listener
+                // 1. Setup User Profile in Sidebar
+                try {
+                    const userDoc = await getDoc(doc(db, "users", user.uid));
+                    if(userDoc.exists()) {
+                        const data = userDoc.data();
+                        document.getElementById('user-name').innerText = data.name || "User";
+                        document.getElementById('user-handle').innerText = '@' + (data.username || 'user');
+                        if(data.avatar) document.getElementById('user-avatar').src = data.avatar;
+                    }
+                } catch (e) { console.warn("User profile fetch failed", e); }
+
+                // 2. Fetch Helper Data
+                await fetchUsers();
+
+                // 3. Listen to My Posts
                 const q = query(collection(db, "posts"), where("authorId", "==", user.uid));
+                
                 onSnapshot(q, (snapshot) => {
                     myPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    processAnalytics();
+                    
+                    renderOverview();
+                    renderContentGrid();
+                    
+                    // Hide loading once data arrives
                     document.getElementById('loading-overlay').classList.add('hidden');
+                }, (error) => {
+                    console.error("Snapshot error:", error);
+                    // Even on error, hide loader so user isn't stuck
+                    document.getElementById('loading-overlay').innerHTML = `<div class='text-red-500 font-bold'>Error loading data.</div><div class='text-xs text-gray-400 mt-2'>${error.message}</div>`;
                 });
 
             } else {
-                window.location.href = '/login.html'; // Or wherever login is
+                // Not logged in -> Redirect
+                window.location.href = '/'; 
             }
         });
 
-        // Initialize icons on load
-        refreshIcons();
+        // Icon Init
+        if(window.lucide) window.lucide.createIcons();
+
     </script>
 </body>
 </html>
