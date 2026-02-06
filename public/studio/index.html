@@ -11,19 +11,18 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
         :root {
-            --bg-color: #fafafa;
+            --bg-color: #f8fafc;
             --surface-color: #ffffff;
-            --border-color: #dbdbdb;
-            --text-primary: #262626;
-            --text-secondary: #8e8e8e;
-            --accent: #0095f6;
+            --text-primary: #0f172a;
+            --text-secondary: #64748b;
+            --primary: #2563eb;
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-primary);
             overflow-x: hidden;
@@ -31,10 +30,15 @@
 
         .studio-card {
             background: var(--surface-color);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .studio-card:hover {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
         }
 
         /* Sidebar Navigation */
@@ -44,21 +48,27 @@
             gap: 12px;
             padding: 12px 16px;
             margin-bottom: 4px;
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 15px;
-            font-weight: 400;
-            transition: background 0.2s;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
             cursor: pointer;
         }
 
         .sidebar-item:hover {
-            background-color: #f2f2f2;
+            background-color: #f1f5f9;
+            color: var(--text-primary);
         }
 
         .sidebar-item.active {
+            background-color: #eff6ff;
+            color: var(--primary);
             font-weight: 600;
-            background-color: #efefef;
+        }
+        
+        .sidebar-item.active i {
+            color: var(--primary);
         }
 
         /* Loading Overlay */
@@ -71,7 +81,7 @@
             justify-content: center;
             align-items: center;
             flex-direction: column;
-            transition: opacity 0.3s ease;
+            transition: opacity 0.4s ease;
         }
         #loading-overlay.hidden {
             opacity: 0;
@@ -79,43 +89,48 @@
         }
 
         .spinner {
-            width: 32px;
-            height: 32px;
-            border: 3px solid #f0f0f0;
-            border-top-color: #262626;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top-color: var(--primary);
             border-radius: 50%;
             animation: spin 0.8s linear infinite;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .animate-fade-up {
+            animation: fadeUp 0.5s ease-out forwards;
         }
 
         /* Post Grid */
         .post-grid-item {
             aspect-ratio: 1;
-            background: #efefef;
+            background: #f1f5f9;
             position: relative;
             cursor: pointer;
-            border-radius: 2px;
+            border-radius: 8px;
             overflow: hidden;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
         
-        .post-grid-item:hover {
-            opacity: 0.95;
-        }
-
         .post-grid-item img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .post-grid-item:hover img {
+            transform: scale(1.05);
         }
         
         /* Stats Overlay on Grid Hover */
         .post-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.4);
+            background: rgba(15, 23, 42, 0.4);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -124,22 +139,36 @@
             opacity: 0;
             transition: opacity 0.2s;
             font-weight: 600;
+            backdrop-filter: blur(2px);
         }
         
         .post-grid-item:hover .post-overlay {
             opacity: 1;
         }
 
+        /* Stats Badge */
+        .stat-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+        .stat-badge.green { background: #dcfce7; color: #166534; }
+        .stat-badge.blue { background: #dbeafe; color: #1e40af; }
+
         /* Modal */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.6);
+            background: rgba(15, 23, 42, 0.75);
             z-index: 50;
             display: none;
             justify-content: center;
             align-items: center;
-            padding: 40px;
+            padding: 20px;
+            backdrop-filter: blur(4px);
         }
 
         .modal-overlay.open {
@@ -147,185 +176,254 @@
             animation: fadeIn 0.2s ease-out;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; transform: scale(0.98); }
-            to { opacity: 1; transform: scale(1); }
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
         .modal-content {
             background: white;
-            border-radius: 0 4px 4px 0;
-            max-width: 1100px;
+            max-width: 1000px;
             width: 100%;
             height: 85vh;
             display: flex;
             overflow: hidden;
-            border-radius: 12px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
         }
         
         @media (max-width: 768px) {
             .modal-content {
                 flex-direction: column;
-                height: 100%;
-                border-radius: 0;
-            }
-            .modal-overlay {
-                padding: 0;
-                align-items: flex-end;
+                height: 90vh;
             }
         }
 
         .tab-btn {
-            padding: 14px;
+            padding: 16px;
             flex: 1;
             text-align: center;
-            border-bottom: 1px solid #dbdbdb;
+            border-bottom: 2px solid transparent;
             font-weight: 600;
             font-size: 14px;
             color: var(--text-secondary);
             cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            transition: color 0.2s;
         }
+        .tab-btn:hover { color: var(--text-primary); background: #f8fafc; }
         .tab-btn.active {
-            border-bottom: 2px solid #262626;
+            border-bottom-color: var(--text-primary);
             color: var(--text-primary);
         }
 
-        .custom-scroll {
-            scrollbar-width: thin;
-        }
-        .custom-scroll::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scroll::-webkit-scrollbar-thumb {
-            background-color: #dbdbdb;
-            border-radius: 3px;
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 3px; }
+        
+        /* Gradient Header */
+        .header-gradient {
+            background: linear-gradient(135deg, #eff6ff 0%, #f0f9ff 100%);
         }
     </style>
 </head>
 
-<body class="h-screen flex">
+<body class="h-screen flex text-slate-900">
 
     <!-- Loading Screen -->
     <div id="loading-overlay">
         <div class="spinner mb-4"></div>
-        <div class="text-sm font-semibold text-gray-500">Loading Dashboard...</div>
+        <div class="text-sm font-semibold text-slate-500 animate-pulse">Initializing Studio...</div>
     </div>
 
     <!-- Mobile Header -->
-    <div class="md:hidden fixed top-0 w-full bg-white border-b border-gray-200 z-30 h-14 flex items-center justify-between px-4">
-        <span class="font-bold text-lg">Professional Dashboard</span>
-        <button onclick="window.location.href='/'" class="text-sm font-semibold text-blue-500">Exit</button>
+    <div class="md:hidden fixed top-0 w-full bg-white/90 backdrop-blur-sm border-b border-slate-200 z-30 h-16 flex items-center justify-between px-4">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            </div>
+            <span class="font-bold text-lg">Studio</span>
+        </div>
+        <button onclick="window.location.href='/'" class="p-2 bg-slate-100 rounded-full text-slate-600">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
     </div>
 
     <!-- Sidebar -->
-    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-gray-200 h-full fixed left-0 top-0 z-20">
-        <div class="h-16 flex items-center px-6 mb-2">
-            <span class="text-xl font-bold italic" style="font-family: 'Inter', sans-serif;">Studio</span>
+    <aside class="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-full fixed left-0 top-0 z-20">
+        <div class="h-20 flex items-center px-6 border-b border-slate-100">
+            <div class="flex items-center gap-2 text-xl font-bold text-slate-900 tracking-tight cursor-pointer" onclick="window.location.href='/'">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white shadow-lg shadow-blue-600/20">
+                    <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                </div>
+                <span>Studio</span>
+            </div>
         </div>
         
-        <div class="px-2 py-2 flex-1 space-y-1">
+        <div class="p-4 flex-1 space-y-1">
             <div class="sidebar-item active" onclick="switchView('overview')" id="nav-overview">
-                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
-                Insights
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                Dashboard
             </div>
             <div class="sidebar-item" onclick="switchView('content')" id="nav-content">
                 <i data-lucide="grid" class="w-5 h-5"></i>
-                Content
-            </div>
-            <div class="mt-8 border-t border-gray-100 pt-4">
-                 <div class="sidebar-item" onclick="window.location.href='/'">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                    Back to Feed
-                </div>
+                My Content
             </div>
         </div>
 
-        <div class="p-4 border-t border-gray-100">
-            <div class="flex items-center gap-3">
-                <img id="user-avatar" src="" class="w-8 h-8 rounded-full bg-gray-100 object-cover border border-gray-200">
+        <div class="p-4 border-t border-slate-100">
+            <button onclick="window.location.href='/'" class="w-full flex items-center gap-2 text-sm text-slate-500 hover:text-slate-800 transition-colors mb-4 px-2">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i> Return to App
+            </button>
+            <div class="flex items-center gap-3 p-2 bg-slate-50 rounded-xl border border-slate-100">
+                <img id="user-avatar" src="" class="w-9 h-9 rounded-full bg-white object-cover border border-slate-200 shadow-sm">
                 <div class="min-w-0">
-                    <div id="user-name" class="text-sm font-semibold truncate">User</div>
-                    <div class="text-xs text-gray-500">Creator Account</div>
+                    <div id="user-name" class="text-sm font-bold truncate">Loading...</div>
+                    <div class="text-xs text-slate-500 font-medium">Creator</div>
                 </div>
             </div>
         </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 ml-0 md:ml-64 h-full bg-[#fafafa] overflow-y-auto pt-14 md:pt-0">
-        <div class="max-w-5xl mx-auto p-4 md:p-8 space-y-8">
+    <main class="flex-1 ml-0 md:ml-64 h-full bg-[#f8fafc] overflow-y-auto pt-16 md:pt-0">
+        
+        <!-- Header Section -->
+        <div class="header-gradient px-8 py-10 border-b border-slate-200">
+            <div class="max-w-6xl mx-auto">
+                <h1 class="text-3xl font-bold text-slate-900 mb-2 animate-fade-up">Welcome back!</h1>
+                <p class="text-slate-500 animate-fade-up" style="animation-delay: 0.1s">Here's what's happening with your content today.</p>
+            </div>
+        </div>
+
+        <div class="max-w-6xl mx-auto p-4 md:p-8 space-y-8 -mt-8">
             
             <!-- OVERVIEW SECTION -->
             <div id="view-overview" class="space-y-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Performance</h1>
-                    <p class="text-gray-500 text-sm mt-1">Analytics for the last 30 days</p>
-                </div>
-
-                <!-- Stats Cards -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- Stats Cards Row -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-up" style="animation-delay: 0.2s">
                     <!-- Likes -->
-                    <div class="studio-card p-5">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-500 font-medium">Likes</span>
-                            <i data-lucide="heart" class="w-4 h-4 text-gray-400"></i>
+                    <div class="studio-card p-5 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <i data-lucide="heart" class="w-16 h-16 text-red-500"></i>
                         </div>
-                        <div class="text-2xl font-bold" id="total-likes">0</div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-2 bg-red-50 text-red-500 rounded-lg"><i data-lucide="heart" class="w-4 h-4"></i></div>
+                            <span class="text-sm font-semibold text-slate-600">Total Likes</span>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-900 counter" id="total-likes">0</div>
                     </div>
+
                     <!-- Comments -->
-                    <div class="studio-card p-5">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-500 font-medium">Comments</span>
-                            <i data-lucide="message-circle" class="w-4 h-4 text-gray-400"></i>
+                    <div class="studio-card p-5 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <i data-lucide="message-circle" class="w-16 h-16 text-blue-500"></i>
                         </div>
-                        <div class="text-2xl font-bold" id="total-comments">0</div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-2 bg-blue-50 text-blue-500 rounded-lg"><i data-lucide="message-circle" class="w-4 h-4"></i></div>
+                            <span class="text-sm font-semibold text-slate-600">Comments</span>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-900 counter" id="total-comments">0</div>
                     </div>
+
                     <!-- Posts -->
-                    <div class="studio-card p-5">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-500 font-medium">Total Posts</span>
-                            <i data-lucide="image" class="w-4 h-4 text-gray-400"></i>
+                    <div class="studio-card p-5 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <i data-lucide="image" class="w-16 h-16 text-purple-500"></i>
                         </div>
-                        <div class="text-2xl font-bold" id="total-posts">0</div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-2 bg-purple-50 text-purple-500 rounded-lg"><i data-lucide="image" class="w-4 h-4"></i></div>
+                            <span class="text-sm font-semibold text-slate-600">Posts</span>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-900 counter" id="total-posts">0</div>
                     </div>
-                    <!-- Engagement Rate (Calc) -->
-                    <div class="studio-card p-5">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-sm text-gray-500 font-medium">Engagement</span>
-                            <i data-lucide="activity" class="w-4 h-4 text-gray-400"></i>
+
+                    <!-- Engagement -->
+                    <div class="studio-card p-5 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                            <i data-lucide="trending-up" class="w-16 h-16 text-green-500"></i>
                         </div>
-                        <div class="text-2xl font-bold" id="engagement-rate">0%</div>
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="p-2 bg-green-50 text-green-500 rounded-lg"><i data-lucide="activity" class="w-4 h-4"></i></div>
+                            <span class="text-sm font-semibold text-slate-600">Avg. Rate</span>
+                        </div>
+                        <div class="text-3xl font-bold text-slate-900"><span class="counter" id="engagement-rate">0</span>%</div>
                     </div>
                 </div>
 
-                <!-- Graphs -->
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="studio-card p-6 lg:col-span-2">
-                        <h3 class="font-semibold text-gray-900 mb-6">Interaction History</h3>
-                        <div class="h-64 w-full">
-                            <canvas id="engagementChart"></canvas>
+                <!-- Main Grid Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-up" style="animation-delay: 0.3s">
+                    
+                    <!-- Left Column: Charts -->
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Engagement Chart -->
+                        <div class="studio-card p-6">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-900">Engagement Overview</h3>
+                                    <p class="text-sm text-slate-500">Interactions over your last 10 posts</p>
+                                </div>
+                                <div class="stat-badge blue"><i data-lucide="bar-chart" class="w-3 h-3 mr-1"></i> Live</div>
+                            </div>
+                            <div class="h-64 w-full">
+                                <canvas id="engagementChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Keywords Chart -->
+                        <div class="studio-card p-6">
+                             <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="font-bold text-lg text-slate-900">Top Topics</h3>
+                                    <p class="text-sm text-slate-500">Keywords driving engagement</p>
+                                </div>
+                            </div>
+                            <div class="h-48 w-full">
+                                <canvas id="keywordChart"></canvas>
+                            </div>
                         </div>
                     </div>
-                    <div class="studio-card p-6">
-                        <h3 class="font-semibold text-gray-900 mb-6">Top Keywords</h3>
-                        <div class="h-64 w-full">
-                            <canvas id="keywordChart"></canvas>
+
+                    <!-- Right Column: Highlights -->
+                    <div class="space-y-6">
+                        
+                        <!-- Top Performer -->
+                        <div class="studio-card overflow-hidden">
+                            <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+                                <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                                    <i data-lucide="trophy" class="w-4 h-4 text-yellow-500"></i> Top Performer
+                                </h3>
+                            </div>
+                            <div id="top-post-container" class="p-0">
+                                <!-- JS Injected -->
+                                <div class="p-8 text-center text-slate-400 text-sm">No data yet</div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Activity -->
+                        <div class="studio-card flex flex-col max-h-[400px]">
+                             <div class="p-4 border-b border-slate-100 bg-slate-50/50">
+                                <h3 class="font-bold text-slate-900 flex items-center gap-2">
+                                    <i data-lucide="zap" class="w-4 h-4 text-orange-500"></i> Recent Comments
+                                </h3>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scroll p-0" id="recent-activity-list">
+                                <div class="p-8 text-center text-slate-400 text-sm">No recent activity</div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- CONTENT SECTION -->
-            <div id="view-content" class="hidden space-y-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900">Recent Content</h1>
-                    <p class="text-gray-500 text-sm mt-1">Click on a post to view detailed insights</p>
+            <!-- CONTENT VIEW -->
+            <div id="view-content" class="hidden space-y-6 animate-fade-up">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-900">Your Content Library</h2>
+                        <p class="text-slate-500 text-sm">Manage and analyze your posts.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-semibold hover:bg-slate-50 transition">Filter</button>
+                    </div>
                 </div>
                 
-                <div class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-1 md:gap-4" id="posts-grid">
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3 md:gap-6" id="posts-grid">
                     <!-- Javascript will populate this -->
                 </div>
             </div>
@@ -334,23 +432,23 @@
     </main>
 
     <!-- Mobile Bottom Nav -->
-    <div class="md:hidden fixed bottom-0 w-full bg-white border-t border-gray-200 h-16 flex items-center justify-around z-30 pb-safe">
-        <button onclick="switchView('overview')" class="flex flex-col items-center gap-1 text-gray-900">
-            <i data-lucide="bar-chart-2" class="w-6 h-6"></i>
-            <span class="text-[10px] font-medium">Insights</span>
+    <div class="md:hidden fixed bottom-0 w-full bg-white border-t border-slate-200 h-16 flex items-center justify-around z-30 pb-safe shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+        <button onclick="switchView('overview')" class="flex flex-col items-center gap-1 text-slate-900">
+            <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+            <span class="text-[10px] font-medium">Dashboard</span>
         </button>
-        <button onclick="switchView('content')" class="flex flex-col items-center gap-1 text-gray-400">
+        <button onclick="switchView('content')" class="flex flex-col items-center gap-1 text-slate-400">
             <i data-lucide="grid" class="w-6 h-6"></i>
             <span class="text-[10px] font-medium">Content</span>
         </button>
     </div>
 
-    <!-- Analytics Modal -->
+    <!-- Details Modal -->
     <div id="post-modal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content shadow-2xl" onclick="event.stopPropagation()">
             <!-- Left: Media Preview -->
-            <div class="hidden md:flex w-1/2 bg-black items-center justify-center relative bg-[#f5f5f5]">
-                <div id="modal-post-preview" class="p-12 text-center text-gray-500 font-medium">
+            <div class="hidden md:flex w-1/2 bg-black items-center justify-center relative bg-slate-900">
+                <div id="modal-post-preview" class="p-12 text-center text-slate-400 font-medium max-w-md leading-relaxed">
                     <!-- Text Content Fallback -->
                 </div>
                 <img id="modal-post-image" class="absolute inset-0 w-full h-full object-contain hidden" />
@@ -359,43 +457,35 @@
             <!-- Right: Details -->
             <div class="w-full md:w-1/2 flex flex-col bg-white h-full relative">
                 <!-- Header -->
-                <div class="p-4 border-b border-gray-100 flex items-center justify-between shrink-0">
+                <div class="p-4 border-b border-slate-100 flex items-center justify-between shrink-0">
                     <h3 class="font-bold text-lg">Post Insights</h3>
-                    <button onclick="closeModal(null, true)" class="p-2 hover:bg-gray-100 rounded-full">
-                        <i data-lucide="x" class="w-6 h-6 text-gray-900"></i>
+                    <button onclick="closeModal(null, true)" class="p-2 hover:bg-slate-100 rounded-full transition-colors">
+                        <i data-lucide="x" class="w-6 h-6 text-slate-900"></i>
                     </button>
                 </div>
 
                 <!-- Quick Stats -->
-                <div class="flex border-b border-gray-100 shrink-0">
-                    <div class="flex-1 p-4 text-center">
-                        <div class="text-xl font-bold" id="modal-likes-count">0</div>
-                        <div class="text-xs text-gray-500 font-semibold">Likes</div>
+                <div class="grid grid-cols-2 border-b border-slate-100 shrink-0 divide-x divide-slate-100">
+                    <div class="p-4 text-center hover:bg-slate-50 transition">
+                        <div class="text-2xl font-bold text-slate-900" id="modal-likes-count">0</div>
+                        <div class="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Likes</div>
                     </div>
-                    <div class="flex-1 p-4 text-center border-l border-gray-100">
-                        <div class="text-xl font-bold" id="modal-comments-count">0</div>
-                        <div class="text-xs text-gray-500 font-semibold">Comments</div>
+                    <div class="p-4 text-center hover:bg-slate-50 transition">
+                        <div class="text-2xl font-bold text-slate-900" id="modal-comments-count">0</div>
+                        <div class="text-xs text-slate-500 font-bold uppercase tracking-wider mt-1">Comments</div>
                     </div>
                 </div>
 
                 <!-- Tabs -->
-                <div class="flex border-b border-gray-100 shrink-0">
+                <div class="flex border-b border-slate-100 shrink-0">
                     <div class="tab-btn active" onclick="switchModalTab('likes')" id="tab-likes">Likes</div>
                     <div class="tab-btn" onclick="switchModalTab('comments')" id="tab-comments">Comments</div>
                 </div>
 
                 <!-- Lists (Scrollable Area) -->
                 <div class="flex-1 overflow-y-auto custom-scroll p-0 relative bg-white">
-                    
-                    <!-- Likes List -->
-                    <div id="modal-list-likes" class="p-0">
-                        <!-- Items injected here -->
-                    </div>
-
-                    <!-- Comments List -->
-                    <div id="modal-list-comments" class="hidden p-0">
-                        <!-- Items injected here -->
-                    </div>
+                    <div id="modal-list-likes" class="p-0"></div>
+                    <div id="modal-list-comments" class="hidden p-0"></div>
                 </div>
             </div>
         </div>
@@ -406,13 +496,12 @@
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getFirestore, collection, query, where, getDocs, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-        // Configuration
+        // Config
         const firebaseConfig = { apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno", authDomain: "edulinki.firebaseapp.com", projectId: "edulinki", storageBucket: "edulinki.firebasestorage.app", messagingSenderId: "248886466474", appId: "1:248886466474:web:160043201a6b28bafbbdd3", measurementId: "G-MQBH12VL7N" };
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // State
         let currentUser = null;
         let allUsersCache = [];
         let myPosts = [];
@@ -420,35 +509,41 @@
         let keywordChart = null;
         let isDataLoaded = false;
 
-        // Force remove loader after 3 seconds (fail-safe)
-        setTimeout(() => {
-            if (!isDataLoaded) {
-                console.warn("Loader timeout triggered. Forcing UI display.");
-                const loader = document.getElementById('loading-overlay');
-                if(loader) loader.classList.add('hidden');
-            }
-        }, 3000);
+        // --- Animations ---
+        function animateCounter(id, end, suffix = "") {
+            const obj = document.getElementById(id);
+            if(!obj) return;
+            let current = 0;
+            const step = Math.ceil(end / 20); // 20 frames approx
+            if(end === 0) { obj.innerText = "0" + suffix; return; }
+            
+            const timer = setInterval(() => {
+                current += step;
+                if(current >= end) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                obj.innerText = current.toLocaleString() + suffix;
+            }, 30);
+        }
 
-        // --- View Switching ---
+        // --- View & Navigation ---
         window.switchView = (viewName) => {
             document.getElementById('view-overview').classList.add('hidden');
             document.getElementById('view-content').classList.add('hidden');
-            
             document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
             
-            const selectedView = document.getElementById(`view-${viewName}`);
-            if(selectedView) selectedView.classList.remove('hidden');
-            
-            const selectedNav = document.getElementById(`nav-${viewName}`);
-            if(selectedNav) selectedNav.classList.add('active');
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            const nav = document.getElementById(`nav-${viewName}`);
+            if(nav) nav.classList.add('active');
 
             if(viewName === 'overview') {
+                // Trigger chart resize
                 if(engagementChart) engagementChart.resize();
                 if(keywordChart) keywordChart.resize();
             }
         };
 
-        // --- Modal Logic ---
         window.closeModal = (e, force) => {
             if (force || e.target.classList.contains('modal-overlay')) {
                 document.getElementById('post-modal').classList.remove('open');
@@ -465,56 +560,161 @@
             document.getElementById(`tab-${tab}`).classList.add('active');
         };
 
-        // --- Data Helpers ---
+        // --- Data Handling ---
         function getUserDetails(uid) {
             const u = allUsersCache.find(u => u.id === uid);
-            return u || { name: 'Unknown User', avatar: 'https://ui-avatars.com/api/?name=User&background=random', username: 'user' };
+            return u || { name: 'User', avatar: 'https://ui-avatars.com/api/?name=User&background=random&color=fff', username: 'user' };
         }
 
-        // Non-blocking fetch
-        function fetchUsersInBackground() {
-            getDocs(collection(db, "users")).then(snap => {
+        async function fetchUsers() {
+            try {
+                const snap = await getDocs(collection(db, "users"));
                 allUsersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-                // Re-render modal if open?
-            }).catch(e => console.log("User fetch optional error:", e));
+            } catch(e) { console.log("User cache error", e); }
         }
 
-        function updateOverview() {
+        function processData() {
             let likes = 0, comments = 0;
             const wordMap = {};
-            const stopWords = new Set(['the','and','a','to','of','in','i','is','that','it','on','you','this','for','but','with','are','have','be','at','or','as','was','so','if','out','not','my','me','just','like']);
+            const stopWords = new Set(['the','and','a','to','of','in','i','is','that','it','on','you','this','for','but','with','are','have','be','at','or','as','was','so','if','out','not','my','me','just','like','video','image']);
+            
+            let allComments = [];
 
-            myPosts.forEach(post => {
-                likes += (post.likes || []).length;
-                comments += (post.comments || []).length;
+            // Sort posts: Newest first for Grid, Oldest first for Charts
+            const postsSortedByTime = [...myPosts].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
 
-                // Keywords
+            // Best post tracking
+            let bestPost = null;
+            let maxEngagement = -1;
+
+            postsSortedByTime.forEach(post => {
+                const l = (post.likes || []).length;
+                const c = (post.comments || []).length;
+                const total = l + c;
+
+                likes += l;
+                comments += c;
+
+                if(total > maxEngagement) {
+                    maxEngagement = total;
+                    bestPost = post;
+                }
+
+                // Keyword analysis
                 if (post.content) {
                     const text = post.content.toLowerCase().replace(/[^\w\s]/g, '');
                     text.split(/\s+/).forEach(w => {
                         if (w.length > 3 && !stopWords.has(w)) wordMap[w] = (wordMap[w] || 0) + 1;
                     });
                 }
+
+                // Collect comments for recent activity
+                if (post.comments && Array.isArray(post.comments)) {
+                    post.comments.forEach(comment => {
+                        allComments.push({
+                            ...comment,
+                            postImg: post.imageUrl || post.image,
+                            postContent: post.content,
+                            postId: post.id
+                        });
+                    });
+                }
             });
 
-            document.getElementById('total-likes').innerText = likes.toLocaleString();
-            document.getElementById('total-comments').innerText = comments.toLocaleString();
-            document.getElementById('total-posts').innerText = myPosts.length.toLocaleString();
+            // Update Counters with Animation
+            animateCounter('total-likes', likes);
+            animateCounter('total-comments', comments);
+            animateCounter('total-posts', myPosts.length);
             
-            // Engagement rate: (likes+comments) / posts / 100 (dummy calc)
-            const rate = myPosts.length ? (((likes + comments) / myPosts.length) * 10).toFixed(1) : 0;
-            document.getElementById('engagement-rate').innerText = rate + '%';
+            const rate = myPosts.length ? Math.round(((likes + comments) / myPosts.length) * 10) / 10 : 0;
+            animateCounter('engagement-rate', rate); // Note: Simple number animation handles ints well, float slightly tricky but ok for demo
 
-            updateCharts(wordMap);
+            // Render Charts
+            updateCharts(postsSortedByTime.reverse(), wordMap); // Chart wants chronological order
+            
+            // Render Top Post
+            renderTopPost(bestPost);
+
+            // Render Recent Activity
+            renderRecentActivity(allComments);
+
+            // Render Content Grid
+            renderContentGrid(postsSortedByTime); // Grid wants newest first
         }
 
-        function updateCharts(wordMap) {
-            const ctx1 = document.getElementById('engagementChart').getContext('2d');
+        function renderTopPost(post) {
+            const container = document.getElementById('top-post-container');
+            if(!post) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">Post more to see analytics!</div>`;
+                return;
+            }
+
+            const likes = (post.likes || []).length;
+            const comments = (post.comments || []).length;
+            const hasImg = post.imageUrl || post.image;
             
-            // Time buckets (simple index based for robustness)
-            const reversedPosts = [...myPosts].reverse(); // Oldest first
-            const dataPoints = reversedPosts.map(p => (p.likes?.length || 0) + (p.comments?.length || 0));
-            const labels = reversedPosts.map((p, i) => i + 1); // Post 1, Post 2...
+            const mediaHtml = hasImg 
+                ? `<img src="${hasImg}" class="w-full h-48 object-cover">` 
+                : `<div class="w-full h-48 bg-slate-100 flex items-center justify-center p-4 text-center text-slate-500 text-sm italic">"${post.content ? post.content.substring(0, 100) + '...' : 'Text Post'}"</div>`;
+
+            container.innerHTML = `
+                <div class="cursor-pointer group" onclick="openPostModal('${post.id}')">
+                    ${mediaHtml}
+                    <div class="p-4">
+                        <div class="flex items-center justify-between mb-2">
+                             <div class="flex items-center gap-3">
+                                <div class="flex items-center gap-1 text-red-500 font-bold"><i data-lucide="heart" class="w-4 h-4 fill-red-500"></i> ${likes}</div>
+                                <div class="flex items-center gap-1 text-blue-500 font-bold"><i data-lucide="message-circle" class="w-4 h-4 fill-blue-500"></i> ${comments}</div>
+                            </div>
+                            <span class="text-xs text-white bg-orange-500 px-2 py-1 rounded-full font-bold shadow-sm">Best</span>
+                        </div>
+                        <p class="text-xs text-slate-400 truncate">Posted on ${post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleDateString() : 'Recently'}</p>
+                    </div>
+                </div>
+            `;
+            if(window.lucide) window.lucide.createIcons();
+        }
+
+        function renderRecentActivity(comments) {
+            const container = document.getElementById('recent-activity-list');
+            if(comments.length === 0) {
+                container.innerHTML = `<div class="p-8 text-center text-slate-400 text-sm">No recent comments found.</div>`;
+                return;
+            }
+
+            // Sort by time descending
+            const sorted = comments.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).slice(0, 10);
+
+            container.innerHTML = sorted.map(c => {
+                const u = getUserDetails(c.authorId);
+                const time = c.timestamp ? new Date(c.timestamp.seconds * 1000).toLocaleDateString() : '';
+                return `
+                    <div class="p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 transition cursor-default">
+                        <div class="flex items-start gap-3">
+                            <img src="${u.avatar}" class="w-8 h-8 rounded-full border border-slate-200 mt-1">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <span class="font-bold text-sm text-slate-900 truncate">${u.name}</span>
+                                    <span class="text-[10px] text-slate-400 whitespace-nowrap ml-2">${time}</span>
+                                </div>
+                                <p class="text-sm text-slate-600 line-clamp-2 leading-snug">"${c.content}"</p>
+                                <div class="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
+                                    <i data-lucide="corner-down-right" class="w-3 h-3"></i> on post
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            if(window.lucide) window.lucide.createIcons();
+        }
+
+        function updateCharts(posts, wordMap) {
+            // Engagement Chart
+            const ctx1 = document.getElementById('engagementChart').getContext('2d');
+            const limitedPosts = posts.slice(-10); // Last 10
+            const labels = limitedPosts.map((_, i) => `Post ${i+1}`);
+            const dataPoints = limitedPosts.map(p => (p.likes?.length || 0) + (p.comments?.length || 0));
 
             if (engagementChart) engagementChart.destroy();
             engagementChart = new Chart(ctx1, {
@@ -522,41 +722,55 @@
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'Interactions',
+                        label: 'Total Interactions',
                         data: dataPoints,
-                        borderColor: '#262626',
-                        backgroundColor: 'rgba(38, 38, 38, 0.05)',
-                        borderWidth: 2,
+                        borderColor: '#2563eb',
+                        backgroundColor: (context) => {
+                            const ctx = context.chart.ctx;
+                            const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+                            gradient.addColorStop(0, 'rgba(37, 99, 235, 0.2)');
+                            gradient.addColorStop(1, 'rgba(37, 99, 235, 0)');
+                            return gradient;
+                        },
+                        borderWidth: 3,
                         tension: 0.4,
                         fill: true,
-                        pointRadius: 0,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#2563eb',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
                         pointHoverRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
+                    plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false } },
                     scales: { 
                         x: { display: false },
-                        y: { grid: { display: false }, beginAtZero: true }
-                    }
+                        y: { grid: { borderDash: [4, 4], color: '#f1f5f9' }, beginAtZero: true }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'nearest',
+                    },
                 }
             });
 
+            // Keyword Chart
             const ctx2 = document.getElementById('keywordChart').getContext('2d');
-            const sorted = Object.entries(wordMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
-
+            const sortedWords = Object.entries(wordMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            
             if (keywordChart) keywordChart.destroy();
             keywordChart = new Chart(ctx2, {
                 type: 'bar',
                 data: {
-                    labels: sorted.map(s => s[0]),
+                    labels: sortedWords.map(s => s[0]),
                     datasets: [{
-                        data: sorted.map(s => s[1]),
-                        backgroundColor: '#dbdbdb',
-                        hoverBackgroundColor: '#262626',
-                        borderRadius: 4
+                        data: sortedWords.map(s => s[1]),
+                        backgroundColor: ['#3b82f6', '#60a5fa', '#93c5fd', '#bfdbfe', '#dbeafe'],
+                        borderRadius: 6,
+                        barPercentage: 0.6
                     }]
                 },
                 options: {
@@ -566,34 +780,34 @@
                     plugins: { legend: { display: false } },
                     scales: {
                         x: { display: false },
-                        y: { grid: { display: false }, ticks: { font: { weight: '600' } } }
+                        y: { grid: { display: false }, ticks: { font: { weight: '600' }, color: '#475569' } }
                     }
                 }
             });
         }
 
-        function updateContentGrid() {
+        function renderContentGrid(posts) {
             const container = document.getElementById('posts-grid');
-            if (myPosts.length === 0) {
-                container.innerHTML = `<div class="col-span-full py-20 text-center text-gray-400">No posts shared yet.</div>`;
+            if (posts.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-20 text-center text-slate-400">No posts shared yet. Start creating!</div>`;
                 return;
             }
 
-            container.innerHTML = myPosts.map(post => {
+            container.innerHTML = posts.map(post => {
                 const hasImg = post.imageUrl || post.image;
                 const likes = (post.likes || []).length;
                 const comments = (post.comments || []).length;
                 
                 let media = hasImg 
                     ? `<img src="${hasImg}" loading="lazy">` 
-                    : `<div class="w-full h-full flex items-center justify-center p-4 bg-white text-xs text-gray-800 text-center border">${post.content?.substring(0,80)}...</div>`;
+                    : `<div class="w-full h-full flex items-center justify-center p-6 bg-white text-xs text-slate-700 text-center leading-relaxed font-medium">"${post.content?.substring(0,80)}..."</div>`;
 
                 return `
-                    <div class="post-grid-item group" onclick="openPostModal('${post.id}')">
+                    <div class="post-grid-item group shadow-sm hover:shadow-md transition-shadow" onclick="openPostModal('${post.id}')">
                         ${media}
                         <div class="post-overlay flex-col">
-                            <div class="flex items-center gap-1"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> ${likes}</div>
-                            <div class="flex items-center gap-1"><i data-lucide="message-circle" class="w-5 h-5 fill-white"></i> ${comments}</div>
+                            <div class="flex items-center gap-1 text-lg font-bold"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> ${likes}</div>
+                            <div class="flex items-center gap-1 text-lg font-bold"><i data-lucide="message-circle" class="w-5 h-5 fill-white"></i> ${comments}</div>
                         </div>
                     </div>
                 `;
@@ -602,18 +816,16 @@
             if(window.lucide) window.lucide.createIcons();
         }
 
-        // Global Modal Opener
+        // Global Modal Logic
         window.openPostModal = (pid) => {
             const post = myPosts.find(p => p.id === pid);
             if (!post) return;
 
-            // 1. Stats
             const likes = post.likes || [];
             const comments = post.comments || [];
             document.getElementById('modal-likes-count').innerText = likes.length;
             document.getElementById('modal-comments-count').innerText = comments.length;
 
-            // 2. Preview
             const imgEl = document.getElementById('modal-post-image');
             const txtEl = document.getElementById('modal-post-preview');
             const hasImg = post.imageUrl || post.image;
@@ -622,55 +834,52 @@
                 imgEl.src = hasImg;
                 imgEl.classList.remove('hidden');
                 txtEl.classList.add('hidden');
+                // Ensure text is hidden background is black for image
+                txtEl.parentElement.classList.remove('bg-slate-100');
+                txtEl.parentElement.classList.add('bg-black');
             } else {
                 imgEl.classList.add('hidden');
                 txtEl.classList.remove('hidden');
                 txtEl.innerText = post.content || "No Description";
+                // Light background for text
+                txtEl.parentElement.classList.remove('bg-black');
+                txtEl.parentElement.classList.add('bg-slate-100');
             }
 
-            // 3. Render Likes List
+            // Render Likes
             const likesContainer = document.getElementById('modal-list-likes');
-            if(likes.length === 0) {
-                likesContainer.innerHTML = '<div class="p-8 text-center text-gray-400">No likes yet.</div>';
-            } else {
-                likesContainer.innerHTML = likes.map(uid => {
-                    const u = getUserDetails(uid);
-                    return `
-                        <div class="flex items-center gap-3 p-3 hover:bg-gray-50 border-b border-gray-50 last:border-0">
-                            <img src="${u.avatar}" class="w-10 h-10 rounded-full border border-gray-200 object-cover">
-                            <div class="flex-1 min-w-0">
-                                <div class="font-semibold text-sm text-gray-900 truncate">${u.name}</div>
-                                <div class="text-xs text-gray-500 truncate">@${u.username}</div>
-                            </div>
+            likesContainer.innerHTML = likes.length ? likes.map(uid => {
+                const u = getUserDetails(uid);
+                return `
+                    <div class="flex items-center gap-3 p-3 hover:bg-slate-50 border-b border-slate-50">
+                        <img src="${u.avatar}" class="w-10 h-10 rounded-full border border-slate-200 object-cover">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-bold text-sm text-slate-900 truncate">${u.name}</div>
+                            <div class="text-xs text-slate-500 truncate">@${u.username}</div>
                         </div>
-                    `;
-                }).join('');
-            }
+                    </div>
+                `;
+            }).join('') : '<div class="p-8 text-center text-slate-400">No likes yet.</div>';
 
-            // 4. Render Comments List
+            // Render Comments
             const commentsContainer = document.getElementById('modal-list-comments');
-            if(comments.length === 0) {
-                commentsContainer.innerHTML = '<div class="p-8 text-center text-gray-400">No comments yet.</div>';
-            } else {
-                // sort new to old
-                const sortedC = [...comments].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
-                commentsContainer.innerHTML = sortedC.map(c => {
-                    const u = getUserDetails(c.authorId);
-                    const time = c.timestamp ? new Date(c.timestamp.seconds * 1000).toLocaleDateString() : '';
-                    return `
-                        <div class="flex gap-3 p-3 hover:bg-gray-50 border-b border-gray-50 last:border-0 items-start">
-                            <img src="${u.avatar}" class="w-8 h-8 rounded-full border border-gray-200 object-cover mt-1">
-                            <div class="flex-1">
-                                <div class="flex justify-between items-baseline">
-                                    <span class="font-semibold text-sm text-gray-900 mr-2">${u.name}</span>
-                                    <span class="text-[10px] text-gray-400">${time}</span>
-                                </div>
-                                <div class="text-sm text-gray-700 mt-1 leading-snug">${c.content}</div>
+            const sortedC = [...comments].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+            commentsContainer.innerHTML = sortedC.length ? sortedC.map(c => {
+                const u = getUserDetails(c.authorId);
+                const time = c.timestamp ? new Date(c.timestamp.seconds * 1000).toLocaleDateString() : 'Just now';
+                return `
+                    <div class="flex gap-3 p-4 hover:bg-slate-50 border-b border-slate-50 items-start">
+                        <img src="${u.avatar}" class="w-8 h-8 rounded-full border border-slate-200 mt-1">
+                        <div class="flex-1">
+                            <div class="flex justify-between items-baseline">
+                                <span class="font-bold text-sm text-slate-900 mr-2">${u.name}</span>
+                                <span class="text-[10px] text-slate-400">${time}</span>
                             </div>
+                            <div class="text-sm text-slate-700 mt-1">${c.content}</div>
                         </div>
-                    `;
-                }).join('');
-            }
+                    </div>
+                `;
+            }).join('') : '<div class="p-8 text-center text-slate-400">No comments yet.</div>';
 
             switchModalTab('likes');
             document.getElementById('post-modal').classList.add('open');
@@ -681,11 +890,14 @@
             if (user) {
                 currentUser = user;
                 
-                // Set sidebar profile immediately
+                // Immediate UI update
                 document.getElementById('user-name').innerText = user.displayName || 'Creator';
                 document.getElementById('user-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'U'}`;
 
-                // Async: Get extra details & Users
+                // Fetch Users Cache
+                fetchUsers();
+                
+                // Get User DB Profile
                 getDoc(doc(db, "users", user.uid)).then(d => {
                     if(d.exists()) {
                         const data = d.data();
@@ -693,29 +905,22 @@
                         if(data.avatar) document.getElementById('user-avatar').src = data.avatar;
                     }
                 });
-                
-                fetchUsersInBackground();
 
-                // Listen for posts
+                // Realtime Posts
                 const q = query(collection(db, "posts"), where("authorId", "==", user.uid));
-                
                 onSnapshot(q, (snapshot) => {
                     myPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    
-                    updateOverview();
-                    updateContentGrid();
-
-                    isDataLoaded = true;
+                    processData();
                     document.getElementById('loading-overlay').classList.add('hidden');
-                }, (err) => {
-                    console.error("Studio Load Error", err);
-                    document.getElementById('loading-overlay').classList.add('hidden'); // Fail gracefully
+                    isDataLoaded = true;
                 });
-
             } else {
                 window.location.href = '/';
             }
         });
+        
+        // Failsafe
+        setTimeout(() => { if(!isDataLoaded) document.getElementById('loading-overlay').classList.add('hidden'); }, 3000);
 
         if(window.lucide) window.lucide.createIcons();
     </script>
