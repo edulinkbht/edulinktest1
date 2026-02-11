@@ -1648,25 +1648,34 @@
         </div>
     </div>
     <div id="mobile-notifications-header"
-        class="md:hidden fixed top-0 left-0 w-full bg-white z-30 flex-col hidden border-b border-gray-100 pb-0 shadow-sm">
+        class="md:hidden fixed top-0 left-0 w-full bg-white z-30 flex-col hidden border-b border-gray-100 pb-0">
         <div class="h-16 flex items-center justify-between px-4 shrink-0 relative">
-            <span class="font-bold text-lg text-[#1f1f1f]">Activity</span>
-            <div class="flex items-center gap-3">
-                <button onclick="toggleNotifSearchMobile()" class="icon-btn">
-                    <i data-lucide="search" class="w-5 h-5 text-[#1f1f1f]"></i>
-                </button>
-                <div class="relative">
+            <!-- Default Header Content -->
+            <div id="notif-header-default" class="flex items-center justify-between w-full">
+                <span class="font-bold text-lg text-[#1f1f1f]">Activity</span>
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleNotifSearchMobile()"
+                        class="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors">
+                        <i data-lucide="search" class="w-4 h-4 text-[#1f1f1f]"></i>
+                        <span class="text-sm font-bold text-[#1f1f1f]">Search</span>
+                    </button>
                     <button onclick="toggleNotifMenu()" class="icon-btn">
-                        <i data-lucide="more-vertical" class="w-5 h-5 text-[#1f1f1f]"></i>
+                        <i data-lucide="layout-grid" class="w-5 h-5 text-[#1f1f1f]"></i>
                     </button>
                 </div>
             </div>
-        </div>
-        <div id="mobile-notif-search-container" class="px-4 pb-2 hidden">
-            <div class="relative">
-                <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
-                <input type="text" id="notif-search" placeholder="Search..." oninput="handleNotifSearch(this.value)"
-                    class="w-full bg-gray-100 rounded-xl py-2 pl-9 pr-4 text-sm outline-none focus:ring-1 focus:ring-blue-500 transition-all">
+
+            <!-- Search Mode Header Content -->
+            <div id="notif-header-search" class="hidden flex items-center gap-3 w-full">
+                <div class="relative flex-1">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                    <input type="text" id="notif-search" placeholder="Search..." oninput="handleNotifSearch(this.value)"
+                        class="w-full bg-gray-100 rounded-xl py-2 pl-9 pr-4 text-sm outline-none focus:ring-1 focus:ring-blue-500 transition-all">
+                </div>
+                <button onclick="toggleNotifSearchMobile()"
+                    class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
+                </button>
             </div>
         </div>
     </div>
@@ -2829,7 +2838,33 @@
         async function sendNotification(rid, t, c, pid = null) { await setDoc(doc(db, "notifications", `${t}_${currentUser.id}_${pid || 'general'}_${rid}`), { receiverId: rid, senderId: currentUser.id, type: t, content: c, timestamp: serverTimestamp(), read: !1, postId: pid }, { merge: !0 }) }
         window.switchNotifTab = t => { activeNotifTab = t; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));[`ntab-${t}`, `ntab-${t}-mobile`].forEach(id => document.getElementById(id)?.classList.add('active')); renderNotifications() };
         window.toggleNotifMenu = () => { manageHistory('notif-options-overlay'); const o = document.getElementById('notif-options-overlay'), m = document.getElementById('notif-options-modal'); o.classList.remove('hidden'); m.style.transition = 'none'; o.classList.add('opacity-0'); m.classList.add('translate-y-full'); void m.offsetWidth; m.style.transition = ''; setTimeout(() => { o.classList.remove('opacity-0'); m.classList.remove('translate-y-full') }, 20) }; window.closeNotifOptions = () => { const o = document.getElementById('notif-options-overlay'), m = document.getElementById('notif-options-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full'); setTimeout(() => o.classList.add('hidden'), 200) };
-        window.toggleNotifSelection = () => { window.notifSelectionMode = !window.notifSelectionMode; if (!window.notifSelectionMode) window.selectedNotifs.clear(); renderNotifications() }; window.toggleNotifSearchMobile = () => { const c = document.getElementById('mobile-notif-search-container'); c.classList.toggle('hidden'); if (!c.classList.contains('hidden')) document.getElementById('notif-search').focus() }; window.handleNotifSearch = v => { window.notifSearchTerm = v.toLowerCase(); renderNotifications() }; window.toggleNotifSelect = id => { window.selectedNotifs.has(id) ? window.selectedNotifs.delete(id) : window.selectedNotifs.add(id); renderNotifications() };
+        window.toggleNotifSelection = () => { window.notifSelectionMode = !window.notifSelectionMode; if (!window.notifSelectionMode) window.selectedNotifs.clear(); renderNotifications() };
+        window.toggleNotifSearchMobile = () => {
+            const d = document.getElementById('notif-header-default'), s = document.getElementById('notif-header-search');
+            if (d && s) {
+                const isSearchActive = d.classList.contains('hidden');
+                if (isSearchActive) {
+                    d.classList.remove('hidden');
+                    d.classList.add('flex');
+                    s.classList.add('hidden');
+                    s.classList.remove('flex');
+                    window.notifSearchTerm = '';
+                    const si = document.getElementById('notif-search');
+                    if (si) si.value = '';
+                    renderNotifications();
+                } else {
+                    d.classList.add('hidden');
+                    d.classList.remove('flex');
+                    s.classList.remove('hidden');
+                    s.classList.add('flex');
+                    const si = document.getElementById('notif-search');
+                    if (si) si.focus();
+                }
+                refreshIcons();
+            }
+        };
+        window.handleNotifSearch = v => { window.notifSearchTerm = v.toLowerCase(); renderNotifications() };
+        window.toggleNotifSelect = id => { window.selectedNotifs.has(id) ? window.selectedNotifs.delete(id) : window.selectedNotifs.add(id); renderNotifications() };
         window.deleteSelectedNotifs = async () => { if (!window.selectedNotifs.size) return showToast("None selected"); showAlert(`Delete ${window.selectedNotifs.size} items?`, async () => { const b = writeBatch(db); window.selectedNotifs.forEach(id => b.delete(doc(db, "notifications", id))); await b.commit(); window.notifSelectionMode = false; window.selectedNotifs.clear(); toggleNotifMenu(); showToast("Deleted") }) };
         window.renderNotifications = () => {
             const c = document.getElementById('notification-list'), term = window.notifSearchTerm;
