@@ -580,11 +580,29 @@
             color: #1f1f1f;
             flex-shrink: 0;
             transition: all 0.2s ease;
+            background: transparent;
         }
 
         .post-option-item:hover .icon-circle {
             border-color: #d1d5db;
-            background-color: #f9fafb;
+        }
+
+        .logout-btn-custom {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            background: #fffafa;
+            border: 1.5px solid #fee2e2;
+            width: 100%;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .logout-btn-custom:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
         }
 
         .tab-group {
@@ -2811,13 +2829,26 @@
                     </div>
                 </button>
                 <div class="h-px bg-gray-100 my-2 mx-2"></div>
-                <button onclick="doLogout()" class="post-option-item group w-full">
-                    <div class="icon-circle border-red-100 text-red-600"><i data-lucide="log-out" class="w-5 h-5"></i></div>
-                    <div class="font-bold text-red-600 text-[15px]">Log Out</div>
-                </button>
+                <div onclick="window.logoutWithConfirm()" class="logout-btn-custom group">
+                    <img src="${currentUser.avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
+                    <div class="flex-1">
+                        <div class="font-bold text-red-600 text-[15px]">Log Out</div>
+                        <div class="text-xs text-gray-400 truncate">@${currentUser.username || 'user'}</div>
+                    </div>
+                    <i data-lucide="log-out" class="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors"></i>
+                </div>
             `;
             toggleModalAnim('settings-overlay', 'settings-modal', !0);
             refreshIcons();
+        };
+        window.logoutWithConfirm = () => {
+            showAlert("Are you sure you want to quit?", () => {
+                window.doLogout();
+            });
+        };
+        window.doLogout = async () => {
+            await signOut(auth);
+            window.location.href = '/login';
         };
         window.openMobileSettings = () => {
             window.openSettings();
@@ -2834,10 +2865,10 @@
             const isMyProfile = window.currentViewName === 'profile' && window.currentViewingProfileId === currentUser.id;
             if (isMyProfile) {
                 mProfile.onclick = (e) => { e.stopPropagation(); window.openSettings(); };
-                mProfile.innerHTML = `<i data-lucide="layout-panel-left" class="w-6 h-6 text-gray-900" style="stroke-width: 2.5;"></i>`;
+                mProfile.innerHTML = `<i data-lucide="layout-panel-left" class="w-7 h-7 text-gray-900 icon-filled" style="stroke-width: 2; fill: currentColor;"></i>`;
             } else {
                 mProfile.onclick = () => window.showProfile(currentUser.id);
-                mProfile.innerHTML = `<img id="mobile-avatar" src="${currentUser.avatar}" class="w-6 h-6 rounded-full border border-gray-200 object-cover">`;
+                mProfile.innerHTML = `<img id="mobile-avatar" src="${currentUser.avatar}" class="w-7 h-7 rounded-full border border-gray-200 object-cover">`;
             }
             refreshIcons();
         };
