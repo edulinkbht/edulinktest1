@@ -2831,7 +2831,94 @@
         window.onpopstate = e => { const modals = [{ id: 'post-view-overlay', close: window.closePostView }, { id: 'thread-overlay', close: window.closeThread }, { id: 'edit-profile-overlay', close: window.closeEditProfile }, { id: 'likes-overlay', close: window.closeLikes }, { id: 'user-list-overlay', close: window.closeUserList }, { id: 'feed-filter-overlay', close: window.closeFeedFilter }, { id: 'compose-overlay', close: window.attemptCloseCompose }, { id: 'share-overlay', close: window.closeShareMenu }, { id: 'post-options-overlay', close: window.hidePostMenu }, { id: 'settings-overlay', close: window.closeSettings }, { id: 'notif-options-overlay', close: window.closeNotifOptions }, { id: 'qr-overlay', close: window.closeQR }, { id: 'privacy-overlay', close: window.closePrivacySettings }, { id: 'profile-filter-overlay', close: window.closeProfileFilter }, { id: 'download-select-overlay', close: window.closeDownloadSelect }, { id: 'comment-options-overlay', close: window.closeCommentOptions }, { id: 'create-menu-overlay', close: window.closeCreateMenu }, { id: 'announcement-overlay', close: window.closeAnnouncement }, { id: 'profile-preview-overlay', close: window.closeProfilePreview }, { id: 'comment-filter-overlay', close: window.closeCommentFilter }, { id: 'claim-link-overlay', close: window.closeClaimOverlay }, { id: 'view-profile', close: () => window.switchView('feed') }]; let closedAny = false; if (e.state && e.state.modal) { } else { for (let m of modals) { const el = document.getElementById(m.id); if (el && !el.classList.contains('hidden') && !el.classList.contains('opacity-0')) { if (m.id === 'view-profile') { if (window.currentViewingProfileId) { window.switchView('feed'); window.currentViewingProfileId = null; closedAny = true } } else if (m.id === 'compose-overlay') { window.closeCompose(); closedAny = true } else if (m.id === 'create-menu-overlay') { window.closeCreateMenu(); closedAny = true } else { m.close(); closedAny = true } if (closedAny) break } } } if (!closedAny) { if (exitAttempt) { } else { window.history.pushState({ root: true }, ""); exitAttempt = true; showToast("Press back again to exit"); setTimeout(() => { exitAttempt = false }, 2000) } } };
         window.checkUsername = e => { const v = e.value.trim().toLowerCase(), l = v.length; document.getElementById('username-counter').innerText = `${l}/20`; if (l < 3) { document.getElementById('username-error').classList.add('hidden'); return } const t = users.some(u => u.username === v && u.id !== currentUser.id); const err = document.getElementById('username-error'); if (t) { err.innerText = "Username taken"; err.classList.remove('hidden') } else err.classList.add('hidden') };
         window.saveUsername = async () => { const v = document.getElementById('new-username-input').value.trim().toLowerCase(); if (v.length < 3 || v.length > 20 || /\s/.test(v) || !/^[a-z0-9_.]+$/.test(v)) return showToast("Invalid username", true); if (!(await getDocs(query(collection(db, "users"), where("username", "==", v)))).empty) return showToast("Taken", true); await updateDoc(doc(db, "users", currentUser.id), { username: v }); currentUser.username = v; document.getElementById('username-modal').classList.add('hidden'); showToast("Username set!") };
-        function initRealtimeListeners() { onSnapshot(collection(db, "users"), s => { users = s.docs.map(d => ({ id: d.id, ...d.data() })); const me = users.find(u => u.id === currentUser.id); if (me && me.banned) { document.getElementById('banned-overlay').classList.remove('hidden') } if (window.pendingProfileUid && users.some(u => u.id === window.pendingProfileUid)) { showProfile(window.pendingProfileUid); window.pendingProfileUid = null; window.history.replaceState({}, document.title, window.location.pathname) } if (!document.getElementById('view-network').classList.contains('hidden')) renderNetwork(); if (!document.getElementById('privacy-overlay').classList.contains('hidden')) { const u = users.find(x => x.id === currentUser.id); if (u && u.settings) { const pt = document.getElementById('toggle-privacy-main'), ht = document.getElementById('toggle-hide-connections'); if (u.settings.privateNetwork) pt.classList.add('active'); else pt.classList.remove('active'); if (u.settings.hideConnections) ht.classList.add('active'); else ht.classList.remove('active') } } if (window.currentViewingProfileId && !document.getElementById('view-profile').classList.contains('hidden')) renderProfileContent(window.currentViewingProfileId, window.currentProfileTab); renderRightSidebar(); refreshIcons() }); onSnapshot(doc(db, "global", "promo"), s => { const sec = document.getElementById('promo-section'); if (s.exists() && s.data().imageUrl) { sec.classList.remove('hidden'); document.getElementById('promo-image').src = s.data().imageUrl; document.getElementById('promo-link').href = s.data().linkUrl || '#' } else if (currentUser?.email !== 'edulinkbht@gmail.com') sec.classList.add('hidden') }); onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), { includeMetadataChanges: true }, s => { posts = s.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().timestamp })); const ch = s.docChanges(); ch.filter(c => c.type === 'removed').forEach(c => { document.querySelectorAll(`[id*='post-card-'][id$='-${c.doc.id}']`).forEach(el => el.remove()) }); if (ch.some(c => c.type === 'added')) { if (!document.getElementById('view-feed').classList.contains('hidden')) renderFeed(); if (!document.getElementById('view-explore').classList.contains('hidden')) handleSearch(document.getElementById('global-search').value || document.getElementById('mobile-explore-search').value) } posts.forEach(p => { const isLiked = p.likes && p.likes.includes(currentUser.id); document.querySelectorAll(`.js-like-btn-${p.id}`).forEach(b => b.classList.toggle('active', isLiked)); document.querySelectorAll(`.js-like-count-${p.id}`).forEach(el => el.innerText = (p.likes?.length > 0) ? p.likes.length : 'Like'); document.querySelectorAll(`.js-comment-count-${p.id}`).forEach(el => el.innerText = (p.comments?.length > 0) ? p.comments.length : 'Comment'); const isSaved = savedPosts.includes(p.id); document.querySelectorAll(`.js-save-btn-${p.id}`).forEach(b => b.classList.toggle('active', isSaved)); document.querySelectorAll(`.js-post-body-${p.id}`).forEach(el => el.innerHTML = window.renderTextWithReadMore(p.content, `post-${p.id}`)) }); if (!document.getElementById('view-saved').classList.contains('hidden')) renderSaved(); if (!document.getElementById('view-network').classList.contains('hidden') && activeNetworkTab === 'posts') renderNetwork(); if (!document.getElementById('view-profile').classList.contains('hidden') && window.currentViewingProfileId) renderProfileContent(window.currentViewingProfileId, window.currentProfileTab); if (window.currentViewingPostId) { const cp = posts.find(p => p.id === window.currentViewingPostId); if (cp) { if (window.isDesktopThreadMode) renderDesktopThread(window.threadPostId, window.threadParentCommentId); else renderCommentsInModal(window.currentViewingPostId); updatePostViewStats(window.currentViewingPostId) } else closePostView() } if (window.threadPostId && !window.isDesktopThreadMode) renderThreadContent(window.threadPostId, window.threadParentCommentId); renderRightSidebar(); setTimeout(refreshIcons, 5) }); onSnapshot(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id)), s => { notifications = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0)); const u = notifications.filter(n => !n.read).length, t = u > 99 ? '99+' : u, d = document.getElementById('nav-notif-badge'), m = document.getElementById('mobile-footer-badge'); if (d) { d.style.display = u ? 'flex' : 'none'; d.innerText = t } if (m) { m.style.display = u ? 'flex' : 'none'; m.innerText = t } if (!document.getElementById('view-notifications').classList.contains('hidden')) renderNotifications(); refreshIcons() }) }
+        function initRealtimeListeners() {
+            onSnapshot(collection(db, "users"), s => {
+                users = s.docs.map(d => ({ id: d.id, ...d.data() }));
+                const me = users.find(u => u.id === currentUser.id);
+                if (me && me.banned) { document.getElementById('banned-overlay').classList.remove('hidden') }
+                if (window.pendingProfileUid && users.some(u => u.id === window.pendingProfileUid)) {
+                    showProfile(window.pendingProfileUid);
+                    window.pendingProfileUid = null;
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+                // Removed automatic renderNetwork() and renderProfileContent() from generic user updates to prevent jumps
+                if (!document.getElementById('privacy-overlay').classList.contains('hidden')) {
+                    const u = users.find(x => x.id === currentUser.id);
+                    if (u && u.settings) {
+                        const pt = document.getElementById('toggle-privacy-main'), ht = document.getElementById('toggle-hide-connections');
+                        if (u.settings.privateNetwork) pt.classList.add('active'); else pt.classList.remove('active');
+                        if (u.settings.hideConnections) ht.classList.add('active'); else ht.classList.remove('active')
+                    }
+                }
+                renderRightSidebar();
+                refreshIcons()
+            });
+            onSnapshot(doc(db, "global", "promo"), s => {
+                const sec = document.getElementById('promo-section');
+                if (s.exists() && s.data().imageUrl) {
+                    sec.classList.remove('hidden');
+                    document.getElementById('promo-image').src = s.data().imageUrl;
+                    document.getElementById('promo-link').href = s.data().linkUrl || '#'
+                } else if (currentUser?.email !== 'edulinkbht@gmail.com') sec.classList.add('hidden')
+            });
+            onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), { includeMetadataChanges: true }, s => {
+                const oldPosts = [...posts];
+                posts = s.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().timestamp }));
+                const ch = s.docChanges();
+                ch.filter(c => c.type === 'removed').forEach(c => {
+                    document.querySelectorAll(`[id*='post-card-'][id$='-${c.doc.id}']`).forEach(el => el.remove())
+                });
+
+                // Targeted in-place updates for existing posts
+                posts.forEach(p => {
+                    const isLiked = p.likes && p.likes.includes(currentUser.id);
+                    document.querySelectorAll(`.js-like-btn-${p.id}`).forEach(b => b.classList.toggle('active', isLiked));
+                    document.querySelectorAll(`.js-like-count-${p.id}`).forEach(el => el.innerText = (p.likes?.length > 0) ? p.likes.length : 'Like');
+                    document.querySelectorAll(`.js-comment-count-${p.id}`).forEach(el => el.innerText = (p.comments?.length > 0) ? p.comments.length : 'Comment');
+                    const isSaved = savedPosts.includes(p.id);
+                    document.querySelectorAll(`.js-save-btn-${p.id}`).forEach(b => b.classList.toggle('active', isSaved));
+                    // Only update body if content changed (prevents flicker)
+                    const oldP = oldPosts.find(x => x.id === p.id);
+                    if (!oldP || oldP.content !== p.content) {
+                        document.querySelectorAll(`.js-post-body-${p.id}`).forEach(el => el.innerHTML = window.renderTextWithReadMore(p.content, `post-${p.id}`));
+                    }
+                });
+
+                // Interaction specifically for current post view
+                if (window.currentViewingPostId) {
+                    const cp = posts.find(p => p.id === window.currentViewingPostId);
+                    const oldP = oldPosts.find(p => p.id === window.currentViewingPostId);
+                    if (cp) {
+                        // Only re-render comments if comment count or content changed
+                        if (!oldP || JSON.stringify(oldP.comments) !== JSON.stringify(cp.comments)) {
+                            if (window.isDesktopThreadMode) renderDesktopThread(window.threadPostId, window.threadParentCommentId);
+                            else renderCommentsInModal(window.currentViewingPostId);
+                        }
+                        updatePostViewStats(window.currentViewingPostId)
+                    } else closePostView()
+                }
+
+                if (window.threadPostId && !window.isDesktopThreadMode) {
+                    const tp = posts.find(p => p.id === window.threadPostId);
+                    const oldTp = oldPosts.find(p => p.id === window.threadPostId);
+                    if (tp && (!oldTp || JSON.stringify(oldTp.comments) !== JSON.stringify(tp.comments))) {
+                        renderThreadContent(window.threadPostId, window.threadParentCommentId);
+                    }
+                }
+
+                renderRightSidebar();
+                setTimeout(refreshIcons, 5)
+            });
+            onSnapshot(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id)), s => {
+                notifications = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0));
+                const u = notifications.filter(n => !n.read).length, t = u > 99 ? '99+' : u, d = document.getElementById('nav-notif-badge'), m = document.getElementById('mobile-footer-badge');
+                if (d) { d.style.display = u ? 'flex' : 'none'; d.innerText = t }
+                if (m) { m.style.display = u ? 'flex' : 'none'; m.innerText = t }
+                if (!document.getElementById('view-notifications').classList.contains('hidden')) renderNotifications();
+                refreshIcons()
+            })
+        }
+
         window.renderRightSidebar = () => { const l = document.getElementById('who-to-follow-list'), now = Date.now(); if (!l || !currentUser) return; if (!window.currentSuggestionIds?.length || now - (window.lastSuggestionRefresh || 0) > 180000) { window.currentSuggestionIds = users.filter(u => u.id !== currentUser.id && u.name).sort(() => .5 - Math.random()).slice(0, 3).map(u => u.id); window.lastSuggestionRefresh = now } const c = window.currentSuggestionIds.map(id => users.find(u => u.id === id)).filter(Boolean); l.innerHTML = c.length ? c.map(u => { const isF = currentUser.following.includes(u.id); return `<div class="flex items-center justify-between" onclick="showProfile('${u.id}')"><div class="flex items-center gap-3 overflow-hidden"><div class="img-placeholder rounded-full w-10 h-10 shrink-0"><img src="${u.avatar}" class="w-10 h-10 rounded-full object-cover" onload="this.classList.add('loaded')"></div><div class="min-w-0"><div class="font-bold text-sm text-gray-900 truncate hover:underline cursor-pointer flex items-center gap-1">${u.name}${u.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500"></i>' : ''}</div><div class="text-xs text-gray-500 truncate">@${u.username || 'user'}</div></div></div><button onclick="event.stopPropagation(); toggleFollow('${u.id}')" class="${isF ? 'bg-gray-100 text-gray-900 border border-gray-200' : 'bg-black text-white'} text-xs px-3 py-1.5 rounded-full font-bold hover:opacity-80 transition-colors">${isF ? 'Following' : 'Follow'}</button></div>` }).join('') : '<div class="text-sm text-gray-400 p-2">No suggestions.</div>' };
         window.openPromoModal = e => { if (e) { e.stopPropagation(); e.preventDefault() } document.getElementById('promo-modal').classList.remove('hidden'); const i = document.getElementById('promo-image'), l = document.getElementById('promo-link'); if (i.src) document.getElementById('promo-img-url').value = i.src; if (l.href) document.getElementById('promo-target-url').value = l.href };
         window.handlePromoFile = e => { const f = e.target.files[0]; if (f) { window.currentPromoBlob = f; showToast("Image selected") } };
@@ -3179,7 +3266,39 @@
             c.innerHTML = `<div class="profile-banner-container"><img src="${u.banner || 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80'}" class="profile-banner-img" style="object-position:center ${u.bannerPos || 50}%" onload="this.classList.add('loaded')"></div><div class="bg-white rounded-t-[30px] -mt-6 relative z-10 pt-2 px-4 md:px-6 min-h-[calc(100%-140px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"><div class="flex justify-between items-end -mt-14 mb-4 px-2"><div class="rounded-full border-4 border-white bg-white w-24 h-24 shrink-0 img-placeholder"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover cursor-pointer" onclick="openLightbox('${u.avatar}')" onload="this.classList.add('loaded')"></div>${ab}</div><div class="mb-3"><h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-6 h-6 official-badge ml-1"></i>' : ''}${u.banned ? '<i data-lucide="ban" class="text-red-600 w-6 h-6"></i>' : ''}</h1>${stats}</div><div class="tab-group mb-0">${tabs}</div><div id="profile-content-area" class="pt-1 md:pt-4 pb-20 md:pb-0"></div></div>`; switchView('profile'); renderProfileContent(uid, tab); syncURLState(); refreshIcons(); window.updateMobileFooterProfile();
         };
         window.switchProfileTab = t => { if (t === 'posts' && window.currentProfileTab === 'posts') { openProfileFilter(); return } document.querySelectorAll('#view-profile .tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('onclick').includes(t))); window.currentProfileTab = t; renderProfileContent(window.currentViewingProfileId, t); syncURLState() };
-        window.renderProfileContent = (uid, t) => { const c = document.getElementById('profile-content-area'), u = users.find(x => x.id === uid); c.innerHTML = ""; if (t === 'liked' && uid !== currentUser.id) return c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="lock" class="w-16 h-16 mb-2"></i><p>This user\'s likes are private.</p></div>', refreshIcons(); let tp = posts.filter(p => t === 'posts' ? p.authorId === uid : t === 'saved' ? savedPosts.includes(p.id) : t === 'liked' ? p.likes?.includes(uid) : (p.collaborators?.some(x => x.id === uid && x.status === 'accepted') || p.mentions?.includes(uid))); if (uid !== currentUser.id && t === 'posts') { const isF = currentUser.following.includes(uid); if (u.settings?.privateNetwork && !isF) { c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="lock" class="w-16 h-16 mb-2"></i><p>This account is private.</p></div>'; refreshIcons(); return } tp = tp.filter(p => (p.settings?.privacy === 'public' || currentUser.following.includes(uid))) } if (window.profileSort === 'latest') tp.sort((a, b) => b.timestamp - a.timestamp); else if (window.profileSort === 'oldest') tp.sort((a, b) => a.timestamp - b.timestamp); else if (window.profileSort === 'popular') tp.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0)); if (tp.length === 0) c.innerHTML = '<div class="text-center py-20 text-gray-400">No posts yet</div>'; else c.innerHTML = `<div class="grid-post-container">${tp.map(p => { const m = Array.isArray(p.media) ? p.media[0] : p.media, isV = m && (m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video')); return `<div class="grid-post-item group bg-gray-200 ${!m ? 'border border-gray-300' : ''}" onclick="openPostView('${p.id}')">${m ? (isV ? `<video src="${m}" class="w-full h-full object-cover pointer-events-none"></video><div class="absolute inset-0 flex items-center justify-center"><i data-lucide="play" class="w-8 h-8 text-white drop-shadow-md"></i></div>` : `<div class="img-placeholder w-full h-full"><img src="${m}" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>` + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2"><i data-lucide="layers" class="w-4 h-4 text-white drop-shadow-md"></i></div>` : '')) : `<div class="grid-post-text-preview">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`}<div class="grid-post-overlay"><div class="flex items-center gap-1"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> ${p.likes?.length > 0 ? p.likes.length : '0'}</div><div class="flex items-center gap-1"><i data-lucide="message-circle" class="w-5 h-5 fill-white"></i> ${p.comments?.length > 0 ? p.comments.length : ''}</div></div></div>` }).join('')}</div>`; refreshIcons() };
+        window.renderProfileContent = (uid, t) => {
+            const c = document.getElementById('profile-content-area'), u = users.find(x => x.id === uid);
+            c.innerHTML = "";
+            if (t === 'liked' && uid !== currentUser.id) return c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="lock" class="w-16 h-16 mb-2"></i><p>This user\'s likes are private.</p></div>', refreshIcons();
+            let tp = posts.filter(p => t === 'posts' ? p.authorId === uid : t === 'saved' ? savedPosts.includes(p.id) : t === 'liked' ? p.likes?.includes(uid) : (p.collaborators?.some(x => x.id === uid && x.status === 'accepted') || p.mentions?.includes(uid)));
+            if (uid !== currentUser.id && t === 'posts') {
+                const isF = currentUser.following.includes(uid);
+                if (u.settings?.privateNetwork && !isF) {
+                    c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="lock" class="w-16 h-16 mb-2"></i><p>This account is private.</p></div>';
+                    refreshIcons();
+                    return
+                }
+                tp = tp.filter(p => (p.settings?.privacy === 'public' || currentUser.following.includes(uid)))
+            }
+            if (window.profileSort === 'latest') tp.sort((a, b) => b.timestamp - a.timestamp);
+            else if (window.profileSort === 'oldest') tp.sort((a, b) => a.timestamp - b.timestamp);
+            else if (window.profileSort === 'popular') tp.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
+            if (tp.length === 0) c.innerHTML = '<div class="text-center py-20 text-gray-400">No posts yet</div>';
+            else {
+                c.innerHTML = `<div class="grid-post-container">${tp.map(p => {
+                    const m = Array.isArray(p.media) ? p.media[0] : p.media, isV = m && (m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video')), likeText = (p.likes?.length > 0) ? p.likes.length : '0', commentText = (p.comments?.length > 0) ? p.comments.length : '0';
+                    return `<div class="grid-post-item group bg-gray-200 ${!m ? 'border border-gray-300' : ''}" onclick="openPostView('${p.id}')">
+                        ${m ? (isV ? `<video src="${m}" class="w-full h-full object-cover pointer-events-none"></video><div class="absolute inset-0 flex items-center justify-center"><i data-lucide="play" class="w-8 h-8 text-white drop-shadow-md"></i></div>` : `<div class="img-placeholder w-full h-full"><img src="${m}" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>` + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2"><i data-lucide="layers" class="w-4 h-4 text-white drop-shadow-md"></i></div>` : '')) : `<div class="grid-post-text-preview">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`}
+                        <div class="grid-post-overlay">
+                            <div class="flex items-center gap-1"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> <span class="js-like-count-${p.id}">${likeText}</span></div>
+                            <div class="flex items-center gap-1"><i data-lucide="message-circle" class="w-5 h-5 fill-white"></i> <span class="js-comment-count-${p.id}">${commentText}</span></div>
+                        </div>
+                    </div>`
+                }).join('')}</div>`;
+            }
+            refreshIcons()
+        };
+
 
         window.openEditProfile = () => { manageHistory('edit-profile-overlay'); document.getElementById('edit-banner-preview').src = currentUser.banner || 'https://images.unsplash.com/photo-1579546929518-9e396f3cc809?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80'; document.getElementById('edit-banner-preview').style.objectPosition = `center ${currentBannerPos = initialBannerPos = currentUser.bannerPos || 50}%`; document.getElementById('banner-pos-hint').innerText = `${currentBannerPos}%`; document.getElementById('edit-email').value = currentUser.email || ""; const ONE_WEEK = 604800000; const now = Date.now(); const lastNameChange = currentUser.lastNameChange?.toDate?.()?.getTime() || 0; const daysLeftName = Math.ceil((lastNameChange + ONE_WEEK - now) / (1000 * 60 * 60 * 24)); const canEditName = now - lastNameChange > ONE_WEEK; const lastUserChange = currentUser.lastUsernameChange?.toDate?.()?.getTime() || 0; const daysLeftUser = Math.ceil((lastUserChange + ONE_WEEK - now) / (1000 * 60 * 60 * 24)); const canEditUser = now - lastUserChange > ONE_WEEK; const ni = document.getElementById('edit-name'); ni.value = currentUser.name; ni.disabled = !canEditName; document.getElementById('name-change-hint').innerText = canEditName ? "You can change your name once a week." : `Wait ${daysLeftName} days to change name.`; document.getElementById('name-change-hint').className = canEditName ? "text-[10px] text-gray-400 mt-1" : "text-[10px] text-red-500 mt-1 font-medium"; const ui = document.getElementById('edit-username'); ui.value = currentUser.username || ""; ui.disabled = !canEditUser; document.getElementById('username-change-hint').innerText = canEditUser ? "You can change this once a week." : `Wait ${daysLeftUser} days to change username.`; document.getElementById('username-change-hint').className = canEditUser ? "text-[10px] text-gray-400" : "text-[10px] text-red-500 font-medium"; document.getElementById('username-counter').innerText = `${(currentUser.username || "").length}/20`; document.body.classList.add('modal-open'); toggleModalAnim('edit-profile-overlay', 'edit-profile-modal', !0) };
         window.closeEditProfile = () => { document.body.classList.remove('modal-open'); toggleModalAnim('edit-profile-overlay', 'edit-profile-modal', !1) }; window.handleEditAvatarSelect = e => { const f = e.target.files[0]; if (f) { currentAvatarBlob = f; const r = new FileReader(); r.onload = x => document.getElementById('edit-avatar-preview').src = x.target.result; r.readAsDataURL(f) } }; window.handleEditBannerSelect = e => { const f = e.target.files[0]; if (f) { currentBannerBlob = f; const r = new FileReader(); r.onload = x => document.getElementById('edit-banner-preview').src = x.target.result; r.readAsDataURL(f) } };
