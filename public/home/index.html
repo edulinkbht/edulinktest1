@@ -2221,7 +2221,7 @@
         class="fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-[#000]/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
         onclick="attemptCloseCompose()">
         <div id="compose-modal"
-            class="bg-white w-full h-full md:h-auto md:w-[95%] md:max-w-[620px] rounded-none md:rounded-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden"
+            class="bg-white w-full h-full md:h-[600px] md:w-[95%] md:max-w-[700px] rounded-none md:rounded-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col mx-auto"
             onclick="event.stopPropagation()">
             <div id="compose-progress-overlay"
                 class="absolute inset-0 bg-white/90 backdrop-blur-sm z-[60] hidden flex-col items-center justify-center">
@@ -2251,14 +2251,42 @@
                             <div id="compose-name" class="text-[15px] font-bold text-[#1f1f1f]">User</div>
                         </div>
                     </div>
-                    <div class="relative"><textarea id="compose-text" placeholder="What's on your mind?"
-                            class="w-full min-h-[150px] text-lg resize-none border-none outline-none bg-transparent placeholder-gray-400"
-                            oninput="checkWordCount(this)"></textarea>
-                        <div id="word-count-display"
-                            class="absolute bottom-2 right-2 text-xs text-gray-400 font-medium pointer-events-none">
-                            0/500 words</div>
+                    <div class="relative flex-1 min-h-[150px]">
+                        <textarea id="compose-text" placeholder="What's on your mind?"
+                            class="w-full h-full text-lg resize-none border-none outline-none bg-transparent placeholder-gray-400 p-2"
+                            oninput="checkWordCount(this)"
+                            onkeydown="handleMentionKeydown(event,'compose-text','compose-mention-suggestions')"
+                            onkeyup="handleMentionInput('compose-text','compose-mention-suggestions')"></textarea>
+                        <div id="compose-mention-suggestions"
+                            class="mention-suggestions hidden !top-auto !bottom-full !mb-2"></div>
                     </div>
                     <div id="collab-chips-container" class="flex flex-wrap mb-2"></div>
+                    <div class="flex items-center justify-between border-t border-gray-100 pt-3 relative">
+                        <div class="relative">
+                            <button onclick="document.getElementById('quick-emoji-picker').classList.toggle('hidden')"
+                                class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+                                <i data-lucide="smile" class="w-5 h-5"></i>
+                            </button>
+                            <div id="quick-emoji-picker"
+                                class="hidden flex gap-1 p-2 bg-white border border-gray-100 rounded-xl shadow-lg absolute bottom-full left-0 mb-2 z-10 w-max">
+                                <button onclick="insertComposeEmoji('😂')"
+                                    class="hover:bg-gray-100 p-1.5 rounded text-xl">😂</button>
+                                <button onclick="insertComposeEmoji('❤️')"
+                                    class="hover:bg-gray-100 p-1.5 rounded text-xl">❤️</button>
+                                <button onclick="insertComposeEmoji('🔥')"
+                                    class="hover:bg-gray-100 p-1.5 rounded text-xl">🔥</button>
+                                <button onclick="insertComposeEmoji('✨')"
+                                    class="hover:bg-gray-100 p-1.5 rounded text-xl">✨</button>
+                                <button onclick="insertComposeEmoji('🙏')"
+                                    class="hover:bg-gray-100 p-1.5 rounded text-xl">🙏</button>
+                                <button onclick="insertComposeEmoji('👀')"
+                                    class="hover:bg-gray-100 p-1.5 rounded text-xl">👀</button>
+                                <button onclick="insertComposeEmoji('😭')"
+                                    class="hover:bg-gray-100 p-1.5 rounded text-xl">😭</button>
+                            </div>
+                        </div>
+                        <div id="word-count-display" class="text-xs text-gray-400 font-medium">0/500 words</div>
+                    </div>
                 </div>
             </div>
             <div class="bg-white border-t border-gray-100 z-10">
@@ -2370,7 +2398,7 @@
         </div>
     </div>
     <aside id="main-sidebar" class="hidden md:flex app-panel">
-        <div class="h-12 flex items-center gap-3 mb-6 px-2 cursor-pointer" onclick="switchView('feed')"><img
+        <div class="h-12 flex items-center gap-3 mb-6 px-2 cursor-pointer" onclick="window.location.reload()"><img
                 src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
             <h1 class="text-[20px] font-bold text-[#1f1f1f] hidden lg:block tracking-tight">EduLink</h1>
         </div><button onclick="openCreateMenu()" class="create-btn hidden lg:flex">
@@ -2434,9 +2462,8 @@
         <main id="main-panel" class="flex-1 app-panel min-w-0 relative lg:max-w-[700px] lg:mx-auto">
             <header id="main-header"
                 class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 shrink-0 z-20 absolute top-0 w-full bg-white/95 md:bg-white/90 backdrop-blur-md border-b border-[#f0f0f0] transition-transform duration-300">
-                <div class="md:hidden flex items-center gap-3 cursor-pointer"
-                    onclick="switchView('feed'); renderFeed();"><img src="https://i.imghippo.com/files/fRGt5603uII.png"
-                        class="w-8 h-8 object-contain">
+                <div class="md:hidden flex items-center gap-3 cursor-pointer" onclick="window.location.reload()"><img
+                        src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
                     <h1 class="text-lg font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
                 </div>
                 <div class="flex-1 max-w-[600px] relative group hidden md:block"><i data-lucide="search"
@@ -2740,6 +2767,9 @@
 
                 // Penalize seen content to prevent repetitive loops
                 if (seenPosts.has(p.id)) score -= 50;
+
+                // Randomize slightly so content changes on refresh
+                score += (Math.random() * 20);
 
                 return { ...p, pipelineScore: score };
             }).sort((a, b) => b.pipelineScore - a.pipelineScore);
@@ -3605,6 +3635,8 @@
         };
         window.checkWordCount = e => { const w = e.value.trim().split(/\s+/).filter(x => x).length; document.getElementById('word-count-display').innerText = `${w}/500 words` };
         window.attemptCloseCompose = () => { const hc = document.getElementById('compose-text').value.trim().length > 0 || window.composeImages.some(x => x !== null); if (hc && !window.editingPostId) showAlert("Discard post?", () => closeCompose()); else closeCompose() };
+        let isComposeSubmitting = false;
+        window.insertComposeEmoji = (e) => { const el = document.getElementById('compose-text'); el.value += e; checkWordCount(el); document.getElementById('quick-emoji-picker').classList.add('hidden'); el.focus() };
         window.closeCompose = () => { document.getElementById('compose-overlay').classList.add('opacity-0', 'pointer-events-none'); const modal = document.getElementById('compose-modal'); modal.classList.add('scale-95'); modal.classList.add('translate-y-full'); setTimeout(() => { window.editingPostId = null; document.getElementById('compose-text').value = ""; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null] }, 200) };
         window.toggleComposeSettings = () => { const a = document.getElementById('compose-settings-area'), ar = document.getElementById('compose-settings-arrow'); a.classList.toggle('hidden'); ar.style.transform = a.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)' };
         window.openUploadOptions = () => document.getElementById('upload-options-modal').classList.remove('hidden'); window.triggerUpload = m => { window.uploadMode = m; document.getElementById('upload-options-modal').classList.add('hidden'); const i = document.getElementById('media-input'); if (m === 'multiple') i.setAttribute('multiple', ''); else i.removeAttribute('multiple'); i.click() }; window.handleFileSelect = e => { const f = e.target.files; if (f.length > 0) { window.currentMediaBlob = []; window.currentMedia = []; const c = document.getElementById('media-preview-container'), inr = document.getElementById('preview-inner'); c.classList.remove('hidden'); inr.innerHTML = ''; const ps = Array.from(f).map(file => { window.currentMediaBlob.push(file); return new Promise(r => { const d = new FileReader(); d.onload = ev => { window.currentMedia.push(ev.target.result); const iv = file.type.startsWith('video'), el = document.createElement(iv ? 'video' : 'img'); el.src = ev.target.result; el.className = "h-20 w-20 object-cover rounded-md border border-gray-200 shrink-0"; inr.appendChild(el); r() }; d.readAsDataURL(file) }) }); Promise.all(ps).then(() => showToast(`${f.length} file(s) ready`)) } }; window.removeMedia = () => { window.currentMedia = []; window.currentMediaBlob = []; document.getElementById('media-preview-container').classList.add('hidden'); document.getElementById('media-input').value = "" };
