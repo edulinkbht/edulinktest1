@@ -2658,37 +2658,130 @@
         window.currentDownloadImages = []; window.selectedDownloadIndices = new Set();
         window.currentCommentFilter = 'latest'; window.sessionSeenPosts = new Set();
         window.trackInteraction = async (pid, type, weight = 1) => { if (!currentUser) return; const r = doc(db, "users", currentUser.id), p = posts.find(x => x.id === pid); if (!p) return; const s = currentUser.interests || {}; s.authors = s.authors || {}; s.tags = s.tags || {}; s.disliked = s.disliked || []; if (type === 'not_interested') { if (!s.disliked.includes(pid)) s.disliked.push(pid); weight = -50 } if (p.authorId) s.authors[p.authorId] = (s.authors[p.authorId] || 0) + weight; const tags = p.content.match(/#(\w+)/g); if (tags) tags.forEach(t => { const tn = t.substring(1).toLowerCase(); s.tags[tn] = (s.tags[tn] || 0) + weight }); await updateDoc(r, { interests: s }); currentUser.interests = s; if (type === 'not_interested') { showToast("We'll show you less of this") } else if (type === 'show_more') showToast("We'll show you more of this") };
-        const getPostScore = (p, refreshSalt = 0.5) => {
-            if (!currentUser) return 0;
-            const s = currentUser.interests || {};
-            if (s.disliked && s.disliked.includes(p.id)) return -2000;
-            if (window.sessionSeenPosts.has(p.id)) return -500;
+        /* ==========================================================================
+           INDUSTRIAL-GRADE RECOMMENDATION PIPELINE (4 STAGES)
+           ========================================================================== */
 
-            const ts = p.timestamp?.toDate ? p.timestamp.toDate().getTime() : new Date(p.timestamp || 0).getTime();
-            const hoursOld = (Date.now() - ts) / 3600000;
+        // STAGE 1: QUERY HYDRATION (Context Gathering)
+        window.hydrateUserContext = () => {
+            if (!currentUser) return null;
+            return {
+                id: currentUser.id,
+                socialGraph: {
+                    following: currentUser.following || [],
+                    followers: currentUser.followers || [],
+                    friends: currentUser.friends || []
+                },
+                engagementHistory: currentUser.interests || { authors: {}, tags: {}, disliked: [] },
+                features: currentUser.settings || {}
+            };
+        };
 
-            const rawRel = (p.authorId && s.authors && s.authors[p.authorId]) ? s.authors[p.authorId] : 0;
-            const relationship = Math.min(100, rawRel * 12);
+        // STAGE 2: CANDIDATE SOURCING (Thunder & Phoenix Retrieval)
+        window.sourceCandidates = async (context, searchTerm = '') => {
+            if (!context) return [];
 
-            let rawInterest = 0;
+            // "Thunder" Retrieval: In-Network (Direct Follows)
+            const thunderCandidates = posts.filter(p => context.socialGraph.following.includes(p.authorId));
+
+            // "Phoenix" Retrieval: Out-of-Network (Discovery/Discovery Algorithm)
+            const phoenixCandidates = posts.filter(p => !context.socialGraph.following.includes(p.authorId) && p.authorId !== context.id);
+
+            let combined = [...thunderCandidates, ...phoenixCandidates];
+
+            // Apply text search filter if provided
+            if (searchTerm) {
+                const term = searchTerm.toLowerCase();
+                combined = combined.filter(p => p.content.toLowerCase().includes(term));
+            }
+
+            return combined;
+        };
+
+        // STAGE 3: SCORING & RANKING (Phoenix Scorer / Grok Transformer Simulation)
+        window.scoreAndRankCandidates = (candidates, context) => {
+            const weights = { like: 10, repost: 12, dwell: 8, report: -100 };
+            const seenPosts = window.sessionSeenPosts || new Set();
+
+            return candidates.map(p => {
+                // Predictive Probability Heuristics
+                const pLike = calculatePLike(p, context);
+                const pRepost = calculatePRepost(p, context);
+                const pDwell = calculatePDwell(p, context); // Simulated Dwell Time probability
+                const pReport = calculatePReport(p, context);
+
+                // Weighted Score Formula: (w1 * Plike) + (w2 * Prepost) + (w3 * Pdwell) - (w4 * Preport)
+                let score = (weights.like * pLike) + (weights.repost * pRepost) + (weights.dwell * pDwell) + (weights.report * pReport);
+
+                // Recency Decay: Halve score every 48 hours for extreme freshness
+                const ts = p.timestamp?.toDate ? p.timestamp.toDate().getTime() : new Date(p.timestamp || 0).getTime();
+                const hoursOld = (Date.now() - ts) / 3600000;
+                const recencyFactor = Math.pow(0.5, hoursOld / 48);
+                score *= recencyFactor;
+
+                // Penalize seen content to prevent repetitive loops
+                if (seenPosts.has(p.id)) score -= 50;
+
+                return { ...p, pipelineScore: score };
+            }).sort((a, b) => b.pipelineScore - a.pipelineScore);
+        };
+
+        // STAGE 4: FILTERING & SELECTION (Final Polish)
+        window.filterAndPolish = (ranked, context) => {
+            const authorCounts = {};
+            const finalSelection = [];
+
+            for (const p of ranked) {
+                // Visibility & Safety Filters
+                if (context.engagementHistory.disliked?.includes(p.id)) continue;
+                if (!canSeePost(p)) continue;
+
+                // Author Diversity: Don't show more than 2 posts from same author in top batch
+                const authorId = p.authorId;
+                authorCounts[authorId] = (authorCounts[authorId] || 0) + 1;
+                if (authorCounts[authorId] > 2) continue;
+
+                finalSelection.push(p);
+                if (finalSelection.length >= 100) break; // Selection limit for this pass
+            }
+            return finalSelection;
+        };
+
+        // --- Probability Heuristic Calculators ---
+        const calculatePLike = (p, ctx) => {
+            let prob = 0.05; // Baseline
+            // Social Proof: more likes/comments = higher baseline prob
+            const engagement = (p.likes?.length || 0) * 0.02 + (p.comments?.length || 0) * 0.05;
+            prob += Math.min(0.2, engagement);
+            // Author affinity
+            if (ctx.engagementHistory.authors?.[p.authorId]) prob += 0.3;
+            if (ctx.socialGraph.friends?.includes(p.authorId)) prob += 0.2;
+            // Interest tags
             const tags = p.content.match(/#(\w+)/g);
-            if (tags && s.tags) tags.forEach(t => { const tn = t.substring(1).toLowerCase(); if (s.tags[tn]) rawInterest += s.tags[tn] });
-            const interest = Math.min(100, rawInterest * 10);
+            if (tags && ctx.engagementHistory.tags) {
+                tags.forEach(t => { if (ctx.engagementHistory.tags[t.substring(1).toLowerCase()]) prob += 0.15; });
+            }
+            return Math.min(1.0, prob);
+        };
 
-            const recency = Math.min(100, (1 / (hoursOld + 1)) * 1000);
-            const likesCount = p.likes?.length || 0;
-            const commentsCount = p.comments?.length || 0;
-            const engagement = Math.min(100, (likesCount * 3) + (commentsCount * 6));
+        const calculatePRepost = (p, ctx) => {
+            let prob = 0.02; // Reposting is rarer
+            if (p.isOfficial) prob += 0.1;
+            if (ctx.engagementHistory.authors?.[p.authorId] > 5) prob += 0.2;
+            return Math.min(1.0, prob);
+        };
 
-            let finalScore = (relationship * 0.35) + (interest * 0.45) * 1.5 + (recency * 0.1) + (engagement * 0.1);
+        const calculatePDwell = (p, ctx) => {
+            let prob = 0.2; // High baseline for stop-scrolling
+            if (p.media) prob += 0.3; // Images/Video catch eye
+            if (p.content?.length > 100) prob += 0.15; // Longer text = more dwell if read
+            return Math.min(1.0, prob);
+        };
 
-            // Use the refreshSalt to create a unique but stable shuffle for this render cycle
-            // Incorporate User ID to ensure different people see different orders
-            const userInt = (currentUser.id.charCodeAt(0) + (currentUser.id.charCodeAt(currentUser.id.length - 1) || 0));
-            const varietyWeight = ((refreshSalt * 1000 + userInt) % 100) / 100;
-            finalScore *= (0.7 + (varietyWeight * 0.6)); // +/- 30% shuffle for higher variety
-
-            return finalScore;
+        const calculatePReport = (p, ctx) => {
+            let prob = 0.001; // Ideally very low
+            if (p.banned) prob = 1.0;
+            return prob;
         };
         window.commentSearchTerm = ''; window.isCommentSearchOpen = false;
         window.currentClaimLink = null;
@@ -3120,56 +3213,47 @@
         };
         window.switchNetworkTab = t => { activeNetworkTab = t; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(`net-tab-${t}`)?.classList.add('active'); renderNetwork(); syncURLState() };
 
-        window.renderFeed = t => {
+        window.renderFeed = async (t) => {
             const c = document.getElementById('feed-container');
+            if (!c) return;
             c.innerHTML = "";
-            let filtered = posts.filter(p => {
-                if (!canSeePost(p)) return false;
-                const a = users.find(u => u.id === p.authorId);
-                const fol = currentUser.following.includes(p.authorId);
-                let pf = true;
-                if (window.activeFeedFilter === 'following') pf = fol;
-                else if (window.activeFeedFilter === 'friends') {
-                    const isF = fol && (a?.following && a.following.includes(currentUser.id));
-                    pf = isF;
-                }
-                const ms = (!t || p.content.toLowerCase().includes(t.toLowerCase()));
-                return pf && ms;
-            });
 
-            if (window.activeFeedFilter === 'all') {
-                // Aggressive randomization for true "refresh" feel
-                filtered = filtered.sort(() => Math.random() - 0.5);
-                filtered.sort((a, b) => getPostScore(b, Math.random()) - getPostScore(a, Math.random()));
-            }
+            // --- 4 STAGE PIPELINE EXECUTION ---
 
-            if (filtered.length === 0) {
+            // 1. Hydration
+            const context = window.hydrateUserContext();
+            if (!context) return;
+
+            // 2. Sourcing
+            const candidates = await window.sourceCandidates(context, t);
+
+            // 3. Scoring
+            const ranked = window.scoreAndRankCandidates(candidates, context);
+
+            // 4. Selection & Filtering
+            const finalFeed = window.filterAndPolish(ranked, context);
+
+            if (finalFeed.length === 0) {
                 let msg = "No posts found", sub = "Try adjusting filters", icon = "inbox";
                 if (window.activeFeedFilter === 'following') { msg = "Follow someone"; sub = "You aren't following anyone yet."; icon = "user-plus" }
                 else if (window.activeFeedFilter === 'all') { msg = "Welcome to EduLink"; sub = "Be the first to share!"; icon = "pen-tool" }
                 c.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-center"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400"><i data-lucide="${icon}" class="w-8 h-8"></i></div><h3 class="text-gray-900 font-bold text-lg">${msg}</h3><p class="text-gray-500 text-sm mt-1 max-w-xs">${sub}</p></div>`;
             } else {
-                filtered.forEach((p, index) => {
+                finalFeed.forEach((p, index) => {
                     c.appendChild(createPostElement(p, 'feed'));
 
                     // Mark as seen in session
                     window.sessionSeenPosts.add(p.id);
 
-                    // Injection logic: Post-like Spotlight
-                    // Wait until 7th post, then show every 12 posts
                     // Injection logic: Dual Spotlight System (Vertical & Horizontal)
-                    // Show less often: Start at 7th, then every 20 posts
                     const spotIndex = index + 1;
                     if (spotIndex === 5 || (spotIndex > 5 && (spotIndex - 5) % 10 === 0)) {
                         const spot = document.createElement('article');
                         spot.className = "post-card bg-white overflow-hidden mb-4";
-
-                        // Determine type: Odd occurrences = Horizontal (People You May Know), Even = Vertical (Influencer Spotlight)
                         const occurrence = (spotIndex === 5) ? 1 : ((spotIndex - 5) / 10) + 1;
                         const useHorizontal = occurrence % 2 !== 0;
 
                         if (useHorizontal) {
-                            // NEW HORIZONTAL LIST (People You May Know)
                             const suggestions = users.filter(u => u.id !== currentUser.id && !currentUser.following.includes(u.id)).sort(() => .5 - Math.random()).slice(0, 10);
                             if (suggestions.length > 2) {
                                 spot.innerHTML = `
@@ -3191,22 +3275,14 @@
                                                 <div class="text-sm font-bold text-gray-900 text-center truncate w-full mb-0.5">${u.name}</div>
                                                 <div class="text-xs text-gray-500 text-center truncate w-full mb-3">@${u.username || 'user'}</div>
                                                 <button id="ul-btn-${u.id}" onclick="event.stopPropagation(); toggleFollow('${u.id}')" class="w-full bg-[#0b57d0] text-white hover:bg-blue-700 text-xs font-bold py-1.5 rounded-lg transition-colors">${isFollowing ? 'Following' : 'Follow'}</button>
-                                            </div>
-                                        `}).join('')}
-                                    </div>
-                                `;
+                                            </div>`;
+                                }).join('')}
+                                    </div>`;
                                 c.appendChild(spot);
                             }
                         } else {
-                            // OLD VERTICAL LIST (Influencer/Specific Spotlight)
-                            const qualityUsers = users.filter(u => {
-                                const name = u.name?.toLowerCase() || "";
-                                const hasFullPfp = u.avatar && (u.avatar.startsWith('data:') || u.avatar.length > 100);
-                                const isSpecific = name.includes('ngawang') || name.includes('tshogyal') || name.includes('soname') || name.includes('yangtshel') || name.includes('jigdral');
-                                return hasFullPfp || isSpecific;
-                            });
+                            const qualityUsers = users.filter(u => u.avatar && u.avatar.length > 100);
                             const displayUsers = qualityUsers.slice(0, 5);
-
                             spot.innerHTML = `
                                 <div class="p-4 flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white shrink-0">
@@ -3221,14 +3297,12 @@
                                     <p class="text-[15px] text-gray-800 leading-relaxed mb-4">Discover influential educators and top-performing creators on EduLink. Connect with people who share your passion for learning.</p>
                                     <div class="flex -space-x-3 overflow-hidden mb-1">
                                         ${displayUsers.map(u => `<div class="inline-block h-9 w-9 rounded-full ring-2 ring-white img-placeholder"><img class="w-full h-full rounded-full object-cover" src="${u.avatar}" alt="${u.name}" onload="this.classList.add('loaded')"></div>`).join('')}
-                                        ${qualityUsers.length > 5 ? `<div class="flex items-center justify-center h-9 w-9 rounded-full ring-2 ring-white bg-gray-100 text-[11px] font-bold text-gray-500">+${qualityUsers.length - 5}</div>` : ''}
                                     </div>
                                 </div>
                                 <div class="px-4 py-3 bg-white border-t border-gray-100 flex items-center justify-between group cursor-pointer hover:bg-gray-50 transition-colors" onclick="switchExploreMainTab('people')">
                                     <span class="text-[13px] font-bold text-gray-500">See more creators like this</span>
                                     <i data-lucide="chevron-right" class="w-4 h-4 text-gray-400 group-hover:translate-x-1 transition-transform"></i>
-                                </div>
-                            `;
+                                </div>`;
                             c.appendChild(spot);
                         }
                     }
