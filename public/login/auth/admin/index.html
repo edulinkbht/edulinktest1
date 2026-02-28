@@ -3,38 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Login | @academy.bt</title>
+    <title>Secure Login | Academy BT</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
-            font-family: 'Segoe UI', sans-serif;
-            background: #f0f2f5;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
             display: flex; justify-content: center; align-items: center; height: 100vh;
         }
-        .card {
-            background: #fff; padding: 40px; border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        .container {
+            background: #ffffff; padding: 40px; border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             text-align: center; width: 100%; max-width: 400px;
         }
-        #otp-section, #success-section, #loading { display: none; }
+        #otp-section, #success-section, #loading-section { display: none; }
+        h2 { color: #202124; margin-bottom: 10px; }
+        p { color: #5f6368; font-size: 14px; margin-bottom: 25px; }
         input {
-            width: 100%; padding: 12px; margin: 10px 0;
-            border: 1px solid #dadce0; border-radius: 4px;
-            font-size: 20px; text-align: center; letter-spacing: 5px;
+            width: 100%; padding: 12px; margin: 15px 0;
+            border: 2px solid #e0e0e0; border-radius: 8px;
+            font-size: 24px; text-align: center; letter-spacing: 8px;
+            outline: none; transition: border-color 0.3s;
         }
+        input:focus { border-color: #1a73e8; }
         button {
             background: #1a73e8; color: white; border: none;
-            padding: 12px; border-radius: 4px; width: 100%; cursor: pointer;
+            padding: 14px; border-radius: 8px; width: 100%;
+            font-size: 16px; font-weight: bold; cursor: pointer;
         }
-        .error { color: red; font-size: 13px; margin-top: 10px; display: none; }
+        button:hover { background: #1557b0; }
+        .error { color: #d93025; font-size: 13px; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
 
-    <div class="card">
+    <div class="container">
         <div id="login-section">
             <h2>Welcome</h2>
             <p>Sign in with your @academy.bt account</p>
@@ -42,78 +48,89 @@
                  data-client_id="157920295198-subd0poc75qa4k52kfm930dmbm8tpo9h.apps.googleusercontent.com"
                  data-callback="handleGoogleLogin">
             </div>
-            <div class="g_id_signin" data-type="standard"></div>
+            <div class="g_id_signin" data-type="standard" data-size="large" data-width="320"></div>
         </div>
 
-        <div id="loading">
-            <p>Sending verification code...</p>
+        <div id="loading-section">
+            <p>Sending 6-digit code to your Gmail...</p>
         </div>
 
         <div id="otp-section">
-            <h2>Enter 6-Digit Code</h2>
-            <p id="sent-to-msg"></p>
+            <h2>Verify Email</h2>
+            <p id="email-hint"></p>
             <input type="text" id="otp-input" placeholder="000000" maxlength="6">
-            <button onclick="verifyCode()">Verify & Redirect</button>
-            <p id="otp-error" class="error">Incorrect code. Check your Gmail.</p>
+            <button onclick="verifyCode()">Verify & Access Home</button>
+            <p id="otp-error" class="error">The code is incorrect. Please check your Gmail.</p>
         </div>
 
         <div id="success-section">
-            <h2>Verified!</h2>
-            <p>Redirecting to home...</p>
+            <h2>Success!</h2>
+            <p>Identity verified. Redirecting...</p>
         </div>
     </div>
 
     <script>
-        // --- CONFIGURATION ---
-        // Initialize EmailJS with your Public Key
-        (function() { emailjs.init("YOUR_PUBLIC_KEY"); })(); 
+        // --- 1. INITIALIZE EMAILJS ---
+        // Replace 'YOUR_PUBLIC_KEY' with the key from EmailJS Account > API Keys
+        (function() { emailjs.init("YOUR_PUBLIC_KEY"); })();
 
         let generatedOTP = "";
 
-        // 1. Handle Google Login
+        // --- 2. GOOGLE LOGIN CALLBACK ---
         function handleGoogleLogin(response) {
             const payload = parseJwt(response.credential);
             const userEmail = payload.email;
 
-            // Generate 6-digit code
+            // Generate 6-digit OTP (100000 to 999999)
             generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
 
-            // Show loading
+            // UI Switch
             document.getElementById('login-section').style.display = 'none';
-            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loading-section').style.display = 'block';
 
-            // SEND THE EMAIL via EmailJS
+            // Send Email using your Service ID: edu_link
             const templateParams = {
                 to_email: userEmail,
+                user_name: payload.name,
                 otp_code: generatedOTP
             };
 
-            // Replace 'YOUR_SERVICE_ID' and 'YOUR_TEMPLATE_ID' with your EmailJS IDs
-            emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams)
+            // Replace 'YOUR_TEMPLATE_ID' with your EmailJS Template ID
+            emailjs.send('edu_link', 'YOUR_TEMPLATE_ID', templateParams)
                 .then(() => {
-                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('loading-section').style.display = 'none';
                     document.getElementById('otp-section').style.display = 'block';
-                    document.getElementById('sent-to-msg').innerText = "Code sent to " + userEmail;
-                }, (error) => {
-                    alert("Failed to send email. Check console for error.");
-                    console.log("Email Error:", error);
+                    document.getElementById('email-hint').innerText = "Code sent to: " + userEmail;
+                }, (err) => {
+                    alert("Email failed to send. Check your EmailJS configuration.");
+                    console.error("EmailJS Error:", err);
                 });
         }
 
-        // 2. Verify 6-digit Code
+        // --- 3. VERIFY OTP ---
         function verifyCode() {
             const userInput = document.getElementById('otp-input').value;
+            const errorElement = document.getElementById('otp-error');
+
             if (userInput === generatedOTP) {
                 document.getElementById('otp-section').style.display = 'none';
                 document.getElementById('success-section').style.display = 'block';
-                setTimeout(() => { window.location.href = "/home"; }, 2000);
+                
+                // Final Redirect
+                setTimeout(() => {
+                    window.location.href = "/home";
+                }, 1500);
             } else {
-                document.getElementById('otp-error').style.display = 'block';
+                errorElement.style.display = 'block';
+                document.getElementById('otp-input').style.borderColor = '#d93025';
             }
         }
 
+        // Helper to decode the Google JWT
         function parseJwt(token) {
-            return JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(window.atob(base64));
         }
     </script>
 </body>
