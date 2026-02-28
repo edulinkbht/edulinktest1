@@ -2801,14 +2801,27 @@
                 window.history.replaceState({ path: newurl }, '', newurl);
                 return;
             }
+
+            let path = '/';
             const params = new URLSearchParams();
-            if (window.currentViewName && window.currentViewName !== 'feed') params.set('view', window.currentViewName);
-            if (window.currentViewName === 'explore' && window.activeExploreTab) params.set('etab', window.activeExploreTab);
+
+            if (window.currentViewName === 'feed') {
+                path = '/feed';
+            } else if (window.currentViewName === 'explore') {
+                path = '/search';
+                if (window.activeExploreTab) params.set('etab', window.activeExploreTab);
+            } else if (window.currentViewName === 'notifications') {
+                path = '/notifications';
+            } else if (window.currentViewName) {
+                params.set('view', window.currentViewName);
+            }
+
             const searchVal = document.getElementById('global-search')?.value || document.getElementById('mobile-explore-search')?.value;
             if (searchVal) params.set('q', searchVal);
+
             const qs = params.toString();
-            const basePath = window.location.pathname.startsWith('/profile/') ? '/' : window.location.pathname;
-            const newurl = window.location.origin + basePath + (qs ? '?' + qs : '');
+            // Ensure we don't accidentally keep old profile paths if we switched view
+            const newurl = window.location.origin + path + (qs ? '?' + qs : '');
             window.history.replaceState({ path: newurl }, '', newurl);
         };
         window.initializeStateFromURL = () => {
@@ -2818,6 +2831,21 @@
 
             if (postId) {
                 setTimeout(() => openPostView(postId), 1000);
+                return;
+            }
+
+            // Handle /feed, /search, /notifications paths
+            if (pathname === '/feed') { switchView('feed'); return; }
+            if (pathname === '/notifications') { switchView('notifications'); return; }
+            if (pathname === '/search') {
+                switchView('explore');
+                const etab = params.get('etab');
+                if (etab) { window.activeExploreTab = etab; switchExploreMainTab(etab); }
+                const q = params.get('q');
+                if (q) {
+                    const gs = document.getElementById('global-search'), ms = document.getElementById('mobile-explore-search');
+                    if (gs) gs.value = q; if (ms) ms.value = q; handleSearch(q);
+                }
                 return;
             }
 
