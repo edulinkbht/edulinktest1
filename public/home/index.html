@@ -5006,6 +5006,7 @@
                         follow_request: { i: 'lock', c: 'bg-orange-500', fill: '' },
                         collab_request: { i: 'users', c: 'bg-pink-500', fill: '' },
                         mention: { i: 'at-sign', c: 'bg-green-500', fill: '' },
+                        birthday: { i: 'gift', c: 'bg-purple-500', fill: '' },
                         share: { i: 'share-2', c: 'bg-indigo-600', fill: '' },
                         default: { i: 'bell', c: 'bg-gray-500', fill: '' }
                     }, cfg = map[n.type] || map.default, p = n.postId ? posts.find(x => x.id === n.postId) : null, postImg = p ? (Array.isArray(p.media) ? p.media[0] : p.media) : null, isVid = postImg && (postImg.includes('video') || postImg.endsWith('.mp4')), showImg = postImg && !isVid ? postImg : null, click = window.notifSelectionMode ? '' : (['like', 'repost_like', 'comment', 'reply', 'mention', 'share'].includes(n.type) && n.postId ? `openPostView('${n.postId}',true)` : `showProfile('${s.id}')`);
@@ -5947,39 +5948,30 @@
             });
 
             for (const friend of friendsWithBirthday) {
-                // Check if we already posted a birthday comment for this friend today
+                // Check if we already notified about this friend's birthday today
                 const lastBirthdayNotify = currentUser.lastBirthdayNotify || {};
                 const currentYear = new Date().getFullYear();
                 if (lastBirthdayNotify[friend.id] === currentYear) continue;
 
-                // Find friend's latest post
-                const friendPosts = posts.filter(p => p.authorId === friend.id).sort((a, b) => b.timestamp - a.timestamp);
-                if (friendPosts.length > 0) {
-                    const latestPost = friendPosts[0];
-                    
-                    // Add a birthday comment
-                    const commentData = {
-                        id: 'bday-' + Date.now(),
-                        authorId: currentUser.id, // The current user (friend) greets
-                        content: `Happy Birthday, ${friend.name}! 🎂🎉`,
-                        timestamp: Date.now(),
-                        isBirthdayComment: true
-                    };
+                // Send a notification to current user about friend's birthday
+                const notifId = `birthday_${friend.id}_${currentYear}_${currentUser.id}`;
+                await setDoc(doc(db, "notifications", notifId), {
+                    receiverId: currentUser.id,
+                    senderId: friend.id,
+                    type: 'birthday',
+                    content: 'has a birthday today! 🎂🎉',
+                    timestamp: serverTimestamp(),
+                    read: !1
+                });
 
-                    const postRef = doc(db, "posts", latestPost.id);
-                    await updateDoc(postRef, {
-                        comments: arrayUnion(commentData)
-                    });
-
-                    // Update local state to prevent multiple comments
-                    lastBirthdayNotify[friend.id] = currentYear;
-                    await updateDoc(doc(db, "users", currentUser.id), {
-                        lastBirthdayNotify: lastBirthdayNotify
-                    });
-                    currentUser.lastBirthdayNotify = lastBirthdayNotify;
-                    
-                    showToast(`Wished ${friend.name} a Happy Birthday!`);
-                }
+                // Update local state to prevent multiple notifications
+                lastBirthdayNotify[friend.id] = currentYear;
+                await updateDoc(doc(db, "users", currentUser.id), {
+                    lastBirthdayNotify: lastBirthdayNotify
+                });
+                currentUser.lastBirthdayNotify = lastBirthdayNotify;
+                
+                showToast(`${friend.name} has a birthday today!`);
             }
         };
 
