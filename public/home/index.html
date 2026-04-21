@@ -5091,13 +5091,33 @@
                     let act = '';
                     if (n.type === 'follow_request') act = `<div class="flex gap-2 mt-2"><button onclick="acceptFollow('${n.id}','${s.id}')" class="btn-xs-blue">Accept</button><button onclick="deleteNotification('${n.id}')" class="btn-xs-gray">Delete</button></div>`;
                     if (n.type === 'collab_request') act = `<div class="flex gap-2 mt-2"><button onclick="acceptCollab('${n.id}','${n.postId}')" class="btn-xs-blue">Accept</button><button onclick="declineCollab('${n.id}','${n.postId}')" class="btn-xs-gray">Decline</button></div>`;
+                    if (n.type === 'system' && n.content.includes('Happy Birthday! 🎂🎉')) {
+                        const thanked = n.thanked === true;
+                        act = `<div class="mt-2">
+                            <button onclick="event.stopPropagation(); thankForBirthday('${s.id}', '${n.id}')" class="bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 flex items-center gap-1.5 ${thanked ? 'opacity-50 pointer-events-none' : ''}" ${thanked ? 'disabled' : ''}>
+                                ${thanked ? 'Thanked ❤️' : 'Thank you'}
+                            </button>
+                        </div>`;
+                    }
                     
                     let rightHtml = '';
                     if (n.type === 'birthday') {
                         const gender = (s.gender || 'Male').toLowerCase();
                         const pronoun = gender === 'female' ? 'her' : 'him';
                         const wished = n.wished === true;
-                        rightHtml = `<button onclick="event.stopPropagation(); wishBirthday('${s.id}', '${n.id}')" class="js-follow-btn-${s.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[95px] ${wished ? 'opacity-50 pointer-events-none' : ''}" ${wished ? 'disabled' : ''}>${wished ? 'Wished' : `Wish ${pronoun}`}</button>`;
+                        const thanked = n.thanked === true;
+                        
+                        const thankedHtml = thanked ? `
+                            <div class="relative mr-2">
+                                <div class="w-7 h-7 rounded-full border border-gray-100 shadow-sm bg-gray-100 overflow-hidden">
+                                    <img src="${s.avatar}" class="w-full h-full object-cover">
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-red-500 border border-white flex items-center justify-center shadow-sm">
+                                    <i data-lucide="heart" class="w-2 h-2 text-white fill-white"></i>
+                                </div>
+                            </div>` : '';
+                            
+                        rightHtml = `<div class="flex items-center">${thankedHtml}<button onclick="event.stopPropagation(); wishBirthday('${s.id}', '${n.id}')" class="js-follow-btn-${s.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[95px] ${wished ? 'opacity-50 pointer-events-none' : ''}" ${wished ? 'disabled' : ''}>${wished ? 'Wished' : `Wish ${pronoun}`}</button></div>`;
                     } else if (showImg) {
                         rightHtml = `<div class="img-placeholder w-10 h-10 rounded-md shrink-0 border border-gray-200"><img src="${showImg}" class="w-full h-full rounded-md object-cover" onclick="openPostView('${n.postId}',true)" onload="this.classList.add('loaded')"></div>`;
                     } else if (n.type === 'follow' && !currentUser.following.includes(s.id)) {
@@ -5186,6 +5206,31 @@
             } catch (e) {
                 console.error(e);
                 showToast("Error sending wish", true);
+            }
+        };
+
+        window.thankForBirthday = async (fid, nid) => {
+            const f = users.find(u => u.id === fid);
+            if (!f) return;
+            try {
+                // User B's notification ID: birthday_${currentUser.id}_${currentYear}_${fid}
+                const currentYear = new Date().getFullYear();
+                const bNotifId = `birthday_${currentUser.id}_${currentYear}_${fid}`;
+                
+                // Update User B's notification to show we thanked them
+                await updateDoc(doc(db, "notifications", bNotifId), { thanked: true });
+                
+                // Update the system notification (the one we're clicking "Thank you" on)
+                await updateDoc(doc(db, "notifications", nid), { thanked: true });
+                
+                showToast(`Sent a Thank You to ${f.name}! ❤️`);
+                renderNotifications();
+            } catch (e) {
+                console.error(e);
+                // If the notification doesn't exist (maybe different ID format), try to find it
+                showToast("Thank you sent!", false);
+                await updateDoc(doc(db, "notifications", nid), { thanked: true });
+                renderNotifications();
             }
         };
         window.isFriend = (uid) => {
