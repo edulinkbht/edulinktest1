@@ -1083,6 +1083,72 @@
             .details-modal { max-width: 100%; min-height: 100vh; border-radius: 0; box-shadow: none; }
         }
 
+        /* User Birthday Overlay Styles */
+        #user-birthday-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(15, 23, 42, 0.7); 
+            backdrop-filter: blur(8px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+        .birthday-modal {
+            background-color: #ffffff;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 32px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            text-align: center;
+            animation: scaleIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .birthday-image-container {
+            width: 100%;
+            height: 240px;
+            background-color: #f8fafc;
+            overflow: hidden;
+        }
+        .birthday-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .birthday-content {
+            padding: 32px 24px;
+        }
+        .birthday-content h2 {
+            font-size: 28px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 12px;
+            letter-spacing: -0.025em;
+        }
+        .birthday-content p {
+            font-size: 16px;
+            color: #64748b;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .birthday-close-btn {
+            width: 100%;
+            height: 54px;
+            background-color: #000000;
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .birthday-close-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
         .logout-btn-custom {
             display: flex;
             align-items: center;
@@ -3054,6 +3120,20 @@
         </div>
     </div>
 
+    <!-- User Birthday Overlay -->
+    <div id="user-birthday-overlay">
+        <div class="birthday-modal">
+            <div class="birthday-image-container">
+                <img src="https://i.pinimg.com/originals/e6/2c/d3/e62cd3def4f89f19b513ab3e651dacde.gif" alt="Birthday Celebration">
+            </div>
+            <div class="birthday-content">
+                <h2 id="birthday-title">Happy Birthday!</h2>
+                <p id="birthday-message">Thank you for spending your day with EduLink!</p>
+                <button class="birthday-close-btn" onclick="closeBirthdayOverlay()">Thank You!</button>
+            </div>
+        </div>
+    </div>
+
     <div id="compose-overlay"
         class="fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-[#000]/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
         onclick="attemptCloseCompose()">
@@ -4088,7 +4168,7 @@
             }
         };
         const canSeePost = (p) => { if (!p || !currentUser) return false; if (p.authorId === currentUser.id) return true; const author = users.find(u => u.id === p.authorId); if (!author) return false; const isFollowing = currentUser.following.includes(p.authorId); const isAccountPrivate = author.settings?.privateNetwork; const isPostPrivate = p.settings?.privacy === 'private'; if (isPostPrivate) return false; if (isAccountPrivate && !isFollowing) return false; return true };
-        onAuthStateChanged(auth, async u => { const l = document.getElementById('app-loader'); if (!u) return window.location.href = '/login'; const r = doc(db, "users", u.uid), s = await getDoc(r), off = u.email === 'edulinkbht@gmail.com'; if (s.exists()) { const data = s.data(); if (data.banned) { document.getElementById('banned-overlay').classList.remove('hidden'); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } return } currentUser = { id: u.uid, ...data }; if (off && !currentUser.isOfficial) await updateDoc(r, { isOfficial: true }) } else { const newUser = { name: u.displayName || 'User', email: u.email, username: 'user' + u.uid.substring(0, 6).toLowerCase(), avatar: u.photoURL || `https://ui-avatars.com/api/?name=${u.displayName || 'User'}&background=random`, banner: '', bio: 'Hello EduLink!', isOfficial: u.email === 'edulinkbht@gmail.com', following: [], followers: [], saved: [], timestamp: serverTimestamp() }; await setDoc(r, newUser); currentUser = { id: u.uid, ...newUser } } currentUser.following ||= []; currentUser.followers ||= []; currentUser.friends ||= []; currentUser.saved ||= []; currentUser.links ||= []; currentUser.settings ||= { privateNetwork: false }; window.currentUser = currentUser; savedPosts = currentUser.saved; if (!currentUser.username) document.getElementById('username-modal').classList.remove('hidden'); updateUserInterface(); initRealtimeListeners(); refreshIcons(); initBannerDrag(); window.checkProfileCompletion(); window.history.replaceState({ root: true }, ""); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } initializeStateFromURL(); });
+        onAuthStateChanged(auth, async u => { const l = document.getElementById('app-loader'); if (!u) return window.location.href = '/login'; const r = doc(db, "users", u.uid), s = await getDoc(r), off = u.email === 'edulinkbht@gmail.com'; if (s.exists()) { const data = s.data(); if (data.banned) { document.getElementById('banned-overlay').classList.remove('hidden'); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } return } currentUser = { id: u.uid, ...data }; if (off && !currentUser.isOfficial) await updateDoc(r, { isOfficial: true }) } else { const newUser = { name: u.displayName || 'User', email: u.email, username: 'user' + u.uid.substring(0, 6).toLowerCase(), avatar: u.photoURL || `https://ui-avatars.com/api/?name=${u.displayName || 'User'}&background=random`, banner: '', bio: 'Hello EduLink!', isOfficial: u.email === 'edulinkbht@gmail.com', following: [], followers: [], saved: [], timestamp: serverTimestamp() }; await setDoc(r, newUser); currentUser = { id: u.uid, ...newUser } } currentUser.following ||= []; currentUser.followers ||= []; currentUser.friends ||= []; currentUser.saved ||= []; currentUser.links ||= []; currentUser.settings ||= { privateNetwork: false }; window.currentUser = currentUser; savedPosts = currentUser.saved; if (!currentUser.username) document.getElementById('username-modal').classList.remove('hidden'); updateUserInterface(); initRealtimeListeners(); refreshIcons(); initBannerDrag(); window.checkProfileCompletion(); window.checkUserBirthday(); window.history.replaceState({ root: true }, ""); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } initializeStateFromURL(); });
         window.onpopstate = e => { const modals = [{ id: 'post-view-overlay', close: window.closePostView }, { id: 'thread-overlay', close: window.closeThread }, { id: 'edit-profile-overlay', close: window.closeEditProfile }, { id: 'likes-overlay', close: window.closeLikes }, { id: 'user-list-overlay', close: window.closeUserList }, { id: 'feed-filter-overlay', close: window.closeFeedFilter }, { id: 'compose-overlay', close: window.attemptCloseCompose }, { id: 'share-overlay', close: window.closeShareMenu }, { id: 'post-options-overlay', close: window.hidePostMenu }, { id: 'settings-overlay', close: window.closeSettings }, { id: 'notif-options-overlay', close: window.closeNotifOptions }, { id: 'qr-overlay', close: window.closeQR }, { id: 'privacy-overlay', close: window.closePrivacySettings }, { id: 'profile-filter-overlay', close: window.closeProfileFilter }, { id: 'download-select-overlay', close: window.closeDownloadSelect }, { id: 'comment-options-overlay', close: window.closeCommentOptions }, { id: 'create-menu-overlay', close: window.closeCreateMenu }, { id: 'announcement-overlay', close: window.closeAnnouncement }, { id: 'profile-preview-overlay', close: window.closeProfilePreview }, { id: 'comment-filter-overlay', close: window.closeCommentFilter }, { id: 'claim-link-overlay', close: window.closeClaimOverlay }, { id: 'view-profile', close: () => window.switchView('feed') }]; let closedAny = false; if (e.state && e.state.modal) { } else { for (let m of modals) { const el = document.getElementById(m.id); if (el && !el.classList.contains('hidden') && !el.classList.contains('opacity-0')) { if (m.id === 'view-profile') { if (window.currentViewingProfileId) { window.switchView('feed'); window.currentViewingProfileId = null; closedAny = true } } else if (m.id === 'compose-overlay') { window.closeCompose(); closedAny = true } else if (m.id === 'create-menu-overlay') { window.closeCreateMenu(); closedAny = true } else { m.close(); closedAny = true } if (closedAny) break } } } if (!closedAny) { if (exitAttempt) { } else { window.history.pushState({ root: true }, ""); exitAttempt = true; showToast("Press back again to exit"); setTimeout(() => { exitAttempt = false }, 2000) } } };
         window.checkUsername = e => { const v = e.value.trim().toLowerCase(), l = v.length; document.getElementById('username-counter').innerText = `${l}/20`; if (l < 3) { document.getElementById('username-error').classList.add('hidden'); return } const t = users.some(u => u.username === v && u.id !== currentUser.id); const err = document.getElementById('username-error'); if (t) { err.innerText = "Username taken"; err.classList.remove('hidden') } else err.classList.add('hidden') };
         window.saveUsername = async () => { const v = document.getElementById('new-username-input').value.trim().toLowerCase(); if (v.length < 3 || v.length > 20 || /\s/.test(v) || !/^[a-z0-9_.]+$/.test(v)) return showToast("Invalid username", true); if (!(await getDocs(query(collection(db, "users"), where("username", "==", v)))).empty) return showToast("Taken", true); await updateDoc(doc(db, "users", currentUser.id), { username: v }); currentUser.username = v; document.getElementById('username-modal').classList.add('hidden'); showToast("Username set!") };
@@ -5015,6 +5095,12 @@
                     let act = '';
                     if (n.type === 'follow_request') act = `<div class="flex gap-2 mt-2"><button onclick="acceptFollow('${n.id}','${s.id}')" class="btn-xs-blue">Accept</button><button onclick="deleteNotification('${n.id}')" class="btn-xs-gray">Delete</button></div>`;
                     if (n.type === 'collab_request') act = `<div class="flex gap-2 mt-2"><button onclick="acceptCollab('${n.id}','${n.postId}')" class="btn-xs-blue">Accept</button><button onclick="declineCollab('${n.id}','${n.postId}')" class="btn-xs-gray">Decline</button></div>`;
+                    if (n.type === 'birthday') {
+                        const gender = (s.gender || 'Male').toLowerCase();
+                        const pronoun = gender === 'female' ? 'her' : 'him';
+                        const wished = n.wished === true;
+                        act = `<div class="flex gap-2 mt-2"><button onclick="event.stopPropagation(); wishBirthday('${s.id}', '${n.id}')" class="btn-xs-blue ${wished ? 'opacity-50 pointer-events-none' : ''}" ${wished ? 'disabled' : ''}>${wished ? 'Wished' : `Wish ${pronoun}`}</button></div>`;
+                    }
                     let rightHtml = '';
                     if (showImg) {
                         rightHtml = `<div class="img-placeholder w-10 h-10 rounded-md shrink-0 border border-gray-200"><img src="${showImg}" class="w-full h-full rounded-md object-cover" onclick="openPostView('${n.postId}',true)" onload="this.classList.add('loaded')"></div>`;
@@ -5089,6 +5175,23 @@
         document.getElementById('pp-avatar').src = u.avatar; document.getElementById('pp-banner').style.backgroundImage = `url(${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'})`; document.getElementById('pp-name').innerHTML = `${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}`; document.getElementById('pp-username').innerText = `@${u.username || 'user'}`; const pCount = posts.filter(p => p.authorId === uid && (p.content || p.media)).length; document.getElementById('pp-posts-count').innerText = pCount; document.getElementById('pp-followers-count').innerText = u.followers ? u.followers.length : 0; document.getElementById('pp-following-count').innerText = u.following ? u.following.length : 0; document.getElementById('pp-visit-btn').onclick = () => { closeProfilePreview(); showProfile(uid) }; document.getElementById('pp-share-btn').onclick = (e) => { e.stopPropagation(); closeProfilePreview(); manageHistory('share-overlay'); window.currentSharePid = null; const url = `${window.location.origin}/profile/${u.username || 'user'}`; document.getElementById('share-link-input').value = url; document.getElementById('share-link-text').innerText = url; document.getElementById('share-owner-avatar').src = u.avatar; const pc = document.getElementById('share-post-preview'); pc.innerHTML = `<div class="bg-white border border-gray-200 rounded-xl p-3 mb-6 flex items-center gap-3"><div class="w-12 h-12 rounded-full border border-gray-100 flex-shrink-0 bg-gray-100"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div class="flex-1 min-w-0"><div class="font-bold text-gray-900">${u.name}</div><div class="text-xs text-gray-500">@${u.username}</div></div><button class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-bold">View</button></div>`; pc.classList.remove('hidden'); toggleModalAnim('share-overlay', 'share-modal', !0) }; toggleModalAnim('profile-preview-overlay', 'profile-preview-card', true); refreshIcons() };
         window.closeProfilePreview = () => { toggleModalAnim('profile-preview-overlay', 'profile-preview-card', false) }; window.deleteNotification = async id => showAlert("Delete?", async () => await deleteDoc(doc(db, "notifications", id))); window.performClearAllNotifications = async () => { const b = writeBatch(db), s = await getDocs(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id))); s.forEach(d => b.delete(d.ref)); await b.commit(); showToast("Cleared") }; window.confirmDeleteAllActivities = () => showAlert("Are you sure you want to delete all of your activities?", async () => { await window.performClearAllNotifications() }); window.clearAllNotifications = () => window.confirmDeleteAllActivities(); window.toggleNotifications = () => switchView('notifications');
         window.acceptCollab = async (nid, pid) => { const r = doc(db, "posts", pid), s = await getDoc(r); if (s.exists()) { const c = s.data().collaborators || [], i = c.findIndex(x => x.id === currentUser.id); if (i > -1) { c[i].status = 'accepted'; await updateDoc(r, { collaborators: c }); showToast("Accepted!") } } await deleteDoc(doc(db, "notifications", nid)) }; window.declineCollab = async (nid, pid) => { const r = doc(db, "posts", pid), s = await getDoc(r); if (s.exists()) await updateDoc(r, { collaborators: (s.data().collaborators || []).filter(x => x.id !== currentUser.id) }); showToast("Declined"); await deleteDoc(doc(db, "notifications", nid)) }; window.acceptFollow = async (nid, sid) => { await Promise.all([updateDoc(doc(db, "users", currentUser.id), { followers: arrayUnion(sid) }), updateDoc(doc(db, "users", sid), { following: arrayUnion(currentUser.id) }), deleteDoc(doc(db, "notifications", nid)), sendNotification(sid, 'follow', 'accepted follow')]); showToast("Accepted") };
+        window.wishBirthday = async (fid, nid) => {
+            const f = users.find(u => u.id === fid);
+            if (!f) return;
+            try {
+                // Send notification to the friend
+                await sendNotification(fid, 'system', `said: Happy Birthday! 🎂🎉`);
+                
+                // Mark the original notification as wished
+                await updateDoc(doc(db, "notifications", nid), { wished: true });
+                
+                showToast(`Wished ${f.name} a Happy Birthday!`);
+                renderNotifications();
+            } catch (e) {
+                console.error(e);
+                showToast("Error sending wish", true);
+            }
+        };
         window.isFriend = (uid) => {
             if (!currentUser || !uid) return false;
             const u = users.find(x => x.id === uid);
@@ -5973,6 +6076,48 @@
                 
                 showToast(`${friend.name} has a birthday today!`);
             }
+        };
+
+        window.checkUserBirthday = async () => {
+            if (!currentUser || !currentUser.dob) return;
+            
+            const dob = new Date(currentUser.dob);
+            const today = new Date();
+            const isBirthday = dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth();
+            
+            if (isBirthday) {
+                const currentYear = today.getFullYear();
+                const lastCelebratedYear = currentUser.lastBirthdayCelebratedYear;
+                
+                // Show only once per year
+                if (lastCelebratedYear !== currentYear) {
+                    const age = today.getFullYear() - dob.getFullYear();
+                    const ageSuffix = (age) => {
+                        if (age % 10 === 1 && age % 100 !== 11) return 'st';
+                        if (age % 10 === 2 && age % 100 !== 12) return 'nd';
+                        if (age % 10 === 3 && age % 100 !== 13) return 'rd';
+                        return 'th';
+                    };
+                    
+                    document.getElementById('birthday-title').innerText = `Happy ${age}${ageSuffix(age)} Birthday!`;
+                    document.getElementById('user-birthday-overlay').style.display = 'flex';
+                    
+                    // Mark as celebrated in Firestore
+                    await updateDoc(doc(db, "users", currentUser.id), {
+                        lastBirthdayCelebratedYear: currentYear
+                    });
+                    currentUser.lastBirthdayCelebratedYear = currentYear;
+                }
+            }
+        };
+
+        window.closeBirthdayOverlay = () => {
+            const overlay = document.getElementById('user-birthday-overlay');
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                overlay.style.opacity = '1';
+            }, 300);
         };
 
         window.checkProfileCompletion = () => {
