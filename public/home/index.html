@@ -3672,12 +3672,70 @@
             if (entries[0].isIntersecting && window.feedPagination.hasMore && !window.feedPagination.loading && window.currentViewName === 'feed') {
                 window.loadNextFeedBatch();
             }
-        }, { rootMargin: '400px' });
-
-        document.addEventListener('DOMContentLoaded', () => {
-            const sentinel = document.getElementById('feed-sentinel');
-            if (sentinel) feedObserver.observe(sentinel);
+        }, { 
+            root: document.getElementById('view-feed'),
+            rootMargin: '800px' 
         });
+
+        const sentinel = document.getElementById('feed-sentinel');
+        if (sentinel) feedObserver.observe(sentinel);
+
+        // Also fix profile infinite scroll to use the correct root
+        function setupProfileInfiniteScroll(uid, t, allPosts) {
+            if (window.profileObserver) window.profileObserver.disconnect();
+            
+            const rootEl = document.getElementById('view-profile');
+            window.profileObserver = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting && !window.isProfileLoadingMore) {
+                    const currentCount = window.currentProfileVisibleCount || 9;
+                    if (currentCount >= allPosts.length) return;
+
+                    window.isProfileLoadingMore = true;
+                    const spinner = document.getElementById('profile-loading-spinner');
+                    if (spinner) spinner.classList.remove('hidden');
+
+                    setTimeout(() => {
+                        const nextBatch = allPosts.slice(currentCount, currentCount + 9);
+                        const container = document.getElementById('profile-grid-container');
+                        
+                        if (container) {
+                            const fragment = document.createDocumentFragment();
+                            nextBatch.forEach(p => {
+                                const div = document.createElement('div');
+                                div.innerHTML = renderGridPostItem(p);
+                                fragment.appendChild(div.firstElementChild);
+                            });
+                            container.appendChild(fragment);
+                            refreshIcons();
+                        }
+
+                        window.currentProfileVisibleCount = currentCount + 9;
+                        window.isProfileLoadingMore = false;
+
+                        if (window.currentProfileVisibleCount >= allPosts.length) {
+                            const trigger = document.getElementById('profile-load-more-trigger');
+                            if (trigger) trigger.classList.add('hidden');
+                            window.profileObserver.disconnect();
+                        } else {
+                            // Check if trigger is still visible to load more immediately if needed
+                            const trigger = document.getElementById('profile-load-more-trigger');
+                            if (trigger && trigger.getBoundingClientRect().top < window.innerHeight + 800) {
+                                // Recursion via observer would happen, but we can help it
+                                // No action needed as observer will trigger if it stops intersecting and starts again,
+                                // but we should ensure the observer is still alive
+                            }
+                        }
+                    }, 800);
+                }
+            }, { 
+                root: rootEl,
+                threshold: 0.01, 
+                rootMargin: '800px' 
+            });
+
+            const trigger = document.getElementById('profile-load-more-trigger');
+            if (trigger) window.profileObserver.observe(trigger);
+        }
         window.trackInteraction = async (pid, type, weight = 1) => { if (!currentUser) return; const r = doc(db, "users", currentUser.id), p = posts.find(x => x.id === pid); if (!p) return; const s = currentUser.interests || {}; s.authors = s.authors || {}; s.tags = s.tags || {}; s.disliked = s.disliked || []; if (type === 'not_interested') { if (!s.disliked.includes(pid)) s.disliked.push(pid); weight = -50 } if (p.authorId) s.authors[p.authorId] = (s.authors[p.authorId] || 0) + weight; const tags = p.content.match(/#(\w+)/g); if (tags) tags.forEach(t => { const tn = t.substring(1).toLowerCase(); s.tags[tn] = (s.tags[tn] || 0) + weight }); await updateDoc(r, { interests: s }); currentUser.interests = s; if (type === 'not_interested') { showToast("We'll show you less of this") } else if (type === 'show_more') showToast("We'll show you more of this") };
         /* ==========================================================================
            INDUSTRIAL-GRADE RECOMMENDATION PIPELINE (4 STAGES)
@@ -4596,6 +4654,17 @@
             window.feedPagination.loading = false;
             loader?.classList.add('hidden');
             refreshIcons();
+
+            // If we are still intersecting (e.g. large screen or small posts), trigger next batch
+            if (window.feedPagination.hasMore) {
+                const sentinel = document.getElementById('feed-sentinel');
+                if (sentinel && sentinel.getBoundingClientRect().top < window.innerHeight + 800) {
+                    // Small delay to prevent infinite recursion in case of issues
+                    setTimeout(() => {
+                        if (window.currentViewName === 'feed') window.loadNextFeedBatch();
+                    }, 100);
+                }
+            }
         };
         window.openFeedFilter = () => { manageHistory('feed-filter-overlay'); toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !0) }; window.closeFeedFilter = () => toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !1); window.switchFeedFilter = f => { window.activeFeedFilter = f; closeFeedFilter(); renderFeed(); const m = { all: 'All Posts', following: 'Following', friends: 'Friends Only' }; showToast(`Filter: ${m[f]}`, false, "Your feed has been updated based on your selection.") };
         let touchStartX = 0, touchEndX = 0; window.handleTouchStart = e => touchStartX = e.changedTouches[0].screenX; window.handleTouchEnd = (e, pid, ov) => { touchEndX = e.changedTouches[0].screenX; const w = e.currentTarget.closest('.post-carousel'); if (w && Math.abs(touchStartX - touchEndX) > 50) moveCarousel(w.id, touchStartX > touchEndX ? 1 : -1) };
@@ -5406,48 +5475,6 @@
             </div>`;
         }
 
-        function setupProfileInfiniteScroll(uid, t, allPosts) {
-            if (window.profileObserver) window.profileObserver.disconnect();
-            
-            window.profileObserver = new IntersectionObserver((entries) => {
-                if (entries[0].isIntersecting && !window.isProfileLoadingMore) {
-                    const currentCount = window.currentProfileVisibleCount || 9;
-                    if (currentCount >= allPosts.length) return;
-
-                    window.isProfileLoadingMore = true;
-                    const spinner = document.getElementById('profile-loading-spinner');
-                    if (spinner) spinner.classList.remove('hidden');
-
-                    setTimeout(() => {
-                        const nextBatch = allPosts.slice(currentCount, currentCount + 9);
-                        const container = document.getElementById('profile-grid-container');
-                        
-                        if (container) {
-                            const fragment = document.createDocumentFragment();
-                            nextBatch.forEach(p => {
-                                const div = document.createElement('div');
-                                div.innerHTML = renderGridPostItem(p);
-                                fragment.appendChild(div.firstElementChild);
-                            });
-                            container.appendChild(fragment);
-                            refreshIcons();
-                        }
-
-                        window.currentProfileVisibleCount = currentCount + 9;
-                        window.isProfileLoadingMore = false;
-
-                        if (window.currentProfileVisibleCount >= allPosts.length) {
-                            const trigger = document.getElementById('profile-load-more-trigger');
-                            if (trigger) trigger.classList.add('hidden');
-                            window.profileObserver.disconnect();
-                        }
-                    }, 800);
-                }
-            }, { threshold: 0.01, rootMargin: '600px' }); // Load very early
-
-            const trigger = document.getElementById('profile-load-more-trigger');
-            if (trigger) window.profileObserver.observe(trigger);
-        }
         window.openEditProfile = () => {
             manageHistory('edit-profile-overlay');
             const bArea = document.getElementById('banner-edit-area'), aArea = document.getElementById('avatar-edit-area');
