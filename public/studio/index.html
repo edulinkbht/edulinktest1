@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <title>Creator Studio</title>
+    <link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-color: #f9f9f9;
+            --surface-color: #ffffff;
+            --border-color: #e5e5e5;
+            --text-primary: #171717;
+            --text-secondary: #737373;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .studio-card {
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+            border-radius: 16px; /* Curved edges */
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02); /* Subtle depth */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        .studio-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Sidebar Navigation */
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            margin-bottom: 6px;
+            border-radius: 12px;
+            color: var(--text-secondary);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .sidebar-item:hover {
+            background-color: #f3f3f3;
+            color: var(--text-primary);
+        }
+
+        .sidebar-item.active {
+            font-weight: 600;
+            background-color: #171717;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .sidebar-item.active i {
+            color: white;
+        }
+
+        /* Loading Overlay */
+        #loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: #ffffff;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            transition: opacity 0.3s ease;
+        }
+        #loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #171717;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .animate-fade-up {
+            animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Post Grid */
+        .post-grid-item {
+            aspect-ratio: 1;
+            background: #efefef;
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            border-radius: 12px; /* Curved edges */
+            border: 1px solid var(--border-color);
+        }
+        
+        .post-grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+        
+        .post-grid-item:hover img {
+            transform: scale(1.05);
+        }
+        
+        /* Stats Overlay on Grid Hover */
+        .post-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            color: white;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-weight: 600;
+            backdrop-filter: blur(2px);
+        }
+        
+        .post-grid-item:hover .post-overlay {
+            opacity: 1;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 50;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            backdrop-filter: blur(4px);
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            max-width: 1100px;
+            width: 100%;
+            height: 85vh;
+            display: flex;
+            overflow: hidden;
+            border-radius: 24px; /* Highly curved modal */
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        @media (max-width: 768px) {
+            .modal-content {
+                flex-direction: column;
+                height: 100%;
+                border-radius: 0;
+            }
+            .modal-overlay {
+                padding: 0;
+            }
+        }
+
+        .tab-btn {
+            padding: 16px;
+            flex: 1;
+            text-align: center;
+            border-bottom: 2px solid transparent;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: #fafafa;
+        }
+        .tab-btn.active {
+            border-bottom: 2px solid #171717;
+            color: var(--text-primary);
+        }
+
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background-color: #e5e5e5; border-radius: 3px; }
+
+        /* AI Result Text Typing Effect */
+        .typing::after {
+            content: '...';
+            animation: typing 1.5s infinite;
+        }
+        @keyframes typing { 0% { content: '.'; } 33% { content: '..'; } 66% { content: '...'; } }
+    </style>
+</head>
+
+<body class="h-screen flex text-[#171717]">
+
+    <!-- Loading Screen -->
+    <div id="loading-overlay">
+        <div class="spinner mb-4"></div>
+        <p class="text-sm font-medium text-gray-500 animate-pulse">Loading Studio...</p>
+    </div>
+
+    <!-- Mobile Header -->
+    <div class="md:hidden fixed top-0 w-full bg-white/90 backdrop-blur-md border-b border-[#e5e5e5] z-30 h-16 flex items-center justify-between px-6">
+        <span class="font-bold text-lg tracking-tight">Studio</span>
+        <button onclick="window.location.href='/'" class="p-2 bg-gray-100 rounded-full">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="hidden md:flex flex-col w-72 bg-white border-r border-[#e5e5e5] h-full fixed left-0 top-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+        <div class="h-24 flex items-center px-8">
+            <div class="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white mr-3 shadow-lg shadow-black/20">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+            </div>
+            <span class="text-2xl font-bold tracking-tight">Studio</span>
+        </div>
+        
+        <div class="px-4 flex-1 space-y-2 mt-4">
+            <div class="sidebar-item active" onclick="switchView('overview')" id="nav-overview">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                Dashboard
+            </div>
+            <div class="sidebar-item" onclick="switchView('content')" id="nav-content">
+                <i data-lucide="grid" class="w-5 h-5"></i>
+                Content Library
+            </div>
+            <div class="mt-10 pt-6 border-t border-[#f0f0f0]">
+                <div class="sidebar-item" onclick="window.location.href='/'">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    Return to Feed
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-[#f0f0f0]">
+            <div class="flex items-center gap-4 p-3 rounded-2xl bg-gray-50 border border-gray-100">
+                <img id="user-avatar" src="" class="w-10 h-10 rounded-full bg-white object-cover border border-gray-200 shadow-sm">
+                <div class="min-w-0">
+                    <div id="user-name" class="text-sm font-bold truncate">User</div>
+                    <div class="text-xs text-gray-500 font-medium">Creator Account</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 ml-0 md:ml-72 h-full bg-[#f9f9f9] overflow-y-auto pt-16 md:pt-0">
+        <div class="max-w-6xl mx-auto p-6 md:p-12 space-y-10">
+            
+            <!-- VIEW: OVERVIEW -->
+            <div id="view-overview" class="space-y-8">
+                <div class="flex items-end justify-between">
+                    <div>
+                        <h1 class="text-3xl font-extrabold text-[#171717] tracking-tight">Overview</h1>
+                        <p class="text-[#737373] text-sm mt-2 font-medium">Performance analytics for the last 30 days</p>
+                    </div>
+                    <div class="hidden md:block text-xs font-semibold px-3 py-1 bg-white border border-gray-200 rounded-full text-gray-500 shadow-sm">
+                        Live Data
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-up">
+                    <div class="studio-card p-6 flex flex-col justify-between h-32">
+                        <div class="flex justify-between items-start">
+                            <span class="text-xs font-bold text-[#737373] uppercase tracking-wider">Total Likes</span>
+                            <i data-lucide="heart" class="w-4 h-4 text-red-500 fill-red-500"></i>
+                        </div>
+                        <div class="text-3xl font-bold counter" id="total-likes">0</div>
+                    </div>
+                    <div class="studio-card p-6 flex flex-col justify-between h-32">
+                         <div class="flex justify-between items-start">
+                            <span class="text-xs font-bold text-[#737373] uppercase tracking-wider">Comments</span>
+                            <i data-lucide="message-circle" class="w-4 h-4 text-blue-500 fill-blue-500"></i>
+                        </div>
+                        <div class="text-3xl font-bold counter" id="total-comments">0</div>
+                    </div>
+                    <div class="studio-card p-6 flex flex-col justify-between h-32">
+                         <div class="flex justify-between items-start">
+                            <span class="text-xs font-bold text-[#737373] uppercase tracking-wider">Posts</span>
+                            <i data-lucide="image" class="w-4 h-4 text-purple-500"></i>
+                        </div>
+                        <div class="text-3xl font-bold counter" id="total-posts">0</div>
+                    </div>
+                    <div class="studio-card p-6 flex flex-col justify-between h-32">
+                         <div class="flex justify-between items-start">
+                            <span class="text-xs font-bold text-[#737373] uppercase tracking-wider">Avg. Engagement</span>
+                            <i data-lucide="activity" class="w-4 h-4 text-green-500"></i>
+                        </div>
+                        <div class="text-3xl font-bold"><span class="counter" id="engagement-rate">0</span>%</div>
+                    </div>
+                </div>
+
+                <!-- Charts & Activity -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-fade-up" style="animation-delay: 0.1s">
+                    
+                    <!-- Left: Charts -->
+                    <div class="lg:col-span-2 space-y-8">
+                        <div class="studio-card p-8">
+                            <div class="flex items-center justify-between mb-8">
+                                <h3 class="font-bold text-lg text-[#171717]">Interaction Trends</h3>
+                                <button class="p-2 hover:bg-gray-100 rounded-full transition"><i data-lucide="more-horizontal" class="w-5 h-5 text-gray-400"></i></button>
+                            </div>
+                            <div class="h-72 w-full">
+                                <canvas id="engagementChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="studio-card p-8">
+                             <div class="flex items-center justify-between mb-8">
+                                <h3 class="font-bold text-lg text-[#171717]">Top Keywords</h3>
+                            </div>
+                            <div class="h-56 w-full">
+                                <canvas id="keywordChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Highlights -->
+                    <div class="space-y-8">
+                        
+                        <!-- Top Performer -->
+                        <div class="studio-card flex flex-col">
+                            <div class="p-5 border-b border-[#f0f0f0] bg-gray-50/50">
+                                <h3 class="font-bold text-sm text-[#171717] flex items-center gap-2">
+                                    <i data-lucide="trophy" class="w-4 h-4 text-yellow-500 fill-yellow-500"></i> Top Performer
+                                </h3>
+                            </div>
+                            <div id="top-post-container" class="flex-1">
+                                <!-- JS Injected -->
+                                <div class="p-10 text-center text-gray-400 text-xs">No data available</div>
+                            </div>
+                        </div>
+
+                        <!-- Recent Comments -->
+                        <div class="studio-card flex flex-col max-h-[450px]">
+                             <div class="p-5 border-b border-[#f0f0f0] bg-gray-50/50">
+                                <h3 class="font-bold text-sm text-[#171717] flex items-center gap-2">
+                                    <i data-lucide="zap" class="w-4 h-4 text-orange-500 fill-orange-500"></i> Recent Activity
+                                </h3>
+                            </div>
+                            <div class="flex-1 overflow-y-auto custom-scroll" id="recent-activity-list">
+                                <div class="p-10 text-center text-gray-400 text-xs">No recent comments</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW: CONTENT -->
+            <div id="view-content" class="hidden space-y-8 animate-fade-up">
+                <div class="flex items-end justify-between">
+                     <div>
+                        <h1 class="text-3xl font-extrabold text-[#171717] tracking-tight">Content Library</h1>
+                        <p class="text-[#737373] text-sm mt-2 font-medium">Manage and analyze your shared posts</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button class="px-4 py-2 bg-white border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50 transition shadow-sm">Newest</button>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4" id="posts-grid">
+                    <!-- Javascript will populate this -->
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Mobile Bottom Nav -->
+    <div class="md:hidden fixed bottom-0 w-full bg-white border-t border-[#e5e5e5] h-16 flex items-center justify-around z-30 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.03)]">
+        <button onclick="switchView('overview')" class="flex flex-col items-center gap-1 text-[#171717]">
+            <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+        </button>
+        <button onclick="switchView('content')" class="flex flex-col items-center gap-1 text-[#737373]">
+            <i data-lucide="grid" class="w-6 h-6"></i>
+        </button>
+    </div>
+
+    <!-- Details Modal -->
+    <div id="post-modal" class="modal-overlay" onclick="closeModal(event)">
+        <div class="modal-content shadow-2xl ring-1 ring-black/5" onclick="event.stopPropagation()">
+            <!-- Left: Media Preview -->
+            <div class="hidden md:flex w-1/2 bg-black items-center justify-center relative bg-[#f5f5f5]">
+                <div id="modal-post-preview" class="p-16 text-center text-gray-400 font-medium max-w-md leading-relaxed text-lg">
+                    <!-- Text Content Fallback -->
+                </div>
+                <img id="modal-post-image" class="absolute inset-0 w-full h-full object-contain hidden" />
+            </div>
+
+            <!-- Right: Details -->
+            <div class="w-full md:w-1/2 flex flex-col bg-white h-full relative border-l border-[#e5e5e5]">
+                <!-- Header -->
+                <div class="p-5 border-b border-[#f0f0f0] flex items-center justify-between shrink-0">
+                    <h3 class="font-bold text-base">Post Insights</h3>
+                    <button onclick="closeModal(null, true)" class="p-2 hover:bg-gray-100 rounded-full transition">
+                        <i data-lucide="x" class="w-5 h-5 text-[#171717]"></i>
+                    </button>
+                </div>
+
+                <!-- Stats Strip -->
+                <div class="flex border-b border-[#f0f0f0] shrink-0 divide-x divide-[#f0f0f0]">
+                    <div class="flex-1 p-5 text-center bg-gray-50/30">
+                        <div class="text-2xl font-extrabold text-[#171717]" id="modal-likes-count">0</div>
+                        <div class="text-[11px] text-gray-500 uppercase font-bold tracking-wider mt-1">Likes</div>
+                    </div>
+                    <div class="flex-1 p-5 text-center bg-gray-50/30">
+                        <div class="text-2xl font-extrabold text-[#171717]" id="modal-comments-count">0</div>
+                        <div class="text-[11px] text-gray-500 uppercase font-bold tracking-wider mt-1">Comments</div>
+                    </div>
+                </div>
+
+                <!-- AI Analysis Section -->
+                <div class="p-4 border-b border-[#f0f0f0] bg-white">
+                    <button onclick="triggerAIAnalysis()" id="ai-btn" class="w-full py-3 bg-black text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition shadow-lg shadow-black/10 transform active:scale-95">
+                        <i data-lucide="sparkles" class="w-4 h-4 text-yellow-300"></i> Generate AI Analysis
+                    </button>
+                    <div id="ai-result-container" class="hidden mt-4 bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <div class="flex items-center gap-2 mb-2">
+                             <div class="p-1 bg-black rounded-md"><i data-lucide="bot" class="w-3 h-3 text-white"></i></div>
+                             <span class="text-xs font-bold uppercase tracking-wider text-gray-900">AI Report</span>
+                        </div>
+                        <p id="ai-result-text" class="text-sm text-gray-700 leading-relaxed font-medium"></p>
+                    </div>
+                </div>
+
+                <!-- Tabs -->
+                <div class="flex border-b border-[#f0f0f0] shrink-0">
+                    <div class="tab-btn active" onclick="switchModalTab('likes')" id="tab-likes">Likes</div>
+                    <div class="tab-btn" onclick="switchModalTab('comments')" id="tab-comments">Comments</div>
+                </div>
+
+                <!-- Lists -->
+                <div class="flex-1 overflow-y-auto custom-scroll p-0 relative bg-white">
+                    <div id="modal-list-likes" class="p-0"></div>
+                    <div id="modal-list-comments" class="hidden p-0"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, onSnapshot, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+        // Config
+        const configResponse = await fetch('/api/data');
+        const config = await configResponse.json();
+        const firebaseConfig = config.firebaseConfig;
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+        let allUsersCache = [];
+        let myPosts = [];
+        let engagementChart = null;
+        let keywordChart = null;
+        let isDataLoaded = false;
+        let currentOpenPostId = null;
+
+        // --- AI Analysis Logic ---
+        window.triggerAIAnalysis = async () => {
+            const btn = document.getElementById('ai-btn');
+            const resultContainer = document.getElementById('ai-result-container');
+            const resultText = document.getElementById('ai-result-text');
+            
+            if(!currentOpenPostId) return;
+            const post = myPosts.find(p => p.id === currentOpenPostId);
+            if(!post) return;
+
+            // Loading state
+            btn.disabled = true;
+            btn.innerHTML = `<span class="typing">Analyzing</span>`;
+            resultContainer.classList.add('hidden');
+            resultText.innerText = "";
+
+            // Prepare context
+            const comments = post.comments || [];
+            // Limit comments to avoid URL length issues
+            const commentText = comments.slice(0, 3).map(c => c.content).join(". "); 
+            const likes = (post.likes || []).length;
+            const content = post.content ? post.content.substring(0, 100) : "Image post"; // Limit content length
+
+            // Construct a cleaner prompt
+            const prompt = `Analyze social media post. Content: ${content}. Stats: ${likes} likes, ${comments.length} comments. Comments: ${commentText}. Give 1 sentiment insight and 1 tip.`;
+
+            try {
+                // Using Pollinations AI Text Endpoint
+                // Adding a random seed to prevent caching issues
+                const seed = Math.floor(Math.random() * 1000);
+                const url = `https://text.pollinations.ai/${encodeURIComponent(prompt)}?seed=${seed}`;
+                
+                const response = await fetch(url);
+                if(!response.ok) throw new Error("AI Service Error");
+                const text = await response.text();
+                
+                resultText.innerText = text;
+                resultContainer.classList.remove('hidden');
+                btn.innerHTML = `<i data-lucide="check" class="w-4 h-4"></i> Analysis Complete`;
+            } catch (err) {
+                console.error("Pollinations Error:", err);
+                btn.innerHTML = `<i data-lucide="alert-circle" class="w-4 h-4"></i> Failed. Try again.`;
+                setTimeout(() => { 
+                    btn.disabled = false;
+                    btn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 text-yellow-300"></i> Generate AI Analysis`;
+                }, 2000);
+            }
+            
+            if(window.lucide) window.lucide.createIcons();
+        };
+
+        // --- Animations ---
+        function animateCounter(id, end) {
+            const obj = document.getElementById(id);
+            if(!obj) return;
+            let current = 0;
+            const step = Math.ceil(end / 25);
+            if(end === 0) { obj.innerText = "0"; return; }
+            
+            const timer = setInterval(() => {
+                current += step;
+                if(current >= end) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                obj.innerText = current.toLocaleString();
+            }, 20);
+        }
+
+        // --- View & Navigation ---
+        window.switchView = (viewName) => {
+            document.getElementById('view-overview').classList.add('hidden');
+            document.getElementById('view-content').classList.add('hidden');
+            document.querySelectorAll('.sidebar-item').forEach(el => el.classList.remove('active'));
+            
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            const nav = document.getElementById(`nav-${viewName}`);
+            if(nav) nav.classList.add('active');
+
+            if(viewName === 'overview') {
+                if(engagementChart) engagementChart.resize();
+                if(keywordChart) keywordChart.resize();
+            }
+        };
+
+        window.closeModal = (e, force) => {
+            if (force || e.target.classList.contains('modal-overlay')) {
+                document.getElementById('post-modal').classList.remove('open');
+                currentOpenPostId = null;
+            }
+        };
+
+        window.switchModalTab = (tab) => {
+            document.getElementById('modal-list-likes').classList.add('hidden');
+            document.getElementById('modal-list-comments').classList.add('hidden');
+            document.getElementById('tab-likes').classList.remove('active');
+            document.getElementById('tab-comments').classList.remove('active');
+
+            document.getElementById(`modal-list-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).classList.add('active');
+        };
+
+        // --- Data Handling ---
+        function getUserDetails(uid) {
+            const u = allUsersCache.find(u => u.id === uid);
+            return u || { name: 'User', avatar: 'https://ui-avatars.com/api/?name=User&background=random&color=fff', username: 'user' };
+        }
+
+        async function fetchUsers() {
+            try {
+                const snap = await getDocs(collection(db, "users"));
+                allUsersCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            } catch(e) { console.log("User cache error", e); }
+        }
+
+        function processData() {
+            let likes = 0, comments = 0;
+            const wordMap = {};
+            const stopWords = new Set(['the','and','a','to','of','in','i','is','that','it','on','you','this','for','but','with','are','have','be','at','or','as','was','so','if','out','not','my','me','just','like']);
+            
+            let allComments = [];
+            const postsSortedByTime = [...myPosts].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+            // Best post logic
+            let bestPost = null;
+            let maxEngagement = -1;
+
+            postsSortedByTime.forEach(post => {
+                const l = (post.likes || []).length;
+                const c = (post.comments || []).length;
+                const total = l + c;
+                likes += l;
+                comments += c;
+
+                if(total > maxEngagement) { maxEngagement = total; bestPost = post; }
+
+                if (post.content) {
+                    const text = post.content.toLowerCase().replace(/[^\w\s]/g, '');
+                    text.split(/\s+/).forEach(w => {
+                        if (w.length > 3 && !stopWords.has(w)) wordMap[w] = (wordMap[w] || 0) + 1;
+                    });
+                }
+
+                if (post.comments && Array.isArray(post.comments)) {
+                    post.comments.forEach(comment => {
+                        allComments.push({ ...comment, postId: post.id });
+                    });
+                }
+            });
+
+            animateCounter('total-likes', likes);
+            animateCounter('total-comments', comments);
+            animateCounter('total-posts', myPosts.length);
+            
+            const rate = myPosts.length ? Math.round(((likes + comments) / myPosts.length) * 10) / 10 : 0;
+            animateCounter('engagement-rate', rate);
+
+            updateCharts(postsSortedByTime.reverse(), wordMap);
+            renderTopPost(bestPost);
+            renderRecentActivity(allComments);
+            renderContentGrid(postsSortedByTime);
+        }
+
+        function renderTopPost(post) {
+            const container = document.getElementById('top-post-container');
+            if(!post) {
+                container.innerHTML = `<div class="p-8 text-center text-gray-400 text-sm">No analytics available yet.</div>`;
+                return;
+            }
+
+            const likes = (post.likes || []).length;
+            const comments = (post.comments || []).length;
+            const hasImg = post.imageUrl || post.image;
+            
+            const mediaHtml = hasImg 
+                ? `<img src="${hasImg}" class="w-full h-48 object-cover opacity-95 hover:opacity-100 transition duration-300">` 
+                : `<div class="w-full h-48 bg-gray-50 flex items-center justify-center p-6 text-center text-gray-500 text-sm italic border-b border-[#e5e5e5] leading-relaxed">"${post.content ? post.content.substring(0, 100) + '...' : 'Text Post'}"</div>`;
+
+            container.innerHTML = `
+                <div class="cursor-pointer group h-full flex flex-col" onclick="openPostModal('${post.id}')">
+                    <div class="relative overflow-hidden">
+                        ${mediaHtml}
+                    </div>
+                    <div class="p-5 flex-1 flex flex-col justify-center">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4 text-sm">
+                                <div class="flex items-center gap-1.5 font-bold"><i data-lucide="heart" class="w-4 h-4 text-red-500 fill-red-500"></i> ${likes}</div>
+                                <div class="flex items-center gap-1.5 font-bold"><i data-lucide="message-circle" class="w-4 h-4 text-black fill-black"></i> ${comments}</div>
+                            </div>
+                            <span class="text-[10px] bg-black text-white px-2 py-1 rounded-full font-bold uppercase tracking-wider">Top Post</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            if(window.lucide) window.lucide.createIcons();
+        }
+
+        function renderRecentActivity(comments) {
+            const container = document.getElementById('recent-activity-list');
+            if(comments.length === 0) {
+                container.innerHTML = `<div class="p-10 text-center text-gray-400 text-sm">No recent comments.</div>`;
+                return;
+            }
+            const sorted = comments.sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).slice(0, 10);
+            container.innerHTML = sorted.map(c => {
+                const u = getUserDetails(c.authorId);
+                return `
+                    <div class="p-4 border-b border-[#f0f0f0] last:border-0 hover:bg-gray-50 transition cursor-default">
+                        <div class="flex items-start gap-4">
+                            <img src="${u.avatar}" class="w-9 h-9 rounded-full border border-gray-200 shadow-sm">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex justify-between items-baseline mb-1">
+                                    <span class="font-bold text-sm text-[#171717] truncate">${u.name}</span>
+                                </div>
+                                <p class="text-sm text-gray-600 line-clamp-2 leading-relaxed">"${c.content}"</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            if(window.lucide) window.lucide.createIcons();
+        }
+
+        function updateCharts(posts, wordMap) {
+            // Engagement Chart (Monochrome)
+            const ctx1 = document.getElementById('engagementChart').getContext('2d');
+            const limitedPosts = posts.slice(-10);
+            const dataPoints = limitedPosts.map(p => (p.likes?.length || 0) + (p.comments?.length || 0));
+
+            if (engagementChart) engagementChart.destroy();
+            engagementChart = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: limitedPosts.map((_, i) => `Post ${i+1}`),
+                    datasets: [{
+                        label: 'Interactions',
+                        data: dataPoints,
+                        borderColor: '#171717',
+                        backgroundColor: 'rgba(0,0,0,0)',
+                        borderWidth: 2,
+                        tension: 0.3, /* Slight curve */
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#171717',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { backgroundColor: '#171717', titleFont: { family: 'Inter' }, bodyFont: { family: 'Inter' }, padding: 10, cornerRadius: 8 } },
+                    scales: { 
+                        x: { display: false },
+                        y: { grid: { borderDash: [4, 4], color: '#f0f0f0' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // Keyword Chart (Monochrome)
+            const ctx2 = document.getElementById('keywordChart').getContext('2d');
+            const sortedWords = Object.entries(wordMap).sort((a,b) => b[1] - a[1]).slice(0, 5);
+            
+            if (keywordChart) keywordChart.destroy();
+            keywordChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: sortedWords.map(s => s[0]),
+                    datasets: [{
+                        data: sortedWords.map(s => s[1]),
+                        backgroundColor: '#262626',
+                        borderRadius: 6,
+                        barPercentage: 0.6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { grid: { display: false }, ticks: { font: { weight: '600', family: 'Inter' }, color: '#404040' } }
+                    }
+                }
+            });
+        }
+
+        function renderContentGrid(posts) {
+            const container = document.getElementById('posts-grid');
+            if (posts.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-24 text-center text-gray-400 text-sm">No posts yet. Start creating to populate your library.</div>`;
+                return;
+            }
+
+            container.innerHTML = posts.map(post => {
+                const hasImg = post.imageUrl || post.image;
+                const likes = (post.likes || []).length;
+                const comments = (post.comments || []).length;
+                
+                let media = hasImg 
+                    ? `<img src="${hasImg}" loading="lazy">` 
+                    : `<div class="w-full h-full flex items-center justify-center p-6 bg-white text-xs text-gray-600 text-center leading-relaxed font-medium">"${post.content?.substring(0,60)}..."</div>`;
+
+                return `
+                    <div class="post-grid-item group shadow-sm hover:shadow-md" onclick="openPostModal('${post.id}')">
+                        ${media}
+                        <div class="post-overlay flex-col">
+                            <div class="flex items-center gap-1.5 text-base font-bold"><i data-lucide="heart" class="w-5 h-5 text-red-500 fill-red-500"></i> ${likes}</div>
+                            <div class="flex items-center gap-1.5 text-base font-bold"><i data-lucide="message-circle" class="w-5 h-5 fill-white"></i> ${comments}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            if(window.lucide) window.lucide.createIcons();
+        }
+
+        window.openPostModal = (pid) => {
+            currentOpenPostId = pid;
+            const post = myPosts.find(p => p.id === pid);
+            if (!post) return;
+
+            // Reset AI Button
+            const btn = document.getElementById('ai-btn');
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="sparkles" class="w-4 h-4 text-yellow-300"></i> Generate AI Analysis`;
+            document.getElementById('ai-result-container').classList.add('hidden');
+
+            const likes = post.likes || [];
+            const comments = post.comments || [];
+            document.getElementById('modal-likes-count').innerText = likes.length;
+            document.getElementById('modal-comments-count').innerText = comments.length;
+
+            const imgEl = document.getElementById('modal-post-image');
+            const txtEl = document.getElementById('modal-post-preview');
+            const hasImg = post.imageUrl || post.image;
+
+            if (hasImg) {
+                imgEl.src = hasImg;
+                imgEl.classList.remove('hidden');
+                txtEl.classList.add('hidden');
+                txtEl.parentElement.classList.remove('bg-[#f5f5f5]');
+                txtEl.parentElement.classList.add('bg-black');
+            } else {
+                imgEl.classList.add('hidden');
+                txtEl.classList.remove('hidden');
+                txtEl.innerText = post.content || "No Description";
+                txtEl.parentElement.classList.remove('bg-black');
+                txtEl.parentElement.classList.add('bg-[#f5f5f5]');
+            }
+
+            // Likes
+            const likesContainer = document.getElementById('modal-list-likes');
+            likesContainer.innerHTML = likes.length ? likes.map(uid => {
+                const u = getUserDetails(uid);
+                return `
+                    <div class="flex items-center gap-4 p-4 hover:bg-gray-50 border-b border-[#f0f0f0]">
+                        <img src="${u.avatar}" class="w-10 h-10 rounded-full border border-gray-200 object-cover shadow-sm">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-bold text-sm text-[#171717] truncate">${u.name}</div>
+                            <div class="text-xs text-gray-500 truncate">@${u.username}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('') : '<div class="p-10 text-center text-gray-400 text-sm">No likes yet.</div>';
+
+            // Comments
+            const commentsContainer = document.getElementById('modal-list-comments');
+            const sortedC = [...comments].sort((a,b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+            commentsContainer.innerHTML = sortedC.length ? sortedC.map(c => {
+                const u = getUserDetails(c.authorId);
+                return `
+                    <div class="flex gap-4 p-4 hover:bg-gray-50 border-b border-[#f0f0f0] items-start">
+                        <img src="${u.avatar}" class="w-9 h-9 rounded-full border border-gray-200 mt-1 shadow-sm">
+                        <div class="flex-1">
+                            <div class="flex justify-between items-baseline">
+                                <span class="font-bold text-sm text-[#171717] mr-2">${u.name}</span>
+                            </div>
+                            <div class="text-sm text-gray-800 mt-1 leading-relaxed">${c.content}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('') : '<div class="p-10 text-center text-gray-400 text-sm">No comments yet.</div>';
+
+            switchModalTab('likes');
+            document.getElementById('post-modal').classList.add('open');
+            if(window.lucide) window.lucide.createIcons();
+        };
+
+        // Init
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('user-name').innerText = user.displayName || 'Creator';
+                document.getElementById('user-avatar').src = user.photoURL || `https://ui-avatars.com/api/?name=${user.displayName || 'U'}`;
+                fetchUsers();
+                getDoc(doc(db, "users", user.uid)).then(d => {
+                    if(d.exists()) {
+                        const data = d.data();
+                        document.getElementById('user-name').innerText = data.name;
+                        if(data.avatar) document.getElementById('user-avatar').src = data.avatar;
+                    }
+                });
+
+                const q = query(collection(db, "posts"), where("authorId", "==", user.uid));
+                onSnapshot(q, (snapshot) => {
+                    myPosts = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    processData();
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                    isDataLoaded = true;
+                });
+            } else {
+                window.location.href = '/';
+            }
+        });
+        setTimeout(() => { if(!isDataLoaded) document.getElementById('loading-overlay').classList.add('hidden'); }, 3000);
+
+        if(window.lucide) window.lucide.createIcons();
+    </script>
+</body>
+</html>

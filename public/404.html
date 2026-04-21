@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>404 Page Not Found</title>
+    <style>
+        :root {
+            --notion-blue: #2eaadc;
+            --deep-atmosphere: #115c7a;
+            --star-white: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: var(--notion-blue);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            overscroll-behavior: none;
+        }
+
+        /* --- HEADER --- */
+        header {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 25px 40px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            background: linear-gradient(to bottom, rgba(16, 64, 88, 0.4) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .header-logo {
+            height: 45px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.3));
+            pointer-events: auto;
+            transition: transform 0.3s ease;
+        }
+
+        .header-logo:hover {
+            transform: scale(1.05);
+        }
+
+        .header-nav {
+            pointer-events: auto;
+        }
+
+        .header-nav a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            padding: 10px 20px;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .header-nav a:hover {
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+        }
+
+        /* --- SCENE --- */
+        .scene {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 30%, #4fc3f7 0%, var(--notion-blue) 40%, var(--deep-atmosphere) 100%);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .overlay-texture {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            pointer-events: none;
+            background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.3) 120%);
+        }
+        
+        .grain {
+            position: absolute;
+            inset: 0;
+            z-index: 101;
+            opacity: 0.04;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* --- OPTIMIZED CLOUD ENGINE --- */
+        .layer {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            will-change: transform; 
+        }
+
+        /* PERFORMANCE TRICK:
+           We create small elements and SCALE them up.
+           Calculating a filter on 200px is 16x faster than 800px.
+        */
+        .smoke-puff {
+            position: absolute;
+            background: radial-gradient(closest-side, rgba(255,255,255,0.8), transparent);
+            border-radius: 50%;
+            filter: url(#cloud-filter);
+            /* Reset transform origin to center for scaling */
+            transform-origin: center center;
+        }
+
+        /* Cloud Positioning - Notice sizes are smaller, but Scales are added */
+        
+        /* Back Layer */
+        .layer-back .smoke-puff { opacity: 0.3; }
+        /* Was 800px -> Now 200px scaled 4x */
+        .b1 { width: 200px; height: 150px; top: -10%; left: -5%; transform: scale(4); } 
+        .b2 { width: 220px; height: 180px; bottom: -10%; right: -10%; transform: scale(4); }
+
+        /* Mid Layer */
+        .layer-mid .smoke-puff { mix-blend-mode: soft-light; }
+        .m1 { width: 150px; height: 100px; top: 20%; left: 5%; opacity: 0.5; transform: scale(3.5); }
+        .m2 { width: 120px; height: 100px; bottom: 15%; right: 10%; opacity: 0.5; transform: scale(3.5); }
+
+        /* Center Clouds */
+        .c1-center { 
+            width: 200px; height: 150px; 
+            top: 50%; left: 50%; 
+            /* We combine the centering translate with the scale */
+            margin-top: -75px; margin-left: -100px; /* CSS Centering without translate() to avoid conflict with animation */
+            opacity: 0.45; 
+            transform: scale(4);
+        }
+        .c2-center { 
+            width: 120px; height: 90px; 
+            top: 60%; left: 45%; 
+            margin-top: -45px; margin-left: -60px;
+            opacity: 0.4; 
+            transform: scale(3.5);
+        }
+
+        /* Front Layer */
+        .layer-front { z-index: 50; pointer-events: none; }
+        .layer-front .smoke-puff { opacity: 0.3; }
+        .f1 { width: 300px; height: 100px; bottom: -10%; left: -10%; transform: scale(4); }
+
+        /* --- STARS --- */
+        .star {
+            position: absolute;
+            background: var(--star-white);
+            border-radius: 50%;
+            opacity: 0;
+            box-shadow: 0 0 3px rgba(255, 255, 255, 0.9);
+            animation: twinkle var(--duration) ease-in-out infinite;
+            animation-delay: var(--delay);
+            will-change: opacity;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.2; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.2); }
+            100% { opacity: 0.2; transform: scale(0.8); }
+        }
+
+        .shooting-star {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 4px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 0 0 4px rgba(255,255,255,0.1), 0 0 0 8px rgba(255,255,255,0.1), 0 0 20px rgba(255,255,255,1);
+            animation: shoot 3s linear infinite;
+            opacity: 0;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .shooting-star::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 300px;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,255,255,1), transparent);
+            right: 0;
+        }
+
+        @keyframes shoot {
+            0% { transform: rotate(-45deg) translateX(0); opacity: 1; }
+            15% { transform: rotate(-45deg) translateX(-1000px); opacity: 0; }
+            100% { transform: rotate(-45deg) translateX(-1000px); opacity: 0; }
+        }
+
+        /* --- CONTENT --- */
+        .content {
+            z-index: 10;
+            text-align: center;
+            color: white;
+            position: relative;
+            padding: 0 20px;
+        }
+
+        .error-num {
+            font-size: clamp(6rem, 20vw, 15rem);
+            font-weight: 800;
+            line-height: 0.8;
+            letter-spacing: -0.05em;
+            margin: 0;
+            mix-blend-mode: overlay;
+            opacity: 0.9;
+            text-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: pulse-text 8s infinite ease-in-out;
+        }
+
+        .error-text {
+            font-size: clamp(0.9rem, 4vw, 1.5rem);
+            text-transform: uppercase;
+            letter-spacing: 0.3rem;
+            margin-top: 20px;
+            font-weight: 400;
+            opacity: 0.95;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        button {
+            margin-top: 45px;
+            padding: 14px 45px;
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.6);
+            color: white;
+            font-size: 0.9rem;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            position: relative;
+            z-index: 11;
+        }
+
+        button:hover {
+            background: white;
+            color: var(--deep-atmosphere);
+            box-shadow: 0 0 30px rgba(255,255,255,0.7);
+            transform: translateY(-2px);
+        }
+
+        /* --- ANIMATIONS --- */
+        /* Note: Scale is preserved in animations by not overriding it */
+        @keyframes pulse-text { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.7; } }
+
+        @media (max-width: 768px) {
+            header { padding: 20px; }
+            .header-logo { height: 35px; }
+            .c1-center { transform: scale(2.5); }
+            .c2-center { transform: scale(2); }
+        }
+
+        @media (max-width: 480px) {
+            .smoke-puff { opacity: 0.3 !important; }
+            .c1-center, .c2-center { opacity: 0.25 !important; }
+            .f1 { bottom: -20%; }
+            button { padding: 12px 30px; font-size: 0.8rem; margin-top: 30px; }
+            .header-nav { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <svg style="display: none;">
+        <filter id="cloud-filter">
+            <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" result="turbulence"/>
+            <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="40" xChannelSelector="R" yChannelSelector="G"/>
+            <feGaussianBlur stdDeviation="2" />
+        </filter>
+    </svg>
+
+    <header>
+        <img src="https://i.imghippo.com/files/vgr8207c.png" alt="Logo" class="header-logo">
+        <nav class="header-nav">
+            <a href="/">Home</a>
+        </nav>
+    </header>
+
+    <div class="scene" id="scene">
+        
+        <div class="overlay-texture"></div>
+        <div class="grain"></div>
+
+        <div class="layer" id="star-layer" data-speed="0.02">
+            <div id="shooting-star-container"></div>
+        </div>
+
+        <div class="layer layer-back" data-speed="-0.03">
+            <div class="smoke-puff b1"></div>
+            <div class="smoke-puff b2"></div>
+        </div>
+
+        <div class="layer layer-mid" data-speed="0.06">
+            <div class="smoke-puff m1"></div>
+            <div class="smoke-puff m2"></div>
+            <div class="smoke-puff c1-center"></div>
+            <div class="smoke-puff c2-center"></div>
+        </div>
+
+        <div class="content">
+            <h1 class="error-num">404</h1>
+            <div class="error-text">Lost in your own thoughts</div>
+            <button onclick="window.history.back()">Return</button>
+        </div>
+
+        <div class="layer layer-front" data-speed="0.1">
+            <div class="smoke-puff f1"></div>
+        </div>
+    </div>
+
+    <script>
+        const layers = document.querySelectorAll('.layer');
+        const starLayer = document.getElementById('star-layer');
+        const shootingStarContainer = document.getElementById('shooting-star-container');
+        const isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+        function createStars() {
+            const starCount = isMobile ? 60 : 150; 
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.classList.add('star');
+                const x = Math.random() * 100;
+                const y = Math.random() * 100;
+                const size = Math.random() * 2 + 1; 
+                const duration = Math.random() * 3 + 2 + 's';
+                const delay = Math.random() * 5 + 's';
+                star.style.left = `${x}%`;
+                star.style.top = `${y}%`;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.setProperty('--duration', duration);
+                star.style.setProperty('--delay', delay);
+                starLayer.appendChild(star);
+            }
+        }
+
+        function createShootingStar() {
+            const star = document.createElement('div');
+            star.classList.add('shooting-star');
+            const startY = Math.random() * 40; 
+            const startX = Math.random() * 40 + 60;
+            star.style.top = startY + '%';
+            star.style.left = startX + '%';
+            star.style.animationDelay = (Math.random() * 2) + 's';
+            shootingStarContainer.appendChild(star);
+            setTimeout(() => { star.remove(); setTimeout(createShootingStar, Math.random() * 5000 + 2000); }, 4000);
+        }
+
+        createStars();
+        setTimeout(createShootingStar, 1000);
+
+        if (!isMobile) {
+            let mouseX = 0, mouseY = 0;
+            let currentX = 0, currentY = 0;
+            const ease = 0.05; 
+
+            document.addEventListener('mousemove', (e) => {
+                mouseX = (window.innerWidth / 2 - e.clientX) / (window.innerWidth / 2);
+                mouseY = (window.innerHeight / 2 - e.clientY) / (window.innerHeight / 2);
+            });
+
+            function animate() {
+                currentX += (mouseX - currentX) * ease;
+                currentY += (mouseY - currentY) * ease;
+
+                // Stop loop if motion is tiny to save CPU
+                if(Math.abs(mouseX - currentX) > 0.001 || Math.abs(mouseY - currentY) > 0.001) {
+                    layers.forEach(layer => {
+                        const speed = parseFloat(layer.getAttribute('data-speed'));
+                        const xPos = currentX * speed * 80;
+                        const yPos = currentY * speed * 80;
+                        const rotate = currentX * speed * 2;
+
+                        if(layer.id === 'star-layer') {
+                            layer.style.transform = `translate3d(${xPos}px, ${yPos}px, 0)`;
+                        } else {
+                            // Note: Rotate handles the rotation, scaling is handled in CSS class
+                            layer.style.transform = `translate3d(${xPos}px, ${yPos}px, 0) rotate(${rotate}deg)`;
+                        }
+                    });
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,583 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EduLink Admin</title>
+<link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Google+Sans:wght@400;500;700&display=swap');
+
+:root {
+    --bg-color: #ffffff;
+    --surface-color: #f9f9fb;
+    --text-primary: #1f1f1f;
+    --text-secondary: #6b7280;
+    --border-color: #e5e7eb;
+    --google-blue: #0b57d0;
+    --google-blue-hover: #0842a0;
+    --danger: #dc2626;
+    --success: #16a34a;
+}
+
+body { font-family: 'Inter', sans-serif; background-color: var(--bg-color); color: var(--text-primary); }
+.google-font { font-family: 'Google Sans', 'Inter', sans-serif; }
+
+/* Notion-style Cards */
+.notion-card {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.notion-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Google-style Inputs */
+.notion-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border-color);
+    padding: 8px 0;
+    font-size: 14px;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+}
+.notion-input:focus { border-bottom-color: var(--google-blue); }
+
+/* Navigation Tabs */
+.nav-tab {
+    padding: 8px 16px;
+    border-radius: 99px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.nav-tab:hover { background-color: var(--surface-color); color: var(--text-primary); }
+.nav-tab.active { background-color: #e8f0fe; color: var(--google-blue); font-weight: 600; }
+
+/* Status Badges */
+.badge { padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+.badge-blue { background: #e8f0fe; color: #1967d2; }
+.badge-red { background: #fce8e6; color: #c5221f; }
+.badge-green { background: #e6f4ea; color: #137333; }
+
+/* Table Styling */
+.notion-table th { font-weight: 500; color: var(--text-secondary); font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+.notion-table td { padding: 16px 8px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+.notion-table tr:last-child td { border-bottom: none; }
+
+/* Animations */
+.fade-in { animation: fadeIn 0.4s ease forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<!-- Login Section -->
+<div id="login-section" class="fixed inset-0 z-50 flex items-center justify-center bg-white">
+    <div class="max-w-sm w-full text-center p-8 fade-in">
+        <img src="https://i.imghippo.com/files/vgr8207c.png" class="w-16 h-16 mx-auto mb-6 object-contain">
+        <h1 class="text-3xl font-bold google-font mb-2 text-[#1f1f1f]">Admin Access</h1>
+        <p class="text-gray-500 mb-8">Sign in to manage EduLink</p>
+        
+        <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 text-[#1f1f1f] font-medium py-3 rounded-full transition-all shadow-sm hover:shadow-md">
+            <svg class="w-5 h-5" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+            Continue with Google
+        </button>
+        <p id="error-msg" class="text-red-500 text-xs mt-4 hidden"></p>
+    </div>
+</div>
+
+<!-- Main Dashboard -->
+<div id="dashboard-section" class="flex-1 hidden flex flex-col max-w-7xl mx-auto w-full px-4 md:px-8 pb-12">
+    
+    <!-- Navbar -->
+    <header class="py-6 flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100">
+        <div class="flex items-center gap-3">
+            <img src="https://i.imghippo.com/files/vgr8207c.png" class="w-10 h-10 object-contain">
+            <div>
+                <h1 class="text-xl font-bold google-font text-[#1f1f1f]">EduLink Workspace</h1>
+                <p class="text-xs text-gray-400">Admin Console</p>
+            </div>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                <div class="w-6 h-6 rounded-full bg-[#0b57d0] text-white flex items-center justify-center text-xs font-bold" id="admin-initial">A</div>
+                <span class="text-sm text-gray-700 font-medium" id="admin-email">admin@edulink.com</span>
+            </div>
+            <button onclick="logout()" class="text-gray-400 hover:text-red-600 transition-colors">
+                <i data-lucide="log-out" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="flex items-center gap-2 py-6 overflow-x-auto no-scrollbar">
+        <button onclick="switchTab('overview')" id="tab-overview" class="nav-tab active">
+            <i data-lucide="layout-grid" class="w-4 h-4"></i> Overview
+        </button>
+        <button onclick="switchTab('users')" id="tab-users" class="nav-tab">
+            <i data-lucide="users" class="w-4 h-4"></i> Database
+        </button>
+        <button onclick="switchTab('broadcast')" id="tab-broadcast" class="nav-tab">
+            <i data-lucide="megaphone" class="w-4 h-4"></i> Broadcast
+        </button>
+    </nav>
+
+    <!-- Content Views -->
+    <div id="view-overview" class="fade-in space-y-8">
+        <!-- Key Metrics -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="notion-card p-6">
+                <div class="text-gray-500 text-xs font-bold uppercase mb-2">Total Users</div>
+                <div class="text-4xl font-bold google-font text-[#1f1f1f]" id="stat-users">-</div>
+            </div>
+            <div class="notion-card p-6">
+                <div class="text-gray-500 text-xs font-bold uppercase mb-2">Posts Created</div>
+                <div class="text-4xl font-bold google-font text-[#1f1f1f]" id="stat-posts">-</div>
+            </div>
+            <div class="notion-card p-6">
+                <div class="text-gray-500 text-xs font-bold uppercase mb-2">Verified</div>
+                <div class="text-4xl font-bold google-font text-blue-600" id="stat-verified">-</div>
+            </div>
+            <div class="notion-card p-6">
+                <div class="text-gray-500 text-xs font-bold uppercase mb-2">Banned</div>
+                <div class="text-4xl font-bold google-font text-red-600" id="stat-banned">-</div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="notion-card p-6">
+                <h3 class="font-bold text-gray-900 mb-6 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4"></i> Growth</h3>
+                <div class="h-64"><canvas id="growthChart"></canvas></div>
+            </div>
+            <div class="notion-card p-6">
+                <h3 class="font-bold text-gray-900 mb-6 flex items-center gap-2"><i data-lucide="pie-chart" class="w-4 h-4"></i> Content Split</h3>
+                <div class="h-64 flex justify-center"><canvas id="contentChart"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Database View -->
+    <div id="view-users" class="hidden fade-in">
+        <div class="notion-card overflow-hidden">
+            <!-- Toolbar -->
+            <div class="p-4 border-b border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 bg-white">
+                <div class="relative w-full md:w-80">
+                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                    <input type="text" oninput="handleSearch(this.value)" placeholder="Search database..." class="w-full pl-10 pr-4 py-2 bg-gray-50 border border-transparent focus:bg-white focus:border-gray-200 rounded-lg text-sm outline-none transition-all">
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="refreshData()" class="p-2 text-gray-500 hover:text-[#1f1f1f] hover:bg-gray-100 rounded-md transition-colors"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                    <select onchange="filterUsers(this.value)" class="bg-gray-50 border border-gray-200 text-sm rounded-lg px-3 py-2 outline-none cursor-pointer">
+                        <option value="all">All Status</option>
+                        <option value="verified">Verified</option>
+                        <option value="banned">Banned</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left notion-table">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="pl-6">Profile</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th>Activity</th>
+                            <th class="text-right pr-6">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="user-table-body" class="bg-white"></tbody>
+                </table>
+            </div>
+            <div id="empty-state" class="hidden p-12 text-center text-gray-400">
+                <i data-lucide="database" class="w-8 h-8 mx-auto mb-2 opacity-50"></i>
+                <p>No records found.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Broadcast View -->
+    <div id="view-broadcast" class="hidden fade-in max-w-2xl mx-auto w-full">
+        <div class="notion-card p-8">
+            <div class="flex items-center gap-3 mb-6">
+                <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center">
+                    <i data-lucide="radio" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h2 class="text-lg font-bold text-[#1f1f1f]">System Broadcast</h2>
+                    <p class="text-sm text-gray-500">Send a notification to all users.</p>
+                </div>
+            </div>
+            
+            <div class="space-y-6">
+                <!-- Sender Preview -->
+                <div class="flex items-center gap-3 p-3 bg-blue-50/50 rounded-lg border border-blue-100">
+                    <img src="https://i.imghippo.com/files/vgr8207c.png" class="w-8 h-8 object-contain">
+                    <div class="text-xs text-blue-800">
+                        <span class="font-bold">Sending as EduLink</span>
+                        <div class="opacity-70">Official Announcement</div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Announcement Title</label>
+                    <input type="text" id="bc-title" class="notion-input font-bold text-lg" placeholder="e.g. Scheduled Maintenance">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 mb-2">Message</label>
+                    <textarea id="bc-message" class="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm outline-none focus:border-blue-500 min-h-[120px] resize-none" placeholder="Type your message here..."></textarea>
+                </div>
+                <div class="flex justify-end pt-4">
+                    <button onclick="sendBroadcast()" id="bc-btn" class="bg-[#0b57d0] hover:bg-[#0842a0] text-white px-6 py-2.5 rounded-full font-bold text-sm transition-all shadow-sm flex items-center gap-2">
+                        <span>Send Broadcast</span>
+                        <i data-lucide="send" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Loader -->
+<div id="loader" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[100] flex items-center justify-center hidden">
+    <div class="animate-spin text-[#0b57d0]"><i data-lucide="loader-2" class="w-8 h-8"></i></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getFirestore, collection, doc, getDoc, updateDoc, deleteDoc, query, where, getDocs, writeBatch, orderBy, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+const configResponse = await fetch('/api/data');
+const config = await configResponse.json();
+const firebaseConfig = config.firebaseConfig;
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let allUsers = [];
+let allPosts = [];
+let charts = {};
+let currentView = 'overview';
+let currentAdmin = null;
+
+// Auth
+onAuthStateChanged(auth, async (user) => {
+    if (user) {
+        if (user.email === 'edulinkbht@gmail.com') {
+            currentAdmin = user;
+            document.getElementById('login-section').classList.add('hidden');
+            document.getElementById('dashboard-section').classList.remove('hidden');
+            document.getElementById('dashboard-section').classList.add('flex');
+            document.getElementById('admin-email').innerText = user.email;
+            document.getElementById('admin-initial').innerText = user.email[0].toUpperCase();
+            loadData();
+        } else {
+            alert("Unauthorized");
+            await signOut(auth);
+        }
+    } else {
+        document.getElementById('login-section').classList.remove('hidden');
+        document.getElementById('dashboard-section').classList.add('hidden');
+        document.getElementById('dashboard-section').classList.remove('flex');
+    }
+});
+
+window.loginWithGoogle = async () => {
+    try { await signInWithPopup(auth, new GoogleAuthProvider()); } 
+    catch (e) { document.getElementById('error-msg').innerText = e.message; document.getElementById('error-msg').classList.remove('hidden'); }
+};
+
+window.logout = () => signOut(auth);
+
+// Navigation
+window.switchTab = (tab) => {
+    currentView = tab;
+    document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    
+    ['overview', 'users', 'broadcast'].forEach(v => {
+        document.getElementById(`view-${v}`).classList.add('hidden');
+    });
+    document.getElementById(`view-${tab}`).classList.remove('hidden');
+    
+    if(tab === 'overview') renderCharts();
+};
+
+// Data Logic
+window.loadData = async () => {
+    setLoading(true);
+    try {
+        const [uSnap, pSnap] = await Promise.all([
+            getDocs(query(collection(db, "users"))),
+            getDocs(query(collection(db, "posts"), orderBy("timestamp", "desc")))
+        ]);
+        allUsers = uSnap.docs.map(d => ({id: d.id, ...d.data()}));
+        allPosts = pSnap.docs.map(d => ({id: d.id, ...d.data()}));
+        
+        updateStats();
+        renderUsers(allUsers);
+        if(currentView === 'overview') renderCharts();
+    } catch(e) { console.error(e); }
+    setLoading(false);
+};
+
+window.refreshData = loadData;
+
+function updateStats() {
+    const set = (id, v) => document.getElementById(id).innerText = v;
+    set('stat-users', allUsers.length);
+    set('stat-posts', allPosts.length);
+    set('stat-verified', allUsers.filter(u => u.isOfficial).length);
+    set('stat-banned', allUsers.filter(u => u.banned).length);
+}
+
+// User Management
+window.handleSearch = (q) => {
+    const t = q.toLowerCase();
+    const f = allUsers.filter(u => 
+        (u.name||'').toLowerCase().includes(t) || 
+        (u.email||'').toLowerCase().includes(t) ||
+        (u.username||'').toLowerCase().includes(t)
+    );
+    renderUsers(f);
+};
+
+window.filterUsers = (mode) => {
+    let f = allUsers;
+    if(mode === 'verified') f = f.filter(u => u.isOfficial);
+    if(mode === 'banned') f = f.filter(u => u.banned);
+    renderUsers(f);
+};
+
+function renderUsers(list) {
+    const tbody = document.getElementById('user-table-body');
+    tbody.innerHTML = '';
+    
+    if(list.length === 0) {
+        document.getElementById('empty-state').classList.remove('hidden');
+        return;
+    }
+    document.getElementById('empty-state').classList.add('hidden');
+
+    list.forEach(u => {
+        const postCount = allPosts.filter(p => p.authorId === u.id).length;
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-gray-50 transition-colors group';
+        tr.innerHTML = `
+            <td class="pl-6">
+                <div class="flex items-center gap-3">
+                    <img src="${u.avatar || 'https://api.dicebear.com/9.x/lorelei/svg?seed='+u.id}" class="w-9 h-9 rounded-full bg-gray-100 object-cover border border-gray-200">
+                    <div>
+                        <div class="font-bold text-[#1f1f1f] text-sm flex items-center gap-1">
+                            ${u.name}
+                            ${u.isOfficial ? '<i data-lucide="badge-check" class="w-3.5 h-3.5 text-blue-600 fill-blue-50"></i>' : ''}
+                        </div>
+                        <div class="text-xs text-gray-500">@${u.username || 'user'}</div>
+                    </div>
+                </div>
+            </td>
+            <td><span class="text-gray-600 font-mono text-xs">${u.email}</span></td>
+            <td>
+                ${u.banned 
+                    ? '<span class="badge badge-red">Banned</span>' 
+                    : u.isOfficial ? '<span class="badge badge-blue">Verified</span>' : '<span class="badge badge-green">Active</span>'}
+            </td>
+            <td>
+                <div class="flex gap-3 text-xs text-gray-500">
+                    <span class="flex items-center gap-1"><i data-lucide="file-text" class="w-3 h-3"></i> ${postCount}</span>
+                    <span class="flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> ${u.followers?.length || 0}</span>
+                </div>
+            </td>
+            <td class="pr-6 text-right">
+                <div class="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="toggleVerify('${u.id}', ${!u.isOfficial})" class="p-1.5 rounded hover:bg-blue-50 text-blue-600" title="Verify">
+                        <i data-lucide="${u.isOfficial ? 'shield-off' : 'badge-check'}" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="toggleBan('${u.id}', ${!u.banned})" class="p-1.5 rounded hover:bg-orange-50 text-orange-600" title="Ban">
+                        <i data-lucide="${u.banned ? 'undo-2' : 'ban'}" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="deleteUser('${u.id}')" class="p-1.5 rounded hover:bg-red-50 text-red-600" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+    lucide.createIcons();
+}
+
+// Logic Actions
+window.toggleVerify = async (uid, s) => {
+    try {
+        await updateDoc(doc(db,"users",uid), {isOfficial: s});
+        allUsers.find(u => u.id === uid).isOfficial = s;
+        filterUsers(document.querySelector('select').value);
+    } catch(e) { alert(e.message); }
+};
+
+window.toggleBan = async (uid, s) => {
+    if(confirm(s ? "Ban user?" : "Unban user?")) {
+        try {
+            await updateDoc(doc(db,"users",uid), {banned: s});
+            allUsers.find(u => u.id === uid).banned = s;
+            filterUsers(document.querySelector('select').value);
+        } catch(e) { alert(e.message); }
+    }
+};
+
+window.deleteUser = async (uid) => {
+    if(prompt("Type DELETE to confirm") === "DELETE") {
+        setLoading(true);
+        try {
+            const batch = writeBatch(db);
+            batch.delete(doc(db,"users",uid));
+            const pQ = await getDocs(query(collection(db,"posts"), where("authorId","==",uid)));
+            pQ.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+            allUsers = allUsers.filter(u => u.id !== uid);
+            filterUsers('all');
+        } catch(e) { alert(e.message); }
+        setLoading(false);
+    }
+};
+
+// Broadcast
+window.sendBroadcast = async () => {
+    const t = document.getElementById('bc-title').value;
+    const m = document.getElementById('bc-message').value;
+    const btn = document.getElementById('bc-btn');
+    
+    if(!t || !m) return alert("Fill all fields");
+    
+    btn.disabled = true;
+    btn.innerHTML = 'Sending...';
+    
+    try {
+        const batch = writeBatch(db);
+        const usersToNotify = allUsers.slice(0, 400); // Limit for demo safety
+        
+        usersToNotify.forEach(u => {
+            const ref = doc(collection(db, "notifications"));
+            batch.set(ref, {
+                receiverId: u.id,
+                senderId: 'EduLink', 
+                senderName: 'EduLink',
+                senderAvatar: 'https://i.imghippo.com/files/vgr8207c.png',
+                type: 'official', 
+                content: `${t}: ${m}`,
+                timestamp: serverTimestamp(),
+                read: false
+            });
+        });
+        
+        await batch.commit();
+        alert("Broadcast Sent!");
+        document.getElementById('bc-title').value = '';
+        document.getElementById('bc-message').value = '';
+    } catch(e) {
+        alert("Error: " + e.message);
+    }
+    
+    btn.disabled = false;
+    btn.innerHTML = `<span>Send Broadcast</span><i data-lucide="send" class="w-4 h-4"></i>`;
+    lucide.createIcons();
+};
+
+// Charts
+function renderCharts() {
+    if(charts.growth) charts.growth.destroy();
+    if(charts.content) charts.content.destroy();
+    
+    // Growth
+    const ctx1 = document.getElementById('growthChart').getContext('2d');
+    const dates = {};
+    const today = new Date();
+    for(let i=6; i>=0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        dates[d.toLocaleDateString()] = 0;
+    }
+    allPosts.forEach(p => {
+        if(p.timestamp) {
+             const d = p.timestamp.toDate ? p.timestamp.toDate() : new Date(p.timestamp);
+             const k = d.toLocaleDateString();
+             if(dates[k] !== undefined) dates[k]++;
+        }
+    });
+    
+    charts.growth = new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: Object.keys(dates).map(d => d.slice(0, -5)),
+            datasets: [{
+                label: 'Posts',
+                data: Object.values(dates),
+                borderColor: '#0b57d0',
+                backgroundColor: 'rgba(11, 87, 208, 0.1)',
+                tension: 0.4,
+                fill: true,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: {display: false} },
+            scales: { x: {grid: {display: false}}, y: {grid: {borderDash: [5,5]}} }
+        }
+    });
+    
+    // Content
+    const ctx2 = document.getElementById('contentChart').getContext('2d');
+    let img = 0, txt = 0;
+    allPosts.forEach(p => p.media ? img++ : txt++);
+    
+    charts.content = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: ['Text', 'Media'],
+            datasets: [{
+                data: [txt, img],
+                backgroundColor: ['#e5e7eb', '#0b57d0'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: { legend: {position: 'bottom', labels: {usePointStyle: true, padding: 20}} }
+        }
+    });
+}
+
+function setLoading(s) {
+    const l = document.getElementById('loader');
+    if(s) l.classList.remove('hidden');
+    else l.classList.add('hidden');
+}
+
+lucide.createIcons();
+</script>
+</body>
+</html>
