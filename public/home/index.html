@@ -1135,18 +1135,14 @@
         .birthday-close-btn {
             width: 100%;
             height: 54px;
-            background-color: #000000;
-            color: white;
-            border: none;
+            background-color: transparent;
+            color: #64748b;
+            border: 1.5px solid #e2e8f0;
             border-radius: 16px;
             font-size: 16px;
             font-weight: 700;
             cursor: pointer;
             transition: all 0.2s;
-        }
-        .birthday-close-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
         .logout-btn-custom {
@@ -4351,7 +4347,7 @@
         window.handlePromoFile = e => { const f = e.target.files[0]; if (f) { window.currentPromoBlob = f; showToast("Image selected") } };
         window.savePromo = async () => { const b = event.target, ot = b.innerText; b.innerText = "Saving..."; b.disabled = true; let i = document.getElementById('promo-img-url').value.trim(); const l = document.getElementById('promo-target-url').value.trim(); if (window.currentPromoBlob) try { i = await uploadToImgHippo(window.currentPromoBlob) } catch (e) { console.error(e); } try { await setDoc(doc(db, "global", "promo"), { imageUrl: i || "", linkUrl: l }); showToast("Upload done"); document.getElementById('promo-modal').classList.add('hidden'); window.currentPromoBlob = null } catch (e) { console.error(e); showToast("Upload done", false) } b.innerText = ot; b.disabled = false };
         window.updatePostViewStats = pid => { const p = posts.find(x => x.id === pid); if (!p) return; const dl = document.getElementById('post-view-likes-count'); if (dl) dl.innerText = `${p.likes ? p.likes.length : 0} likes`; const mlc = document.getElementById(`mobile-overlay-like-count-${pid}`); if (mlc) mlc.innerText = `${p.likes ? p.likes.length : 0} likes` };
-        function updateUserInterface() { if (!currentUser) return; const u = currentUser; document.getElementById('nav-profile-avatar').src = u.avatar; document.getElementById('mobile-avatar').src = u.avatar; document.getElementById('header-avatar').src = u.avatar; const _nha = document.getElementById('notif-header-avatar'); if (_nha) _nha.src = u.avatar; document.getElementById('compose-name').innerText = u.name; document.getElementById('compose-avatar').src = u.avatar; document.getElementById('edit-name').value = u.name; document.getElementById('edit-username').value = u.username || ""; document.getElementById('edit-bio').value = u.bio; document.getElementById('edit-avatar-preview').src = u.avatar; document.getElementById('edit-banner-preview').src = u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'; document.getElementById('edit-banner-preview').style.objectPosition = `center ${currentBannerPos}%`; document.getElementById('banner-pos-hint').innerText = `${currentBannerPos}%`; const tp = document.getElementById('toggle-privacy'); if (tp) u.settings?.privateNetwork ? tp.classList.add('active') : tp.classList.remove('active'); if (u.email === 'edulinkbht@gmail.com') { document.getElementById('edit-promo-btn').classList.remove('hidden'); document.getElementById('promo-section').classList.remove('hidden'); document.getElementById('create-option-ad').classList.remove('hidden') } else document.getElementById('create-option-ad').classList.add('hidden'); refreshIcons() }
+        function updateUserInterface() { if (!currentUser) return; const u = currentUser; document.getElementById('nav-profile-avatar').src = u.avatar; document.getElementById('mobile-avatar').src = u.avatar; document.getElementById('header-avatar').src = u.avatar; const _nha = document.getElementById('notif-header-avatar'); if (_nha) _nha.src = u.avatar; document.getElementById('compose-name').innerText = u.name; document.getElementById('compose-avatar').src = u.avatar; document.getElementById('edit-name').value = u.name; document.getElementById('edit-username').value = u.username || ""; document.getElementById('edit-bio').value = u.bio || ""; document.getElementById('edit-avatar-preview').src = u.avatar; document.getElementById('edit-banner-preview').src = u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'; document.getElementById('edit-banner-preview').style.objectPosition = `center ${currentBannerPos}%`; document.getElementById('banner-pos-hint').innerText = `${currentBannerPos}%`; const tp = document.getElementById('toggle-privacy'); if (tp) u.settings?.privateNetwork ? tp.classList.add('active') : tp.classList.remove('active'); if (u.email === 'edulinkbht@gmail.com') { document.getElementById('edit-promo-btn').classList.remove('hidden'); document.getElementById('promo-section').classList.remove('hidden'); document.getElementById('create-option-ad').classList.remove('hidden') } else document.getElementById('create-option-ad').classList.add('hidden'); refreshIcons() }
         let alertCallback = null; window.showAlert = (m, cb) => { document.getElementById('alert-msg').innerText = m; const a = document.getElementById('custom-alert'); a.classList.remove('hidden'); setTimeout(() => { a.classList.remove('opacity-0'); document.getElementById('custom-alert-box').classList.remove('scale-95') }, 10); alertCallback = cb; const b = document.getElementById('alert-confirm-btn'), nb = b.cloneNode(!0); b.parentNode.replaceChild(nb, b); nb.onclick = () => { if (alertCallback) alertCallback(); closeAlert(!0) } };
         window.closeAlert = () => { const a = document.getElementById('custom-alert'); a.classList.add('opacity-0'); document.getElementById('custom-alert-box').classList.add('scale-95'); setTimeout(() => a.classList.add('hidden'), 200) };
         window.confirmAndOpenLink = url => showAlert("Are you sure you would like to proceed? We don't take responsibility for your actions after you leave this site.", () => window.open(url, '_blank'));
@@ -5095,14 +5091,14 @@
                     let act = '';
                     if (n.type === 'follow_request') act = `<div class="flex gap-2 mt-2"><button onclick="acceptFollow('${n.id}','${s.id}')" class="btn-xs-blue">Accept</button><button onclick="deleteNotification('${n.id}')" class="btn-xs-gray">Delete</button></div>`;
                     if (n.type === 'collab_request') act = `<div class="flex gap-2 mt-2"><button onclick="acceptCollab('${n.id}','${n.postId}')" class="btn-xs-blue">Accept</button><button onclick="declineCollab('${n.id}','${n.postId}')" class="btn-xs-gray">Decline</button></div>`;
+                    
+                    let rightHtml = '';
                     if (n.type === 'birthday') {
                         const gender = (s.gender || 'Male').toLowerCase();
                         const pronoun = gender === 'female' ? 'her' : 'him';
                         const wished = n.wished === true;
-                        act = `<div class="flex gap-2 mt-2"><button onclick="event.stopPropagation(); wishBirthday('${s.id}', '${n.id}')" class="js-follow-btn-${s.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[95px] ${wished ? 'opacity-50 pointer-events-none' : ''}" ${wished ? 'disabled' : ''}>${wished ? 'Wished' : `Wish ${pronoun}`}</button></div>`;
-                    }
-                    let rightHtml = '';
-                    if (showImg) {
+                        rightHtml = `<button onclick="event.stopPropagation(); wishBirthday('${s.id}', '${n.id}')" class="js-follow-btn-${s.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[95px] ${wished ? 'opacity-50 pointer-events-none' : ''}" ${wished ? 'disabled' : ''}>${wished ? 'Wished' : `Wish ${pronoun}`}</button>`;
+                    } else if (showImg) {
                         rightHtml = `<div class="img-placeholder w-10 h-10 rounded-md shrink-0 border border-gray-200"><img src="${showImg}" class="w-full h-full rounded-md object-cover" onclick="openPostView('${n.postId}',true)" onload="this.classList.add('loaded')"></div>`;
                     } else if (n.type === 'follow' && !currentUser.following.includes(s.id)) {
                         rightHtml = `<button onclick="event.stopPropagation(); toggleFollow('${s.id}')" class="js-follow-btn-${s.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[85px]">Follow back</button>`;
@@ -6978,7 +6974,7 @@
             const url = `${window.location.origin}/profile/${uname}`;
             document.getElementById('qr-full-name').innerText = u.name;
             document.getElementById('qr-username-display').innerText = `@${uname}`;
-            document.getElementById('qr-bio-text').innerText = u.bio || 'Sharing knowledge and connecting minds on EduLink.';
+            document.getElementById('qr-bio-text').innerText = u.bio || 'No bio yet';
             const shortUrl = url.replace('https://', '').replace('http://', '');
             document.getElementById('qr-display-name').innerText = shortUrl;
             document.getElementById('qr-owner-avatar').src = u.avatar;
