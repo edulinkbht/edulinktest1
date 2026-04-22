@@ -247,6 +247,7 @@
     <div class="modal-box" style="width:440px">
         <div class="modal-title">⚔ UNDER ATTACK!</div>
         <div class="modal-sub" id="defenderChallengeSub">Incoming Siege</div>
+        <div id="defenderPreviewMap" style="width:100%;height:150px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:8px;margin-top:15px;overflow:hidden"></div>
         <p style="color:var(--cream);font-size:0.95rem;line-height:1.7;margin:20px 0" id="defenderChallengeBody"></p>
         <div class="confirm-btns">
             <button class="confirm-btn yes" id="defenderAcceptBtn">⚔ DEFEND TERRITORY</button>
@@ -524,6 +525,31 @@ function showDefenderOverlay(n) {
     document.getElementById('defenderChallengeBody').innerHTML = 
         `<strong>${n.territory}</strong> is being attacked by <em>${n.attackerEmpire}</em> (@${n.attackerTag})!<br><br>
         Defeat costs <strong>${DEFEAT_PENALTY} Gold</strong>. If you surrender, you lose the territory immediately.`;
+    
+    // Preview Map
+    const preview = d3.select("#defenderPreviewMap");
+    preview.selectAll("*").remove();
+    const pw = 440, ph = 150;
+    const pSvg = preview.append("svg").attr("width", "100%").attr("height", "100%").attr("viewBox", `0 0 ${pw} ${ph}`);
+    
+    let feature = null;
+    if (worldData) {
+        const countries = topojson.feature(worldData, worldData.objects.countries).features;
+        feature = countries.find(f => f.properties.name === n.territory);
+    }
+    
+    if (feature) {
+        const pProj = d3.geoMercator().fitSize([pw, ph], feature);
+        const pPath = d3.geoPath().projection(pProj);
+        pSvg.append("path").datum(feature).attr("d", pPath).style("fill", "#6b1010").style("stroke", "var(--gold)").style("stroke-width", "2");
+    } else {
+        // Try ocean zones
+        const oz = OCEAN_ZONES.find(o => o.name === n.territory);
+        if (oz) {
+            pSvg.append("circle").attr("cx", pw/2).attr("cy", ph/2).attr("r", 40).style("fill", "#6b1010").style("stroke", "var(--gold)").style("stroke-width", "2");
+            pSvg.append("text").attr("x", pw/2).attr("y", ph/2 + 5).attr("text-anchor", "middle").style("fill", "white").style("font-size", "12px").text("OCEAN ZONE");
+        }
+    }
     
     const acceptBtn = document.getElementById('defenderAcceptBtn');
     const declineBtn = document.getElementById('defenderDeclineBtn');
