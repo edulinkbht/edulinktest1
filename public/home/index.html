@@ -2504,7 +2504,7 @@
     <div id="thread-overlay" class="fixed inset-0 z-[65] hidden flex justify-center items-end md:items-center">
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onclick="closeThread()"></div>
         <div
-            class="bg-white w-full md:w-[450px] h-[75vh] md:h-[85vh] md:rounded-[24px] rounded-t-[20px] shadow-2xl relative flex flex-col transform transition-transform duration-300 scale-100 opacity-100 overflow-hidden scale-in thread-mobile-container">
+            class="bg-white w-full md:w-[450px] h-[85vh] md:rounded-[24px] rounded-t-[20px] shadow-2xl relative flex flex-col transform transition-transform duration-300 scale-100 opacity-100 overflow-hidden thread-mobile-container">
             <div class="discussion-header border-b border-gray-100">
                 <div class="flex items-center gap-3">
                     <button onclick="closeThread()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
@@ -2515,6 +2515,7 @@
             </div>
             <div id="thread-content" class="discussion-scroll bg-white"></div>
             <div class="discussion-footer">
+                <div id="mention-suggestions-thread" class="mention-suggestions hidden"></div>
                 <div class="flex items-center gap-2">
                     <div class="img-placeholder w-8 h-8 rounded-full overflow-hidden shrink-0">
                         <img id="thread-input-avatar" src="" class="w-full h-full rounded-full object-cover"
@@ -2524,6 +2525,42 @@
                         class="flex-1 bg-[#f2f2f2] rounded-[24px] px-4 py-2.5 text-sm outline-none text-gray-900 placeholder-gray-500"
                         onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitThreadReply();}"><button
                         onclick="submitThreadReply()"
+                        class="w-10 h-10 bg-[#065fd4] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-blue-700 transition-colors shadow-sm"><i
+                            data-lucide="arrow-up" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Comments Overlay for Mobile -->
+    <div id="comments-overlay" class="fixed inset-0 z-[65] hidden flex justify-center items-end">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onclick="closeComments()"></div>
+        <div class="bg-white w-full h-[85vh] rounded-t-[20px] shadow-2xl relative flex flex-col transform transition-transform duration-300 overflow-hidden thread-mobile-container">
+            <div class="discussion-header border-b border-gray-100 shrink-0">
+                <div class="flex items-center justify-between px-4">
+                    <div class="flex items-center gap-3 h-14">
+                        <button onclick="closeComments()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                            <i data-lucide="chevron-down" class="w-6 h-6 text-gray-700"></i>
+                        </button>
+                        <span class="font-bold text-[17px] text-gray-900">Comments</span>
+                    </div>
+                    <div id="comments-filter-trigger" class="flex items-center gap-2">
+                        <!-- Optional filter icon if needed -->
+                    </div>
+                </div>
+            </div>
+            <div id="comments-overlay-content" class="discussion-scroll bg-white"></div>
+            <div class="discussion-footer shrink-0">
+                <div id="mention-suggestions-comments-overlay" class="mention-suggestions hidden"></div>
+                <div class="flex items-center gap-2">
+                    <div class="img-placeholder w-8 h-8 rounded-full overflow-hidden shrink-0">
+                        <img id="comments-overlay-input-avatar" src="" class="w-full h-full rounded-full object-cover"
+                            onload="this.classList.add('loaded')">
+                    </div>
+                    <input type="text" id="comments-overlay-input" placeholder="Add a comment..."
+                        class="flex-1 bg-[#f2f2f2] rounded-[24px] px-4 py-2.5 text-sm outline-none text-gray-900 placeholder-gray-500"
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitOverlayComment();}"><button
+                        onclick="submitOverlayComment()"
                         class="w-10 h-10 bg-[#065fd4] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-blue-700 transition-colors shadow-sm"><i
                             data-lucide="arrow-up" class="w-5 h-5"></i></button>
                 </div>
@@ -5912,7 +5949,42 @@
                         </div>
                     </div>
                 </div>`;
-            const mobileHTML = `<div class="mobile-overlay-layout md:hidden">${mobileTopBar}<div class="mobile-scroll-content"><div class="flex items-center gap-3 p-4 pb-2"><div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden cursor-pointer" onclick="event.stopPropagation();openProfilePreview('${a.id}')"><img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div onclick="closePostView();showProfile('${a.id}')"><div class="font-bold text-gray-900 text-sm flex items-center">${a.name}${badge}</div><div class="text-xs text-gray-500">@${a.username || 'user'}</div></div></div><div class="px-4 py-2 text-[15px] leading-relaxed text-gray-900 whitespace-pre-wrap js-post-body-${p.id}">${postBodyHtml}</div><div class="px-4">${previewHtmlM}</div><div class="px-4 pb-4">${mhMobile}</div><div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>${headerHtml}<div id="mobile-post-comments" class="flex-1 p-0 pb-4"></div></div><div class="mobile-fixed-footer"><div class="post-actions mb-1 !pt-1 !pb-0"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length : 'Like'}</span></button><button class="action-btn comment" onclick="${allowComments ? 'document.getElementById(\'mobile-comment-input\').focus()' : ''}"><i data-lucide="message-circle"></i> <span class="js-comment-count-${p.id}">${(p.comments?.length > 0) ? p.comments.length : 'Comment'}</span></button><button class="action-btn share-btn" onclick="sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${mobileAction}</div>${commentInputMobile}</div></div>`; c.innerHTML = desktopHTML + mobileHTML; renderCommentsInModal(pid); refreshIcons()
+            const mobileHTML = `<div class="mobile-overlay-layout md:hidden">
+                ${mobileTopBar}
+                <div class="mobile-scroll-content">
+                    <div class="flex items-center gap-3 p-4 pb-2">
+                        <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden cursor-pointer" onclick="event.stopPropagation();openProfilePreview('${a.id}')">
+                            <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
+                        </div>
+                        <div onclick="closePostView();showProfile('${a.id}')">
+                            <div class="font-bold text-gray-900 text-sm flex items-center">${a.name}${badge}</div>
+                            <div class="text-xs text-gray-500">@${a.username || 'user'}</div>
+                        </div>
+                    </div>
+                    <div class="px-4 py-2 text-[15px] leading-relaxed text-gray-800 whitespace-pre-wrap js-post-body-${p.id}">${postBodyHtml}</div>
+                    <div class="px-4">${previewHtmlM}</div>
+                    <div class="px-4 pb-4">${mhMobile}</div>
+                    <div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
+                </div>
+                <div class="mobile-fixed-footer">
+                    <div class="post-actions mb-1 !pt-1 !pb-0">
+                        <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="toggleLike('${p.id}')">
+                            <i data-lucide="heart"></i> 
+                            <span class="js-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length : 'Like'}</span>
+                        </button>
+                        <button class="action-btn comment" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
+                            <i data-lucide="message-circle"></i> 
+                            <span class="js-comment-count-${p.id}">${(p.comments?.length > 0) ? p.comments.length : 'Comment'}</span>
+                        </button>
+                        <button class="action-btn share-btn" onclick="sharePost('${p.id}')">
+                            <i data-lucide="redo-2"></i> 
+                            <span class="hidden sm:inline">Share</span>
+                        </button>
+                        <div class="flex-1"></div>
+                        ${mobileAction}
+                    </div>
+                </div>
+            </div>`; c.innerHTML = desktopHTML + mobileHTML; refreshIcons()
         };
         window.toggleCommentSearch = () => { window.isCommentSearchOpen = !window.isCommentSearchOpen; window.commentSearchTerm = ''; const dhd = document.getElementById('comment-header-default'), dhs = document.getElementById('comment-header-search'); if (dhd && dhs) { if (window.isCommentSearchOpen) { dhd.classList.add('hidden'); dhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-desktop')?.focus(), 100) } else { dhd.classList.remove('hidden'); dhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } const mhd = document.getElementById('mobile-comment-header-default'), mhs = document.getElementById('mobile-comment-header-search'); if (mhd && mhs) { if (window.isCommentSearchOpen) { mhd.classList.add('hidden'); mhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-mobile')?.focus(), 100) } else { mhd.classList.remove('hidden'); mhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } };
         window.handleCommentSearch = (val) => { window.commentSearchTerm = val.toLowerCase(); renderCommentsInModal(window.currentViewingPostId) };
@@ -6376,7 +6448,35 @@
         }
         window.openCommentMoreMenu = (cid, pid, ts, isMe) => { manageHistory('comment-options-overlay'); const o = document.getElementById('comment-options-overlay'), m = document.getElementById('comment-options-modal'), c = document.getElementById('comment-options-content'); c.innerHTML = `<div class="p-2">${isMe ? `<button onclick="deleteComment('${pid}','${cid}'); closeCommentOptions()" class="flex items-center gap-4 w-full p-4 hover:bg-red-50 rounded-xl transition-colors font-bold text-red-600 text-left group"><div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></div><span>Delete Comment</span></button>` : `<button onclick="showToast('Reported'); closeCommentOptions()" class="flex items-center gap-4 w-full p-4 hover:bg-gray-50 rounded-xl transition-colors font-bold text-gray-700 text-left group"><div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="flag" class="w-5 h-5"></i></div><span>Report Comment</span></button>`}</div>`; refreshIcons(); toggleModalAnim('comment-options-overlay', 'comment-options-modal', !0) };
         window.closeCommentOptions = () => toggleModalAnim('comment-options-overlay', 'comment-options-modal', !1);
-        window.openThread = (pid, cid) => { if (window.innerWidth >= 768) { window.isDesktopThreadMode = true; window.threadPostId = pid; window.threadParentCommentId = cid; renderDesktopThread(pid, cid); return } manageHistory('thread-overlay'); window.threadPostId = pid; window.threadParentCommentId = cid; renderThreadContent(pid, cid); document.getElementById('thread-overlay').classList.remove('hidden'); setTimeout(() => { document.getElementById('thread-input').focus(); document.getElementById('thread-input-avatar').src = currentUser.avatar }, 100) }; window.closeThread = () => { document.getElementById('thread-overlay').classList.add('hidden'); if (!window.currentViewingPostId) { window.threadPostId = null; window.threadParentCommentId = null } window.replyingToCommentId = null; window.isDesktopThreadMode = false; if (window.currentViewingPostId && window.innerWidth >= 768) renderCommentsInModal(window.currentViewingPostId) };
+        window.openThread = (pid, cid) => {
+            if (window.innerWidth >= 768) {
+                window.isDesktopThreadMode = true;
+                window.threadPostId = pid;
+                window.threadParentCommentId = cid;
+                renderDesktopThread(pid, cid);
+                return
+            }
+            manageHistory('thread-overlay');
+            window.threadPostId = pid;
+            window.threadParentCommentId = cid;
+            renderThreadContent(pid, cid);
+            document.getElementById('thread-overlay').classList.remove('hidden');
+            
+            // Re-bind mentions for thread input
+            const input = document.getElementById('thread-input');
+            if (input) {
+                input.onkeyup = () => handleMentionInput('thread-input', 'mention-suggestions-thread');
+                input.onkeydown = (e) => {
+                    handleMentionKeydown(e, 'thread-input', 'mention-suggestions-thread');
+                    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submitThreadReply();}
+                };
+            }
+            
+            setTimeout(() => {
+                if (input) input.focus();
+                document.getElementById('thread-input-avatar').src = currentUser.avatar
+            }, 100)
+        }; window.closeThread = () => { document.getElementById('thread-overlay').classList.add('hidden'); if (!window.currentViewingPostId) { window.threadPostId = null; window.threadParentCommentId = null } window.replyingToCommentId = null; window.isDesktopThreadMode = false; if (window.currentViewingPostId && window.innerWidth >= 768) renderCommentsInModal(window.currentViewingPostId) };
         window.renderDesktopThread = (pid, cid) => {
             const p = posts.find(x => x.id === pid);
             if (!p) return;
@@ -6430,10 +6530,11 @@
             
             // If we are on mobile and already in the thread overlay
             const isThreadOpen = !document.getElementById('thread-overlay').classList.contains('hidden');
+            const isCommentsOpen = !document.getElementById('comments-overlay').classList.contains('hidden');
             const isMobile = window.innerWidth < 768;
             
-            if (isMobile && isThreadOpen) {
-                const input = document.getElementById('thread-input');
+            if (isMobile && (isThreadOpen || isCommentsOpen)) {
+                const input = isThreadOpen ? document.getElementById('thread-input') : document.getElementById('comments-overlay-input');
                 if (input) {
                     input.value = `@${u} `;
                     input.focus();
@@ -6468,6 +6569,60 @@
                     }
                 }, 200);
             }
+        };
+
+        window.openComments = (pid) => {
+            manageHistory('comments-overlay');
+            window.currentPostIdForComments = pid;
+            const p = posts.find(x => x.id === pid);
+            if (!p) return;
+            renderOverlayComments(pid);
+            document.getElementById('comments-overlay').classList.remove('hidden');
+            document.getElementById('comments-overlay-input-avatar').src = currentUser.avatar;
+            setTimeout(() => {
+                const input = document.getElementById('comments-overlay-input');
+                if (input) input.focus();
+            }, 100);
+        };
+
+        window.closeComments = () => {
+            document.getElementById('comments-overlay').classList.add('hidden');
+            window.currentPostIdForComments = null;
+        };
+
+        window.renderOverlayComments = (pid) => {
+            const p = posts.find(x => x.id === pid);
+            if (!p) return;
+            const comments = (p.comments || []).filter(c => !c.parentId); // Only top level comments
+            const container = document.getElementById('comments-overlay-content');
+            if (comments.length === 0) {
+                container.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-gray-400 py-20"><i data-lucide="message-circle" class="w-12 h-12 mb-4 opacity-20"></i><p class="font-medium">No comments yet</p><p class="text-xs">Be the first to share what you think!</p></div>';
+            } else {
+                container.innerHTML = `<div class="pt-2 pb-0 relative">${comments.map(c => createCommentHTML(c, pid, (p.comments || []).filter(r => r.parentId === c.id).length)).join('')}</div>`;
+            }
+            refreshIcons();
+            
+            // Re-bind mentions for the new input if it exists
+            const input = document.getElementById('comments-overlay-input');
+            if (input) {
+                input.onkeyup = () => handleMentionInput('comments-overlay-input', 'mention-suggestions-comments-overlay');
+                input.onkeydown = (e) => {
+                    handleMentionKeydown(e, 'comments-overlay-input', 'mention-suggestions-comments-overlay');
+                    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submitOverlayComment();}
+                };
+            }
+        };
+
+        window.submitOverlayComment = async () => {
+            const t = document.getElementById('comments-overlay-input').value.trim();
+            const pid = window.currentPostIdForComments;
+            if (!t || !pid) return;
+            const r = doc(db, "posts", pid), nc = { id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000), authorId: currentUser.id, content: t, timestamp: Date.now(), likes: [], parentId: null };
+            await updateDoc(r, { comments: arrayUnion(nc) });
+            const p = posts.find(x => x.id === pid);
+            if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', pid);
+            document.getElementById('comments-overlay-input').value = "";
+            renderOverlayComments(pid);
         };
         window.submitCommentDesktop = async () => { const t = document.getElementById('comment-input-desktop').value.trim(); if (!t || !window.currentViewingPostId) return; if (window.isDesktopThreadMode && window.threadParentCommentId) { window.replyingToCommentId = window.threadParentCommentId; await postCommentCommon(t); window.replyingToCommentId = null } else await postCommentCommon(t); document.getElementById('comment-input-desktop').value = "" }; window.submitCommentMobile = async () => { const t = document.getElementById('mobile-comment-input').value.trim(); if (!t || !window.currentViewingPostId) return; await postCommentCommon(t); document.getElementById('mobile-comment-input').value = "" };
         async function postCommentCommon(t) { const r = doc(db, "posts", window.currentViewingPostId), nc = { id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000), authorId: currentUser.id, content: t, timestamp: Date.now(), likes: [], parentId: window.replyingToCommentId }; await updateDoc(r, { comments: arrayUnion(nc) }); const p = posts.find(x => x.id === window.currentViewingPostId); if (window.replyingToCommentId) { const pc = p.comments.find(x => x.id === window.replyingToCommentId); if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.currentViewingPostId) } else if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', window.currentViewingPostId); const mm = t.match(/@([a-zA-Z0-9._]+)/g); if (mm) { mm.forEach(m => { const uname = m.substring(1).toLowerCase(), found = users.find(u => (u.username || "").toLowerCase() === uname); if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', window.currentViewingPostId) }) } window.replyingToCommentId = null }
