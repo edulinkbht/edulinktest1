@@ -928,7 +928,18 @@ function listenToBattle(bId) {
         const thW=battleRole==='attacker'?d.defenderWins:d.attackerWins;
         document.getElementById('myScore').textContent=myW;
         document.getElementById('theirScore').textContent=thW;
-        if (d.status==='pending' && d.attackerChoice && d.defenderChoice) {
+
+        // Sync Waiting UI
+        const myChoice = battleRole === 'attacker' ? d.attackerChoice : d.defenderChoice;
+        const theirChoice = battleRole === 'attacker' ? d.defenderChoice : d.attackerChoice;
+        if (myChoice && !theirChoice) {
+            document.getElementById('waitingLabel').style.display = 'block';
+            document.getElementById('timerText').textContent = 'Choice locked in!';
+        } else if (d.status === 'active') {
+            document.getElementById('waitingLabel').style.display = 'none';
+        }
+
+        if ((d.status==='pending' || d.status==='active') && d.attackerChoice && d.defenderChoice) {
             resolvePvP(d);
             return;
         }
@@ -937,10 +948,16 @@ function listenToBattle(bId) {
     });
 }
 
-function startPvPRound() {
+async function startPvPRound() {
     myChoiceThisRound=null; enableRps();
     document.getElementById('roundResult').textContent=''; document.getElementById('roundResult').className='round-result';
     document.getElementById('waitingLabel').style.display='none';
+    
+    // Attacker resets status to active to start the new round
+    if (battleRole === 'attacker' && battleDocId) {
+        await updateDoc(doc(db, 'battles', battleDocId), { status: 'active' });
+    }
+
     let t=5; resetTimer(5);
     clearInterval(roundTimerInterval);
     roundTimerInterval = setInterval(()=>{ t--; document.getElementById('timerText').textContent=`Choose within ${t}s...`; if(t<=0){clearInterval(roundTimerInterval);if(!myChoiceThisRound)submitPvP(rng(),true);} },1000);
@@ -952,16 +969,21 @@ async function submitPvP(choice, auto=false) {
     document.getElementById('timerText').textContent='Choice locked in!';
     const field=battleRole==='attacker'?'attackerChoice':'defenderChoice';
     await updateDoc(doc(db,'battles',battleDocId),{[field]:choice});
-    // If attacker, check if both chose and resolve
-    if (battleRole==='attacker') {
-        const snap=await getDoc(doc(db,'battles',battleDocId));
-        const d=snap.data();
-        if (d.attackerChoice && d.defenderChoice) resolvePvP(d);
+    
+    // Check if both chose and resolve
+    const snap=await getDoc(doc(db,'battles',battleDocId));
+    const d=snap.data();
+    if ((d.status==='pending' || d.status==='active') && d.attackerChoice && d.defenderChoice) {
+        resolvePvP(d);
     }
 }
 
 async function resolvePvP(d) {
+    if (d.status === 'round_result' || d.status === 'finished') return; // Already resolved
+    
     const ac=d.attackerChoice, dc=d.defenderChoice;
+    if (!ac || !dc) return; // Need both choices
+    
     const aW=(ac==='rock'&&dc==='scissors')||(ac==='paper'&&dc==='rock')||(ac==='scissors'&&dc==='paper');
     const dW=(dc==='rock'&&ac==='scissors')||(dc==='paper'&&ac==='rock')||(dc==='scissors'&&ac==='paper');
     const newAW=(d.attackerWins||0)+(aW?1:0);
@@ -969,6 +991,7 @@ async function resolvePvP(d) {
     let status='round_result', winnerId=null;
     if(newAW>=3){status='finished';winnerId=d.attackerUid;}
     else if(newDW>=3){status='finished';winnerId=d.defenderUid;}
+    
     await updateDoc(doc(db,'battles',battleDocId),{
         attackerWins:newAW, defenderWins:newDW,
         lastAttackerChoice:ac, lastDefenderChoice:dc,
