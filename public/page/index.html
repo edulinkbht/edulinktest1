@@ -310,6 +310,23 @@
     </div>
 </div>
 
+<!-- CONQUEST MODAL -->
+<div class="modal-overlay" id="conquestModal">
+    <div class="modal-box" style="width:480px">
+        <div class="modal-title">🏆 TERRITORY CONQUERED!</div>
+        <div class="modal-sub" id="conquestTerritoryName">COUNTRY NAME</div>
+        
+        <div id="conquestWikiStats" style="margin-top:20px;text-align:left">
+            <div class="load-spinner" style="margin:20px auto"></div>
+            <p style="text-align:center;color:var(--muted)">Analyzing the spoils of war...</p>
+        </div>
+
+        <div class="confirm-btns">
+            <button class="confirm-btn yes" onclick="closeConquestModal()">CLAIM SPOILS</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast"></div>
 
 <script type="module">
@@ -1097,6 +1114,11 @@ async function applyWin(name, isPvPWin = false) {
     const newT=[...new Set([...(playerData.territories||[]),name])];
     await updateDoc(doc(db,'players',currentUser.uid),{territories:newT,wins:(playerData.wins||0)+1,money:(playerData.money||0)+income});
     await refreshPlayerData();
+    
+    // Show the Wikipedia-based conquest summary
+    if (typeof showConquestSummary === 'function') {
+        showConquestSummary(name);
+    }
 }
 
 window.closeBattle = function() {
@@ -1181,6 +1203,60 @@ window.confirmGift = async function() {
     document.getElementById('infoPanel').classList.remove('visible');
     showToast(`${name} gifted to @${rd.tag}!`);
 };
+
+// === CONQUEST SUMMARY ===
+window.showConquestSummary = async function(name) {
+    document.getElementById('conquestTerritoryName').textContent = name.toUpperCase();
+    document.getElementById('conquestWikiStats').innerHTML = `<div class="load-spinner" style="margin:20px auto"></div><p style="text-align:center;color:var(--muted)">Analyzing the spoils of war...</p>`;
+    document.getElementById('conquestModal').classList.add('open');
+    
+    try {
+        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        let stats = `<div style="color:var(--cream);font-size:0.9rem;line-height:1.6;margin-bottom:15px;background:rgba(0,0,0,0.2);padding:15px;border-radius:8px;border:1px solid var(--border)">`;
+        
+        if (data.extract) {
+            const txt = data.extract.toLowerCase();
+            
+            // Extracting "Best At" information based on common keywords
+            let highlight = "Regional dominance and strategic location.";
+            if (txt.includes('wealth') || txt.includes('economy') || txt.includes('financial')) highlight = "Global economic powerhouse and vast wealth.";
+            else if (txt.includes('olympic') || txt.includes('sport') || txt.includes('athletic')) highlight = "Legendary athletic history and sporting excellence.";
+            else if (txt.includes('military') || txt.includes('defense') || txt.includes('armed forces')) highlight = "Formidable military strength and tactical superiority.";
+            else if (txt.includes('culture') || txt.includes('heritage') || txt.includes('history')) highlight = "Deep cultural heritage and historic significance.";
+            else if (txt.includes('technology') || txt.includes('innovation') || txt.includes('science')) highlight = "Cutting-edge innovation and technological advancement.";
+
+            stats += `<div style="margin-bottom:12px;display:flex;align-items:center;gap:10px">
+                        <span style="font-size:1.5rem">🌟</span>
+                        <div>
+                            <strong style="color:var(--gold);display:block">NATIONAL HIGHLIGHT</strong>
+                            <span>${highlight}</span>
+                        </div>
+                      </div>`;
+
+            // Displaying some basic stats
+            stats += `<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,0.1);display:grid;grid-template-columns:1fr 1fr;gap:15px">
+                        <div><strong style="color:var(--gold);display:block">WEALTH</strong><span>${txt.includes('billion') || txt.includes('trillion') ? 'EXCEPTIONAL' : 'VIBRANT'}</span></div>
+                        <div><strong style="color:var(--gold);display:block">ATHLETICS</strong><span>${txt.includes('sport') || txt.includes('football') ? 'LEGENDARY' : 'RESPECTED'}</span></div>
+                      </div>`;
+            
+            if (data.thumbnail) {
+                stats = `<img src="${data.thumbnail.source}" style="width:100%;max-height:180px;object-fit:cover;border-radius:6px;margin-bottom:15px;border:1px solid var(--border)">` + stats;
+            }
+        } else {
+            stats += `<p style="text-align:center;color:var(--muted)">Territory annexed. Local records are sparse.</p>`;
+        }
+        
+        stats += `</div>`;
+        document.getElementById('conquestWikiStats').innerHTML = stats;
+    } catch (e) {
+        document.getElementById('conquestWikiStats').innerHTML = `<p style="text-align:center;color:var(--red)">Connection lost to local archives.</p>`;
+    }
+};
+
+window.closeConquestModal = () => { document.getElementById('conquestModal').classList.remove('open'); };
 
 // === WIKI DETAILS ===
 window.openWikiDetails = async function() {
