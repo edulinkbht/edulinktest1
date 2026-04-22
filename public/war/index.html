@@ -1,1 +1,486 @@
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empire Globe — Enter</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --border: #2a2a3a;
+            --gold: #c9a84c;
+            --gold-light: #e8c97a;
+            --cream: #f3efe6;
+            --muted: #6b6b7a;
+            --red: #8b2020;
+            --green: #2a6b3a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background: var(--bg);
+            color: var(--cream);
+            font-family: 'Crimson Text', Georgia, serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated star-field background */
+        .stars {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .star {
+            position: absolute;
+            background: var(--gold);
+            border-radius: 50%;
+            animation: twinkle var(--dur) ease-in-out infinite alternate;
+        }
+        @keyframes twinkle {
+            from { opacity: 0.1; transform: scale(0.8); }
+            to { opacity: 0.7; transform: scale(1.2); }
+        }
+
+        /* Vignette */
+        .vignette {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse at center, transparent 40%, #0a0a0f 100%);
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* Main card */
+        .card {
+            position: relative;
+            z-index: 2;
+            width: 480px;
+            max-width: 95vw;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            padding: 48px 44px;
+            box-shadow: 0 0 80px rgba(201,168,76,0.08), 0 0 4px rgba(201,168,76,0.15);
+        }
+
+        /* Decorative corner marks */
+        .card::before, .card::after {
+            content: '';
+            position: absolute;
+            width: 24px; height: 24px;
+            border-color: var(--gold);
+            border-style: solid;
+        }
+        .card::before { top: 8px; left: 8px; border-width: 1px 0 0 1px; }
+        .card::after  { bottom: 8px; right: 8px; border-width: 0 1px 1px 0; }
+
+        .crown {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 4px;
+            letter-spacing: 6px;
+            color: var(--gold);
+        }
+
+        h1 {
+            font-family: 'Cinzel', serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 0.15em;
+            text-align: center;
+            color: var(--gold-light);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            text-align: center;
+            font-style: italic;
+            color: var(--muted);
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 28px;
+            border-bottom: 1px solid var(--border);
+        }
+        .tab {
+            flex: 1;
+            padding: 10px;
+            background: none;
+            border: none;
+            color: var(--muted);
+            font-family: 'Cinzel', serif;
+            font-size: 0.78rem;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            text-transform: uppercase;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: color 0.2s, border-color 0.2s;
+        }
+        .tab.active {
+            color: var(--gold);
+            border-bottom-color: var(--gold);
+        }
+
+        /* Form */
+        .form-group {
+            margin-bottom: 18px;
+        }
+        label {
+            display: block;
+            font-family: 'Cinzel', serif;
+            font-size: 0.68rem;
+            letter-spacing: 0.14em;
+            color: var(--gold);
+            text-transform: uppercase;
+            margin-bottom: 7px;
+        }
+        input {
+            width: 100%;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            color: var(--cream);
+            padding: 11px 14px;
+            font-family: 'Crimson Text', serif;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input:focus {
+            border-color: var(--gold);
+            box-shadow: 0 0 0 2px rgba(201,168,76,0.1);
+        }
+        input::placeholder { color: var(--muted); }
+
+        .btn {
+            width: 100%;
+            padding: 13px;
+            background: var(--gold);
+            color: #0a0a0f;
+            border: none;
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn:hover { background: var(--gold-light); }
+        .btn:active { transform: scale(0.99); }
+        .btn:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+        .divider {
+            text-align: center;
+            color: var(--muted);
+            font-size: 0.8rem;
+            margin: 18px 0;
+            letter-spacing: 0.1em;
+            position: relative;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 38%;
+            height: 1px;
+            background: var(--border);
+        }
+        .divider::before { left: 0; }
+        .divider::after { right: 0; }
+
+        .google-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: var(--cream);
+            border: 1px solid var(--border);
+            font-family: 'Cinzel', serif;
+            font-size: 0.78rem;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            transition: border-color 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .google-btn:hover {
+            border-color: var(--gold);
+            background: rgba(201,168,76,0.05);
+        }
+
+        /* Message */
+        .msg {
+            padding: 10px 14px;
+            font-size: 0.88rem;
+            margin-top: 12px;
+            display: none;
+        }
+        .msg.error { background: rgba(139,32,32,0.2); border: 1px solid var(--red); color: #e87070; }
+        .msg.success { background: rgba(42,107,58,0.2); border: 1px solid var(--green); color: #7ecc8e; }
+        .msg.show { display: block; }
+
+        /* Panel switching */
+        .panel { display: none; }
+        .panel.active { display: block; }
+
+        /* Loading overlay */
+        #overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(10,10,15,0.9);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 16px;
+        }
+        #overlay.show { display: flex; }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 2px solid var(--border);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .overlay-text {
+            font-family: 'Cinzel', serif;
+            font-size: 0.8rem;
+            letter-spacing: 0.2em;
+            color: var(--gold);
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+
+<canvas class="stars" id="starsCanvas"></canvas>
+<div class="vignette"></div>
+
+<div id="overlay">
+    <div class="spinner"></div>
+    <div class="overlay-text">Entering the Empire...</div>
+</div>
+
+<div class="card">
+    <div class="crown">♛</div>
+    <h1>Empire Globe</h1>
+    <p class="subtitle">Conquer the World. Forge Your Legacy.</p>
+
+    <div class="tabs">
+        <button class="tab active" onclick="switchTab('login')">Sign In</button>
+        <button class="tab" onclick="switchTab('register')">Create Empire</button>
+    </div>
+
+    <!-- LOGIN PANEL -->
+    <div class="panel active" id="loginPanel">
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="loginEmail" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="loginPassword" placeholder="••••••••">
+        </div>
+        <button class="btn" onclick="doLogin()">Enter the Empire</button>
+        <div class="divider">or</div>
+        <button class="google-btn" onclick="doGoogle()">
+            <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.35-8.16 2.35-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+            Continue with Google
+        </button>
+        <div class="msg" id="loginMsg"></div>
+    </div>
+
+    <!-- REGISTER PANEL -->
+    <div class="panel" id="registerPanel">
+        <div class="form-group">
+            <label>Your Name</label>
+            <input type="text" id="regName" placeholder="e.g. Druk Wangchuk">
+        </div>
+        <div class="form-group">
+            <label>Game Tag</label>
+            <input type="text" id="regTag" placeholder="e.g. DrukKing99" maxlength="16">
+        </div>
+        <div class="form-group">
+            <label>Empire Name</label>
+            <input type="text" id="regEmpire" placeholder="e.g. Kingdom of Thunder">
+        </div>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="regEmail" placeholder="your@email.com">
+        </div>
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="regPassword" placeholder="Min 6 characters">
+        </div>
+        <button class="btn" onclick="doRegister()">Forge My Empire</button>
+        <div class="msg" id="registerMsg"></div>
+    </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+    import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
+        authDomain: "edulinki.firebaseapp.com",
+        projectId: "edulinki",
+        storageBucket: "edulinki.firebasestorage.app",
+        messagingSenderId: "248886466474",
+        appId: "1:248886466474:web:160043201a6b28bafbbdd3",
+        measurementId: "G-MQBH12VL7N"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    function showOverlay() { document.getElementById('overlay').classList.add('show'); }
+    function hideOverlay() { document.getElementById('overlay').classList.remove('show'); }
+    function showMsg(id, text, type) {
+        const el = document.getElementById(id);
+        el.textContent = text;
+        el.className = `msg ${type} show`;
+    }
+
+    async function saveUserProfile(uid, data) {
+        const ref = doc(db, 'players', uid);
+        const snap = await getDoc(ref);
+        if (!snap.exists()) {
+            await setDoc(ref, {
+                ...data,
+                money: 500,
+                territories: [],
+                level: 1,
+                wins: 0,
+                losses: 0,
+                createdAt: Date.now()
+            });
+        }
+    }
+
+    window.doLogin = async function() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const pass = document.getElementById('loginPassword').value;
+        if (!email || !pass) return showMsg('loginMsg', 'Please fill all fields.', 'error');
+        showOverlay();
+        try {
+            await signInWithEmailAndPassword(auth, email, pass);
+            window.location.href = 'home.html';
+        } catch(e) {
+            hideOverlay();
+            showMsg('loginMsg', e.message.replace('Firebase: ', ''), 'error');
+        }
+    };
+
+    window.doRegister = async function() {
+        const name = document.getElementById('regName').value.trim();
+        const tag = document.getElementById('regTag').value.trim();
+        const empire = document.getElementById('regEmpire').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const pass = document.getElementById('regPassword').value;
+        if (!name || !tag || !empire || !email || !pass) return showMsg('registerMsg', 'All fields are required.', 'error');
+        if (tag.length < 3) return showMsg('registerMsg', 'Game tag must be at least 3 characters.', 'error');
+        showOverlay();
+        try {
+            const cred = await createUserWithEmailAndPassword(auth, email, pass);
+            await saveUserProfile(cred.user.uid, { name, tag, empire, email });
+            window.location.href = 'home.html';
+        } catch(e) {
+            hideOverlay();
+            showMsg('registerMsg', e.message.replace('Firebase: ', ''), 'error');
+        }
+    };
+
+    window.doGoogle = async function() {
+        showOverlay();
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+            // Check if profile exists; if not, prompt for game info
+            const ref = doc(db, 'players', user.uid);
+            const snap = await getDoc(ref);
+            if (!snap.exists()) {
+                // First time Google login - ask for game tag and empire
+                hideOverlay();
+                const tag = prompt('Choose your Game Tag (e.g. DrukKing99):');
+                const empire = prompt('Name your Empire (e.g. Kingdom of Thunder):');
+                if (!tag || !empire) { showMsg('loginMsg', 'Game tag and empire name required.', 'error'); return; }
+                showOverlay();
+                await saveUserProfile(user.uid, {
+                    name: user.displayName || 'Unknown',
+                    tag: tag.trim(),
+                    empire: empire.trim(),
+                    email: user.email
+                });
+            }
+            window.location.href = 'home.html';
+        } catch(e) {
+            hideOverlay();
+            showMsg('loginMsg', e.message.replace('Firebase: ', ''), 'error');
+        }
+    };
+</script>
+
+<script>
+    // Tab switching
+    function switchTab(tab) {
+        document.querySelectorAll('.tab').forEach((t, i) => {
+            t.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'register'));
+        });
+        document.getElementById('loginPanel').classList.toggle('active', tab === 'login');
+        document.getElementById('registerPanel').classList.toggle('active', tab === 'register');
+    }
+    window.switchTab = switchTab;
+
+    // Animated stars
+    const canvas = document.getElementById('starsCanvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    const ctx = canvas.getContext('2d');
+    const stars = Array.from({length: 120}, () => ({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        r: Math.random() * 1.5 + 0.3,
+        a: Math.random(),
+        da: (Math.random() * 0.005 + 0.002) * (Math.random() > 0.5 ? 1 : -1)
+    }));
+    function drawStars() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        stars.forEach(s => {
+            s.a += s.da;
+            if (s.a > 1 || s.a < 0) s.da *= -1;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(201,168,76,${s.a * 0.6})`;
+            ctx.fill();
+        });
+        requestAnimationFrame(drawStars);
+    }
+    drawStars();
+</script>
+</body>
+</html>
