@@ -176,11 +176,15 @@
         <div class="stat">LOSSES <span id="lossesDisplay">0</span></div>
     </div>
     <div class="topbar-right">
+        <div id="adminControls" style="display:none;margin-right:15px">
+            <button class="nav-btn" onclick="resetWorld()" style="border-color:var(--red);color:var(--red)">☢ RESET WORLD</button>
+        </div>
         <div id="empireTag">
             <div id="empireNameDisplay" style="font-size:0.85rem;color:var(--gold-light)">—</div>
             <div id="tagDisplay" style="font-size:0.65rem;color:var(--muted);margin-top:2px">Loading...</div>
         </div>
         <button class="nav-btn" onclick="toggleNotifs()">⚔ ALERTS<span class="badge" id="notifBadge">0</span></button>
+        <button class="nav-btn" onclick="restartUser()" style="border-color:var(--green);color:var(--green)">⟲ RESTART</button>
         <button class="nav-btn" onclick="doLogout()">RETREAT</button>
     </div>
 </div>
@@ -206,6 +210,13 @@
         <button class="panel-btn blue" id="wikiBtn" onclick="openWikiDetails()">📖 WIKI DETAILS</button>
         <button class="panel-btn green" id="upgradeBtn" onclick="upgradeTerritory()" style="display:none">⬆ UPGRADE</button>
         <button class="panel-btn blue" id="giftBtn" onclick="openGiftModal()" style="display:none">🎁 GIFT TERRITORY</button>
+        
+        <div id="adminPanelButtons" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+            <div class="panel-title" style="font-size:0.6rem">ADMIN COMMANDS</div>
+            <button class="panel-btn attack" onclick="adminTakeOver()">👑 TAKE OVER</button>
+            <button class="panel-btn green" onclick="adminGiveLand()">🎁 GIVE LAND</button>
+            <button class="panel-btn blue" onclick="adminForcePeace()">🕊 FORCE PEACE</button>
+        </div>
     </div>
     <div id="legend">
         <div class="legend-item"><div class="legend-dot" style="background:#1a2a4a"></div>Unclaimed Land</div>
@@ -262,9 +273,19 @@
         <div class="modal-title">⚔ TERRITORIAL BATTLE</div>
         <div class="modal-sub" id="battleSubtitle">Engaging...</div>
         <div class="score-board">
-            <div class="score-side"><div class="s-name" id="myBattleName">YOU</div><div class="s-num" id="myScore">0</div></div>
+            <div class="score-side">
+                <div class="s-name" id="myBattleName">YOU</div>
+                <div class="s-num" id="myScore">0</div>
+                <div id="attackerList" style="font-size:0.6rem;color:var(--muted);margin-top:5px"></div>
+            </div>
             <div class="score-sep">vs</div>
-            <div class="score-side"><div class="s-name" id="theirBattleName">OPPONENT</div><div class="s-num" id="theirScore">0</div></div>
+            <div class="score-side">
+                <div class="s-name" id="theirBattleName">OPPONENT</div>
+                <div class="s-num" id="theirScore">0</div>
+                <div id="surrender-area" style="margin-top:5px;display:none">
+                    <button onclick="surrenderLand(battleDocId, battleData.territory, battleData.attackerUid)" style="background:none;border:1px solid var(--red);color:var(--red);font-size:0.55rem;padding:2px 5px;cursor:pointer">⚐ SURRENDER</button>
+                </div>
+            </div>
         </div>
         <div class="timer-bar-wrap"><div id="timerBar"></div></div>
         <div id="timerText">Waiting...</div>
@@ -306,6 +327,19 @@
         </div>
         <div class="confirm-btns">
             <button class="confirm-btn no" onclick="closeWikiModal()">CLOSE</button>
+        </div>
+    </div>
+</div>
+
+<!-- GIFT GOLD MODAL -->
+<div class="modal-overlay" id="giftGoldModal">
+    <div class="modal-box" style="width:320px">
+        <div class="modal-title">💰 SEND GOLD</div>
+        <div class="modal-sub" id="giftGoldSub">Transfer wealth</div>
+        <input type="number" id="giftGoldAmount" class="modal-input" placeholder="Amount (Gold)">
+        <div class="confirm-btns">
+            <button class="confirm-btn yes" onclick="confirmGiftGold()" style="background:var(--gold)">SEND</button>
+            <button class="confirm-btn no" onclick="closeGiftGoldModal()">CANCEL</button>
         </div>
     </div>
 </div>
@@ -414,6 +448,8 @@ function getIncome(name, level) {
 }
 
 // === AUTH ===
+const ADMIN_EMAIL = 'ngawang.tphuentshok2024@academy.bt';
+
 onAuthStateChanged(auth, async user => {
     if (!user) { window.location.href='index.html'; return; }
     currentUser = user;
@@ -421,15 +457,260 @@ onAuthStateChanged(auth, async user => {
     const snap = await getDoc(userRef);
     if (!snap.exists()) { window.location.href='index.html'; return; }
     
+    // Admin Check
+    if (user.email === ADMIN_EMAIL) {
+        document.getElementById('adminControls').style.display = 'block';
+    }
+
     // Set online status
     await updateDoc(userRef, { online: true, lastSeen: serverTimestamp() });
     
     playerData = snap.data();
+    
+    // Check for new user (no territories and never initialized)
+    if ((!playerData.territories || playerData.territories.length === 0) && !playerData.isInitialized) {
+        await initializeNewUser();
+    }
+
     updateUI();
     listenTerritories();
     listenNotifications();
     listenPlayers(); // Added
 });
+
+async function initializeNewUser(isRestart = false) {
+    if (!currentUser) return;
+    const countries = CONTINENTS["North America"].concat(CONTINENTS["South America"], CONTINENTS["Europe"], CONTINENTS["Africa"], CONTINENTS["Asia"], CONTINENTS["Oceania"]);
+    const randomCountry = countries[Math.floor(Math.random() * countries.length)];
+    const initialGold = 1000;
+
+    // Remove from old owner if exists
+    const tRef = doc(db, 'territories', randomCountry);
+    const tSnap = await getDoc(tRef);
+    if (tSnap.exists()) {
+        const tData = tSnap.data();
+        if (tData.owner) {
+            const oldOwnerRef = doc(db, 'players', tData.owner);
+            const oldOwnerSnap = await getDoc(oldOwnerRef);
+            if (oldOwnerSnap.exists()) {
+                const oldOwnerData = oldOwnerSnap.data();
+                const newT = (oldOwnerData.territories || []).filter(x => x !== randomCountry);
+                await updateDoc(oldOwnerRef, { territories: newT });
+            }
+        }
+    }
+
+    // Assign to new user
+    await setDoc(tRef, {
+        owner: currentUser.uid,
+        ownerEmpire: playerData.empire,
+        ownerTag: playerData.tag,
+        level: 1,
+        name: randomCountry
+    });
+
+    await updateDoc(doc(db, 'players', currentUser.uid), {
+        territories: [randomCountry],
+        money: initialGold,
+        isInitialized: true
+    });
+
+    await refreshPlayerData();
+    
+    if (isRestart) {
+        showToast(`This is your country: ${randomCountry}. You have been assigned 1000 Gold.`);
+    } else {
+        alert(`Welcome to Empire Globe! This is your country: ${randomCountry}. You have been assigned 1000 Gold to start your conquest.`);
+    }
+}
+
+window.restartUser = async function() {
+    if (!confirm("Are you sure you want to restart? You will lose all current progress and be assigned a new random country.")) return;
+    
+    // Clear current territories
+    const territories = playerData.territories || [];
+    for (const tName of territories) {
+        await deleteDoc(doc(db, 'territories', tName));
+    }
+    
+    await updateDoc(doc(db, 'players', currentUser.uid), {
+        territories: [],
+        money: 0,
+        isInitialized: false,
+        wins: 0,
+        losses: 0
+    });
+    
+    await initializeNewUser(true);
+};
+
+// === ADMIN ACTIONS ===
+window.resetWorld = async function() {
+    if (!confirm("WARNING: This will erase ALL ownership and ALL battles. Continue?")) return;
+    
+    const territoriesSnap = await getDocs(collection(db, 'territories'));
+    const playersSnap = await getDocs(collection(db, 'players'));
+    const battlesSnap = await getDocs(collection(db, 'battles'));
+    const notificationsSnap = await getDocs(collection(db, 'notifications'));
+
+    for (const d of territoriesSnap.docs) await deleteDoc(doc(db, 'territories', d.id));
+    for (const d of battlesSnap.docs) await deleteDoc(doc(db, 'battles', d.id));
+    for (const d of notificationsSnap.docs) await deleteDoc(doc(db, 'notifications', d.id));
+    
+    for (const d of playersSnap.docs) {
+        await updateDoc(doc(db, 'players', d.id), {
+            territories: [],
+            money: 500,
+            isInitialized: false
+        });
+    }
+    
+    showToast("WORLD RESET COMPLETE");
+    window.location.reload();
+};
+
+window.adminTakeOver = async function() {
+    if (!selectedCountry) return;
+    const name = selectedCountry.properties.name;
+    await applyWin(name);
+    showToast(`Admin: Took over ${name}`);
+};
+
+window.adminGiveLand = async function() {
+    openGiftModal();
+};
+
+window.adminForcePeace = async function() {
+    if (!battleDocId) {
+        showToast("No active battle to stop.");
+        return;
+    }
+    await updateDoc(doc(db, 'battles', battleDocId), { status: 'cancelled' });
+    showToast("Admin: Forced Peace");
+    closeBattle();
+};
+
+// === GOLD GIFT ===
+let targetGoldUid = null, targetGoldTag = null;
+window.openGiftGoldModal = (uid, tag) => {
+    targetGoldUid = uid; targetGoldTag = tag;
+    document.getElementById('giftGoldSub').textContent = `Sending Gold to @${tag}`;
+    document.getElementById('giftGoldModal').classList.add('open');
+};
+window.closeGiftGoldModal = () => { document.getElementById('giftGoldModal').classList.remove('open'); };
+window.confirmGiftGold = async () => {
+    const amount = parseInt(document.getElementById('giftGoldAmount').value);
+    if (isNaN(amount) || amount <= 0) { showToast("Enter a valid amount."); return; }
+    if (playerData.money < amount) { showToast("Not enough Gold."); return; }
+    
+    // Propose gift (needs acceptance)
+    await addDoc(collection(db, 'notifications'), {
+        toUid: targetGoldUid, type: 'gold_gift_proposal', amount,
+        fromUid: currentUser.uid, fromEmpire: playerData.empire, fromTag: playerData.tag,
+        read: false, createdAt: serverTimestamp()
+    });
+    
+    // Deduct immediately (will be refunded if declined)
+    await updateDoc(doc(db, 'players', currentUser.uid), { money: playerData.money - amount });
+    await refreshPlayerData();
+    
+    closeGiftGoldModal();
+    showToast(`Proposal sent to @${targetGoldTag}`);
+};
+
+window.acceptGoldGift = async (notifId, fromUid, amount) => {
+    await updateDoc(doc(db, 'notifications', notifId), { read: true });
+    const snap = await getDoc(doc(db, 'players', currentUser.uid));
+    const d = snap.data();
+    await updateDoc(doc(db, 'players', currentUser.uid), { money: (d.money || 0) + amount });
+    await refreshPlayerData();
+    showToast(`Received ${amount} Gold!`);
+};
+
+window.declineGoldGift = async (notifId, fromUid, amount) => {
+    await updateDoc(doc(db, 'notifications', notifId), { read: true });
+    const snap = await getDoc(doc(db, 'players', fromUid));
+    if (snap.exists()) {
+        await updateDoc(doc(db, 'players', fromUid), { money: (snap.data().money || 0) + amount });
+    }
+    showToast("Gold gift declined. Refunded to sender.");
+};
+
+// === PEACE TREATY ===
+window.proposePeace = async (uid, tag) => {
+    await addDoc(collection(db, 'notifications'), {
+        toUid: uid, type: 'peace_proposal',
+        fromUid: currentUser.uid, fromEmpire: playerData.empire, fromTag: playerData.tag,
+        read: false, createdAt: serverTimestamp()
+    });
+    showToast(`Peace proposal sent to @${tag}`);
+};
+
+window.acceptPeace = async (notifId, fromUid, fromTag) => {
+    await updateDoc(doc(db, 'notifications', notifId), { read: true });
+    // If there's a battle between them, cancel it
+    const battlesSnap = await getDocs(query(collection(db, 'battles'), where('status', '==', 'active')));
+    for (const b of battlesSnap.docs) {
+        const d = b.data();
+        if ((d.attackerUid === currentUser.uid && d.defenderUid === fromUid) || (d.attackerUid === fromUid && d.defenderUid === currentUser.uid)) {
+            await updateDoc(doc(db, 'battles', b.id), { status: 'cancelled' });
+        }
+    }
+    showToast(`You are now at peace with @${fromTag}`);
+};
+
+window.declinePeace = async (notifId, fromTag) => {
+    await updateDoc(doc(db, 'notifications', notifId), { read: true });
+    showToast(`Peace proposal from @${fromTag} declined.`);
+};
+
+// === INVITE TO FIGHT ===
+window.inviteToFight = async (uid, tag) => {
+    if (!battleDocId || battleIsAI) {
+        showToast("You must be in a battle to invite others.");
+        return;
+    }
+    await addDoc(collection(db, 'notifications'), {
+        toUid: uid, type: 'battle_invite',
+        battleId: battleDocId, territory: battleData.territory,
+        fromUid: currentUser.uid, fromEmpire: playerData.empire, fromTag: playerData.tag,
+        read: false, createdAt: serverTimestamp()
+    });
+    showToast(`Battle invitation sent to @${tag}`);
+};
+
+window.acceptBattleInvite = async (notifId, battleId) => {
+    await updateDoc(doc(db, 'notifications', notifId), { read: true });
+    const snap = await getDoc(doc(db, 'battles', battleId));
+    if (!snap.exists()) { showToast("Battle no longer exists."); return; }
+    const d = snap.data();
+    if (d.status !== 'active' && d.status !== 'pending') { showToast("Battle is over."); return; }
+    
+    // Add as second attacker
+    const attackers = d.attackers || [d.attackerUid];
+    if (attackers.length >= 3) { showToast("Battle is full (max 3 attackers)."); return; }
+    if (!attackers.includes(currentUser.uid)) attackers.push(currentUser.uid);
+    
+    await updateDoc(doc(db, 'battles', battleId), { attackers });
+    openBattleModal(battleId, d, 'attacker', false);
+};
+
+// === SURRENDER ===
+window.surrenderLand = async (battleId, territory, attackerUid) => {
+    await updateDoc(doc(db, 'battles', battleId), { status: 'declined' });
+    // Transfer land directly
+    const attackerDoc = await getDoc(doc(db, 'players', attackerUid));
+    if (attackerDoc.exists()) {
+        const ad = attackerDoc.data();
+        await updateDoc(doc(db, 'territories', territory), { owner: attackerUid, ownerEmpire: ad.empire, ownerTag: ad.tag });
+        const myT = (playerData.territories || []).filter(x => x !== territory);
+        await updateDoc(doc(db, 'players', currentUser.uid), { territories: myT });
+        const theirT = [...new Set([...(ad.territories || []), territory])];
+        await updateDoc(doc(db, 'players', attackerUid), { territories: theirT });
+    }
+    closeBattle();
+    showToast(`You surrendered ${territory}.`);
+};
 
 window.doLogout = async () => { 
     if (currentUser) {
@@ -500,6 +781,13 @@ function renderPlayerList() {
             <div class="user-info">
                 <div class="user-name">${p.tag} ${uid === currentUser.uid ? '(You)' : ''}</div>
                 <div class="user-empire">${p.empire}</div>
+                ${uid !== currentUser.uid ? `
+                    <div style="display:flex;gap:5px;margin-top:4px">
+                        <button onclick="openGiftGoldModal('${uid}','${p.tag}')" style="background:none;border:1px solid var(--gold);color:var(--gold);font-size:0.55rem;padding:2px 5px;cursor:pointer">💰 GIVE GOLD</button>
+                        <button onclick="proposePeace('${uid}','${p.tag}')" style="background:none;border:1px solid var(--blue);color:var(--blue);font-size:0.55rem;padding:2px 5px;cursor:pointer">🕊 PEACE</button>
+                        <button onclick="inviteToFight('${uid}','${p.tag}')" style="background:none;border:1px solid var(--red);color:var(--red);font-size:0.55rem;padding:2px 5px;cursor:pointer">⚔ INVITE</button>
+                    </div>
+                ` : ''}
             </div>
         </div>
     `).join('');
@@ -611,6 +899,33 @@ function renderNotifications(items) {
                 <div class="n-actions"><button class="n-btn accept" onclick="dismissNotif('${n.id}')">OK</button></div>
             </div>`;
         }
+        if (n.type==='gold_gift_proposal') return `
+            <div class="notif-item">
+                <div class="n-title">💰 GOLD GIFT PROPOSAL</div>
+                <div class="n-body"><em>${n.fromEmpire}</em> (@${n.fromTag}) wants to give you <strong>${n.amount} Gold</strong>.</div>
+                <div class="n-actions">
+                    <button class="n-btn accept" onclick="acceptGoldGift('${n.id}','${n.fromUid}',${n.amount})">ACCEPT</button>
+                    <button class="n-btn decline" onclick="declineGoldGift('${n.id}','${n.fromUid}',${n.amount})">DECLINE</button>
+                </div>
+            </div>`;
+        if (n.type==='peace_proposal') return `
+            <div class="notif-item">
+                <div class="n-title">🕊 PEACE TREATY PROPOSAL</div>
+                <div class="n-body"><em>${n.fromEmpire}</em> (@${n.fromTag}) proposes a peace treaty.</div>
+                <div class="n-actions">
+                    <button class="n-btn accept" onclick="acceptPeace('${n.id}','${n.fromUid}','${n.fromTag}')">ACCEPT</button>
+                    <button class="n-btn decline" onclick="declinePeace('${n.id}','${n.fromTag}')">DECLINE</button>
+                </div>
+            </div>`;
+        if (n.type==='battle_invite') return `
+            <div class="notif-item urgent">
+                <div class="n-title">⚔ BATTLE INVITATION</div>
+                <div class="n-body"><em>${n.fromEmpire}</em> (@${n.fromTag}) invites you to join the fight for <strong>${n.territory}</strong>!</div>
+                <div class="n-actions">
+                    <button class="n-btn accept" onclick="acceptBattleInvite('${n.id}','${n.battleId}')">JOIN FIGHT</button>
+                    <button class="n-btn decline" onclick="dismissNotif('${n.id}')">IGNORE</button>
+                </div>
+            </div>`;
         return `<div class="notif-item"><div class="n-title">Alert</div><div class="n-body">${n.body||''}</div><div class="n-actions"><button class="n-btn accept" onclick="dismissNotif('${n.id}')">OK</button></div></div>`;
     }).join('');
 }
@@ -903,9 +1218,19 @@ function openBattleModal(battleId, data, role, isAI) {
     document.getElementById('myScore').textContent='0';
     document.getElementById('theirScore').textContent='0';
     document.getElementById('roundResult').textContent='';
-    document.getElementById('battleLog').textContent='First to 3 wins claims the territory!';
+    
+    const isMulti = (data.attackers && data.attackers.length > 1);
+    const winThreshold = isMulti ? 2 : 3;
+    document.getElementById('battleLog').textContent = `First to ${winThreshold} wins!`;
+    
     document.getElementById('battleCloseBtn').style.display='none';
     document.getElementById('waitingLabel').style.display='none';
+    
+    // Show surrender for defender
+    if (document.getElementById('surrender-area')) {
+        document.getElementById('surrender-area').style.display = (role === 'defender') ? 'block' : 'none';
+    }
+
     if (isAI) startAIRound();
     else { listenToBattle(battleId); startPvPRound(); }
 }
@@ -967,27 +1292,31 @@ function listenToBattle(bId) {
     roundListenerUnsub = onSnapshot(doc(db,'battles',bId), async snap => {
         const d=snap.data(); if(!d) return;
         battleData={...d};
-        const myW=battleRole==='attacker'?d.attackerWins:d.defenderWins;
-        const thW=battleRole==='attacker'?d.defenderWins:d.attackerWins;
-        document.getElementById('myScore').textContent=myW;
-        document.getElementById('theirScore').textContent=thW;
+        
+        const attackers = d.attackers || [d.attackerUid];
+        const isMulti = attackers.length > 1;
+        const winThreshold = isMulti ? 2 : 3;
+        
+        const myScore = d.scores ? (d.scores[currentUser.uid] || 0) : 0;
+        document.getElementById('myScore').textContent = myScore;
+        
+        const participants = [...attackers, d.defenderUid];
+        const enemies = participants.filter(uid => uid !== currentUser.uid);
+        const maxEnemyScore = d.scores ? Math.max(...enemies.map(uid => d.scores[uid] || 0)) : 0;
+        document.getElementById('theirScore').textContent = maxEnemyScore;
 
         // Sync Waiting UI
-        const myChoice = battleRole === 'attacker' ? d.attackerChoice : d.defenderChoice;
-        const theirChoice = battleRole === 'attacker' ? d.defenderChoice : d.attackerChoice;
-        if (myChoice && !theirChoice) {
+        const myChoice = (battleRole === 'defender') ? d.defenderChoice : (d.attackerChoices ? d.attackerChoices[currentUser.uid] : null);
+        if (myChoice && d.status === 'active') {
             document.getElementById('waitingLabel').style.display = 'block';
             document.getElementById('timerText').textContent = 'Choice locked in!';
         } else if (d.status === 'active') {
             document.getElementById('waitingLabel').style.display = 'none';
         }
 
-        if ((d.status==='pending' || d.status==='active') && d.attackerChoice && d.defenderChoice) {
-            resolvePvP(d);
-            return;
-        }
         if (d.status==='round_result') showPvPResult(d);
         if (d.status==='finished') await handleFinished(d);
+        if (d.status==='cancelled') { showToast("Battle was cancelled."); closeBattle(); }
     });
 }
 
@@ -1010,36 +1339,86 @@ async function submitPvP(choice, auto=false) {
     if (!battleDocId) return;
     disableRps(choice); document.getElementById('waitingLabel').style.display='block';
     document.getElementById('timerText').textContent='Choice locked in!';
-    const field=battleRole==='attacker'?'attackerChoice':'defenderChoice';
-    await updateDoc(doc(db,'battles',battleDocId),{[field]:choice});
     
-    // Check if both chose and resolve
-    const snap=await getDoc(doc(db,'battles',battleDocId));
-    const d=snap.data();
-    if ((d.status==='pending' || d.status==='active') && d.attackerChoice && d.defenderChoice) {
-        resolvePvP(d);
+    const snap = await getDoc(doc(db, 'battles', battleDocId));
+    const d = snap.data();
+    
+    if (battleRole === 'defender') {
+        await updateDoc(doc(db, 'battles', battleDocId), { defenderChoice: choice });
+    } else {
+        const choices = d.attackerChoices || {};
+        choices[currentUser.uid] = choice;
+        await updateDoc(doc(db, 'battles', battleDocId), { attackerChoices: choices });
+    }
+    
+    // Check if all chose and resolve
+    const freshSnap = await getDoc(doc(db, 'battles', battleDocId));
+    const fd = freshSnap.data();
+    const attackers = fd.attackers || [fd.attackerUid];
+    const allAttackerChose = attackers.every(uid => fd.attackerChoices && fd.attackerChoices[uid]);
+    
+    if ((fd.status==='pending' || fd.status==='active') && allAttackerChose && fd.defenderChoice) {
+        resolveMultiPvP(fd);
     }
 }
 
-async function resolvePvP(d) {
-    if (d.status === 'round_result' || d.status === 'finished') return; // Already resolved
+async function resolveMultiPvP(d) {
+    if (d.status === 'round_result' || d.status === 'finished') return;
     
-    const ac=d.attackerChoice, dc=d.defenderChoice;
-    if (!ac || !dc) return; // Need both choices
+    const attackers = d.attackers || [d.attackerUid];
+    const aChoices = d.attackerChoices;
+    const dc = d.defenderChoice;
     
-    const aW=(ac==='rock'&&dc==='scissors')||(ac==='paper'&&dc==='rock')||(ac==='scissors'&&dc==='paper');
-    const dW=(dc==='rock'&&ac==='scissors')||(dc==='paper'&&ac==='rock')||(dc==='scissors'&&ac==='paper');
-    const newAW=(d.attackerWins||0)+(aW?1:0);
-    const newDW=(d.defenderWins||0)+(dW?1:0);
-    let status='round_result', winnerId=null;
-    if(newAW>=3){status='finished';winnerId=d.attackerUid;}
-    else if(newDW>=3){status='finished';winnerId=d.defenderUid;}
+    const participants = [...attackers.map(uid => ({ uid, choice: aChoices[uid], role: 'attacker' })), { uid: d.defenderUid, choice: dc, role: 'defender' }];
+    const choices = participants.map(p => p.choice);
+    const uniqueChoices = [...new Set(choices)];
     
-    await updateDoc(doc(db,'battles',battleDocId),{
-        attackerWins:newAW, defenderWins:newDW,
-        lastAttackerChoice:ac, lastDefenderChoice:dc,
-        attackerChoice:null, defenderChoice:null,
-        status, round:(d.round||0)+1, winnerId
+    let roundWinners = [];
+    
+    if (uniqueChoices.length === 2) {
+        const [c1, c2] = uniqueChoices;
+        const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+        const winningChoice = beats[c1] === c2 ? c1 : c2;
+        const potentialWinners = participants.filter(p => p.choice === winningChoice);
+        
+        if (potentialWinners.length === 2 && participants.length === 3) {
+            // "if two user shows rock and one shows sisor amke the two users to play"
+            // They both showed the same winning hand, so they "play" each other -> Draw.
+            roundWinners = []; 
+        } else {
+            roundWinners = potentialWinners;
+        }
+    }
+    
+    // Update scores
+    const newScores = d.scores || {};
+    roundWinners.forEach(w => {
+        newScores[w.uid] = (newScores[w.uid] || 0) + 1;
+    });
+    
+    // Check for overall winner
+    const winThreshold = attackers.length > 1 ? 2 : 3;
+    let overallWinner = null;
+    participants.forEach(p => {
+        if ((newScores[p.uid] || 0) >= winThreshold) {
+            if (!overallWinner || newScores[p.uid] > newScores[overallWinner.uid]) {
+                overallWinner = p;
+            }
+        }
+    });
+    
+    let status = 'round_result';
+    if (overallWinner) status = 'finished';
+    
+    await updateDoc(doc(db, 'battles', battleDocId), {
+        scores: newScores,
+        lastChoices: participants.reduce((acc, p) => ({ ...acc, [p.uid]: p.choice }), {}),
+        attackerChoices: null,
+        defenderChoice: null,
+        status,
+        round: (d.round || 0) + 1,
+        winnerId: overallWinner ? overallWinner.uid : null,
+        winnerRole: overallWinner ? overallWinner.role : null
     });
 }
 
@@ -1047,41 +1426,75 @@ function showPvPResult(d) {
     clearInterval(roundTimerInterval);
     document.getElementById('waitingLabel').style.display='none';
     const em={rock:'✊',paper:'🖐',scissors:'✌'};
-    const ac=d.lastAttackerChoice, dc=d.lastDefenderChoice;
-    const myC=battleRole==='attacker'?ac:dc, thC=battleRole==='attacker'?dc:ac;
-    const aW=(ac==='rock'&&dc==='scissors')||(ac==='paper'&&dc==='rock')||(ac==='scissors'&&dc==='paper');
-    const iWon=(battleRole==='attacker'&&aW)||(battleRole==='defender'&&!aW&&ac!==dc);
-    const isDraw=ac===dc;
+    
+    const attackers = d.attackers || [d.attackerUid];
+    const myChoice = d.lastChoices[currentUser.uid];
+    
+    const choices = Object.values(d.lastChoices);
+    const uniqueChoices = [...new Set(choices)];
+    let iWonRound = false;
+    if (uniqueChoices.length === 2) {
+        const [c1, c2] = uniqueChoices;
+        const beats = { rock: 'scissors', paper: 'rock', scissors: 'paper' };
+        const winningChoice = beats[c1] === c2 ? c1 : c2;
+        if (myChoice === winningChoice) iWonRound = true;
+    }
+    
+    const isDraw = uniqueChoices.length !== 2;
     const el=document.getElementById('roundResult');
-    if(isDraw){el.textContent=`${em[myC]} vs ${em[thC]} — Draw!`;el.className='round-result draw';}
-    else if(iWon){el.textContent=`${em[myC]} vs ${em[thC]} — Round won!`;el.className='round-result win';}
-    else{el.textContent=`${em[myC]} vs ${em[thC]} — Round lost.`;el.className='round-result lose';}
+    if(isDraw){el.textContent=`Draw!`;el.className='round-result draw';}
+    else if(iWonRound){el.textContent=`Round won!`;el.className='round-result win';}
+    else{el.textContent=`Round lost.`;el.className='round-result lose';}
+    
     document.getElementById('timerText').textContent=`Round ${d.round}`;
-    const myW=battleRole==='attacker'?d.attackerWins:d.defenderWins;
-    document.getElementById('battleLog').textContent=`${3-myW} wins needed`;
+    
+    const myScore = d.scores[currentUser.uid] || 0;
+    const winThreshold = attackers.length > 1 ? 2 : 3;
+    document.getElementById('myScore').textContent = myScore;
+    
+    const enemies = [...attackers, d.defenderUid].filter(uid => uid !== currentUser.uid);
+    const maxEnemyScore = Math.max(...enemies.map(uid => d.scores[uid] || 0));
+    document.getElementById('theirScore').textContent = maxEnemyScore;
+    
+    document.getElementById('battleLog').textContent=`${winThreshold - myScore} wins needed`;
+    
     if(d.status!=='finished') setTimeout(()=>startPvPRound(),2000);
 }
 
 async function handleFinished(d) {
     clearInterval(roundTimerInterval);
     if(roundListenerUnsub){roundListenerUnsub();roundListenerUnsub=null;}
-    const iWon=d.winnerId===currentUser.uid;
+    
+    const iWon = d.winnerId === currentUser.uid;
     disableRps(null);
     document.getElementById('waitingLabel').style.display='none';
     document.getElementById('roundResult').className='round-result '+(iWon?'win':'lose');
     document.getElementById('roundResult').textContent=iWon?'🏆 VICTORY!':'💀 DEFEATED';
-    document.getElementById('battleLog').textContent=iWon?'Territory is yours!':'The territory holds.';
+    
+    if (iWon) {
+        document.getElementById('battleLog').textContent = (d.winnerRole === 'attacker') ? 'Territory is yours!' : 'The territory holds.';
+    } else {
+        document.getElementById('battleLog').textContent = (d.winnerRole === 'attacker' && d.winnerId === d.attackerUid) ? 'The territory fell.' : 'The siege failed.';
+    }
+    
     document.getElementById('battleCloseBtn').style.display='inline-block';
     
-    if(iWon){
-        await applyWin(d.territory, iWon);
-        const loserUid = battleRole==='attacker' ? d.defenderUid : d.attackerUid;
-        await addDoc(collection(db,'notifications'),{
-            toUid:loserUid, type:'battle_result', winnerId:d.winnerId,
-            body:`${playerData.empire} defeated you and claimed ${d.territory}! You lost ${DEFEAT_PENALTY} Gold.`,
-            read:false, createdAt:serverTimestamp()
-        });
-    } else {
+    if (iWon && d.winnerRole === 'attacker') {
+        await applyWin(d.territory, true);
+        const losers = [d.defenderUid, ...(d.attackers || [])].filter(uid => uid !== d.winnerId);
+        for (const loserUid of losers) {
+            await addDoc(collection(db,'notifications'),{
+                toUid:loserUid, type:'battle_result', winnerId:d.winnerId,
+                body:`${playerData.empire} claimed ${d.territory}! You lost ${DEFEAT_PENALTY} Gold.`,
+                read:false, createdAt:serverTimestamp()
+            });
+            const lSnap = await getDoc(doc(db, 'players', loserUid));
+            if (lSnap.exists()) {
+                const lData = lSnap.data();
+                await updateDoc(doc(db, 'players', loserUid), { money: Math.max(0, (lData.money || 0) - DEFEAT_PENALTY) });
+            }
+        }
+    } else if (d.winnerRole === 'defender' && battleRole === 'attacker') {
         const newMoney = Math.max(0, (playerData.money||0) - DEFEAT_PENALTY);
         await updateDoc(doc(db,'players',currentUser.uid),{
             losses:(playerData.losses||0)+1,
