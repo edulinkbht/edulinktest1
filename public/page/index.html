@@ -29,6 +29,9 @@
         .badge { position:absolute; top:-6px; right:-6px; background:var(--red); color:#fff; font-size:0.6rem; width:16px; height:16px; border-radius:50%; display:none; align-items:center; justify-content:center; }
         .badge.show { display:flex; }
 
+        .celestial-nav { display:flex; gap:8px; margin-left:15px; border-left:1px solid var(--border); padding-left:15px; }
+        .nav-btn.active { border-color:var(--gold); color:var(--gold); background:rgba(184,134,11,0.1); }
+        
         /* GLOBE */
         #globeArea { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background: radial-gradient(circle, #1a1c22 0%, #0a0c10 100%); }
         #globeSvg { cursor:grab; }
@@ -168,7 +171,13 @@
 <body>
 
 <div id="topbar">
-    <div class="topbar-left">♛ EMPIRE GLOBE</div>
+    <div class="topbar-left" style="display:flex;align-items:center;gap:15px">
+        <span style="white-space:nowrap">♛ EMPIRE GLOBE</span>
+        <div class="celestial-nav" style="display:flex;gap:5px;margin-left:10px">
+            <button class="nav-btn active" id="btnEarth" onclick="switchCelestial('earth')" style="padding:4px 10px;font-size:0.65rem">🌍 EARTH</button>
+            <button class="nav-btn" id="btnMoon" onclick="switchCelestial('moon')" style="padding:4px 10px;font-size:0.65rem">🌑 MOON</button>
+        </div>
+    </div>
     <div class="topbar-center">
         <div class="stat">GOLD <span id="moneyDisplay">500</span></div>
         <div class="stat">TERRITORIES <span id="territoriesDisplay">0</span></div>
@@ -335,7 +344,7 @@ import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/fi
 import {
     getFirestore, doc, getDoc, updateDoc, setDoc, deleteDoc,
     onSnapshot, collection, query, where, getDocs,
-    addDoc, serverTimestamp
+    addDoc, serverTimestamp, runTransaction, arrayUnion
 } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -352,6 +361,7 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 
 // === STATE ===
+let currentCelestial = 'earth';
 let currentUser = null, playerData = null;
 let allTerritories = {};
 let allPlayers = {};
@@ -387,6 +397,9 @@ const UPGRADE_COSTS = [0,200,500,1000,2000];
 const ATTACK_COST = 100;
 const DEFEAT_PENALTY = 150;
 
+const MOON_PURCHASE_COST = 2000; // Standard price for moon land
+const MOON_INCOME = 150; // High income for moon land
+
 const COUNTRY_INCOME = {
     "United States":300,"China":280,"Germany":150,"Japan":140,"India":120,"Brazil":100,
     "United Kingdom":130,"France":120,"Russia":110,"Canada":100,"Australia":90,"South Korea":80,
@@ -407,7 +420,22 @@ const OCEAN_ZONES = [
     {id:"ocean_bering",name:"Bering Sea",coords:[-175,57],income:30}
 ];
 
+const MOON_ZONES = [
+    {id:"moon_tranquility",name:"Mare Tranquillitatis",coords:[28.3,8.5],income:150},
+    {id:"moon_imbrium",name:"Mare Imbrium",coords:[-15.6,32.8],income:180},
+    {id:"moon_serenity",name:"Mare Serenitatis",coords:[17.5,28.0],income:160},
+    {id:"moon_tycho",name:"Tycho Crater",coords:[-11.2,-43.3],income:200},
+    {id:"moon_copernicus",name:"Copernicus Crater",coords:[-20.0,9.7],income:190},
+    {id:"moon_crisium",name:"Mare Crisium",coords:[59.1,17.0],income:170},
+    {id:"moon_procellarum",name:"Oceanus Procellarum",coords:[-47.4,18.4],income:250},
+    {id:"moon_aristarchus",name:"Aristarchus Crater",coords:[-47.4,23.7],income:210},
+    {id:"moon_plato",name:"Plato Crater",coords:[-9.3,51.6],income:180},
+    {id:"moon_fecundity",name:"Mare Fecunditatis",coords:[51.3,-7.8],income:160}
+];
+
 function getIncome(name, level) {
+    const mz = MOON_ZONES.find(m=>m.name===name);
+    if (mz) return Math.floor(mz.income*(level||1)*1.5);
     const oz = OCEAN_ZONES.find(o=>o.name===name);
     const base = oz ? oz.income : (COUNTRY_INCOME[name]||COUNTRY_INCOME["default"]);
     return Math.floor(base*(level||1)*1.4);
@@ -618,6 +646,36 @@ function renderNotifications(items) {
 window.dismissNotif = async id => { await updateDoc(doc(db,'notifications',id),{read:true}); };
 window.toggleNotifs = () => { document.getElementById('notifsPanel').classList.toggle('open'); };
 
+// === CELESTIAL SWITCH ===
+window.switchCelestial = function(type) {
+    if (currentCelestial === type) return;
+    currentCelestial = type;
+    
+    // Update UI buttons
+    document.getElementById('btnEarth').classList.toggle('active', type==='earth');
+    document.getElementById('btnMoon').classList.toggle('active', type==='moon');
+    
+    // Reset selection
+    selectedCountry = null;
+    document.getElementById('infoPanel').classList.remove('visible');
+    
+    // Redraw
+    if (type === 'moon') {
+        countriesGroup.style("display", "none");
+        labelsGroup.style("display", "none");
+        svg.select(".sphere-fill").style("fill", "#111");
+        svg.select(".sphere-border").style("stroke", "#444");
+    } else {
+        countriesGroup.style("display", "block");
+        labelsGroup.style("display", "block");
+        svg.select(".sphere-fill").style("fill", "#0d2a4a");
+        svg.select(".sphere-border").style("stroke", "var(--border)");
+    }
+    
+    drawOceanZones();
+    refreshGlobeColors();
+};
+
 // === D3 GLOBE ===
 const svg = d3.select("#globeSvg");
 let W, H;
@@ -639,29 +697,46 @@ const oceanPathData = {};
 
 function tColor(name, isOcean) {
     const t = allTerritories[name];
-    if (!t) return isOcean ? "#0d2a4a" : "#1a2a4a";
+    if (!t) {
+        if (currentCelestial === 'moon') return "#333";
+        return isOcean ? "#0d2a4a" : "#1a2a4a";
+    }
     
     const isMine = t.owner === currentUser?.uid;
     
+    if (currentCelestial === 'moon') {
+        return isMine ? "#c9a84c" : "#6b1010";
+    }
+    
     if (isOcean) {
-        return isMine ? "#1a4a8a" : "#6b1010"; // Using dark red for enemy oceans too
+        return isMine ? "#1a4a8a" : "#6b1010";
     } else {
         return isMine ? "#c9a84c" : "#6b1010";
     }
 }
 
 function refreshGlobeColors() {
-    if (!worldData) return;
-    countriesGroup.selectAll(".country").style("fill", d => tColor(d.properties.name, false));
+    if (!worldData && currentCelestial === 'earth') return;
+    
+    if (currentCelestial === 'earth') {
+        countriesGroup.selectAll(".country").style("fill", d => tColor(d.properties.name, false));
+    }
+    
     oceansGroup.selectAll(".ocean-zone").style("fill", function() {
         const id = d3.select(this).attr("data-id");
-        const oz = OCEAN_ZONES.find(o=>o.id===id);
-        return oz ? tColor(oz.name, true) : "rgba(13,42,74,0.5)";
+        const zones = currentCelestial === 'earth' ? OCEAN_ZONES : MOON_ZONES;
+        const z = zones.find(o=>o.id===id);
+        return z ? tColor(z.name, true) : (currentCelestial === 'earth' ? "rgba(13,42,74,0.5)" : "rgba(100,100,100,0.3)");
     });
+    
     refreshContinentLabels();
 }
 
 function refreshContinentLabels() {
+    if (currentCelestial !== 'earth') {
+        labelsGroup.selectAll(".continent-label").remove();
+        return;
+    }
     const conquered = [];
     Object.entries(CONTINENTS).forEach(([name, countries]) => {
         if (!countries.length) return;
@@ -704,12 +779,19 @@ function refreshContinentLabels() {
 }
 
 function drawOceanZones() {
-    OCEAN_ZONES.forEach(oz => {
-        const feat = d3.geoCircle().center(oz.coords).radius(11)();
+    oceansGroup.selectAll("*").remove();
+    oceanPathData = {};
+    
+    const zones = currentCelestial === 'earth' ? OCEAN_ZONES : MOON_ZONES;
+    
+    zones.forEach(oz => {
+        const feat = d3.geoCircle().center(oz.coords).radius(currentCelestial === 'earth' ? 11 : 14)();
         oceanPathData[oz.id] = feat;
         oceansGroup.append("path").datum(feat)
             .attr("class","ocean-zone").attr("data-id",oz.id)
-            .attr("d",geoPath).style("fill","rgba(13,42,74,0.5)")
+            .attr("d",geoPath)
+            .style("fill", currentCelestial === 'earth' ? "rgba(13,42,74,0.5)" : "rgba(100,100,100,0.3)")
+            .style("stroke", currentCelestial === 'earth' ? "rgba(74,159,212,0.3)" : "rgba(255,255,255,0.2)")
             .on("click", () => selectTerritoryByData(oz.name, true, oz));
     });
 }
@@ -762,15 +844,24 @@ function selectTerritoryByData(name, isOcean, oz, countryFeature) {
     const level = t?(t.level||1):0;
     const owned = t && t.owner===currentUser.uid;
     const enemy = t && t.owner && t.owner!==currentUser.uid;
+    
     document.getElementById('infoPanelName').textContent = name;
-    document.getElementById('infoType').textContent = isOcean ? '🌊 Ocean Zone' : '🌍 Territory';
+    
+    if (currentCelestial === 'moon') {
+        document.getElementById('infoType').textContent = '🌑 Lunar Region';
+    } else {
+        document.getElementById('infoType').textContent = isOcean ? '🌊 Ocean Zone' : '🌍 Territory';
+    }
+    
     document.getElementById('infoIncome').textContent = `${getIncome(name,level)} Gold`;
     if (owned) document.getElementById('infoOwner').innerHTML = `Your Territory — <em>${playerData.empire}</em>`;
     else if (enemy) document.getElementById('infoOwner').innerHTML = `Owned by <em>${t.ownerEmpire||'an empire'}</em> (@${t.ownerTag||'?'})`;
     else document.getElementById('infoOwner').textContent = 'Unclaimed';
+    
     // Level pips
     const badges = document.getElementById('infoBadges'); badges.innerHTML='';
     for(let i=1;i<=5;i++){const p=document.createElement('div');p.className='lvl-pip'+(i<=level?' active':'');badges.appendChild(p);}
+    
     // Buttons
     const btn=document.getElementById('claimBtn'), upBtn=document.getElementById('upgradeBtn'), giftBtn=document.getElementById('giftBtn');
     if (owned) {
@@ -781,25 +872,79 @@ function selectTerritoryByData(name, isOcean, oz, countryFeature) {
         btn.textContent=`⚔ ATTACK (${ATTACK_COST} GOLD)`; btn.className='panel-btn attack';
         upBtn.style.display='none'; giftBtn.style.display='none';
     } else {
-        btn.textContent = isOcean ? `⚓ CLAIM (${ATTACK_COST} GOLD)` : `⊕ CLAIM (${ATTACK_COST} GOLD)`;
+        if (currentCelestial === 'moon') {
+            btn.textContent = `🌑 PURCHASE (${MOON_PURCHASE_COST} GOLD)`;
+        } else {
+            btn.textContent = isOcean ? `⚓ CLAIM (${ATTACK_COST} GOLD)` : `⊕ CLAIM (${ATTACK_COST} GOLD)`;
+        }
         btn.className='panel-btn gold'; upBtn.style.display='none'; giftBtn.style.display='none';
     }
     document.getElementById('infoPanel').classList.add('visible');
 }
 
 // === CLAIM / ATTACK ===
-window.handleClaimOrAttack = function() {
+window.handleClaimOrAttack = async function() {
     if (!selectedCountry||!currentUser||!playerData) return;
-    if (playerData.money < ATTACK_COST) {
-        showToast(`Need ${ATTACK_COST} Gold to start a war!`);
-        return;
-    }
+    
     const name = selectedCountry.properties.name||"Unknown";
     const t = allTerritories[name];
+    const isMoon = MOON_ZONES.some(m => m.name === name);
+    
+    const cost = isMoon && (!t || !t.owner) ? MOON_PURCHASE_COST : ATTACK_COST;
+    
+    if (playerData.money < cost) {
+        showToast(`Need ${cost} Gold for this!`);
+        return;
+    }
+    
     if (t && t.owner===currentUser.uid) return;
-    if (t && t.owner && t.owner!==currentUser.uid) openAttackConfirm(name,t);
-    else startAIBattle(name);
+    
+    if (t && t.owner && t.owner!==currentUser.uid) {
+        openAttackConfirm(name,t);
+    } else {
+        if (isMoon) {
+            // Direct purchase for moon land
+            await buyMoonLand(name);
+        } else {
+            startAIBattle(name);
+        }
+    }
 };
+
+async function buyMoonLand(name) {
+    if (playerData.money < MOON_PURCHASE_COST) return;
+    
+    const playerRef = doc(db, 'players', currentUser.uid);
+    const terrRef = doc(db, 'territories', name);
+    
+    try {
+        await runTransaction(db, async (transaction) => {
+            const pSnap = await transaction.get(playerRef);
+            if (!pSnap.exists()) return;
+            const pData = pSnap.data();
+            
+            if (pData.money < MOON_PURCHASE_COST) throw "Not enough gold";
+            
+            transaction.set(terrRef, {
+                owner: currentUser.uid,
+                ownerTag: pData.tag,
+                ownerEmpire: pData.empire,
+                level: 1,
+                lastIncome: serverTimestamp()
+            });
+            
+            transaction.update(playerRef, {
+                money: pData.money - MOON_PURCHASE_COST,
+                territories: arrayUnion(name)
+            });
+        });
+        showToast(`Lunar land ${name} purchased! 🌑`);
+        document.getElementById('infoPanel').classList.remove('visible');
+    } catch (e) {
+        console.error(e);
+        showToast("Purchase failed: " + e);
+    }
+}
 
 // === ATTACK CONFIRM (vs real player) ===
 let pendingAttackName=null, pendingAttackData=null;
