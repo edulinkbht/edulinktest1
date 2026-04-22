@@ -596,20 +596,15 @@ const oceanPathData = {};
 
 function tColor(name, isOcean) {
     const t = allTerritories[name];
-    if (!t) return isOcean ? "rgba(13,42,74,0.5)" : "#1a2a4a";
+    if (!t) return isOcean ? "#0d2a4a" : "#1a2a4a";
     
-    const ownerUid = t.owner;
-    // Generate color for owner if not already in playerColors
-    if (ownerUid && !playerColors[ownerUid]) {
-        playerColors[ownerUid] = stringToColor(ownerUid);
+    const isMine = t.owner === currentUser?.uid;
+    
+    if (isOcean) {
+        return isMine ? "#1a4a8a" : "#6b1010"; // Using dark red for enemy oceans too
+    } else {
+        return isMine ? "#c9a84c" : "#6b1010";
     }
-    
-    const color = playerColors[ownerUid] || (isOcean ? "rgba(26,74,138,0.75)" : "#c9a84c");
-    
-    if (t.owner===currentUser?.uid) return color;
-    
-    // For enemy territories, we can use their color but maybe slightly muted or different opacity
-    return color;
 }
 
 function refreshGlobeColors() {
@@ -660,7 +655,7 @@ function refreshContinentLabels() {
     const allLabels = enter.merge(labels);
     allLabels.select("text")
         .text(d => `👑 ${d.ownerTag.toUpperCase()}`)
-        .style("fill", d => playerColors[d.ownerUid] || "var(--gold)");
+        .style("fill", d => d.ownerUid === currentUser?.uid ? "#c9a84c" : "#6b1010");
     
     updateGlobe();
 }
