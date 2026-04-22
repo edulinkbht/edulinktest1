@@ -427,8 +427,8 @@ const geoPath = d3.geoPath().projection(projection);
 const graticule = d3.geoGraticule10();
 svg.append("path").datum({type:"Sphere"}).attr("class","sphere-fill").attr("d",geoPath);
 svg.append("path").datum(graticule).attr("class","graticule").attr("d",geoPath);
-const countriesGroup = svg.append("g").attr("id","countriesGroup");
 const oceansGroup = svg.append("g").attr("id","oceansGroup");
+const countriesGroup = svg.append("g").attr("id","countriesGroup");
 svg.append("path").datum({type:"Sphere"}).attr("class","sphere-border").attr("d",geoPath);
 
 let worldData = null;
@@ -466,12 +466,12 @@ d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(w
     document.getElementById('loading').remove();
     worldData = world;
     const features = topojson.feature(world, world.objects.countries).features;
+    drawOceanZones();
     countriesGroup.selectAll(".country").data(features).enter().append("path")
         .attr("class","country").attr("d",geoPath)
         .style("fill", d => tColor(d.properties.name, false))
         .on("click",(e,d) => selectTerritoryByData(d.properties.name, false, null, d))
         .append("title").text(d => d.properties.name||"Unknown");
-    drawOceanZones();
     // Drag
     let ds=null;
     svg.call(d3.drag().on("start",e=>{ds=[e.x,e.y]}).on("drag",e=>{
@@ -680,6 +680,10 @@ function listenToBattle(bId) {
         const thW=battleRole==='attacker'?d.defenderWins:d.attackerWins;
         document.getElementById('myScore').textContent=myW;
         document.getElementById('theirScore').textContent=thW;
+        if (d.status==='pending' && d.attackerChoice && d.defenderChoice) {
+            resolvePvP(d);
+            return;
+        }
         if (d.status==='round_result') showPvPResult(d);
         if (d.status==='finished') await handleFinished(d);
     });
