@@ -1,1 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Empire Globe — World Map</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://unpkg.com/topojson-client@3"></script>
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --border: #2a2a3a;
+            --gold: #c9a84c;
+            --gold-light: #e8c97a;
+            --cream: #f3efe6;
+            --muted: #6b6b7a;
+            --red: #c0392b;
+            --green: #27ae60;
+            --blue: #2980b9;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
+        body {
+            background: var(--bg);
+            color: var(--cream);
+            font-family: 'Crimson Text', serif;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ===== TOP NAV ===== */
+        #topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 24px;
+            background: rgba(10,10,15,0.9);
+            border-bottom: 1px solid var(--border);
+            z-index: 50;
+            flex-shrink: 0;
+        }
+        .topbar-left {
+            font-family: 'Cinzel', serif;
+            font-size: 1.1rem;
+            font-weight: 900;
+            color: var(--gold);
+            letter-spacing: 0.12em;
+        }
+        .topbar-center {
+            display: flex;
+            gap: 28px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+        .stat { color: var(--muted); }
+        .stat span { color: var(--gold-light); font-weight: 600; font-size: 0.85rem; }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        #empireTag {
+            font-family: 'Cinzel', serif;
+            font-size: 0.72rem;
+            color: var(--gold);
+            letter-spacing: 0.1em;
+            text-align: right;
+        }
+        .logout-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--muted);
+            font-family: 'Cinzel', serif;
+            font-size: 0.62rem;
+            letter-spacing: 0.1em;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: border-color 0.2s, color 0.2s;
+        }
+        .logout-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+        /* ===== GLOBE AREA ===== */
+        #globeArea {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #globeSvg {
+            cursor: grab;
+        }
+        #globeSvg:active { cursor: grabbing; }
+
+        /* Country fill styles */
+        .country {
+            stroke: #2a2a3a;
+            stroke-width: 0.5px;
+            stroke-linejoin: round;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .country:hover { opacity: 0.75; }
+
+        .sphere-fill { fill: #070710; }
+        .sphere-border { fill: none; stroke: #2a2a3a; stroke-width: 1px; }
+        .graticule { fill: none; stroke: #1a1a28; stroke-width: 0.4px; }
+
+        /* ===== SEARCH BAR ===== */
+        #searchBar {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 20;
+        }
+        #searchInput {
+            background: rgba(10,10,15,0.85);
+            border: 1px solid var(--border);
+            color: var(--cream);
+            padding: 9px 16px;
+            font-family: 'Crimson Text', serif;
+            font-size: 1rem;
+            width: 220px;
+            outline: none;
+            backdrop-filter: blur(4px);
+        }
+        #searchInput:focus { border-color: var(--gold); }
+        #searchInput::placeholder { color: var(--muted); }
+        #searchBtn {
+            background: var(--gold);
+            border: none;
+            color: #0a0a0f;
+            padding: 9px 16px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+        }
+        #searchBtn:hover { background: var(--gold-light); }
+
+        /* ===== SIDE INFO PANEL ===== */
+        #infoPanel {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 240px;
+            background: rgba(10,10,15,0.92);
+            border: 1px solid var(--border);
+            padding: 20px;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #infoPanel.visible { opacity: 1; pointer-events: all; }
+
+        #infoPanel::before {
+            content: '';
+            position: absolute;
+            top: 6px; left: 6px;
+            width: 16px; height: 16px;
+            border-top: 1px solid var(--gold);
+            border-left: 1px solid var(--gold);
+        }
+
+        .info-name {
+            font-family: 'Cinzel', serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--gold-light);
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+            color: var(--muted);
+        }
+        .info-row span { color: var(--cream); }
+        .info-owner { margin: 12px 0 8px; font-size: 0.8rem; color: var(--muted); }
+        .info-owner em { color: var(--gold); font-style: normal; }
+
+        .claim-btn {
+            width: 100%;
+            padding: 10px;
+            background: var(--gold);
+            color: #0a0a0f;
+            border: none;
+            font-family: 'Cinzel', serif;
+            font-size: 0.72rem;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            margin-top: 8px;
+            text-transform: uppercase;
+            transition: background 0.2s;
+        }
+        .claim-btn:hover { background: var(--gold-light); }
+        .claim-btn.attack { background: var(--red); color: #fff; }
+        .claim-btn.attack:hover { background: #e74c3c; }
+        .claim-btn.owned { background: var(--border); color: var(--muted); cursor: not-allowed; }
+
+        /* Level badges */
+        .level-badges {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .lvl-pip {
+            width: 20px; height: 6px;
+            background: var(--border);
+            border-radius: 1px;
+        }
+        .lvl-pip.active { background: var(--gold); }
+
+        /* Upgrade btn */
+        .upgrade-btn {
+            width: 100%;
+            padding: 8px;
+            background: transparent;
+            border: 1px solid var(--green);
+            color: var(--green);
+            font-family: 'Cinzel', serif;
+            font-size: 0.68rem;
+            letter-spacing: 0.1em;
+            cursor: pointer;
+            margin-top: 6px;
+            transition: background 0.2s;
+        }
+        .upgrade-btn:hover { background: rgba(39,174,96,0.1); }
+
+        /* ===== BATTLE MODAL ===== */
+        #battleModal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+        #battleModal.open { display: flex; }
+
+        .battle-box {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            width: 480px;
+            max-width: 95vw;
+            padding: 36px;
+            position: relative;
+            text-align: center;
+        }
+        .battle-box::before {
+            content: '';
+            position: absolute;
+            top: 6px; left: 6px; right: 6px; bottom: 6px;
+            border: 1px solid rgba(201,168,76,0.1);
+            pointer-events: none;
+        }
+
+        .battle-title {
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem;
+            color: var(--gold);
+            letter-spacing: 0.15em;
+            margin-bottom: 6px;
+        }
+        .battle-sub {
+            color: var(--muted);
+            font-style: italic;
+            font-size: 0.9rem;
+            margin-bottom: 24px;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 24px;
+            margin-bottom: 22px;
+        }
+        .score-side { font-family: 'Cinzel', serif; }
+        .score-side .s-name { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 4px; }
+        .score-side .s-num { font-size: 2.2rem; color: var(--gold-light); line-height: 1; }
+        .score-sep { font-size: 1.4rem; color: var(--border); }
+
+        .rps-choices {
+            display: flex;
+            gap: 14px;
+            justify-content: center;
+            margin-bottom: 18px;
+        }
+        .rps-btn {
+            width: 80px; height: 80px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            color: var(--cream);
+            font-size: 2.2rem;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.15s, background 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+        }
+        .rps-btn span.lbl {
+            font-family: 'Cinzel', serif;
+            font-size: 0.55rem;
+            color: var(--muted);
+            letter-spacing: 0.08em;
+        }
+        .rps-btn:hover { border-color: var(--gold); background: rgba(201,168,76,0.07); transform: translateY(-2px); }
+        .rps-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
+
+        .timer-bar-wrap {
+            height: 4px;
+            background: var(--border);
+            margin-bottom: 14px;
+            overflow: hidden;
+        }
+        #timerBar {
+            height: 100%;
+            background: var(--gold);
+            width: 100%;
+            transition: width linear;
+        }
+        #timerText {
+            font-family: 'Cinzel', serif;
+            font-size: 0.7rem;
+            color: var(--muted);
+            letter-spacing: 0.12em;
+            margin-bottom: 10px;
+        }
+
+        .round-result {
+            font-size: 1.1rem;
+            min-height: 28px;
+            color: var(--cream);
+            margin-bottom: 14px;
+        }
+        .round-result.win { color: var(--green); }
+        .round-result.lose { color: var(--red); }
+        .round-result.draw { color: var(--gold); }
+
+        .battle-log {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-style: italic;
+            min-height: 22px;
+            margin-bottom: 10px;
+        }
+
+        .battle-close-btn {
+            display: none;
+            margin: 12px auto 0;
+            padding: 11px 28px;
+            background: var(--gold);
+            border: none;
+            color: #0a0a0f;
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            letter-spacing: 0.15em;
+            cursor: pointer;
+        }
+        .battle-close-btn:hover { background: var(--gold-light); }
+
+        /* ===== TOAST ===== */
+        #toast {
+            position: fixed;
+            bottom: 28px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: rgba(10,10,15,0.95);
+            border: 1px solid var(--border);
+            color: var(--cream);
+            padding: 11px 22px;
+            font-family: 'Cinzel', serif;
+            font-size: 0.75rem;
+            letter-spacing: 0.1em;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+        }
+        #toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* ===== LEGEND ===== */
+        #legend {
+            position: absolute;
+            bottom: 18px;
+            left: 18px;
+            z-index: 20;
+            font-family: 'Cinzel', serif;
+            font-size: 0.62rem;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+        .legend-dot { width: 12px; height: 12px; border-radius: 2px; }
+
+        /* Loading */
+        #loading {
+            position: absolute;
+            font-family: 'Cinzel', serif;
+            font-size: 0.85rem;
+            color: var(--gold);
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            z-index: 10;
+            text-align: center;
+        }
+        .load-spinner {
+            width: 32px; height: 32px;
+            border: 2px solid var(--border);
+            border-top-color: var(--gold);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 12px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topbar">
+    <div class="topbar-left">♛ EMPIRE GLOBE</div>
+    <div class="topbar-center">
+        <div class="stat">GOLD <span id="moneyDisplay">500</span></div>
+        <div class="stat">TERRITORIES <span id="territoriesDisplay">0</span></div>
+        <div class="stat">WINS <span id="winsDisplay">0</span></div>
+        <div class="stat">LOSSES <span id="lossesDisplay">0</span></div>
+    </div>
+    <div class="topbar-right">
+        <div id="empireTag">
+            <div id="empireNameDisplay" style="font-size:0.85rem; color:var(--gold-light);">—</div>
+            <div id="tagDisplay" style="font-size:0.65rem; color:var(--muted); margin-top:2px;">Loading...</div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()">RETREAT</button>
+    </div>
+</div>
+
+<!-- GLOBE AREA -->
+<div id="globeArea">
+    <div id="loading">
+        <div class="load-spinner"></div>
+        LOADING WORLD MAP...
+    </div>
+    <svg id="globeSvg"></svg>
+
+    <!-- SEARCH -->
+    <div id="searchBar">
+        <input type="text" id="searchInput" placeholder="Search country...">
+        <button id="searchBtn" onclick="searchCountry()">FIND</button>
+    </div>
+
+    <!-- INFO PANEL -->
+    <div id="infoPanel">
+        <div class="info-name" id="infoPanelName">—</div>
+        <div class="info-row">Population <span id="infoPop">—</span></div>
+        <div class="info-row">Income/turn <span id="infoIncome">—</span></div>
+        <div class="info-owner" id="infoOwner">Unclaimed</div>
+        <div class="level-badges" id="infoBadges"></div>
+        <button class="claim-btn" id="claimBtn" onclick="handleClaimOrAttack()">—</button>
+        <button class="upgrade-btn" id="upgradeBtn" onclick="upgradeTerritory()" style="display:none">⬆ UPGRADE TERRITORY</button>
+    </div>
+
+    <!-- LEGEND -->
+    <div id="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#1a2a4a"></div> Unclaimed</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c9a84c"></div> Your Territory</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#8b2020"></div> Enemy Territory</div>
+    </div>
+</div>
+
+<!-- BATTLE MODAL -->
+<div id="battleModal">
+    <div class="battle-box">
+        <div class="battle-title">⚔ TERRITORIAL BATTLE</div>
+        <div class="battle-sub" id="battleSubtitle">Engaging...</div>
+        <div class="score-board">
+            <div class="score-side">
+                <div class="s-name">YOU</div>
+                <div class="s-num" id="myScore">0</div>
+            </div>
+            <div class="score-sep">vs</div>
+            <div class="score-side">
+                <div class="s-name">DEFENDER</div>
+                <div class="s-num" id="theirScore">0</div>
+            </div>
+        </div>
+        <div class="timer-bar-wrap"><div id="timerBar"></div></div>
+        <div id="timerText">Choose within 5 seconds...</div>
+        <div class="rps-choices">
+            <button class="rps-btn" onclick="rpsChoose('rock')">✊<span class="lbl">ROCK</span></button>
+            <button class="rps-btn" onclick="rpsChoose('paper')">🖐<span class="lbl">PAPER</span></button>
+            <button class="rps-btn" onclick="rpsChoose('scissors')">✌<span class="lbl">SCISSORS</span></button>
+        </div>
+        <div class="round-result" id="roundResult"></div>
+        <div class="battle-log" id="battleLog">First to 3 wins claims the territory!</div>
+        <button class="battle-close-btn" id="battleCloseBtn" onclick="closeBattle()">RETURN TO MAP</button>
+    </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<!-- FIREBASE + GAME LOGIC -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
+import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
+import { getFirestore, doc, getDoc, updateDoc, setDoc, onSnapshot, collection, query, where } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+
+const firebaseConfig = {
+    apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
+    authDomain: "edulinki.firebaseapp.com",
+    projectId: "edulinki",
+    storageBucket: "edulinki.firebasestorage.app",
+    messagingSenderId: "248886466474",
+    appId: "1:248886466474:web:160043201a6b28bafbbdd3"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// ======= Game State =======
+let currentUser = null;
+let playerData = null;
+let allTerritories = {}; // countryName -> { owner, ownerEmpire, level }
+let selectedCountry = null;
+
+const UPGRADE_COSTS = [0, 200, 500, 1000, 2000]; // Level 1-5 upgrade costs
+
+// Auth guard
+onAuthStateChanged(auth, async (user) => {
+    if (!user) { window.location.href = 'index.html'; return; }
+    currentUser = user;
+    const snap = await getDoc(doc(db, 'players', user.uid));
+    if (!snap.exists()) { window.location.href = 'index.html'; return; }
+    playerData = snap.data();
+    updateUI();
+    listenTerritories();
+});
+
+window.doLogout = async function() {
+    await signOut(auth);
+    window.location.href = 'index.html';
+};
+
+function updateUI() {
+    if (!playerData) return;
+    document.getElementById('moneyDisplay').textContent = playerData.money || 0;
+    document.getElementById('territoriesDisplay').textContent = (playerData.territories || []).length;
+    document.getElementById('winsDisplay').textContent = playerData.wins || 0;
+    document.getElementById('lossesDisplay').textContent = playerData.losses || 0;
+    document.getElementById('empireNameDisplay').textContent = playerData.empire || '—';
+    document.getElementById('tagDisplay').textContent = '@' + (playerData.tag || '?');
+}
+
+// Real-time listen to territories
+function listenTerritories() {
+    onSnapshot(collection(db, 'territories'), (snap) => {
+        allTerritories = {};
+        snap.forEach(d => { allTerritories[d.id] = d.data(); });
+        refreshGlobeColors();
+    });
+}
+
+async function refreshPlayerData() {
+    const snap = await getDoc(doc(db, 'players', currentUser.uid));
+    if (snap.exists()) { playerData = snap.data(); updateUI(); }
+}
+
+// ======= COUNTRY INCOME MAP (estimated) =======
+const COUNTRY_INCOME = {
+    "United States": 300, "China": 280, "Germany": 150, "Japan": 140,
+    "India": 120, "Brazil": 100, "United Kingdom": 130, "France": 120,
+    "Russia": 110, "Canada": 100, "Australia": 90, "South Korea": 80,
+    "default": 20
+};
+const COUNTRY_POP = {
+    "United States": "331M", "China": "1.4B", "India": "1.38B", "Brazil": "212M",
+    "Russia": "145M", "Japan": "126M", "Germany": "83M", "United Kingdom": "67M",
+    "France": "67M", "Australia": "26M", "default": "—"
+};
+
+function getIncome(name, level) {
+    const base = COUNTRY_INCOME[name] || COUNTRY_INCOME["default"];
+    return Math.floor(base * (level || 1) * 1.5);
+}
+
+// ======= D3 GLOBE =======
+const svg = d3.select("#globeSvg");
+let W, H;
+
+function sizeGlobe() {
+    const area = document.getElementById('globeArea');
+    W = area.clientWidth;
+    H = area.clientHeight;
+    svg.attr("width", W).attr("height", H);
+}
+sizeGlobe();
+
+const projection = d3.geoOrthographic()
+    .scale(Math.min(W, H) * 0.42)
+    .translate([W / 2, H / 2])
+    .clipAngle(90)
+    .rotate([0, -20]);
+
+const geoPath = d3.geoPath().projection(projection);
+const graticule = d3.geoGraticule10();
+
+svg.append("path").datum({type:"Sphere"}).attr("class","sphere-fill").attr("d", geoPath);
+svg.append("path").datum(graticule).attr("class","graticule").attr("d", geoPath);
+
+let countriesGroup = svg.append("g").attr("id","countriesGroup");
+
+svg.append("path").datum({type:"Sphere"}).attr("class","sphere-border").attr("d", geoPath);
+
+let worldData = null;
+
+function countryColor(name) {
+    const t = allTerritories[name];
+    if (!t) return "#1a2a4a";
+    if (playerData && t.owner === currentUser?.uid) return "#c9a84c";
+    return "#6b1010";
+}
+
+function refreshGlobeColors() {
+    if (!worldData) return;
+    countriesGroup.selectAll(".country").style("fill", d => countryColor(d.properties.name));
+}
+
+d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
+    document.getElementById('loading').remove();
+    worldData = world;
+    const features = topojson.feature(world, world.objects.countries).features;
+
+    countriesGroup.selectAll(".country")
+        .data(features)
+        .enter().append("path")
+        .attr("class", "country")
+        .attr("d", geoPath)
+        .style("fill", d => countryColor(d.properties.name))
+        .on("click", (event, d) => selectCountry(d))
+        .append("title").text(d => d.properties.name || "Unknown");
+
+    // Drag to rotate
+    let dragStart = null;
+    svg.call(d3.drag()
+        .on("start", (event) => { dragStart = [event.x, event.y]; })
+        .on("drag", (event) => {
+            if (!dragStart) return;
+            const dx = event.x - dragStart[0];
+            const dy = event.y - dragStart[1];
+            const r = projection.rotate();
+            projection.rotate([r[0] + dx * 0.4, r[1] - dy * 0.4]);
+            dragStart = [event.x, event.y];
+            updateGlobe();
+        })
+    );
+
+    // Scroll to zoom
+    svg.on("wheel", (event) => {
+        event.preventDefault();
+        const s = projection.scale();
+        const newS = Math.max(80, Math.min(s - event.deltaY * 0.8, 2000));
+        projection.scale(newS);
+        updateGlobe();
+    });
+
+}).catch(err => {
+    document.getElementById('loading').innerHTML = "Failed to load map.";
+    console.error(err);
+});
+
+function updateGlobe() {
+    svg.selectAll("path.country, path.graticule, path.sphere-border, path.sphere-fill").attr("d", geoPath);
+}
+
+// ======= COUNTRY SELECTION =======
+function selectCountry(d) {
+    if (!currentUser || !playerData) return;
+    selectedCountry = d;
+    const name = d.properties.name || "Unknown Territory";
+    const t = allTerritories[name];
+    const level = t ? (t.level || 1) : 0;
+    const owned = t && t.owner === currentUser.uid;
+    const enemy = t && t.owner && t.owner !== currentUser.uid;
+
+    document.getElementById('infoPanelName').textContent = name;
+    document.getElementById('infoPop').textContent = COUNTRY_POP[name] || COUNTRY_POP["default"];
+    document.getElementById('infoIncome').textContent = `${getIncome(name, level)} Gold`;
+
+    // Ownership label
+    if (owned) {
+        document.getElementById('infoOwner').innerHTML = `Your Territory — <em>${playerData.empire}</em>`;
+    } else if (enemy) {
+        document.getElementById('infoOwner').innerHTML = `Owned by <em>${t.ownerEmpire || 'an empire'}</em>`;
+    } else {
+        document.getElementById('infoOwner').textContent = 'Unclaimed Territory';
+    }
+
+    // Level pips
+    const badges = document.getElementById('infoBadges');
+    badges.innerHTML = '';
+    for (let i = 1; i <= 5; i++) {
+        const pip = document.createElement('div');
+        pip.className = 'lvl-pip' + (i <= level ? ' active' : '');
+        badges.appendChild(pip);
+    }
+
+    // Action button
+    const btn = document.getElementById('claimBtn');
+    const upBtn = document.getElementById('upgradeBtn');
+    if (owned) {
+        btn.textContent = 'YOUR TERRITORY';
+        btn.className = 'claim-btn owned';
+        if (level < 5) {
+            const cost = UPGRADE_COSTS[level];
+            upBtn.textContent = `⬆ UPGRADE LVL ${level+1} — ${cost} GOLD`;
+            upBtn.style.display = 'block';
+        } else {
+            upBtn.style.display = 'none';
+        }
+    } else if (enemy) {
+        btn.textContent = '⚔ ATTACK';
+        btn.className = 'claim-btn attack';
+        upBtn.style.display = 'none';
+    } else {
+        btn.textContent = '⊕ CLAIM TERRITORY';
+        btn.className = 'claim-btn';
+        upBtn.style.display = 'none';
+    }
+
+    document.getElementById('infoPanel').classList.add('visible');
+}
+
+// ======= CLAIM / ATTACK =======
+window.handleClaimOrAttack = function() {
+    if (!selectedCountry || !currentUser || !playerData) return;
+    const name = selectedCountry.properties.name || "Unknown";
+    const t = allTerritories[name];
+    const owned = t && t.owner === currentUser.uid;
+    if (owned) return;
+
+    if (t && t.owner && t.owner !== currentUser.uid) {
+        startBattle(name, t.ownerEmpire || 'An Empire');
+    } else {
+        startBattle(name, null);
+    }
+};
+
+window.upgradeTerritory = async function() {
+    if (!selectedCountry || !currentUser || !playerData) return;
+    const name = selectedCountry.properties.name || "Unknown";
+    const t = allTerritories[name];
+    if (!t || t.owner !== currentUser.uid) return;
+    const level = t.level || 1;
+    if (level >= 5) return;
+    const cost = UPGRADE_COSTS[level];
+    if (playerData.money < cost) { showToast(`Need ${cost} Gold to upgrade!`); return; }
+    await updateDoc(doc(db, 'territories', name), { level: level + 1 });
+    await updateDoc(doc(db, 'players', currentUser.uid), { money: playerData.money - cost });
+    await refreshPlayerData();
+    showToast(`Territory upgraded to Level ${level+1}!`);
+    selectCountry(selectedCountry);
+};
+
+// ======= BATTLE SYSTEM =======
+let battleState = {
+    active: false,
+    countryName: null,
+    myWins: 0,
+    theirWins: 0,
+    roundNum: 0,
+    timerInterval: null,
+    choiceTimeout: null,
+    isAttack: false
+};
+
+function startBattle(countryName, defenderEmpire) {
+    battleState = { active: true, countryName, myWins: 0, theirWins: 0, roundNum: 0, isAttack: !!defenderEmpire };
+    document.getElementById('battleSubtitle').textContent = defenderEmpire
+        ? `Attacking ${defenderEmpire}'s territory: ${countryName}`
+        : `Claiming: ${countryName}`;
+    document.getElementById('myScore').textContent = '0';
+    document.getElementById('theirScore').textContent = '0';
+    document.getElementById('roundResult').textContent = '';
+    document.getElementById('battleLog').textContent = 'First to 3 wins claims the territory!';
+    document.getElementById('battleCloseBtn').style.display = 'none';
+    document.getElementById('battleModal').classList.add('open');
+    startRound();
+}
+
+function startRound() {
+    if (!battleState.active) return;
+    battleState.roundNum++;
+    const btns = document.querySelectorAll('.rps-btn');
+    btns.forEach(b => b.disabled = false);
+    document.getElementById('roundResult').textContent = '';
+    document.getElementById('roundResult').className = 'round-result';
+
+    let timeLeft = 5;
+    const timerBar = document.getElementById('timerBar');
+    timerBar.style.transition = 'none';
+    timerBar.style.width = '100%';
+    setTimeout(() => {
+        timerBar.style.transition = `width ${timeLeft}s linear`;
+        timerBar.style.width = '0%';
+    }, 50);
+
+    battleState.timerInterval = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timerText').textContent = `Choose within ${timeLeft} second${timeLeft !== 1 ? 's' : ''}...`;
+        if (timeLeft <= 0) {
+            clearInterval(battleState.timerInterval);
+            // Auto-choose random
+            const choices = ['rock','paper','scissors'];
+            rpsChoose(choices[Math.floor(Math.random() * 3)], true);
+        }
+    }, 1000);
+}
+
+window.rpsChoose = function(playerChoice, auto = false) {
+    if (!battleState.active) return;
+    clearInterval(battleState.timerInterval);
+    document.querySelectorAll('.rps-btn').forEach(b => b.disabled = true);
+
+    const choices = ['rock','paper','scissors'];
+    const aiChoice = choices[Math.floor(Math.random() * 3)];
+    const emojiMap = { rock: '✊', paper: '🖐', scissors: '✌' };
+
+    const win = (playerChoice === 'rock' && aiChoice === 'scissors') ||
+                (playerChoice === 'paper' && aiChoice === 'rock') ||
+                (playerChoice === 'scissors' && aiChoice === 'paper');
+    const draw = playerChoice === aiChoice;
+
+    const resultEl = document.getElementById('roundResult');
+    const log = document.getElementById('battleLog');
+    const prefix = auto ? '⏰ Time up! ' : '';
+
+    if (win) {
+        battleState.myWins++;
+        resultEl.textContent = `${prefix}${emojiMap[playerChoice]} vs ${emojiMap[aiChoice]} — You win this round!`;
+        resultEl.className = 'round-result win';
+    } else if (draw) {
+        resultEl.textContent = `${prefix}${emojiMap[playerChoice]} vs ${emojiMap[aiChoice]} — Draw!`;
+        resultEl.className = 'round-result draw';
+    } else {
+        battleState.theirWins++;
+        resultEl.textContent = `${prefix}${emojiMap[playerChoice]} vs ${emojiMap[aiChoice]} — You lost this round.`;
+        resultEl.className = 'round-result lose';
+    }
+
+    document.getElementById('myScore').textContent = battleState.myWins;
+    document.getElementById('theirScore').textContent = battleState.theirWins;
+    document.getElementById('timerText').textContent = `Round ${battleState.roundNum}`;
+
+    if (battleState.myWins >= 3) {
+        log.textContent = '🏆 Victory! Territory claimed!';
+        claimTerritory();
+    } else if (battleState.theirWins >= 3) {
+        log.textContent = '💀 Defeated! Your forces retreat.';
+        endBattle(false);
+    } else {
+        log.textContent = `Best of 5 — ${3 - battleState.myWins} wins needed`;
+        setTimeout(() => startRound(), 1800);
+    }
+};
+
+async function claimTerritory() {
+    battleState.active = false;
+    const name = battleState.countryName;
+    const level = (allTerritories[name]?.level) || 1;
+    const income = getIncome(name, level);
+
+    await setDoc(doc(db, 'territories', name), {
+        owner: currentUser.uid,
+        ownerEmpire: playerData.empire,
+        ownerTag: playerData.tag,
+        level: level,
+        name: name
+    });
+
+    const newTerritories = [...new Set([...(playerData.territories || []), name])];
+    await updateDoc(doc(db, 'players', currentUser.uid), {
+        territories: newTerritories,
+        wins: (playerData.wins || 0) + 1,
+        money: (playerData.money || 0) + income
+    });
+
+    await refreshPlayerData();
+    showToast(`Territory claimed! +${income} Gold`);
+    endBattle(true);
+}
+
+async function endBattle(won) {
+    battleState.active = false;
+    if (!won) {
+        await updateDoc(doc(db, 'players', currentUser.uid), {
+            losses: (playerData.losses || 0) + 1
+        });
+        await refreshPlayerData();
+    }
+    document.getElementById('battleCloseBtn').style.display = 'inline-block';
+}
+
+window.closeBattle = function() {
+    battleState.active = false;
+    clearInterval(battleState.timerInterval);
+    document.getElementById('battleModal').classList.remove('open');
+    refreshGlobeColors();
+    if (selectedCountry) selectCountry(selectedCountry);
+};
+
+// ======= SEARCH =======
+window.searchCountry = function() {
+    if (!worldData) return;
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!query) return;
+    const features = topojson.feature(worldData, worldData.objects.countries).features;
+    const found = features.find(f => (f.properties.name || '').toLowerCase().includes(query));
+    if (!found) { showToast('Country not found.'); return; }
+
+    const centroid = d3.geoCentroid(found);
+    d3.transition().duration(1200).ease(d3.easeCubicInOut).tween("fly", () => {
+        const interp = d3.interpolate(projection.rotate(), [-centroid[0], -centroid[1]]);
+        return t => { projection.rotate(interp(t)); updateGlobe(); };
+    }).on("end", () => selectCountry(found));
+};
+
+document.getElementById('searchInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') window.searchCountry();
+});
+
+// ======= TOAST =======
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+}
+window.showToast = showToast;
+
+// ======= PASSIVE INCOME (every 60s) =======
+setInterval(async () => {
+    if (!currentUser || !playerData) return;
+    const territories = playerData.territories || [];
+    if (territories.length === 0) return;
+    let totalIncome = 0;
+    territories.forEach(name => {
+        const t = allTerritories[name];
+        if (t && t.owner === currentUser.uid) {
+            totalIncome += getIncome(name, t.level || 1);
+        }
+    });
+    if (totalIncome > 0) {
+        await updateDoc(doc(db, 'players', currentUser.uid), {
+            money: (playerData.money || 0) + totalIncome
+        });
+        await refreshPlayerData();
+        showToast(`Income: +${totalIncome} Gold collected`);
+    }
+}, 60000);
+
+</script>
+</body>
+</html>
