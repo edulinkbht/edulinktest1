@@ -196,7 +196,17 @@
 
 <div id="globeArea">
     <div id="loading"><div class="load-spinner"></div>LOADING WORLD MAP...</div>
-    <svg id="globeSvg"></svg>
+    <svg id="globeSvg">
+    <defs>
+        <pattern id="moonPattern" x="0" y="0" width="1" height="1" patternContentUnits="objectBoundingBox">
+            <image href="https://upload.wikimedia.org/wikipedia/commons/e/e1/FullMoon2010.jpg" x="0" y="0" width="1" height="1" preserveAspectRatio="xMidYMid slice" />
+        </pattern>
+        <filter id="moonGlow">
+            <feGaussianBlur stdDeviation="2" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
+    </defs>
+</svg>
     <div id="searchBar">
         <input type="text" id="searchInput" placeholder="Search territory or ocean...">
         <button id="searchBtn" onclick="searchCountry()">FIND</button>
@@ -663,17 +673,24 @@ window.switchCelestial = function(type) {
     if (type === 'moon') {
         countriesGroup.style("display", "none");
         labelsGroup.style("display", "none");
-        svg.select(".sphere-fill").style("fill", "#111");
-        svg.select(".sphere-border").style("stroke", "#444");
+        svg.select(".sphere-fill")
+            .style("fill", "url(#moonPattern)")
+            .style("opacity", "0.8");
+        svg.select(".sphere-border").style("stroke", "#888");
+        svg.select(".graticule").style("opacity", "0.2");
     } else {
         countriesGroup.style("display", "block");
         labelsGroup.style("display", "block");
-        svg.select(".sphere-fill").style("fill", "#0d2a4a");
+        svg.select(".sphere-fill")
+            .style("fill", "#0d2a4a")
+            .style("opacity", "1");
         svg.select(".sphere-border").style("stroke", "var(--border)");
+        svg.select(".graticule").style("opacity", "0.5");
     }
     
     drawOceanZones();
     refreshGlobeColors();
+    updateGlobe();
 };
 
 // === D3 GLOBE ===
@@ -698,14 +715,14 @@ const oceanPathData = {};
 function tColor(name, isOcean) {
     const t = allTerritories[name];
     if (!t) {
-        if (currentCelestial === 'moon') return "#333";
+        if (currentCelestial === 'moon') return "rgba(255,255,255,0.15)"; // Lighter, semi-transparent for moon
         return isOcean ? "#0d2a4a" : "#1a2a4a";
     }
     
     const isMine = t.owner === currentUser?.uid;
     
     if (currentCelestial === 'moon') {
-        return isMine ? "#c9a84c" : "#6b1010";
+        return isMine ? "rgba(201,168,76,0.6)" : "rgba(107,16,16,0.6)"; // Semi-transparent for moon
     }
     
     if (isOcean) {
@@ -733,47 +750,73 @@ function refreshGlobeColors() {
 }
 
 function refreshContinentLabels() {
-    if (currentCelestial !== 'earth') {
-        labelsGroup.selectAll(".continent-label").remove();
-        return;
-    }
-    const conquered = [];
-    Object.entries(CONTINENTS).forEach(([name, countries]) => {
-        if (!countries.length) return;
-        const first = allTerritories[countries[0]];
-        if (!first || !first.owner) return;
-        const owner = first.owner;
-        const allOwned = countries.every(c => {
-            const t = allTerritories[c];
-            return t && t.owner === owner;
-        });
-        if (allOwned) {
-            conquered.push({
-                name,
-                ownerTag: first.ownerTag,
-                ownerUid: owner,
-                center: CONTINENT_CENTERS[name]
+    labelsGroup.selectAll(".continent-label").remove();
+    
+    if (currentCelestial === 'earth') {
+        const conquered = [];
+        Object.entries(CONTINENTS).forEach(([name, countries]) => {
+            if (!countries.length) return;
+            const first = allTerritories[countries[0]];
+            if (!first || !first.owner) return;
+            const owner = first.owner;
+            const allOwned = countries.every(c => {
+                const t = allTerritories[c];
+                return t && t.owner === owner;
             });
-        }
-    });
+            if (allOwned) {
+                conquered.push({
+                    name,
+                    ownerTag: first.ownerTag,
+                    ownerUid: owner,
+                    center: CONTINENT_CENTERS[name]
+                });
+            }
+        });
 
-    const labels = labelsGroup.selectAll(".continent-label").data(conquered, d => d.name);
-    
-    labels.exit().remove();
-    
-    const enter = labels.enter().append("g").attr("class", "continent-label");
-    enter.append("text").attr("class", "c-tag")
-        .attr("text-anchor", "middle")
-        .style("font-family", "'Cinzel', serif")
-        .style("font-weight", "900")
-        .style("font-size", "10px")
-        .style("letter-spacing", "0.1em")
-        .style("text-shadow", "0 0 4px #fff, 0 0 4px #fff");
-    
-    const allLabels = enter.merge(labels);
-    allLabels.select("text")
-        .text(d => `👑 ${d.ownerTag.toUpperCase()}`)
-        .style("fill", d => d.ownerUid === currentUser?.uid ? "#c9a84c" : "#6b1010");
+        const labels = labelsGroup.selectAll(".continent-label").data(conquered, d => d.name);
+        const enter = labels.enter().append("g").attr("class", "continent-label");
+        enter.append("text").attr("class", "c-tag")
+            .attr("text-anchor", "middle")
+            .style("font-family", "'Cinzel', serif")
+            .style("font-weight", "900")
+            .style("font-size", "10px")
+            .style("letter-spacing", "0.1em")
+            .style("text-shadow", "0 0 4px #fff, 0 0 4px #fff");
+        
+        const allLabels = enter.merge(labels);
+        allLabels.select("text")
+            .text(d => `👑 ${d.ownerTag.toUpperCase()}`)
+            .style("fill", d => d.ownerUid === currentUser?.uid ? "#c9a84c" : "#6b1010");
+    } else {
+        // Moon Labels for owned territories
+        const ownedMoon = [];
+        MOON_ZONES.forEach(mz => {
+            const t = allTerritories[mz.name];
+            if (t && t.owner) {
+                ownedMoon.push({
+                    name: mz.name,
+                    ownerTag: t.ownerTag,
+                    ownerUid: t.owner,
+                    center: mz.coords
+                });
+            }
+        });
+
+        const labels = labelsGroup.selectAll(".continent-label").data(ownedMoon, d => d.name);
+        const enter = labels.enter().append("g").attr("class", "continent-label");
+        enter.append("text").attr("class", "c-tag")
+            .attr("text-anchor", "middle")
+            .style("font-family", "'Cinzel', serif")
+            .style("font-weight", "900")
+            .style("font-size", "8px")
+            .style("letter-spacing", "0.05em")
+            .style("text-shadow", "0 0 3px #000, 0 0 3px #000");
+        
+        const allLabels = enter.merge(labels);
+        allLabels.select("text")
+            .text(d => `${d.ownerTag.toUpperCase()}`)
+            .style("fill", d => d.ownerUid === currentUser?.uid ? "#c9a84c" : "#ff4d4d");
+    }
     
     updateGlobe();
 }
@@ -785,13 +828,14 @@ function drawOceanZones() {
     const zones = currentCelestial === 'earth' ? OCEAN_ZONES : MOON_ZONES;
     
     zones.forEach(oz => {
-        const feat = d3.geoCircle().center(oz.coords).radius(currentCelestial === 'earth' ? 11 : 14)();
+        const feat = d3.geoCircle().center(oz.coords).radius(currentCelestial === 'earth' ? 11 : 6)();
         oceanPathData[oz.id] = feat;
         oceansGroup.append("path").datum(feat)
             .attr("class","ocean-zone").attr("data-id",oz.id)
             .attr("d",geoPath)
-            .style("fill", currentCelestial === 'earth' ? "rgba(13,42,74,0.5)" : "rgba(100,100,100,0.3)")
-            .style("stroke", currentCelestial === 'earth' ? "rgba(74,159,212,0.3)" : "rgba(255,255,255,0.2)")
+            .style("fill", currentCelestial === 'earth' ? "rgba(13,42,74,0.5)" : "rgba(255,255,255,0.2)")
+            .style("stroke", currentCelestial === 'earth' ? "rgba(74,159,212,0.3)" : "rgba(255,255,255,0.5)")
+            .style("stroke-width", currentCelestial === 'earth' ? "1px" : "2px")
             .on("click", () => selectTerritoryByData(oz.name, true, oz));
     });
 }
