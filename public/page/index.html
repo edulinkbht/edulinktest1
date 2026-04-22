@@ -9,19 +9,19 @@
     <script src="https://unpkg.com/topojson-client@3"></script>
     <style>
         :root {
-            --bg: #0a0a0f; --surface: #12121a; --border: #2a2a3a;
-            --gold: #c9a84c; --gold-light: #e8c97a; --cream: #f3efe6;
-            --muted: #6b6b7a; --red: #c0392b; --green: #27ae60; --blue: #1a5a8b;
+            --bg: #f5f7fa; --surface: #ffffff; --border: #d1d9e6;
+            --gold: #b8860b; --gold-light: #daa520; --cream: #2d3436;
+            --muted: #636e72; --red: #d63031; --green: #27ae60; --blue: #0984e3;
         }
         * { box-sizing:border-box; margin:0; padding:0; }
         body { background:var(--bg); color:var(--cream); font-family:'Crimson Text',serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
 
         /* TOP BAR */
-        #topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 24px; background:rgba(10,10,15,0.95); border-bottom:1px solid var(--border); z-index:50; flex-shrink:0; }
+        #topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 24px; background:rgba(255,255,255,0.95); border-bottom:1px solid var(--border); z-index:50; flex-shrink:0; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
         .topbar-left { font-family:'Cinzel',serif; font-size:1.1rem; font-weight:900; color:var(--gold); letter-spacing:0.12em; }
         .topbar-center { display:flex; gap:24px; font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; }
         .stat { color:var(--muted); }
-        .stat span { color:var(--gold-light); font-weight:600; font-size:0.85rem; }
+        .stat span { color:var(--gold); font-weight:600; font-size:0.85rem; }
         .topbar-right { display:flex; align-items:center; gap:10px; }
         #empireTag { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold); letter-spacing:0.1em; text-align:right; }
         .nav-btn { background:none; border:1px solid var(--border); color:var(--muted); font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:0.1em; padding:5px 10px; cursor:pointer; transition:border-color 0.2s,color 0.2s; position:relative; }
@@ -30,118 +30,127 @@
         .badge.show { display:flex; }
 
         /* GLOBE */
-        #globeArea { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+        #globeArea { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; background: radial-gradient(circle, #ffffff 0%, #e1e8f0 100%); }
         #globeSvg { cursor:grab; }
         #globeSvg:active { cursor:grabbing; }
-        .country { stroke:#2a2a3a; stroke-width:0.5px; stroke-linejoin:round; cursor:pointer; transition:opacity 0.15s; }
+        .country { stroke:#ffffff; stroke-width:0.5px; stroke-linejoin:round; cursor:pointer; transition:opacity 0.15s; }
         .country:hover { opacity:0.75; }
-        .ocean-zone { stroke:#1a3a5a; stroke-width:0.8px; cursor:pointer; }
-        .ocean-zone:hover { stroke:#4a9fd4; }
-        .sphere-fill { fill:#060c14; }
-        .sphere-border { fill:none; stroke:#1a2a3a; stroke-width:1px; }
-        .graticule { fill:none; stroke:#0e1a28; stroke-width:0.4px; }
+        .ocean-zone { stroke:#a5b1c2; stroke-width:0.8px; cursor:pointer; }
+        .ocean-zone:hover { stroke:var(--blue); }
+        .sphere-fill { fill:#eef2f7; }
+        .sphere-border { fill:none; stroke:#d1d9e6; stroke-width:1px; }
+        .graticule { fill:none; stroke:#d1d9e6; stroke-width:0.4px; }
 
         /* SEARCH */
-        #searchBar { position:absolute; top:18px; left:50%; transform:translateX(-50%); display:flex; z-index:20; }
-        #searchInput { background:rgba(10,10,15,0.88); border:1px solid var(--border); border-right:none; color:var(--cream); padding:9px 16px; font-family:'Crimson Text',serif; font-size:1rem; width:200px; outline:none; }
+        #searchBar { position:absolute; top:18px; left:50%; transform:translateX(-50%); display:flex; z-index:20; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        #searchInput { background:rgba(255,255,255,0.9); border:1px solid var(--border); border-right:none; color:var(--cream); padding:9px 16px; font-family:'Crimson Text',serif; font-size:1rem; width:200px; outline:none; }
         #searchInput:focus { border-color:var(--gold); }
         #searchInput::placeholder { color:var(--muted); }
-        #searchBtn { background:var(--gold); border:none; color:#0a0a0f; padding:9px 14px; font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.1em; cursor:pointer; }
+        #searchBtn { background:var(--gold); border:none; color:#fff; padding:9px 14px; font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.1em; cursor:pointer; }
         #searchBtn:hover { background:var(--gold-light); }
 
         /* INFO PANEL */
-        #infoPanel { position:absolute; right:18px; top:50%; transform:translateY(-50%); width:250px; background:rgba(8,8,14,0.96); border:1px solid var(--border); padding:20px; z-index:20; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+        #infoPanel { position:absolute; right:18px; top:50%; transform:translateY(-50%); width:250px; background:rgba(255,255,255,0.96); border:1px solid var(--border); padding:20px; z-index:20; opacity:0; pointer-events:none; transition:opacity 0.3s; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border-radius: 4px; }
         #infoPanel.visible { opacity:1; pointer-events:all; }
-        #infoPanel::before { content:''; position:absolute; top:6px; left:6px; width:16px; height:16px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }
-        .info-name { font-family:'Cinzel',serif; font-size:0.88rem; font-weight:600; color:var(--gold-light); letter-spacing:0.08em; margin-bottom:10px; }
+        #infoPanel::before { content:''; position:absolute; top:6px; left:6px; width:16px; height:16px; border-top:2px solid var(--gold); border-left:2px solid var(--gold); }
+        .info-name { font-family:'Cinzel',serif; font-size:0.88rem; font-weight:600; color:var(--gold); letter-spacing:0.08em; margin-bottom:10px; }
         .info-row { display:flex; justify-content:space-between; font-size:0.84rem; margin-bottom:5px; color:var(--muted); }
         .info-row span { color:var(--cream); }
         .info-owner { margin:10px 0 8px; font-size:0.8rem; color:var(--muted); }
-        .info-owner em { color:var(--gold); font-style:normal; }
+        .info-owner em { color:var(--gold); font-style:normal; font-weight: 600; }
         .level-badges { display:flex; gap:4px; margin:6px 0; }
         .lvl-pip { width:20px; height:6px; background:var(--border); border-radius:1px; }
         .lvl-pip.active { background:var(--gold); }
-        .panel-btn { width:100%; padding:9px; border:none; font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.12em; cursor:pointer; margin-top:7px; text-transform:uppercase; transition:background 0.2s; }
-        .panel-btn.gold { background:var(--gold); color:#0a0a0f; }
+        .panel-btn { width:100%; padding:9px; border:none; font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.12em; cursor:pointer; margin-top:7px; text-transform:uppercase; transition:background 0.2s; border-radius: 2px; }
+        .panel-btn.gold { background:var(--gold); color:#fff; }
         .panel-btn.gold:hover { background:var(--gold-light); }
         .panel-btn.attack { background:var(--red); color:#fff; }
-        .panel-btn.attack:hover { background:#e74c3c; }
+        .panel-btn.attack:hover { background:#ff7675; }
         .panel-btn.owned { background:var(--border); color:var(--muted); cursor:not-allowed; }
         .panel-btn.green { background:transparent; border:1px solid var(--green); color:var(--green); }
         .panel-btn.green:hover { background:rgba(39,174,96,0.1); }
-        .panel-btn.blue { background:transparent; border:1px solid #4a9fd4; color:#4a9fd4; }
-        .panel-btn.blue:hover { background:rgba(74,159,212,0.1); }
+        .panel-btn.blue { background:transparent; border:1px solid var(--blue); color:var(--blue); }
+        .panel-btn.blue:hover { background:rgba(9,132,227,0.1); }
+
+        /* SIDE PANELS */
+        #leftPanel { position:absolute; left:18px; top:50%; transform:translateY(-50%); width:200px; background:rgba(255,255,255,0.9); border:1px solid var(--border); padding:15px; z-index:20; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 4px; }
+        .panel-title { font-family:'Cinzel',serif; font-size:0.75rem; color:var(--gold); letter-spacing:0.1em; margin-bottom:12px; border-bottom:1px solid var(--border); padding-bottom:5px; text-transform:uppercase; }
+        .user-item { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:0.85rem; }
+        .user-color { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+        .user-info { display:flex; flex-direction:column; }
+        .user-name { font-weight:600; font-size:0.8rem; }
+        .user-empire { font-size:0.65rem; color:var(--muted); font-style:italic; }
 
         /* MODAL BASE */
-        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:100; align-items:center; justify-content:center; }
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); backdrop-filter: blur(4px); z-index:100; align-items:center; justify-content:center; }
         .modal-overlay.open { display:flex; }
-        .modal-box { background:var(--surface); border:1px solid var(--border); padding:32px; position:relative; text-align:center; max-width:95vw; }
-        .modal-box::before { content:''; position:absolute; top:6px; left:6px; right:6px; bottom:6px; border:1px solid rgba(201,168,76,0.08); pointer-events:none; }
+        .modal-box { background:var(--surface); border:1px solid var(--border); padding:32px; position:relative; text-align:center; max-width:95vw; box-shadow: 0 20px 50px rgba(0,0,0,0.2); border-radius: 8px; }
+        .modal-box::before { content:''; position:absolute; top:6px; left:6px; right:6px; bottom:6px; border:1px solid rgba(184,134,11,0.1); pointer-events:none; }
         .modal-title { font-family:'Cinzel',serif; font-size:1.15rem; color:var(--gold); letter-spacing:0.15em; margin-bottom:6px; }
         .modal-sub { color:var(--muted); font-style:italic; font-size:0.9rem; margin-bottom:20px; }
         .confirm-btns { display:flex; gap:12px; margin-top:16px; justify-content:center; }
-        .confirm-btn { padding:10px 24px; font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.12em; cursor:pointer; border:none; }
+        .confirm-btn { padding:10px 24px; font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.12em; cursor:pointer; border:none; border-radius: 2px; }
         .confirm-btn.yes { background:var(--red); color:#fff; }
-        .confirm-btn.yes:hover { background:#e74c3c; }
+        .confirm-btn.yes:hover { background:#ff7675; }
         .confirm-btn.no { background:var(--border); color:var(--muted); }
-        .confirm-btn.no:hover { background:#3a3a4a; color:var(--cream); }
+        .confirm-btn.no:hover { background:#b2bec3; color:var(--cream); }
 
         /* BATTLE */
         .score-board { display:flex; justify-content:center; align-items:center; gap:24px; margin-bottom:18px; }
         .score-side { font-family:'Cinzel',serif; }
         .score-side .s-name { font-size:0.7rem; color:var(--muted); letter-spacing:0.1em; margin-bottom:4px; }
-        .score-side .s-num { font-size:2.2rem; color:var(--gold-light); line-height:1; }
+        .score-side .s-num { font-size:2.2rem; color:var(--gold); line-height:1; }
         .score-sep { font-size:1.4rem; color:var(--border); }
         .rps-choices { display:flex; gap:14px; justify-content:center; margin-bottom:14px; }
-        .rps-btn { width:80px; height:80px; background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--cream); font-size:2.2rem; cursor:pointer; transition:border-color 0.2s,transform 0.15s,background 0.2s; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
+        .rps-btn { width:80px; height:80px; background:rgba(0,0,0,0.03); border:1px solid var(--border); color:var(--cream); font-size:2.2rem; cursor:pointer; transition:border-color 0.2s,transform 0.15s,background 0.2s; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; border-radius: 8px; }
         .rps-btn span.lbl { font-family:'Cinzel',serif; font-size:0.55rem; color:var(--muted); letter-spacing:0.08em; }
-        .rps-btn:hover { border-color:var(--gold); background:rgba(201,168,76,0.07); transform:translateY(-2px); }
+        .rps-btn:hover { border-color:var(--gold); background:rgba(184,134,11,0.07); transform:translateY(-2px); }
         .rps-btn:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
-        .rps-btn.chosen { border-color:var(--gold); background:rgba(201,168,76,0.15); }
-        .timer-bar-wrap { height:4px; background:var(--border); margin-bottom:12px; overflow:hidden; }
+        .rps-btn.chosen { border-color:var(--gold); background:rgba(184,134,11,0.15); }
+        .timer-bar-wrap { height:4px; background:var(--border); margin-bottom:12px; overflow:hidden; border-radius: 2px; }
         #timerBar { height:100%; background:var(--gold); width:100%; transition:width linear; }
         #timerText { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--muted); letter-spacing:0.12em; margin-bottom:10px; }
-        .round-result { font-size:1.05rem; min-height:26px; color:var(--cream); margin-bottom:10px; }
+        .round-result { font-size:1.05rem; min-height:26px; color:var(--cream); margin-bottom:10px; font-weight: 600; }
         .round-result.win { color:var(--green); }
         .round-result.lose { color:var(--red); }
         .round-result.draw { color:var(--gold); }
         .battle-log { font-size:0.8rem; color:var(--muted); font-style:italic; min-height:20px; margin-bottom:10px; }
         .waiting-label { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold); letter-spacing:0.12em; margin:8px 0; }
-        .battle-close-btn { display:none; margin:10px auto 0; padding:11px 28px; background:var(--gold); border:none; color:#0a0a0f; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:0.15em; cursor:pointer; }
+        .battle-close-btn { display:none; margin:10px auto 0; padding:11px 28px; background:var(--gold); border:none; color:#fff; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:0.15em; cursor:pointer; border-radius: 2px; }
         .battle-close-btn:hover { background:var(--gold-light); }
 
         /* GIFT MODAL */
-        .modal-input { width:100%; background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--cream); padding:10px 14px; font-family:'Crimson Text',serif; font-size:1rem; outline:none; margin-bottom:10px; }
+        .modal-input { width:100%; background:rgba(0,0,0,0.03); border:1px solid var(--border); color:var(--cream); padding:10px 14px; font-family:'Crimson Text',serif; font-size:1rem; outline:none; margin-bottom:10px; border-radius: 4px; }
         .modal-input:focus { border-color:var(--gold); }
         .modal-input::placeholder { color:var(--muted); }
         .modal-label { font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.12em; color:var(--gold); text-transform:uppercase; display:block; margin-bottom:6px; text-align:left; }
-        #userSearchResults { max-height:150px; overflow-y:auto; border:1px solid var(--border); margin-bottom:10px; }
-        .user-result-row { padding:10px 14px; cursor:pointer; display:flex; justify-content:space-between; font-size:0.88rem; border-bottom:1px solid var(--border); }
+        #userSearchResults { max-height:150px; overflow-y:auto; border:1px solid var(--border); margin-bottom:10px; border-radius: 4px; }
+        .user-result-row { padding:10px 14px; cursor:pointer; display:flex; justify-content:space-between; font-size:0.88rem; border-bottom:1px solid var(--border); background: #fff; }
         .user-result-row:last-child { border-bottom:none; }
-        .user-result-row:hover { background:rgba(201,168,76,0.07); }
+        .user-result-row:hover { background:rgba(184,134,11,0.07); }
         .u-tag { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold); }
         .u-empire { color:var(--muted); font-style:italic; font-size:0.8rem; }
         #selectedGiftUser { font-family:'Cinzel',serif; font-size:0.8rem; color:var(--green); margin-bottom:12px; min-height:18px; text-align:left; }
 
         /* NOTIFICATIONS PANEL */
-        #notifsPanel { position:fixed; top:52px; right:0; width:320px; height:calc(100vh - 52px); background:rgba(8,8,14,0.97); border-left:1px solid var(--border); z-index:80; transform:translateX(100%); transition:transform 0.3s ease; overflow-y:auto; padding:16px; }
+        #notifsPanel { position:fixed; top:52px; right:0; width:320px; height:calc(100vh - 52px); background:rgba(255,255,255,0.98); border-left:1px solid var(--border); z-index:80; transform:translateX(100%); transition:transform 0.3s ease; overflow-y:auto; padding:16px; box-shadow: -5px 0 20px rgba(0,0,0,0.05); }
         #notifsPanel.open { transform:translateX(0); }
         .notif-header { font-family:'Cinzel',serif; font-size:0.8rem; letter-spacing:0.12em; color:var(--gold); margin-bottom:14px; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center; }
         .notif-close { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; }
-        .notif-item { border:1px solid var(--border); padding:12px; margin-bottom:10px; }
+        .notif-item { border:1px solid var(--border); padding:12px; margin-bottom:10px; border-radius: 4px; background: #fff; }
         .notif-item.urgent { border-color:var(--red); animation:pulseRed 1s ease-in-out infinite; }
-        .n-title { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold-light); letter-spacing:0.08em; margin-bottom:6px; }
+        .n-title { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold); letter-spacing:0.08em; margin-bottom:6px; font-weight: 600; }
         .n-body { color:var(--muted); margin-bottom:8px; font-style:italic; font-size:0.85rem; }
         .n-actions { display:flex; gap:8px; }
-        .n-btn { flex:1; padding:7px; font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.1em; cursor:pointer; border:none; }
+        .n-btn { flex:1; padding:7px; font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.1em; cursor:pointer; border:none; border-radius: 2px; }
         .n-btn.accept { background:var(--green); color:#fff; }
         .n-btn.decline { background:var(--border); color:var(--muted); }
         .n-btn.accept:hover { background:#2ecc71; }
-        .n-btn.decline:hover { background:#3a3a4a; }
+        .n-btn.decline:hover { background:#b2bec3; }
         .no-notifs { color:var(--muted); font-style:italic; font-size:0.85rem; text-align:center; padding:20px; }
 
         /* TOAST */
-        #toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(8,8,14,0.97); border:1px solid var(--border); color:var(--cream); padding:11px 22px; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:0.1em; z-index:300; opacity:0; transition:opacity 0.3s,transform 0.3s; pointer-events:none; }
+        #toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(255,255,255,0.98); border:1px solid var(--border); color:var(--cream); padding:11px 22px; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:0.1em; z-index:300; opacity:0; transition:opacity 0.3s,transform 0.3s; pointer-events:none; box-shadow: 0 5px 20px rgba(0,0,0,0.1); border-radius: 4px; }
         #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
         /* LEGEND */
@@ -153,7 +162,7 @@
         #loading { position:absolute; font-family:'Cinzel',serif; font-size:0.85rem; color:var(--gold); letter-spacing:0.2em; text-transform:uppercase; z-index:10; text-align:center; }
         .load-spinner { width:32px; height:32px; border:2px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
         @keyframes spin { to { transform:rotate(360deg); } }
-        @keyframes pulseRed { 0%,100%{box-shadow:0 0 0 rgba(192,57,43,0)} 50%{box-shadow:0 0 20px rgba(192,57,43,0.5)} }
+        @keyframes pulseRed { 0%,100%{box-shadow:0 0 0 rgba(214,48,49,0)} 50%{box-shadow:0 0 20px rgba(214,48,49,0.3)} }
     </style>
 </head>
 <body>
@@ -182,6 +191,10 @@
     <div id="searchBar">
         <input type="text" id="searchInput" placeholder="Search territory or ocean...">
         <button id="searchBtn" onclick="searchCountry()">FIND</button>
+    </div>
+    <div id="leftPanel">
+        <div class="panel-title">Online Empires</div>
+        <div id="playerList"></div>
     </div>
     <div id="infoPanel">
         <div class="info-name" id="infoPanelName">—</div>
@@ -295,6 +308,8 @@ const db = getFirestore(app);
 // === STATE ===
 let currentUser = null, playerData = null;
 let allTerritories = {};
+let allPlayers = {};
+let playerColors = {};
 let selectedCountry = null, selectedIsOcean = false;
 let pendingChallengeId = null;
 let challengeListenerUnsub = null, roundListenerUnsub = null;
@@ -304,7 +319,28 @@ let roundTimerInterval = null;
 let aiWins = 0, aiTheirWins = 0, aiRound = 0;
 let selectedGiftTargetUid = null, selectedGiftTargetTag = null;
 
+const CONTINENTS = {
+    "North America": ["United States", "Canada", "Mexico", "Greenland", "Cuba", "Haiti", "Dominican Rep.", "Puerto Rico", "Jamaica", "Guatemala", "Honduras", "El Salvador", "Nicaragua", "Costa Rica", "Panama"],
+    "South America": ["Brazil", "Argentina", "Chile", "Colombia", "Peru", "Venezuela", "Ecuador", "Bolivia", "Paraguay", "Uruguay", "Guyana", "Suriname", "French Guiana"],
+    "Europe": ["Germany", "France", "United Kingdom", "Italy", "Spain", "Ukraine", "Poland", "Romania", "Netherlands", "Belgium", "Greece", "Czechia", "Portugal", "Sweden", "Hungary", "Belarus", "Austria", "Switzerland", "Serbia", "Bulgaria", "Denmark", "Finland", "Slovakia", "Norway", "Ireland", "Croatia", "Moldova", "Bosnia and Herz.", "Albania", "Lithuania", "North Macedonia", "Slovenia", "Latvia", "Estonia", "Montenegro", "Luxembourg", "Malta", "Iceland", "Andorra", "Monaco", "Liechtenstein", "San Marino", "Holy See"],
+    "Africa": ["Nigeria", "Ethiopia", "Egypt", "DR Congo", "Tanzania", "South Africa", "Kenya", "Uganda", "Algeria", "Sudan", "Morocco", "Angola", "Mozambique", "Ghana", "Madagascar", "Cameroon", "Ivory Coast", "Niger", "Burkina Faso", "Mali", "Malawi", "Zambia", "Senegal", "Chad", "Somalia", "Zimbabwe", "Guinea", "Rwanda", "Benin", "Tunisia", "Burundi", "South Sudan", "Togo", "Sierra Leone", "Libya", "Congo", "Liberia", "Central African Rep.", "Mauritania", "Eritrea", "Namibia", "Gambia", "Botswana", "Gabon", "Lesotho", "Guinea-Bissau", "Equatorial Guinea", "Mauritius", "Eswatini", "Djibouti", "Comoros", "Cabo Verde", "Sao Tome and Principe", "Seychelles"],
+    "Asia": ["China", "India", "Indonesia", "Pakistan", "Bangladesh", "Japan", "Philippines", "Vietnam", "Turkey", "Iran", "Thailand", "Myanmar", "South Korea", "Iraq", "Afghanistan", "Saudi Arabia", "Uzbekistan", "Malaysia", "Yemen", "Nepal", "North Korea", "Sri Lanka", "Kazakhstan", "Syria", "Cambodia", "Jordan", "Azerbaijan", "United Arab Emirates", "Tajikistan", "Israel", "Laos", "Kyrgyzstan", "Lebanon", "Turkmenistan", "Singapore", "Oman", "State of Palestine", "Kuwait", "Georgia", "Mongolia", "Armenia", "Qatar", "Bahrain", "Timor-Leste", "Cyprus", "Bhutan", "Maldives", "Brunei"],
+    "Oceania": ["Australia", "Papua New Guinea", "New Zealand", "Fiji", "Solomon Islands", "Vanuatu", "Samoa", "Kiribati", "Micronesia", "Tonga", "Marshall Islands", "Palau", "Tuvalu", "Nauru"]
+};
+
+const CONTINENT_CENTERS = {
+    "North America": [-100, 45],
+    "South America": [-60, -20],
+    "Europe": [15, 50],
+    "Africa": [20, 0],
+    "Asia": [90, 30],
+    "Oceania": [135, -25]
+};
+
 const UPGRADE_COSTS = [0,200,500,1000,2000];
+const ATTACK_COST = 100;
+const DEFEAT_PENALTY = 150;
+
 const COUNTRY_INCOME = {
     "United States":300,"China":280,"Germany":150,"Japan":140,"India":120,"Brazil":100,
     "United Kingdom":130,"France":120,"Russia":110,"Canada":100,"Australia":90,"South Korea":80,
@@ -335,15 +371,36 @@ function getIncome(name, level) {
 onAuthStateChanged(auth, async user => {
     if (!user) { window.location.href='index.html'; return; }
     currentUser = user;
-    const snap = await getDoc(doc(db,'players',user.uid));
+    const userRef = doc(db,'players',user.uid);
+    const snap = await getDoc(userRef);
     if (!snap.exists()) { window.location.href='index.html'; return; }
+    
+    // Set online status
+    await updateDoc(userRef, { online: true, lastSeen: serverTimestamp() });
+    
     playerData = snap.data();
     updateUI();
     listenTerritories();
     listenNotifications();
+    listenPlayers(); // Added
 });
 
-window.doLogout = async () => { await signOut(auth); window.location.href='index.html'; };
+window.doLogout = async () => { 
+    if (currentUser) {
+        await updateDoc(doc(db,'players',currentUser.uid), { online: false });
+    }
+    await signOut(auth); 
+    window.location.href='index.html'; 
+};
+
+// Handle tab close / refresh
+window.addEventListener('beforeunload', () => {
+    if (currentUser) {
+        // Use a non-async fire-and-forget for clean exit if possible, 
+        // though Firestore updateDoc is async.
+        updateDoc(doc(db,'players',currentUser.uid), { online: false });
+    }
+});
 
 function updateUI() {
     if (!playerData) return;
@@ -358,6 +415,48 @@ function updateUI() {
 async function refreshPlayerData() {
     const snap = await getDoc(doc(db,'players',currentUser.uid));
     if (snap.exists()) { playerData = snap.data(); updateUI(); }
+}
+
+// === PLAYERS LISTENER ===
+function listenPlayers() {
+    const q = query(collection(db, 'players'), where('online', '==', true));
+    onSnapshot(q, snap => {
+        allPlayers = {};
+        snap.forEach(d => {
+            const p = d.data();
+            allPlayers[d.id] = p;
+            if (!playerColors[d.id]) {
+                playerColors[d.id] = stringToColor(d.id);
+            }
+        });
+        renderPlayerList();
+    });
+}
+
+function stringToColor(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    let color = '#';
+    for (let i = 0; i < 3; i++) {
+        const value = (hash >> (i * 8)) & 0xFF;
+        color += ('00' + value.toString(16)).substr(-2);
+    }
+    return color;
+}
+
+function renderPlayerList() {
+    const list = document.getElementById('playerList');
+    list.innerHTML = Object.entries(allPlayers).map(([uid, p]) => `
+        <div class="user-item">
+            <div class="user-color" style="background:${playerColors[uid]}"></div>
+            <div class="user-info">
+                <div class="user-name">${p.tag} ${uid === currentUser.uid ? '(You)' : ''}</div>
+                <div class="user-empire">${p.empire}</div>
+            </div>
+        </div>
+    `).join('');
 }
 
 // === TERRITORIES LISTENER ===
@@ -429,6 +528,7 @@ svg.append("path").datum({type:"Sphere"}).attr("class","sphere-fill").attr("d",g
 svg.append("path").datum(graticule).attr("class","graticule").attr("d",geoPath);
 const oceansGroup = svg.append("g").attr("id","oceansGroup");
 const countriesGroup = svg.append("g").attr("id","countriesGroup");
+const labelsGroup = svg.append("g").attr("id","labelsGroup");
 svg.append("path").datum({type:"Sphere"}).attr("class","sphere-border").attr("d",geoPath);
 
 let worldData = null;
@@ -437,8 +537,19 @@ const oceanPathData = {};
 function tColor(name, isOcean) {
     const t = allTerritories[name];
     if (!t) return isOcean ? "rgba(13,42,74,0.5)" : "#1a2a4a";
-    if (t.owner===currentUser?.uid) return isOcean ? "rgba(26,74,138,0.75)" : "#c9a84c";
-    return isOcean ? "rgba(100,20,20,0.55)" : "#6b1010";
+    
+    const ownerUid = t.owner;
+    // Generate color for owner if not already in playerColors
+    if (ownerUid && !playerColors[ownerUid]) {
+        playerColors[ownerUid] = stringToColor(ownerUid);
+    }
+    
+    const color = playerColors[ownerUid] || (isOcean ? "rgba(26,74,138,0.75)" : "#c9a84c");
+    
+    if (t.owner===currentUser?.uid) return color;
+    
+    // For enemy territories, we can use their color but maybe slightly muted or different opacity
+    return color;
 }
 
 function refreshGlobeColors() {
@@ -449,6 +560,49 @@ function refreshGlobeColors() {
         const oz = OCEAN_ZONES.find(o=>o.id===id);
         return oz ? tColor(oz.name, true) : "rgba(13,42,74,0.5)";
     });
+    refreshContinentLabels();
+}
+
+function refreshContinentLabels() {
+    const conquered = [];
+    Object.entries(CONTINENTS).forEach(([name, countries]) => {
+        if (!countries.length) return;
+        const first = allTerritories[countries[0]];
+        if (!first || !first.owner) return;
+        const owner = first.owner;
+        const allOwned = countries.every(c => {
+            const t = allTerritories[c];
+            return t && t.owner === owner;
+        });
+        if (allOwned) {
+            conquered.push({
+                name,
+                ownerTag: first.ownerTag,
+                ownerUid: owner,
+                center: CONTINENT_CENTERS[name]
+            });
+        }
+    });
+
+    const labels = labelsGroup.selectAll(".continent-label").data(conquered, d => d.name);
+    
+    labels.exit().remove();
+    
+    const enter = labels.enter().append("g").attr("class", "continent-label");
+    enter.append("text").attr("class", "c-tag")
+        .attr("text-anchor", "middle")
+        .style("font-family", "'Cinzel', serif")
+        .style("font-weight", "900")
+        .style("font-size", "10px")
+        .style("letter-spacing", "0.1em")
+        .style("text-shadow", "0 0 4px #fff, 0 0 4px #fff");
+    
+    const allLabels = enter.merge(labels);
+    allLabels.select("text")
+        .text(d => `👑 ${d.ownerTag.toUpperCase()}`)
+        .style("fill", d => playerColors[d.ownerUid] || "var(--gold)");
+    
+    updateGlobe();
 }
 
 function drawOceanZones() {
@@ -484,6 +638,21 @@ d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(w
 function updateGlobe() {
     svg.selectAll("path.country,path.graticule,path.sphere-border,path.sphere-fill").attr("d",geoPath);
     oceansGroup.selectAll("path.ocean-zone").attr("d", function(d){ return d ? geoPath(d) : null; });
+    
+    labelsGroup.selectAll(".continent-label").each(function(d) {
+        const proj = projection(d.center);
+        const g = d3.select(this);
+        // Check if point is on the visible side of the globe
+        const geoCircle = d3.geoCircle().center(d.center).radius(0.1)();
+        const visible = geoPath(geoCircle);
+        
+        if (visible && proj) {
+            g.style("display", "block")
+             .attr("transform", `translate(${proj[0]},${proj[1]})`);
+        } else {
+            g.style("display", "none");
+        }
+    });
 }
 
 // === TERRITORY SELECTION ===
@@ -511,10 +680,10 @@ function selectTerritoryByData(name, isOcean, oz, countryFeature) {
         if (level<5){upBtn.textContent=`⬆ UPGRADE LVL ${level+1} — ${UPGRADE_COSTS[level]} GOLD`;upBtn.style.display='block';}else upBtn.style.display='none';
         giftBtn.style.display='block';
     } else if (enemy) {
-        btn.textContent='⚔ ATTACK'; btn.className='panel-btn attack';
+        btn.textContent=`⚔ ATTACK (${ATTACK_COST} GOLD)`; btn.className='panel-btn attack';
         upBtn.style.display='none'; giftBtn.style.display='none';
     } else {
-        btn.textContent = isOcean ? '⚓ CLAIM OCEAN RIGHTS' : '⊕ CLAIM TERRITORY';
+        btn.textContent = isOcean ? `⚓ CLAIM (${ATTACK_COST} GOLD)` : `⊕ CLAIM (${ATTACK_COST} GOLD)`;
         btn.className='panel-btn gold'; upBtn.style.display='none'; giftBtn.style.display='none';
     }
     document.getElementById('infoPanel').classList.add('visible');
@@ -523,6 +692,10 @@ function selectTerritoryByData(name, isOcean, oz, countryFeature) {
 // === CLAIM / ATTACK ===
 window.handleClaimOrAttack = function() {
     if (!selectedCountry||!currentUser||!playerData) return;
+    if (playerData.money < ATTACK_COST) {
+        showToast(`Need ${ATTACK_COST} Gold to start a war!`);
+        return;
+    }
     const name = selectedCountry.properties.name||"Unknown";
     const t = allTerritories[name];
     if (t && t.owner===currentUser.uid) return;
@@ -537,7 +710,10 @@ function openAttackConfirm(name,t) {
     pendingAttackName=name; pendingAttackData=t;
     document.getElementById('attackConfirmSub').textContent = `Target: ${name}`;
     document.getElementById('attackConfirmBody').textContent =
-        `You are challenging ${t.ownerEmpire||'an empire'} (@${t.ownerTag||'?'}) for "${name}". They will receive a notification and must agree to battle. Only then will war begin.`;
+        `You are challenging ${t.ownerEmpire||'an empire'} (@${t.ownerTag||'?'}) for "${name}". 
+        It costs ${ATTACK_COST} Gold to send this challenge. 
+        If you lose, you will lose an additional ${DEFEAT_PENALTY} Gold. 
+        The defender will also lose ${DEFEAT_PENALTY} Gold if they lose.`;
     document.getElementById('attackConfirmActions').style.display='block';
     document.getElementById('attackConfirmWaiting').style.display='none';
     document.getElementById('attackConfirmModal').classList.add('open');
@@ -547,6 +723,11 @@ window.closeAttackConfirm = () => { document.getElementById('attackConfirmModal'
 
 window.sendAttackChallenge = async function() {
     if (!pendingAttackName||!pendingAttackData) return;
+    
+    // Deduct cost immediately
+    await updateDoc(doc(db,'players',currentUser.uid), { money: playerData.money - ATTACK_COST });
+    await refreshPlayerData();
+    
     const t = pendingAttackData;
     const battleRef = await addDoc(collection(db,'battles'),{
         territory:pendingAttackName,
@@ -602,7 +783,11 @@ window.declineChallenge = async function(notifId, battleId) {
 };
 
 // === AI BATTLE (vs unclaimed) ===
-function startAIBattle(name) {
+async function startAIBattle(name) {
+    // Deduct cost
+    await updateDoc(doc(db,'players',currentUser.uid), { money: playerData.money - ATTACK_COST });
+    await refreshPlayerData();
+    
     aiWins=0; aiTheirWins=0; aiRound=0;
     battleIsAI=true; battleDocId=null;
     battleData={territory:name,attackerEmpire:playerData.empire,attackerTag:playerData.tag,defenderEmpire:'Wilderness',defenderTag:'AI'};
@@ -665,7 +850,15 @@ function resolveAI(mine, ai, auto) {
 
 async function finishAI(won) {
     if(won){await applyWin(battleData.territory);showToast(`${battleData.territory} claimed!`);}
-    else{await updateDoc(doc(db,'players',currentUser.uid),{losses:(playerData.losses||0)+1});await refreshPlayerData();}
+    else{
+        const newMoney = Math.max(0, (playerData.money||0) - DEFEAT_PENALTY);
+        await updateDoc(doc(db,'players',currentUser.uid),{
+            losses:(playerData.losses||0)+1,
+            money: newMoney
+        });
+        await refreshPlayerData();
+        showToast(`💀 Defeat! You lost ${DEFEAT_PENALTY} Gold.`);
+    }
     document.getElementById('battleCloseBtn').style.display='inline-block';
     aiWins=0;aiTheirWins=0;aiRound=0;
 }
@@ -758,17 +951,23 @@ async function handleFinished(d) {
     document.getElementById('roundResult').textContent=iWon?'🏆 VICTORY!':'💀 DEFEATED';
     document.getElementById('battleLog').textContent=iWon?'Territory is yours!':'The territory holds.';
     document.getElementById('battleCloseBtn').style.display='inline-block';
+    
     if(iWon){
         await applyWin(d.territory);
-        const loserUid=battleRole==='attacker'?d.defenderUid:d.attackerUid;
+        const loserUid = battleRole==='attacker' ? d.defenderUid : d.attackerUid;
         await addDoc(collection(db,'notifications'),{
             toUid:loserUid, type:'battle_result', winnerId:d.winnerId,
-            body:`${playerData.empire} defeated you and claimed ${d.territory}!`,
+            body:`${playerData.empire} defeated you and claimed ${d.territory}! You lost ${DEFEAT_PENALTY} Gold.`,
             read:false, createdAt:serverTimestamp()
         });
     } else {
-        await updateDoc(doc(db,'players',currentUser.uid),{losses:(playerData.losses||0)+1});
+        const newMoney = Math.max(0, (playerData.money||0) - DEFEAT_PENALTY);
+        await updateDoc(doc(db,'players',currentUser.uid),{
+            losses:(playerData.losses||0)+1,
+            money: newMoney
+        });
         await refreshPlayerData();
+        showToast(`💀 Defeat! You lost ${DEFEAT_PENALTY} Gold.`);
     }
 }
 
