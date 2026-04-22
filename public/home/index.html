@@ -1741,13 +1741,31 @@
         }
 
         .discussion-header {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--outline);
+            padding: 14px 16px;
+            border-bottom: 1px solid #f1f1f1;
             display: flex;
             align-items: center;
             justify-content: space-between;
             background: #fff;
             z-index: 10
+        }
+
+        .discussion-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #f1f1f1;
+            background: #fff;
+            padding-bottom: env(safe-area-inset-bottom, 12px);
+            z-index: 20
+        }
+
+        .thread-mobile-container {
+            height: 85vh;
+            background: #fff;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            border-radius: 24px 24px 0 0;
+            box-shadow: 0 -10px 25px -5px rgba(0, 0, 0, 0.1), 0 -8px 10px -6px rgba(0, 0, 0, 0.1);
         }
 
         .discussion-scroll {
@@ -1901,15 +1919,6 @@
                 position: absolute;
                 bottom: 0
             }
-
-            .thread-mobile-container {
-                height: 75vh;
-                background: #fff;
-                width: 100%;
-                display: flex;
-                flex-direction: column;
-                border-radius: 20px 20px 0 0
-            }
         }
 
         .share-icon-btn {
@@ -2008,13 +2017,6 @@
 
         .toggle-setting-row:last-child {
             border-bottom: none
-        }
-
-        .discussion-footer {
-            padding: 12px 16px;
-            border-top: 1px solid var(--outline);
-            background: #fff;
-            z-index: 20
         }
 
         .img-placeholder {
@@ -2503,13 +2505,13 @@
         <div class="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onclick="closeThread()"></div>
         <div
             class="bg-white w-full md:w-[450px] h-[75vh] md:h-[85vh] md:rounded-[24px] rounded-t-[20px] shadow-2xl relative flex flex-col transform transition-transform duration-300 scale-100 opacity-100 overflow-hidden scale-in thread-mobile-container">
-            <div class="discussion-header">
-                <div class="flex items-center gap-3"><button onclick="closeThread()"
-                        class="icon-btn hover:bg-gray-100 md:hidden"><i data-lucide="chevron-down"
-                            class="w-6 h-6 text-gray-600"></i></button><span
-                        class="font-bold text-lg text-[#1f1f1f]">Thread</span></div><button onclick="closeThread()"
-                    class="icon-btn hover:bg-gray-100 hidden md:flex"><i data-lucide="x"
-                        class="w-5 h-5 text-gray-600"></i></button>
+            <div class="discussion-header border-b border-gray-100">
+                <div class="flex items-center gap-3">
+                    <button onclick="closeThread()" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                        <i data-lucide="chevron-down" class="w-6 h-6 text-gray-700"></i>
+                    </button>
+                    <span class="font-bold text-[17px] text-gray-900">Thread</span>
+                </div>
             </div>
             <div id="thread-content" class="discussion-scroll bg-white"></div>
             <div class="discussion-footer">
@@ -6375,12 +6377,98 @@
         window.openCommentMoreMenu = (cid, pid, ts, isMe) => { manageHistory('comment-options-overlay'); const o = document.getElementById('comment-options-overlay'), m = document.getElementById('comment-options-modal'), c = document.getElementById('comment-options-content'); c.innerHTML = `<div class="p-2">${isMe ? `<button onclick="deleteComment('${pid}','${cid}'); closeCommentOptions()" class="flex items-center gap-4 w-full p-4 hover:bg-red-50 rounded-xl transition-colors font-bold text-red-600 text-left group"><div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></div><span>Delete Comment</span></button>` : `<button onclick="showToast('Reported'); closeCommentOptions()" class="flex items-center gap-4 w-full p-4 hover:bg-gray-50 rounded-xl transition-colors font-bold text-gray-700 text-left group"><div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="flag" class="w-5 h-5"></i></div><span>Report Comment</span></button>`}</div>`; refreshIcons(); toggleModalAnim('comment-options-overlay', 'comment-options-modal', !0) };
         window.closeCommentOptions = () => toggleModalAnim('comment-options-overlay', 'comment-options-modal', !1);
         window.openThread = (pid, cid) => { if (window.innerWidth >= 768) { window.isDesktopThreadMode = true; window.threadPostId = pid; window.threadParentCommentId = cid; renderDesktopThread(pid, cid); return } manageHistory('thread-overlay'); window.threadPostId = pid; window.threadParentCommentId = cid; renderThreadContent(pid, cid); document.getElementById('thread-overlay').classList.remove('hidden'); setTimeout(() => { document.getElementById('thread-input').focus(); document.getElementById('thread-input-avatar').src = currentUser.avatar }, 100) }; window.closeThread = () => { document.getElementById('thread-overlay').classList.add('hidden'); if (!window.currentViewingPostId) { window.threadPostId = null; window.threadParentCommentId = null } window.replyingToCommentId = null; window.isDesktopThreadMode = false; if (window.currentViewingPostId && window.innerWidth >= 768) renderCommentsInModal(window.currentViewingPostId) };
-        window.renderDesktopThread = (pid, cid) => { const p = posts.find(x => x.id === pid); if (!p) return; const parent = p.comments.find(x => x.id === cid); if (!parent) return; const replies = p.comments.filter(x => x.parentId === cid), pa = users.find(u => u.id === parent.authorId) || { name: 'Unknown', avatar: '', username: 'user' }, header = document.getElementById('post-view-comments-header'); if (header) header.innerHTML = `<div class="flex items-center gap-3"><button onclick="closeThread()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i></button><span>Replies to @${pa.username || 'user'}</span></div>`; const html = `<div class="pt-2 pb-0 relative">${createCommentHTML(parent, pid, 0)}<div class="replies-line-container">${replies.length > 0 ? replies.map(r => createCommentHTML(r, pid, 0)).join('') : '<div class="text-xs text-gray-400 pl-4 py-4">No replies yet. Be the first to reply!</div>'}</div></div>`; document.getElementById('post-view-comments').innerHTML = html; refreshIcons() };
-        window.renderThreadContent = (pid, cid) => { const p = posts.find(x => x.id === pid); if (!p) return; const parent = p.comments.find(x => x.id === cid); if (!parent) return; const replies = p.comments.filter(x => x.parentId === cid); const html = `<div class="pt-2 pb-0 relative">${createCommentHTML(parent, pid, 0)}<div class="replies-line-container">${replies.length > 0 ? replies.map(r => createCommentHTML(r, pid, 0)).join('') : '<div class="text-xs text-gray-400 pl-4 py-4">No replies yet. Be the first to reply!</div>'}</div></div>`; const c = document.getElementById('thread-content'); c.innerHTML = html; refreshIcons() };
+        window.renderDesktopThread = (pid, cid) => {
+            const p = posts.find(x => x.id === pid);
+            if (!p) return;
+            const parent = p.comments.find(x => x.id === cid);
+            if (!parent) return;
+            
+            const renderCommentWithReplies = (comment, level = 0) => {
+                const replies = p.comments.filter(x => x.parentId === comment.id);
+                const indentClass = level > 0 ? 'ml-6 md:ml-12 border-l-2 border-gray-200 pl-3 md:pl-4' : '';
+                const replyHtml = replies.length > 0 
+                    ? `<div class="replies-line-container">${replies.map(r => renderCommentWithReplies(r, level + 1)).join('')}</div>`
+                    : '';
+                return `<div class="comment-thread-item ${indentClass}">${createCommentHTML(comment, pid, replies.length)}${replyHtml}</div>`;
+            };
+            
+            const pa = users.find(u => u.id === parent.authorId) || { name: 'Unknown', avatar: '', username: 'user' };
+            const header = document.getElementById('post-view-comments-header');
+            if (header) header.innerHTML = `<div class="flex items-center gap-3"><button onclick="closeThread()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i></button><span>Replies to @${pa.username || 'user'}</span></div>`;
+            const html = `<div class="pt-2 pb-0 relative">${renderCommentWithReplies(parent, 0)}</div>`;
+            document.getElementById('post-view-comments').innerHTML = html;
+            refreshIcons()
+        };
+        window.renderThreadContent = (pid, cid) => {
+            const p = posts.find(x => x.id === pid);
+            if (!p) return;
+            const parent = p.comments.find(x => x.id === cid);
+            if (!parent) return;
+            
+            const renderCommentWithReplies = (comment, level = 0) => {
+                const replies = p.comments.filter(x => x.parentId === comment.id);
+                const indentClass = level > 0 ? 'ml-6 md:ml-12 border-l-2 border-gray-200 pl-3 md:pl-4' : '';
+                const replyHtml = replies.length > 0 
+                    ? `<div class="replies-line-container">${replies.map(r => renderCommentWithReplies(r, level + 1)).join('')}</div>`
+                    : '';
+                return `<div class="comment-thread-item ${indentClass}">${createCommentHTML(comment, pid, replies.length)}${replyHtml}</div>`;
+            };
+            
+            const html = `<div class="pt-2 pb-0 relative">${renderCommentWithReplies(parent, 0)}</div>`;
+            const c = document.getElementById('thread-content');
+            c.innerHTML = html;
+            refreshIcons()
+        };
         window.submitThreadReply = async () => { const t = document.getElementById('thread-input').value.trim(); if (!t || !window.threadPostId || !window.threadParentCommentId) return; const r = doc(db, "posts", window.threadPostId), nc = { id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000), authorId: currentUser.id, content: t, timestamp: Date.now(), likes: [], parentId: window.threadParentCommentId }; await updateDoc(r, { comments: arrayUnion(nc) }); const p = posts.find(x => x.id === window.threadPostId), pc = p.comments.find(x => x.id === window.threadParentCommentId); if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.threadPostId); const mm = t.match(/@([a-zA-Z0-9._]+)/g); if (mm) { mm.forEach(m => { const uname = m.substring(1).toLowerCase(), found = users.find(u => (u.username || "").toLowerCase() === uname); if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a reply', window.threadPostId) }) } document.getElementById('thread-input').value = "" };
         window.deleteComment = async (pid, cid) => { showAlert("Delete comment?", async () => { const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid), nc = p.comments.filter(x => x.id !== cid && x.parentId !== cid); await updateDoc(r, { comments: nc }); showToast("Deleted") }) };
         window.toggleCommentLike = async (pid, cid) => { const p = posts.find(x => x.id === pid); if (!p) return; const c = p.comments || [], i = c.findIndex(x => x.id === cid); if (i === -1) return; const cm = c[i]; if (!cm.likes) cm.likes = []; if (cm.likes.includes(currentUser.id)) cm.likes = cm.likes.filter(x => x !== currentUser.id); else { cm.likes.push(currentUser.id); if (cm.authorId !== currentUser.id) sendNotification(cm.authorId, 'comment_like', 'liked your comment', pid) } c[i] = cm; await updateDoc(doc(db, "posts", pid), { comments: c }) };
-        window.replyToComment = (cid, u) => { const p = posts.find(p => p.comments && p.comments.some(c => c.id === cid)); if (p) window.openThread(p.id, cid) };
+        window.replyToComment = (cid, u) => {
+            const p = posts.find(p => p.comments && p.comments.some(c => c.id === cid));
+            if (!p) return;
+            const c = p.comments.find(x => x.id === cid);
+            if (!c) return;
+            
+            // If we are on mobile and already in the thread overlay
+            const isThreadOpen = !document.getElementById('thread-overlay').classList.contains('hidden');
+            const isMobile = window.innerWidth < 768;
+            
+            if (isMobile && isThreadOpen) {
+                const input = document.getElementById('thread-input');
+                if (input) {
+                    input.value = `@${u} `;
+                    input.focus();
+                }
+                return;
+            }
+
+            // Find the root parent if this is a nested reply
+            let rootId = cid;
+            if (c.parentId) {
+                let current = c;
+                while (current && current.parentId) {
+                    const parent = p.comments.find(x => x.id === current.parentId);
+                    if (parent) {
+                        current = parent;
+                        rootId = parent.id;
+                    } else {
+                        break;
+                    }
+                }
+            }
+            
+            window.openThread(p.id, rootId);
+            
+            // If it was a reply to a nested comment, also add the mention
+            if (cid !== rootId || isMobile) {
+                setTimeout(() => {
+                    const input = document.getElementById('thread-input');
+                    if (input) {
+                        input.value = `@${u} `;
+                        input.focus();
+                    }
+                }, 200);
+            }
+        };
         window.submitCommentDesktop = async () => { const t = document.getElementById('comment-input-desktop').value.trim(); if (!t || !window.currentViewingPostId) return; if (window.isDesktopThreadMode && window.threadParentCommentId) { window.replyingToCommentId = window.threadParentCommentId; await postCommentCommon(t); window.replyingToCommentId = null } else await postCommentCommon(t); document.getElementById('comment-input-desktop').value = "" }; window.submitCommentMobile = async () => { const t = document.getElementById('mobile-comment-input').value.trim(); if (!t || !window.currentViewingPostId) return; await postCommentCommon(t); document.getElementById('mobile-comment-input').value = "" };
         async function postCommentCommon(t) { const r = doc(db, "posts", window.currentViewingPostId), nc = { id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000), authorId: currentUser.id, content: t, timestamp: Date.now(), likes: [], parentId: window.replyingToCommentId }; await updateDoc(r, { comments: arrayUnion(nc) }); const p = posts.find(x => x.id === window.currentViewingPostId); if (window.replyingToCommentId) { const pc = p.comments.find(x => x.id === window.replyingToCommentId); if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.currentViewingPostId) } else if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', window.currentViewingPostId); const mm = t.match(/@([a-zA-Z0-9._]+)/g); if (mm) { mm.forEach(m => { const uname = m.substring(1).toLowerCase(), found = users.find(u => (u.username || "").toLowerCase() === uname); if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', window.currentViewingPostId) }) } window.replyingToCommentId = null }
         window.promptForImageLink = () => { const u = prompt("Enter Image URL:"); if (u && (u.startsWith('http') || u.startsWith('data:'))) { window.currentMedia = [u]; window.currentMediaType = 'image'; document.getElementById('media-preview-container').classList.remove('hidden'); document.getElementById('preview-inner').innerHTML = `<img src="${u}" class="h-20 w-20 object-cover rounded-md">`; showToast("Added") } };
