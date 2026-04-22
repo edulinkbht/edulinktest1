@@ -9,437 +9,155 @@
     <script src="https://unpkg.com/topojson-client@3"></script>
     <style>
         :root {
-            --bg: #0a0a0f;
-            --surface: #12121a;
-            --border: #2a2a3a;
-            --gold: #c9a84c;
-            --gold-light: #e8c97a;
-            --cream: #f3efe6;
-            --muted: #6b6b7a;
-            --red: #c0392b;
-            --green: #27ae60;
-            --blue: #2980b9;
+            --bg: #0a0a0f; --surface: #12121a; --border: #2a2a3a;
+            --gold: #c9a84c; --gold-light: #e8c97a; --cream: #f3efe6;
+            --muted: #6b6b7a; --red: #c0392b; --green: #27ae60; --blue: #1a5a8b;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--cream); font-family:'Crimson Text',serif; height:100vh; overflow:hidden; display:flex; flex-direction:column; }
 
-        body {
-            background: var(--bg);
-            color: var(--cream);
-            font-family: 'Crimson Text', serif;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-        }
+        /* TOP BAR */
+        #topbar { display:flex; align-items:center; justify-content:space-between; padding:10px 24px; background:rgba(10,10,15,0.95); border-bottom:1px solid var(--border); z-index:50; flex-shrink:0; }
+        .topbar-left { font-family:'Cinzel',serif; font-size:1.1rem; font-weight:900; color:var(--gold); letter-spacing:0.12em; }
+        .topbar-center { display:flex; gap:24px; font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; }
+        .stat { color:var(--muted); }
+        .stat span { color:var(--gold-light); font-weight:600; font-size:0.85rem; }
+        .topbar-right { display:flex; align-items:center; gap:10px; }
+        #empireTag { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold); letter-spacing:0.1em; text-align:right; }
+        .nav-btn { background:none; border:1px solid var(--border); color:var(--muted); font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:0.1em; padding:5px 10px; cursor:pointer; transition:border-color 0.2s,color 0.2s; position:relative; }
+        .nav-btn:hover { border-color:var(--gold); color:var(--gold); }
+        .badge { position:absolute; top:-6px; right:-6px; background:var(--red); color:#fff; font-size:0.6rem; width:16px; height:16px; border-radius:50%; display:none; align-items:center; justify-content:center; }
+        .badge.show { display:flex; }
 
-        /* ===== TOP NAV ===== */
-        #topbar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 24px;
-            background: rgba(10,10,15,0.9);
-            border-bottom: 1px solid var(--border);
-            z-index: 50;
-            flex-shrink: 0;
-        }
-        .topbar-left {
-            font-family: 'Cinzel', serif;
-            font-size: 1.1rem;
-            font-weight: 900;
-            color: var(--gold);
-            letter-spacing: 0.12em;
-        }
-        .topbar-center {
-            display: flex;
-            gap: 28px;
-            font-family: 'Cinzel', serif;
-            font-size: 0.7rem;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-        }
-        .stat { color: var(--muted); }
-        .stat span { color: var(--gold-light); font-weight: 600; font-size: 0.85rem; }
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        #empireTag {
-            font-family: 'Cinzel', serif;
-            font-size: 0.72rem;
-            color: var(--gold);
-            letter-spacing: 0.1em;
-            text-align: right;
-        }
-        .logout-btn {
-            background: none;
-            border: 1px solid var(--border);
-            color: var(--muted);
-            font-family: 'Cinzel', serif;
-            font-size: 0.62rem;
-            letter-spacing: 0.1em;
-            padding: 5px 10px;
-            cursor: pointer;
-            transition: border-color 0.2s, color 0.2s;
-        }
-        .logout-btn:hover { border-color: var(--gold); color: var(--gold); }
+        /* GLOBE */
+        #globeArea { flex:1; display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden; }
+        #globeSvg { cursor:grab; }
+        #globeSvg:active { cursor:grabbing; }
+        .country { stroke:#2a2a3a; stroke-width:0.5px; stroke-linejoin:round; cursor:pointer; transition:opacity 0.15s; }
+        .country:hover { opacity:0.75; }
+        .ocean-zone { stroke:#1a3a5a; stroke-width:0.8px; cursor:pointer; }
+        .ocean-zone:hover { stroke:#4a9fd4; }
+        .sphere-fill { fill:#060c14; }
+        .sphere-border { fill:none; stroke:#1a2a3a; stroke-width:1px; }
+        .graticule { fill:none; stroke:#0e1a28; stroke-width:0.4px; }
 
-        /* ===== GLOBE AREA ===== */
-        #globeArea {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
+        /* SEARCH */
+        #searchBar { position:absolute; top:18px; left:50%; transform:translateX(-50%); display:flex; z-index:20; }
+        #searchInput { background:rgba(10,10,15,0.88); border:1px solid var(--border); border-right:none; color:var(--cream); padding:9px 16px; font-family:'Crimson Text',serif; font-size:1rem; width:200px; outline:none; }
+        #searchInput:focus { border-color:var(--gold); }
+        #searchInput::placeholder { color:var(--muted); }
+        #searchBtn { background:var(--gold); border:none; color:#0a0a0f; padding:9px 14px; font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.1em; cursor:pointer; }
+        #searchBtn:hover { background:var(--gold-light); }
 
-        #globeSvg {
-            cursor: grab;
-        }
-        #globeSvg:active { cursor: grabbing; }
+        /* INFO PANEL */
+        #infoPanel { position:absolute; right:18px; top:50%; transform:translateY(-50%); width:250px; background:rgba(8,8,14,0.96); border:1px solid var(--border); padding:20px; z-index:20; opacity:0; pointer-events:none; transition:opacity 0.3s; }
+        #infoPanel.visible { opacity:1; pointer-events:all; }
+        #infoPanel::before { content:''; position:absolute; top:6px; left:6px; width:16px; height:16px; border-top:1px solid var(--gold); border-left:1px solid var(--gold); }
+        .info-name { font-family:'Cinzel',serif; font-size:0.88rem; font-weight:600; color:var(--gold-light); letter-spacing:0.08em; margin-bottom:10px; }
+        .info-row { display:flex; justify-content:space-between; font-size:0.84rem; margin-bottom:5px; color:var(--muted); }
+        .info-row span { color:var(--cream); }
+        .info-owner { margin:10px 0 8px; font-size:0.8rem; color:var(--muted); }
+        .info-owner em { color:var(--gold); font-style:normal; }
+        .level-badges { display:flex; gap:4px; margin:6px 0; }
+        .lvl-pip { width:20px; height:6px; background:var(--border); border-radius:1px; }
+        .lvl-pip.active { background:var(--gold); }
+        .panel-btn { width:100%; padding:9px; border:none; font-family:'Cinzel',serif; font-size:0.7rem; letter-spacing:0.12em; cursor:pointer; margin-top:7px; text-transform:uppercase; transition:background 0.2s; }
+        .panel-btn.gold { background:var(--gold); color:#0a0a0f; }
+        .panel-btn.gold:hover { background:var(--gold-light); }
+        .panel-btn.attack { background:var(--red); color:#fff; }
+        .panel-btn.attack:hover { background:#e74c3c; }
+        .panel-btn.owned { background:var(--border); color:var(--muted); cursor:not-allowed; }
+        .panel-btn.green { background:transparent; border:1px solid var(--green); color:var(--green); }
+        .panel-btn.green:hover { background:rgba(39,174,96,0.1); }
+        .panel-btn.blue { background:transparent; border:1px solid #4a9fd4; color:#4a9fd4; }
+        .panel-btn.blue:hover { background:rgba(74,159,212,0.1); }
 
-        /* Country fill styles */
-        .country {
-            stroke: #2a2a3a;
-            stroke-width: 0.5px;
-            stroke-linejoin: round;
-            cursor: pointer;
-            transition: opacity 0.15s;
-        }
-        .country:hover { opacity: 0.75; }
+        /* MODAL BASE */
+        .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:100; align-items:center; justify-content:center; }
+        .modal-overlay.open { display:flex; }
+        .modal-box { background:var(--surface); border:1px solid var(--border); padding:32px; position:relative; text-align:center; max-width:95vw; }
+        .modal-box::before { content:''; position:absolute; top:6px; left:6px; right:6px; bottom:6px; border:1px solid rgba(201,168,76,0.08); pointer-events:none; }
+        .modal-title { font-family:'Cinzel',serif; font-size:1.15rem; color:var(--gold); letter-spacing:0.15em; margin-bottom:6px; }
+        .modal-sub { color:var(--muted); font-style:italic; font-size:0.9rem; margin-bottom:20px; }
+        .confirm-btns { display:flex; gap:12px; margin-top:16px; justify-content:center; }
+        .confirm-btn { padding:10px 24px; font-family:'Cinzel',serif; font-size:0.72rem; letter-spacing:0.12em; cursor:pointer; border:none; }
+        .confirm-btn.yes { background:var(--red); color:#fff; }
+        .confirm-btn.yes:hover { background:#e74c3c; }
+        .confirm-btn.no { background:var(--border); color:var(--muted); }
+        .confirm-btn.no:hover { background:#3a3a4a; color:var(--cream); }
 
-        .sphere-fill { fill: #070710; }
-        .sphere-border { fill: none; stroke: #2a2a3a; stroke-width: 1px; }
-        .graticule { fill: none; stroke: #1a1a28; stroke-width: 0.4px; }
+        /* BATTLE */
+        .score-board { display:flex; justify-content:center; align-items:center; gap:24px; margin-bottom:18px; }
+        .score-side { font-family:'Cinzel',serif; }
+        .score-side .s-name { font-size:0.7rem; color:var(--muted); letter-spacing:0.1em; margin-bottom:4px; }
+        .score-side .s-num { font-size:2.2rem; color:var(--gold-light); line-height:1; }
+        .score-sep { font-size:1.4rem; color:var(--border); }
+        .rps-choices { display:flex; gap:14px; justify-content:center; margin-bottom:14px; }
+        .rps-btn { width:80px; height:80px; background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--cream); font-size:2.2rem; cursor:pointer; transition:border-color 0.2s,transform 0.15s,background 0.2s; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; }
+        .rps-btn span.lbl { font-family:'Cinzel',serif; font-size:0.55rem; color:var(--muted); letter-spacing:0.08em; }
+        .rps-btn:hover { border-color:var(--gold); background:rgba(201,168,76,0.07); transform:translateY(-2px); }
+        .rps-btn:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
+        .rps-btn.chosen { border-color:var(--gold); background:rgba(201,168,76,0.15); }
+        .timer-bar-wrap { height:4px; background:var(--border); margin-bottom:12px; overflow:hidden; }
+        #timerBar { height:100%; background:var(--gold); width:100%; transition:width linear; }
+        #timerText { font-family:'Cinzel',serif; font-size:0.68rem; color:var(--muted); letter-spacing:0.12em; margin-bottom:10px; }
+        .round-result { font-size:1.05rem; min-height:26px; color:var(--cream); margin-bottom:10px; }
+        .round-result.win { color:var(--green); }
+        .round-result.lose { color:var(--red); }
+        .round-result.draw { color:var(--gold); }
+        .battle-log { font-size:0.8rem; color:var(--muted); font-style:italic; min-height:20px; margin-bottom:10px; }
+        .waiting-label { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold); letter-spacing:0.12em; margin:8px 0; }
+        .battle-close-btn { display:none; margin:10px auto 0; padding:11px 28px; background:var(--gold); border:none; color:#0a0a0f; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:0.15em; cursor:pointer; }
+        .battle-close-btn:hover { background:var(--gold-light); }
 
-        /* ===== SEARCH BAR ===== */
-        #searchBar {
-            position: absolute;
-            top: 18px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 8px;
-            z-index: 20;
-        }
-        #searchInput {
-            background: rgba(10,10,15,0.85);
-            border: 1px solid var(--border);
-            color: var(--cream);
-            padding: 9px 16px;
-            font-family: 'Crimson Text', serif;
-            font-size: 1rem;
-            width: 220px;
-            outline: none;
-            backdrop-filter: blur(4px);
-        }
-        #searchInput:focus { border-color: var(--gold); }
-        #searchInput::placeholder { color: var(--muted); }
-        #searchBtn {
-            background: var(--gold);
-            border: none;
-            color: #0a0a0f;
-            padding: 9px 16px;
-            font-family: 'Cinzel', serif;
-            font-size: 0.7rem;
-            letter-spacing: 0.1em;
-            cursor: pointer;
-        }
-        #searchBtn:hover { background: var(--gold-light); }
+        /* GIFT MODAL */
+        .modal-input { width:100%; background:rgba(255,255,255,0.03); border:1px solid var(--border); color:var(--cream); padding:10px 14px; font-family:'Crimson Text',serif; font-size:1rem; outline:none; margin-bottom:10px; }
+        .modal-input:focus { border-color:var(--gold); }
+        .modal-input::placeholder { color:var(--muted); }
+        .modal-label { font-family:'Cinzel',serif; font-size:0.68rem; letter-spacing:0.12em; color:var(--gold); text-transform:uppercase; display:block; margin-bottom:6px; text-align:left; }
+        #userSearchResults { max-height:150px; overflow-y:auto; border:1px solid var(--border); margin-bottom:10px; }
+        .user-result-row { padding:10px 14px; cursor:pointer; display:flex; justify-content:space-between; font-size:0.88rem; border-bottom:1px solid var(--border); }
+        .user-result-row:last-child { border-bottom:none; }
+        .user-result-row:hover { background:rgba(201,168,76,0.07); }
+        .u-tag { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold); }
+        .u-empire { color:var(--muted); font-style:italic; font-size:0.8rem; }
+        #selectedGiftUser { font-family:'Cinzel',serif; font-size:0.8rem; color:var(--green); margin-bottom:12px; min-height:18px; text-align:left; }
 
-        /* ===== SIDE INFO PANEL ===== */
-        #infoPanel {
-            position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 240px;
-            background: rgba(10,10,15,0.92);
-            border: 1px solid var(--border);
-            padding: 20px;
-            z-index: 20;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.3s;
-        }
-        #infoPanel.visible { opacity: 1; pointer-events: all; }
+        /* NOTIFICATIONS PANEL */
+        #notifsPanel { position:fixed; top:52px; right:0; width:320px; height:calc(100vh - 52px); background:rgba(8,8,14,0.97); border-left:1px solid var(--border); z-index:80; transform:translateX(100%); transition:transform 0.3s ease; overflow-y:auto; padding:16px; }
+        #notifsPanel.open { transform:translateX(0); }
+        .notif-header { font-family:'Cinzel',serif; font-size:0.8rem; letter-spacing:0.12em; color:var(--gold); margin-bottom:14px; text-transform:uppercase; display:flex; justify-content:space-between; align-items:center; }
+        .notif-close { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; }
+        .notif-item { border:1px solid var(--border); padding:12px; margin-bottom:10px; }
+        .notif-item.urgent { border-color:var(--red); animation:pulseRed 1s ease-in-out infinite; }
+        .n-title { font-family:'Cinzel',serif; font-size:0.72rem; color:var(--gold-light); letter-spacing:0.08em; margin-bottom:6px; }
+        .n-body { color:var(--muted); margin-bottom:8px; font-style:italic; font-size:0.85rem; }
+        .n-actions { display:flex; gap:8px; }
+        .n-btn { flex:1; padding:7px; font-family:'Cinzel',serif; font-size:0.65rem; letter-spacing:0.1em; cursor:pointer; border:none; }
+        .n-btn.accept { background:var(--green); color:#fff; }
+        .n-btn.decline { background:var(--border); color:var(--muted); }
+        .n-btn.accept:hover { background:#2ecc71; }
+        .n-btn.decline:hover { background:#3a3a4a; }
+        .no-notifs { color:var(--muted); font-style:italic; font-size:0.85rem; text-align:center; padding:20px; }
 
-        #infoPanel::before {
-            content: '';
-            position: absolute;
-            top: 6px; left: 6px;
-            width: 16px; height: 16px;
-            border-top: 1px solid var(--gold);
-            border-left: 1px solid var(--gold);
-        }
+        /* TOAST */
+        #toast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(20px); background:rgba(8,8,14,0.97); border:1px solid var(--border); color:var(--cream); padding:11px 22px; font-family:'Cinzel',serif; font-size:0.75rem; letter-spacing:0.1em; z-index:300; opacity:0; transition:opacity 0.3s,transform 0.3s; pointer-events:none; }
+        #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-        .info-name {
-            font-family: 'Cinzel', serif;
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: var(--gold-light);
-            letter-spacing: 0.08em;
-            margin-bottom: 10px;
-        }
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            margin-bottom: 6px;
-            color: var(--muted);
-        }
-        .info-row span { color: var(--cream); }
-        .info-owner { margin: 12px 0 8px; font-size: 0.8rem; color: var(--muted); }
-        .info-owner em { color: var(--gold); font-style: normal; }
+        /* LEGEND */
+        #legend { position:absolute; bottom:18px; left:18px; z-index:20; font-family:'Cinzel',serif; font-size:0.6rem; letter-spacing:0.08em; color:var(--muted); }
+        .legend-item { display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+        .legend-dot { width:12px; height:12px; border-radius:2px; }
 
-        .claim-btn {
-            width: 100%;
-            padding: 10px;
-            background: var(--gold);
-            color: #0a0a0f;
-            border: none;
-            font-family: 'Cinzel', serif;
-            font-size: 0.72rem;
-            letter-spacing: 0.12em;
-            cursor: pointer;
-            margin-top: 8px;
-            text-transform: uppercase;
-            transition: background 0.2s;
-        }
-        .claim-btn:hover { background: var(--gold-light); }
-        .claim-btn.attack { background: var(--red); color: #fff; }
-        .claim-btn.attack:hover { background: #e74c3c; }
-        .claim-btn.owned { background: var(--border); color: var(--muted); cursor: not-allowed; }
-
-        /* Level badges */
-        .level-badges {
-            display: flex;
-            gap: 4px;
-            margin-top: 6px;
-        }
-        .lvl-pip {
-            width: 20px; height: 6px;
-            background: var(--border);
-            border-radius: 1px;
-        }
-        .lvl-pip.active { background: var(--gold); }
-
-        /* Upgrade btn */
-        .upgrade-btn {
-            width: 100%;
-            padding: 8px;
-            background: transparent;
-            border: 1px solid var(--green);
-            color: var(--green);
-            font-family: 'Cinzel', serif;
-            font-size: 0.68rem;
-            letter-spacing: 0.1em;
-            cursor: pointer;
-            margin-top: 6px;
-            transition: background 0.2s;
-        }
-        .upgrade-btn:hover { background: rgba(39,174,96,0.1); }
-
-        /* ===== BATTLE MODAL ===== */
-        #battleModal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.85);
-            z-index: 100;
-            align-items: center;
-            justify-content: center;
-        }
-        #battleModal.open { display: flex; }
-
-        .battle-box {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            width: 480px;
-            max-width: 95vw;
-            padding: 36px;
-            position: relative;
-            text-align: center;
-        }
-        .battle-box::before {
-            content: '';
-            position: absolute;
-            top: 6px; left: 6px; right: 6px; bottom: 6px;
-            border: 1px solid rgba(201,168,76,0.1);
-            pointer-events: none;
-        }
-
-        .battle-title {
-            font-family: 'Cinzel', serif;
-            font-size: 1.2rem;
-            color: var(--gold);
-            letter-spacing: 0.15em;
-            margin-bottom: 6px;
-        }
-        .battle-sub {
-            color: var(--muted);
-            font-style: italic;
-            font-size: 0.9rem;
-            margin-bottom: 24px;
-        }
-
-        .score-board {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 24px;
-            margin-bottom: 22px;
-        }
-        .score-side { font-family: 'Cinzel', serif; }
-        .score-side .s-name { font-size: 0.72rem; color: var(--muted); letter-spacing: 0.1em; margin-bottom: 4px; }
-        .score-side .s-num { font-size: 2.2rem; color: var(--gold-light); line-height: 1; }
-        .score-sep { font-size: 1.4rem; color: var(--border); }
-
-        .rps-choices {
-            display: flex;
-            gap: 14px;
-            justify-content: center;
-            margin-bottom: 18px;
-        }
-        .rps-btn {
-            width: 80px; height: 80px;
-            background: rgba(255,255,255,0.03);
-            border: 1px solid var(--border);
-            color: var(--cream);
-            font-size: 2.2rem;
-            cursor: pointer;
-            transition: border-color 0.2s, transform 0.15s, background 0.2s;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 3px;
-        }
-        .rps-btn span.lbl {
-            font-family: 'Cinzel', serif;
-            font-size: 0.55rem;
-            color: var(--muted);
-            letter-spacing: 0.08em;
-        }
-        .rps-btn:hover { border-color: var(--gold); background: rgba(201,168,76,0.07); transform: translateY(-2px); }
-        .rps-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; }
-
-        .timer-bar-wrap {
-            height: 4px;
-            background: var(--border);
-            margin-bottom: 14px;
-            overflow: hidden;
-        }
-        #timerBar {
-            height: 100%;
-            background: var(--gold);
-            width: 100%;
-            transition: width linear;
-        }
-        #timerText {
-            font-family: 'Cinzel', serif;
-            font-size: 0.7rem;
-            color: var(--muted);
-            letter-spacing: 0.12em;
-            margin-bottom: 10px;
-        }
-
-        .round-result {
-            font-size: 1.1rem;
-            min-height: 28px;
-            color: var(--cream);
-            margin-bottom: 14px;
-        }
-        .round-result.win { color: var(--green); }
-        .round-result.lose { color: var(--red); }
-        .round-result.draw { color: var(--gold); }
-
-        .battle-log {
-            font-size: 0.8rem;
-            color: var(--muted);
-            font-style: italic;
-            min-height: 22px;
-            margin-bottom: 10px;
-        }
-
-        .battle-close-btn {
-            display: none;
-            margin: 12px auto 0;
-            padding: 11px 28px;
-            background: var(--gold);
-            border: none;
-            color: #0a0a0f;
-            font-family: 'Cinzel', serif;
-            font-size: 0.75rem;
-            letter-spacing: 0.15em;
-            cursor: pointer;
-        }
-        .battle-close-btn:hover { background: var(--gold-light); }
-
-        /* ===== TOAST ===== */
-        #toast {
-            position: fixed;
-            bottom: 28px;
-            left: 50%;
-            transform: translateX(-50%) translateY(20px);
-            background: rgba(10,10,15,0.95);
-            border: 1px solid var(--border);
-            color: var(--cream);
-            padding: 11px 22px;
-            font-family: 'Cinzel', serif;
-            font-size: 0.75rem;
-            letter-spacing: 0.1em;
-            z-index: 200;
-            opacity: 0;
-            transition: opacity 0.3s, transform 0.3s;
-            pointer-events: none;
-        }
-        #toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* ===== LEGEND ===== */
-        #legend {
-            position: absolute;
-            bottom: 18px;
-            left: 18px;
-            z-index: 20;
-            font-family: 'Cinzel', serif;
-            font-size: 0.62rem;
-            letter-spacing: 0.08em;
-            color: var(--muted);
-        }
-        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-        .legend-dot { width: 12px; height: 12px; border-radius: 2px; }
-
-        /* Loading */
-        #loading {
-            position: absolute;
-            font-family: 'Cinzel', serif;
-            font-size: 0.85rem;
-            color: var(--gold);
-            letter-spacing: 0.2em;
-            text-transform: uppercase;
-            z-index: 10;
-            text-align: center;
-        }
-        .load-spinner {
-            width: 32px; height: 32px;
-            border: 2px solid var(--border);
-            border-top-color: var(--gold);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin: 0 auto 12px;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+        /* LOADER */
+        #loading { position:absolute; font-family:'Cinzel',serif; font-size:0.85rem; color:var(--gold); letter-spacing:0.2em; text-transform:uppercase; z-index:10; text-align:center; }
+        .load-spinner { width:32px; height:32px; border:2px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:spin 0.8s linear infinite; margin:0 auto 12px; }
+        @keyframes spin { to { transform:rotate(360deg); } }
+        @keyframes pulseRed { 0%,100%{box-shadow:0 0 0 rgba(192,57,43,0)} 50%{box-shadow:0 0 20px rgba(192,57,43,0.5)} }
     </style>
 </head>
 <body>
 
-<!-- TOP BAR -->
 <div id="topbar">
     <div class="topbar-left">♛ EMPIRE GLOBE</div>
     <div class="topbar-center">
@@ -450,68 +168,83 @@
     </div>
     <div class="topbar-right">
         <div id="empireTag">
-            <div id="empireNameDisplay" style="font-size:0.85rem; color:var(--gold-light);">—</div>
-            <div id="tagDisplay" style="font-size:0.65rem; color:var(--muted); margin-top:2px;">Loading...</div>
+            <div id="empireNameDisplay" style="font-size:0.85rem;color:var(--gold-light)">—</div>
+            <div id="tagDisplay" style="font-size:0.65rem;color:var(--muted);margin-top:2px">Loading...</div>
         </div>
-        <button class="logout-btn" onclick="doLogout()">RETREAT</button>
+        <button class="nav-btn" onclick="toggleNotifs()">⚔ ALERTS<span class="badge" id="notifBadge">0</span></button>
+        <button class="nav-btn" onclick="doLogout()">RETREAT</button>
     </div>
 </div>
 
-<!-- GLOBE AREA -->
 <div id="globeArea">
-    <div id="loading">
-        <div class="load-spinner"></div>
-        LOADING WORLD MAP...
-    </div>
+    <div id="loading"><div class="load-spinner"></div>LOADING WORLD MAP...</div>
     <svg id="globeSvg"></svg>
-
-    <!-- SEARCH -->
     <div id="searchBar">
-        <input type="text" id="searchInput" placeholder="Search country...">
+        <input type="text" id="searchInput" placeholder="Search territory or ocean...">
         <button id="searchBtn" onclick="searchCountry()">FIND</button>
     </div>
-
-    <!-- INFO PANEL -->
     <div id="infoPanel">
         <div class="info-name" id="infoPanelName">—</div>
-        <div class="info-row">Population <span id="infoPop">—</span></div>
-        <div class="info-row">Income/turn <span id="infoIncome">—</span></div>
+        <div class="info-row">Type <span id="infoType">—</span></div>
+        <div class="info-row">Income/min <span id="infoIncome">—</span></div>
         <div class="info-owner" id="infoOwner">Unclaimed</div>
         <div class="level-badges" id="infoBadges"></div>
-        <button class="claim-btn" id="claimBtn" onclick="handleClaimOrAttack()">—</button>
-        <button class="upgrade-btn" id="upgradeBtn" onclick="upgradeTerritory()" style="display:none">⬆ UPGRADE TERRITORY</button>
+        <button class="panel-btn gold" id="claimBtn" onclick="handleClaimOrAttack()">—</button>
+        <button class="panel-btn green" id="upgradeBtn" onclick="upgradeTerritory()" style="display:none">⬆ UPGRADE</button>
+        <button class="panel-btn blue" id="giftBtn" onclick="openGiftModal()" style="display:none">🎁 GIFT TERRITORY</button>
     </div>
-
-    <!-- LEGEND -->
     <div id="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#1a2a4a"></div> Unclaimed</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#c9a84c"></div> Your Territory</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#8b2020"></div> Enemy Territory</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1a2a4a"></div>Unclaimed Land</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#c9a84c"></div>Your Territory</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#6b1010"></div>Enemy Territory</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#0d2a4a;border:1px solid #1a4a7a"></div>Ocean Zone</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#1a4a8a;border:1px solid #4a9fd4"></div>Your Ocean</div>
+    </div>
+</div>
+
+<!-- NOTIFICATIONS PANEL -->
+<div id="notifsPanel">
+    <div class="notif-header">Incoming Alerts <button class="notif-close" onclick="toggleNotifs()">✕</button></div>
+    <div id="notifsList"><div class="no-notifs">No alerts yet.</div></div>
+</div>
+
+<!-- ATTACK CONFIRM MODAL -->
+<div class="modal-overlay" id="attackConfirmModal">
+    <div class="modal-box" style="width:440px">
+        <div class="modal-title">⚔ DECLARE WAR</div>
+        <div class="modal-sub" id="attackConfirmSub">—</div>
+        <p style="color:var(--cream);font-size:0.9rem;line-height:1.7;margin-bottom:16px" id="attackConfirmBody"></p>
+        <div id="attackConfirmActions">
+            <div class="confirm-btns">
+                <button class="confirm-btn yes" onclick="sendAttackChallenge()">⚔ SEND CHALLENGE</button>
+                <button class="confirm-btn no" onclick="closeAttackConfirm()">CANCEL</button>
+            </div>
+        </div>
+        <div id="attackConfirmWaiting" style="display:none;margin-top:14px">
+            <div class="load-spinner" style="margin:0 auto 8px"></div>
+            <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.12em">WAITING FOR DEFENDER TO ACCEPT...</div>
+            <button class="confirm-btn no" style="margin-top:12px" onclick="cancelChallenge()">WITHDRAW</button>
+        </div>
     </div>
 </div>
 
 <!-- BATTLE MODAL -->
-<div id="battleModal">
-    <div class="battle-box">
-        <div class="battle-title">⚔ TERRITORIAL BATTLE</div>
-        <div class="battle-sub" id="battleSubtitle">Engaging...</div>
+<div class="modal-overlay" id="battleModal">
+    <div class="modal-box" style="width:500px">
+        <div class="modal-title">⚔ TERRITORIAL BATTLE</div>
+        <div class="modal-sub" id="battleSubtitle">Engaging...</div>
         <div class="score-board">
-            <div class="score-side">
-                <div class="s-name">YOU</div>
-                <div class="s-num" id="myScore">0</div>
-            </div>
+            <div class="score-side"><div class="s-name" id="myBattleName">YOU</div><div class="s-num" id="myScore">0</div></div>
             <div class="score-sep">vs</div>
-            <div class="score-side">
-                <div class="s-name">DEFENDER</div>
-                <div class="s-num" id="theirScore">0</div>
-            </div>
+            <div class="score-side"><div class="s-name" id="theirBattleName">OPPONENT</div><div class="s-num" id="theirScore">0</div></div>
         </div>
         <div class="timer-bar-wrap"><div id="timerBar"></div></div>
-        <div id="timerText">Choose within 5 seconds...</div>
+        <div id="timerText">Waiting...</div>
+        <div class="waiting-label" id="waitingLabel" style="display:none">⏳ Waiting for opponent...</div>
         <div class="rps-choices">
-            <button class="rps-btn" onclick="rpsChoose('rock')">✊<span class="lbl">ROCK</span></button>
-            <button class="rps-btn" onclick="rpsChoose('paper')">🖐<span class="lbl">PAPER</span></button>
-            <button class="rps-btn" onclick="rpsChoose('scissors')">✌<span class="lbl">SCISSORS</span></button>
+            <button class="rps-btn" id="btnRock" onclick="rpsChoose('rock')">✊<span class="lbl">ROCK</span></button>
+            <button class="rps-btn" id="btnPaper" onclick="rpsChoose('paper')">🖐<span class="lbl">PAPER</span></button>
+            <button class="rps-btn" id="btnScissors" onclick="rpsChoose('scissors')">✌<span class="lbl">SCISSORS</span></button>
         </div>
         <div class="round-result" id="roundResult"></div>
         <div class="battle-log" id="battleLog">First to 3 wins claims the territory!</div>
@@ -519,469 +252,649 @@
     </div>
 </div>
 
-<!-- TOAST -->
+<!-- GIFT MODAL -->
+<div class="modal-overlay" id="giftModal">
+    <div class="modal-box" style="width:420px;text-align:left">
+        <div class="modal-title" style="text-align:center">🎁 GIFT TERRITORY</div>
+        <div class="modal-sub" id="giftModalSub" style="text-align:center">Transfer land to another player</div>
+        <label class="modal-label">Search Player by Tag</label>
+        <input class="modal-input" id="giftSearchInput" placeholder="e.g. DrukKing99" oninput="searchUsers()">
+        <div id="userSearchResults"></div>
+        <div id="selectedGiftUser"></div>
+        <div class="confirm-btns">
+            <button class="confirm-btn yes" onclick="confirmGift()">🎁 CONFIRM GIFT</button>
+            <button class="confirm-btn no" onclick="closeGiftModal()">CANCEL</button>
+        </div>
+    </div>
+</div>
+
 <div id="toast"></div>
 
-<!-- FIREBASE + GAME LOGIC -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-auth.js";
-import { getFirestore, doc, getDoc, updateDoc, setDoc, onSnapshot, collection, query, where } from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
+import {
+    getFirestore, doc, getDoc, updateDoc, setDoc, deleteDoc,
+    onSnapshot, collection, query, where, getDocs,
+    addDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.12.1/firebase-firestore.js";
 
 const firebaseConfig = {
-    apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
-    authDomain: "edulinki.firebaseapp.com",
-    projectId: "edulinki",
-    storageBucket: "edulinki.firebasestorage.app",
-    messagingSenderId: "248886466474",
-    appId: "1:248886466474:web:160043201a6b28bafbbdd3"
+    apiKey:"AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
+    authDomain:"edulinki.firebaseapp.com",
+    projectId:"edulinki",
+    storageBucket:"edulinki.firebasestorage.app",
+    messagingSenderId:"248886466474",
+    appId:"1:248886466474:web:160043201a6b28bafbbdd3"
 };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-// ======= Game State =======
-let currentUser = null;
-let playerData = null;
-let allTerritories = {}; // countryName -> { owner, ownerEmpire, level }
-let selectedCountry = null;
+// === STATE ===
+let currentUser = null, playerData = null;
+let allTerritories = {};
+let selectedCountry = null, selectedIsOcean = false;
+let pendingChallengeId = null;
+let challengeListenerUnsub = null, roundListenerUnsub = null;
+let battleDocId = null, battleData = null, battleRole = null, battleIsAI = false;
+let myChoiceThisRound = null;
+let roundTimerInterval = null;
+let aiWins = 0, aiTheirWins = 0, aiRound = 0;
+let selectedGiftTargetUid = null, selectedGiftTargetTag = null;
 
-const UPGRADE_COSTS = [0, 200, 500, 1000, 2000]; // Level 1-5 upgrade costs
+const UPGRADE_COSTS = [0,200,500,1000,2000];
+const COUNTRY_INCOME = {
+    "United States":300,"China":280,"Germany":150,"Japan":140,"India":120,"Brazil":100,
+    "United Kingdom":130,"France":120,"Russia":110,"Canada":100,"Australia":90,"South Korea":80,
+    "default":20
+};
+const OCEAN_ZONES = [
+    {id:"ocean_pacific",name:"Pacific Ocean",coords:[180,-10],income:60},
+    {id:"ocean_atlantic",name:"Atlantic Ocean",coords:[-30,10],income:50},
+    {id:"ocean_indian",name:"Indian Ocean",coords:[75,-20],income:45},
+    {id:"ocean_arctic",name:"Arctic Ocean",coords:[0,80],income:30},
+    {id:"ocean_southern",name:"Southern Ocean",coords:[0,-70],income:35},
+    {id:"ocean_caribbean",name:"Caribbean Sea",coords:[-75,15],income:40},
+    {id:"ocean_mediterranean",name:"Mediterranean Sea",coords:[15,36],income:50},
+    {id:"ocean_south_china",name:"South China Sea",coords:[114,14],income:55},
+    {id:"ocean_red",name:"Red Sea",coords:[38,20],income:45},
+    {id:"ocean_persian",name:"Persian Gulf",coords:[52,26],income:70},
+    {id:"ocean_north",name:"North Sea",coords:[4,56],income:40},
+    {id:"ocean_bering",name:"Bering Sea",coords:[-175,57],income:30}
+];
 
-// Auth guard
-onAuthStateChanged(auth, async (user) => {
-    if (!user) { window.location.href = 'index.html'; return; }
+function getIncome(name, level) {
+    const oz = OCEAN_ZONES.find(o=>o.name===name);
+    const base = oz ? oz.income : (COUNTRY_INCOME[name]||COUNTRY_INCOME["default"]);
+    return Math.floor(base*(level||1)*1.4);
+}
+
+// === AUTH ===
+onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href='index.html'; return; }
     currentUser = user;
-    const snap = await getDoc(doc(db, 'players', user.uid));
-    if (!snap.exists()) { window.location.href = 'index.html'; return; }
+    const snap = await getDoc(doc(db,'players',user.uid));
+    if (!snap.exists()) { window.location.href='index.html'; return; }
     playerData = snap.data();
     updateUI();
     listenTerritories();
+    listenNotifications();
 });
 
-window.doLogout = async function() {
-    await signOut(auth);
-    window.location.href = 'index.html';
-};
+window.doLogout = async () => { await signOut(auth); window.location.href='index.html'; };
 
 function updateUI() {
     if (!playerData) return;
-    document.getElementById('moneyDisplay').textContent = playerData.money || 0;
-    document.getElementById('territoriesDisplay').textContent = (playerData.territories || []).length;
-    document.getElementById('winsDisplay').textContent = playerData.wins || 0;
-    document.getElementById('lossesDisplay').textContent = playerData.losses || 0;
-    document.getElementById('empireNameDisplay').textContent = playerData.empire || '—';
-    document.getElementById('tagDisplay').textContent = '@' + (playerData.tag || '?');
+    document.getElementById('moneyDisplay').textContent = playerData.money||0;
+    document.getElementById('territoriesDisplay').textContent = (playerData.territories||[]).length;
+    document.getElementById('winsDisplay').textContent = playerData.wins||0;
+    document.getElementById('lossesDisplay').textContent = playerData.losses||0;
+    document.getElementById('empireNameDisplay').textContent = playerData.empire||'—';
+    document.getElementById('tagDisplay').textContent = '@'+(playerData.tag||'?');
 }
 
-// Real-time listen to territories
+async function refreshPlayerData() {
+    const snap = await getDoc(doc(db,'players',currentUser.uid));
+    if (snap.exists()) { playerData = snap.data(); updateUI(); }
+}
+
+// === TERRITORIES LISTENER ===
 function listenTerritories() {
-    onSnapshot(collection(db, 'territories'), (snap) => {
+    onSnapshot(collection(db,'territories'), snap => {
         allTerritories = {};
         snap.forEach(d => { allTerritories[d.id] = d.data(); });
         refreshGlobeColors();
     });
 }
 
-async function refreshPlayerData() {
-    const snap = await getDoc(doc(db, 'players', currentUser.uid));
-    if (snap.exists()) { playerData = snap.data(); updateUI(); }
+// === NOTIFICATIONS ===
+function listenNotifications() {
+    const q = query(collection(db,'notifications'), where('toUid','==',currentUser.uid), where('read','==',false));
+    onSnapshot(q, snap => {
+        const items = [];
+        snap.forEach(d => items.push({id:d.id,...d.data()}));
+        renderNotifications(items);
+        const badge = document.getElementById('notifBadge');
+        if (items.length>0) { badge.textContent=items.length; badge.classList.add('show'); }
+        else badge.classList.remove('show');
+    });
 }
 
-// ======= COUNTRY INCOME MAP (estimated) =======
-const COUNTRY_INCOME = {
-    "United States": 300, "China": 280, "Germany": 150, "Japan": 140,
-    "India": 120, "Brazil": 100, "United Kingdom": 130, "France": 120,
-    "Russia": 110, "Canada": 100, "Australia": 90, "South Korea": 80,
-    "default": 20
-};
-const COUNTRY_POP = {
-    "United States": "331M", "China": "1.4B", "India": "1.38B", "Brazil": "212M",
-    "Russia": "145M", "Japan": "126M", "Germany": "83M", "United Kingdom": "67M",
-    "France": "67M", "Australia": "26M", "default": "—"
-};
-
-function getIncome(name, level) {
-    const base = COUNTRY_INCOME[name] || COUNTRY_INCOME["default"];
-    return Math.floor(base * (level || 1) * 1.5);
+function renderNotifications(items) {
+    const list = document.getElementById('notifsList');
+    if (!items.length) { list.innerHTML='<div class="no-notifs">No alerts yet.</div>'; return; }
+    list.innerHTML = items.map(n => {
+        if (n.type==='attack_challenge') return `
+            <div class="notif-item urgent">
+                <div class="n-title">⚔ YOUR TERRITORY IS BEING ATTACKED!</div>
+                <div class="n-body"><strong>${n.territory}</strong> is under siege by <em>${n.attackerEmpire}</em> (@${n.attackerTag}). Do you accept their challenge?</div>
+                <div class="n-actions">
+                    <button class="n-btn accept" onclick="acceptBattle('${n.id}','${n.territory}','${n.attackerUid}','${n.attackerEmpire}','${n.attackerTag}','${n.battleId}')">⚔ DEFEND</button>
+                    <button class="n-btn decline" onclick="declineChallenge('${n.id}','${n.battleId}')">SURRENDER</button>
+                </div>
+            </div>`;
+        if (n.type==='land_gift') return `
+            <div class="notif-item">
+                <div class="n-title">🎁 TERRITORY GIFTED TO YOU</div>
+                <div class="n-body"><em>${n.fromEmpire}</em> has gifted you <strong>${n.territory}</strong>!</div>
+                <div class="n-actions"><button class="n-btn accept" onclick="dismissNotif('${n.id}')">ACKNOWLEDGE</button></div>
+            </div>`;
+        if (n.type==='battle_result') {
+            const won = n.winnerId===currentUser.uid;
+            return `<div class="notif-item">
+                <div class="n-title">${won?'🏆 VICTORY':'💀 DEFEATED'}</div>
+                <div class="n-body">${n.body}</div>
+                <div class="n-actions"><button class="n-btn accept" onclick="dismissNotif('${n.id}')">OK</button></div>
+            </div>`;
+        }
+        return `<div class="notif-item"><div class="n-title">Alert</div><div class="n-body">${n.body||''}</div><div class="n-actions"><button class="n-btn accept" onclick="dismissNotif('${n.id}')">OK</button></div></div>`;
+    }).join('');
 }
 
-// ======= D3 GLOBE =======
+window.dismissNotif = async id => { await updateDoc(doc(db,'notifications',id),{read:true}); };
+window.toggleNotifs = () => { document.getElementById('notifsPanel').classList.toggle('open'); };
+
+// === D3 GLOBE ===
 const svg = d3.select("#globeSvg");
 let W, H;
-
-function sizeGlobe() {
-    const area = document.getElementById('globeArea');
-    W = area.clientWidth;
-    H = area.clientHeight;
-    svg.attr("width", W).attr("height", H);
-}
+function sizeGlobe() { const a=document.getElementById('globeArea'); W=a.clientWidth; H=a.clientHeight; svg.attr("width",W).attr("height",H); }
 sizeGlobe();
 
-const projection = d3.geoOrthographic()
-    .scale(Math.min(W, H) * 0.42)
-    .translate([W / 2, H / 2])
-    .clipAngle(90)
-    .rotate([0, -20]);
-
+const projection = d3.geoOrthographic().scale(Math.min(W,H)*0.42).translate([W/2,H/2]).clipAngle(90).rotate([0,-20]);
 const geoPath = d3.geoPath().projection(projection);
 const graticule = d3.geoGraticule10();
-
-svg.append("path").datum({type:"Sphere"}).attr("class","sphere-fill").attr("d", geoPath);
-svg.append("path").datum(graticule).attr("class","graticule").attr("d", geoPath);
-
-let countriesGroup = svg.append("g").attr("id","countriesGroup");
-
-svg.append("path").datum({type:"Sphere"}).attr("class","sphere-border").attr("d", geoPath);
+svg.append("path").datum({type:"Sphere"}).attr("class","sphere-fill").attr("d",geoPath);
+svg.append("path").datum(graticule).attr("class","graticule").attr("d",geoPath);
+const countriesGroup = svg.append("g").attr("id","countriesGroup");
+const oceansGroup = svg.append("g").attr("id","oceansGroup");
+svg.append("path").datum({type:"Sphere"}).attr("class","sphere-border").attr("d",geoPath);
 
 let worldData = null;
+const oceanPathData = {};
 
-function countryColor(name) {
+function tColor(name, isOcean) {
     const t = allTerritories[name];
-    if (!t) return "#1a2a4a";
-    if (playerData && t.owner === currentUser?.uid) return "#c9a84c";
-    return "#6b1010";
+    if (!t) return isOcean ? "rgba(13,42,74,0.5)" : "#1a2a4a";
+    if (t.owner===currentUser?.uid) return isOcean ? "rgba(26,74,138,0.75)" : "#c9a84c";
+    return isOcean ? "rgba(100,20,20,0.55)" : "#6b1010";
 }
 
 function refreshGlobeColors() {
     if (!worldData) return;
-    countriesGroup.selectAll(".country").style("fill", d => countryColor(d.properties.name));
+    countriesGroup.selectAll(".country").style("fill", d => tColor(d.properties.name, false));
+    oceansGroup.selectAll(".ocean-zone").style("fill", function() {
+        const id = d3.select(this).attr("data-id");
+        const oz = OCEAN_ZONES.find(o=>o.id===id);
+        return oz ? tColor(oz.name, true) : "rgba(13,42,74,0.5)";
+    });
+}
+
+function drawOceanZones() {
+    OCEAN_ZONES.forEach(oz => {
+        const feat = d3.geoCircle().center(oz.coords).radius(11)();
+        oceanPathData[oz.id] = feat;
+        oceansGroup.append("path").datum(feat)
+            .attr("class","ocean-zone").attr("data-id",oz.id)
+            .attr("d",geoPath).style("fill","rgba(13,42,74,0.5)")
+            .on("click", () => selectTerritoryByData(oz.name, true, oz));
+    });
 }
 
 d3.json("https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json").then(world => {
     document.getElementById('loading').remove();
     worldData = world;
     const features = topojson.feature(world, world.objects.countries).features;
-
-    countriesGroup.selectAll(".country")
-        .data(features)
-        .enter().append("path")
-        .attr("class", "country")
-        .attr("d", geoPath)
-        .style("fill", d => countryColor(d.properties.name))
-        .on("click", (event, d) => selectCountry(d))
-        .append("title").text(d => d.properties.name || "Unknown");
-
-    // Drag to rotate
-    let dragStart = null;
-    svg.call(d3.drag()
-        .on("start", (event) => { dragStart = [event.x, event.y]; })
-        .on("drag", (event) => {
-            if (!dragStart) return;
-            const dx = event.x - dragStart[0];
-            const dy = event.y - dragStart[1];
-            const r = projection.rotate();
-            projection.rotate([r[0] + dx * 0.4, r[1] - dy * 0.4]);
-            dragStart = [event.x, event.y];
-            updateGlobe();
-        })
-    );
-
-    // Scroll to zoom
-    svg.on("wheel", (event) => {
-        event.preventDefault();
-        const s = projection.scale();
-        const newS = Math.max(80, Math.min(s - event.deltaY * 0.8, 2000));
-        projection.scale(newS);
-        updateGlobe();
-    });
-
-}).catch(err => {
-    document.getElementById('loading').innerHTML = "Failed to load map.";
-    console.error(err);
-});
+    countriesGroup.selectAll(".country").data(features).enter().append("path")
+        .attr("class","country").attr("d",geoPath)
+        .style("fill", d => tColor(d.properties.name, false))
+        .on("click",(e,d) => selectTerritoryByData(d.properties.name, false, null, d))
+        .append("title").text(d => d.properties.name||"Unknown");
+    drawOceanZones();
+    // Drag
+    let ds=null;
+    svg.call(d3.drag().on("start",e=>{ds=[e.x,e.y]}).on("drag",e=>{
+        if(!ds)return; const dx=e.x-ds[0],dy=e.y-ds[1],r=projection.rotate();
+        projection.rotate([r[0]+dx*0.4,r[1]-dy*0.4]); ds=[e.x,e.y]; updateGlobe();
+    }));
+    svg.on("wheel",e=>{e.preventDefault(); const s=projection.scale(); projection.scale(Math.max(80,Math.min(s-e.deltaY*0.8,2500))); updateGlobe();});
+}).catch(()=>{document.getElementById('loading').innerHTML="Failed to load map.";});
 
 function updateGlobe() {
-    svg.selectAll("path.country, path.graticule, path.sphere-border, path.sphere-fill").attr("d", geoPath);
+    svg.selectAll("path.country,path.graticule,path.sphere-border,path.sphere-fill").attr("d",geoPath);
+    oceansGroup.selectAll("path.ocean-zone").attr("d", function(d){ return d ? geoPath(d) : null; });
 }
 
-// ======= COUNTRY SELECTION =======
-function selectCountry(d) {
-    if (!currentUser || !playerData) return;
-    selectedCountry = d;
-    const name = d.properties.name || "Unknown Territory";
+// === TERRITORY SELECTION ===
+function selectTerritoryByData(name, isOcean, oz, countryFeature) {
+    if (!currentUser||!playerData) return;
+    selectedIsOcean = isOcean;
+    selectedCountry = countryFeature || { properties:{name}, _oz:oz };
     const t = allTerritories[name];
-    const level = t ? (t.level || 1) : 0;
-    const owned = t && t.owner === currentUser.uid;
-    const enemy = t && t.owner && t.owner !== currentUser.uid;
-
+    const level = t?(t.level||1):0;
+    const owned = t && t.owner===currentUser.uid;
+    const enemy = t && t.owner && t.owner!==currentUser.uid;
     document.getElementById('infoPanelName').textContent = name;
-    document.getElementById('infoPop').textContent = COUNTRY_POP[name] || COUNTRY_POP["default"];
-    document.getElementById('infoIncome').textContent = `${getIncome(name, level)} Gold`;
-
-    // Ownership label
-    if (owned) {
-        document.getElementById('infoOwner').innerHTML = `Your Territory — <em>${playerData.empire}</em>`;
-    } else if (enemy) {
-        document.getElementById('infoOwner').innerHTML = `Owned by <em>${t.ownerEmpire || 'an empire'}</em>`;
-    } else {
-        document.getElementById('infoOwner').textContent = 'Unclaimed Territory';
-    }
-
+    document.getElementById('infoType').textContent = isOcean ? '🌊 Ocean Zone' : '🌍 Territory';
+    document.getElementById('infoIncome').textContent = `${getIncome(name,level)} Gold`;
+    if (owned) document.getElementById('infoOwner').innerHTML = `Your Territory — <em>${playerData.empire}</em>`;
+    else if (enemy) document.getElementById('infoOwner').innerHTML = `Owned by <em>${t.ownerEmpire||'an empire'}</em> (@${t.ownerTag||'?'})`;
+    else document.getElementById('infoOwner').textContent = 'Unclaimed';
     // Level pips
-    const badges = document.getElementById('infoBadges');
-    badges.innerHTML = '';
-    for (let i = 1; i <= 5; i++) {
-        const pip = document.createElement('div');
-        pip.className = 'lvl-pip' + (i <= level ? ' active' : '');
-        badges.appendChild(pip);
-    }
-
-    // Action button
-    const btn = document.getElementById('claimBtn');
-    const upBtn = document.getElementById('upgradeBtn');
+    const badges = document.getElementById('infoBadges'); badges.innerHTML='';
+    for(let i=1;i<=5;i++){const p=document.createElement('div');p.className='lvl-pip'+(i<=level?' active':'');badges.appendChild(p);}
+    // Buttons
+    const btn=document.getElementById('claimBtn'), upBtn=document.getElementById('upgradeBtn'), giftBtn=document.getElementById('giftBtn');
     if (owned) {
-        btn.textContent = 'YOUR TERRITORY';
-        btn.className = 'claim-btn owned';
-        if (level < 5) {
-            const cost = UPGRADE_COSTS[level];
-            upBtn.textContent = `⬆ UPGRADE LVL ${level+1} — ${cost} GOLD`;
-            upBtn.style.display = 'block';
-        } else {
-            upBtn.style.display = 'none';
-        }
+        btn.textContent='YOUR TERRITORY'; btn.className='panel-btn owned';
+        if (level<5){upBtn.textContent=`⬆ UPGRADE LVL ${level+1} — ${UPGRADE_COSTS[level]} GOLD`;upBtn.style.display='block';}else upBtn.style.display='none';
+        giftBtn.style.display='block';
     } else if (enemy) {
-        btn.textContent = '⚔ ATTACK';
-        btn.className = 'claim-btn attack';
-        upBtn.style.display = 'none';
+        btn.textContent='⚔ ATTACK'; btn.className='panel-btn attack';
+        upBtn.style.display='none'; giftBtn.style.display='none';
     } else {
-        btn.textContent = '⊕ CLAIM TERRITORY';
-        btn.className = 'claim-btn';
-        upBtn.style.display = 'none';
+        btn.textContent = isOcean ? '⚓ CLAIM OCEAN RIGHTS' : '⊕ CLAIM TERRITORY';
+        btn.className='panel-btn gold'; upBtn.style.display='none'; giftBtn.style.display='none';
     }
-
     document.getElementById('infoPanel').classList.add('visible');
 }
 
-// ======= CLAIM / ATTACK =======
+// === CLAIM / ATTACK ===
 window.handleClaimOrAttack = function() {
-    if (!selectedCountry || !currentUser || !playerData) return;
-    const name = selectedCountry.properties.name || "Unknown";
+    if (!selectedCountry||!currentUser||!playerData) return;
+    const name = selectedCountry.properties.name||"Unknown";
     const t = allTerritories[name];
-    const owned = t && t.owner === currentUser.uid;
-    if (owned) return;
-
-    if (t && t.owner && t.owner !== currentUser.uid) {
-        startBattle(name, t.ownerEmpire || 'An Empire');
-    } else {
-        startBattle(name, null);
-    }
+    if (t && t.owner===currentUser.uid) return;
+    if (t && t.owner && t.owner!==currentUser.uid) openAttackConfirm(name,t);
+    else startAIBattle(name);
 };
 
-window.upgradeTerritory = async function() {
-    if (!selectedCountry || !currentUser || !playerData) return;
-    const name = selectedCountry.properties.name || "Unknown";
-    const t = allTerritories[name];
-    if (!t || t.owner !== currentUser.uid) return;
-    const level = t.level || 1;
-    if (level >= 5) return;
-    const cost = UPGRADE_COSTS[level];
-    if (playerData.money < cost) { showToast(`Need ${cost} Gold to upgrade!`); return; }
-    await updateDoc(doc(db, 'territories', name), { level: level + 1 });
-    await updateDoc(doc(db, 'players', currentUser.uid), { money: playerData.money - cost });
-    await refreshPlayerData();
-    showToast(`Territory upgraded to Level ${level+1}!`);
-    selectCountry(selectedCountry);
-};
+// === ATTACK CONFIRM (vs real player) ===
+let pendingAttackName=null, pendingAttackData=null;
 
-// ======= BATTLE SYSTEM =======
-let battleState = {
-    active: false,
-    countryName: null,
-    myWins: 0,
-    theirWins: 0,
-    roundNum: 0,
-    timerInterval: null,
-    choiceTimeout: null,
-    isAttack: false
-};
-
-function startBattle(countryName, defenderEmpire) {
-    battleState = { active: true, countryName, myWins: 0, theirWins: 0, roundNum: 0, isAttack: !!defenderEmpire };
-    document.getElementById('battleSubtitle').textContent = defenderEmpire
-        ? `Attacking ${defenderEmpire}'s territory: ${countryName}`
-        : `Claiming: ${countryName}`;
-    document.getElementById('myScore').textContent = '0';
-    document.getElementById('theirScore').textContent = '0';
-    document.getElementById('roundResult').textContent = '';
-    document.getElementById('battleLog').textContent = 'First to 3 wins claims the territory!';
-    document.getElementById('battleCloseBtn').style.display = 'none';
-    document.getElementById('battleModal').classList.add('open');
-    startRound();
+function openAttackConfirm(name,t) {
+    pendingAttackName=name; pendingAttackData=t;
+    document.getElementById('attackConfirmSub').textContent = `Target: ${name}`;
+    document.getElementById('attackConfirmBody').textContent =
+        `You are challenging ${t.ownerEmpire||'an empire'} (@${t.ownerTag||'?'}) for "${name}". They will receive a notification and must agree to battle. Only then will war begin.`;
+    document.getElementById('attackConfirmActions').style.display='block';
+    document.getElementById('attackConfirmWaiting').style.display='none';
+    document.getElementById('attackConfirmModal').classList.add('open');
 }
 
-function startRound() {
-    if (!battleState.active) return;
-    battleState.roundNum++;
-    const btns = document.querySelectorAll('.rps-btn');
-    btns.forEach(b => b.disabled = false);
-    document.getElementById('roundResult').textContent = '';
-    document.getElementById('roundResult').className = 'round-result';
+window.closeAttackConfirm = () => { document.getElementById('attackConfirmModal').classList.remove('open'); pendingAttackName=null; pendingAttackData=null; };
 
-    let timeLeft = 5;
-    const timerBar = document.getElementById('timerBar');
-    timerBar.style.transition = 'none';
-    timerBar.style.width = '100%';
-    setTimeout(() => {
-        timerBar.style.transition = `width ${timeLeft}s linear`;
-        timerBar.style.width = '0%';
-    }, 50);
-
-    battleState.timerInterval = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timerText').textContent = `Choose within ${timeLeft} second${timeLeft !== 1 ? 's' : ''}...`;
-        if (timeLeft <= 0) {
-            clearInterval(battleState.timerInterval);
-            // Auto-choose random
-            const choices = ['rock','paper','scissors'];
-            rpsChoose(choices[Math.floor(Math.random() * 3)], true);
+window.sendAttackChallenge = async function() {
+    if (!pendingAttackName||!pendingAttackData) return;
+    const t = pendingAttackData;
+    const battleRef = await addDoc(collection(db,'battles'),{
+        territory:pendingAttackName,
+        attackerUid:currentUser.uid, attackerEmpire:playerData.empire, attackerTag:playerData.tag,
+        defenderUid:t.owner, defenderEmpire:t.ownerEmpire, defenderTag:t.ownerTag,
+        status:'pending', attackerWins:0, defenderWins:0,
+        attackerChoice:null, defenderChoice:null,
+        round:0, createdAt:serverTimestamp()
+    });
+    await addDoc(collection(db,'notifications'),{
+        toUid:t.owner, type:'attack_challenge', territory:pendingAttackName,
+        attackerUid:currentUser.uid, attackerEmpire:playerData.empire, attackerTag:playerData.tag,
+        battleId:battleRef.id, read:false, createdAt:serverTimestamp()
+    });
+    pendingChallengeId = battleRef.id;
+    document.getElementById('attackConfirmActions').style.display='none';
+    document.getElementById('attackConfirmWaiting').style.display='block';
+    // Listen for acceptance
+    if (challengeListenerUnsub) challengeListenerUnsub();
+    challengeListenerUnsub = onSnapshot(doc(db,'battles',battleRef.id), snap => {
+        const d = snap.data(); if (!d) return;
+        if (d.status==='active') {
+            document.getElementById('attackConfirmModal').classList.remove('open');
+            openBattleModal(battleRef.id, d, 'attacker', false);
+            if (challengeListenerUnsub){challengeListenerUnsub();challengeListenerUnsub=null;}
         }
-    }, 1000);
-}
-
-window.rpsChoose = function(playerChoice, auto = false) {
-    if (!battleState.active) return;
-    clearInterval(battleState.timerInterval);
-    document.querySelectorAll('.rps-btn').forEach(b => b.disabled = true);
-
-    const choices = ['rock','paper','scissors'];
-    const aiChoice = choices[Math.floor(Math.random() * 3)];
-    const emojiMap = { rock: '✊', paper: '🖐', scissors: '✌' };
-
-    const win = (playerChoice === 'rock' && aiChoice === 'scissors') ||
-                (playerChoice === 'paper' && aiChoice === 'rock') ||
-                (playerChoice === 'scissors' && aiChoice === 'paper');
-    const draw = playerChoice === aiChoice;
-
-    const resultEl = document.getElementById('roundResult');
-    const log = document.getElementById('battleLog');
-    const prefix = auto ? '⏰ Time up! ' : '';
-
-    if (win) {
-        battleState.myWins++;
-        resultEl.textContent = `${prefix}${emojiMap[playerChoice]} vs ${emojiMap[aiChoice]} — You win this round!`;
-        resultEl.className = 'round-result win';
-    } else if (draw) {
-        resultEl.textContent = `${prefix}${emojiMap[playerChoice]} vs ${emojiMap[aiChoice]} — Draw!`;
-        resultEl.className = 'round-result draw';
-    } else {
-        battleState.theirWins++;
-        resultEl.textContent = `${prefix}${emojiMap[playerChoice]} vs ${emojiMap[aiChoice]} — You lost this round.`;
-        resultEl.className = 'round-result lose';
-    }
-
-    document.getElementById('myScore').textContent = battleState.myWins;
-    document.getElementById('theirScore').textContent = battleState.theirWins;
-    document.getElementById('timerText').textContent = `Round ${battleState.roundNum}`;
-
-    if (battleState.myWins >= 3) {
-        log.textContent = '🏆 Victory! Territory claimed!';
-        claimTerritory();
-    } else if (battleState.theirWins >= 3) {
-        log.textContent = '💀 Defeated! Your forces retreat.';
-        endBattle(false);
-    } else {
-        log.textContent = `Best of 5 — ${3 - battleState.myWins} wins needed`;
-        setTimeout(() => startRound(), 1800);
-    }
+        if (d.status==='declined') {
+            document.getElementById('attackConfirmModal').classList.remove('open');
+            showToast('The defender chose to surrender. No battle fought.');
+            if (challengeListenerUnsub){challengeListenerUnsub();challengeListenerUnsub=null;}
+        }
+    });
 };
 
-async function claimTerritory() {
-    battleState.active = false;
-    const name = battleState.countryName;
-    const level = (allTerritories[name]?.level) || 1;
-    const income = getIncome(name, level);
+window.cancelChallenge = async function() {
+    if (pendingChallengeId) { await updateDoc(doc(db,'battles',pendingChallengeId),{status:'cancelled'}); pendingChallengeId=null; }
+    document.getElementById('attackConfirmModal').classList.remove('open');
+};
 
-    await setDoc(doc(db, 'territories', name), {
-        owner: currentUser.uid,
-        ownerEmpire: playerData.empire,
-        ownerTag: playerData.tag,
-        level: level,
-        name: name
-    });
+// === DEFENDER ACCEPTS/DECLINES ===
+window.acceptBattle = async function(notifId, territory, attackerUid, attackerEmpire, attackerTag, battleId) {
+    await updateDoc(doc(db,'notifications',notifId),{read:true});
+    await updateDoc(doc(db,'battles',battleId),{status:'active'});
+    const snap = await getDoc(doc(db,'battles',battleId));
+    openBattleModal(battleId, snap.data(), 'defender', false);
+    document.getElementById('notifsPanel').classList.remove('open');
+};
 
-    const newTerritories = [...new Set([...(playerData.territories || []), name])];
-    await updateDoc(doc(db, 'players', currentUser.uid), {
-        territories: newTerritories,
-        wins: (playerData.wins || 0) + 1,
-        money: (playerData.money || 0) + income
-    });
+window.declineChallenge = async function(notifId, battleId) {
+    await updateDoc(doc(db,'notifications',notifId),{read:true});
+    await updateDoc(doc(db,'battles',battleId),{status:'declined'});
+    showToast('You surrendered the territory challenge. The attacker backs down.');
+};
 
-    await refreshPlayerData();
-    showToast(`Territory claimed! +${income} Gold`);
-    endBattle(true);
+// === AI BATTLE (vs unclaimed) ===
+function startAIBattle(name) {
+    aiWins=0; aiTheirWins=0; aiRound=0;
+    battleIsAI=true; battleDocId=null;
+    battleData={territory:name,attackerEmpire:playerData.empire,attackerTag:playerData.tag,defenderEmpire:'Wilderness',defenderTag:'AI'};
+    battleRole='attacker';
+    openBattleModal(null, battleData, 'attacker', true);
 }
 
-async function endBattle(won) {
-    battleState.active = false;
-    if (!won) {
-        await updateDoc(doc(db, 'players', currentUser.uid), {
-            losses: (playerData.losses || 0) + 1
+// === BATTLE MODAL ===
+function openBattleModal(battleId, data, role, isAI) {
+    battleDocId=battleId; battleData={...data}; battleRole=role; battleIsAI=isAI;
+    document.getElementById('battleModal').classList.add('open');
+    document.getElementById('myBattleName').textContent = role==='attacker'?(playerData.tag||'YOU'):(data.defenderTag||'YOU');
+    document.getElementById('theirBattleName').textContent = role==='attacker'?(isAI?'WILDERNESS':data.defenderTag):(data.attackerTag||'OPPONENT');
+    document.getElementById('battleSubtitle').textContent = `${role==='attacker'?'Conquering':'Defending'}: ${data.territory}`;
+    document.getElementById('myScore').textContent='0';
+    document.getElementById('theirScore').textContent='0';
+    document.getElementById('roundResult').textContent='';
+    document.getElementById('battleLog').textContent='First to 3 wins claims the territory!';
+    document.getElementById('battleCloseBtn').style.display='none';
+    document.getElementById('waitingLabel').style.display='none';
+    if (isAI) startAIRound();
+    else { listenToBattle(battleId); startPvPRound(); }
+}
+
+// == AI ROUND ==
+function startAIRound() {
+    aiRound++; myChoiceThisRound=null; enableRps();
+    document.getElementById('roundResult').textContent=''; document.getElementById('roundResult').className='round-result';
+    document.getElementById('waitingLabel').style.display='none';
+    let t=5; resetTimer(5);
+    clearInterval(roundTimerInterval);
+    roundTimerInterval = setInterval(()=>{ t--; document.getElementById('timerText').textContent=`Choose within ${t}s...`; if(t<=0){clearInterval(roundTimerInterval);rpsChoose(rng(),true);} },1000);
+}
+
+window.rpsChoose = function(choice, auto=false) {
+    if (myChoiceThisRound) return;
+    myChoiceThisRound = choice;
+    clearInterval(roundTimerInterval);
+    disableRps(choice);
+    if (battleIsAI) resolveAI(choice, rng(), auto);
+    else submitPvP(choice);
+};
+
+function resolveAI(mine, ai, auto) {
+    const em={rock:'✊',paper:'🖐',scissors:'✌'};
+    const win=(mine==='rock'&&ai==='scissors')||(mine==='paper'&&ai==='rock')||(mine==='scissors'&&ai==='paper');
+    const draw=mine===ai;
+    const el=document.getElementById('roundResult'), log=document.getElementById('battleLog');
+    const pfx=auto?'⏰ ':'';
+    if(win){aiWins++;el.textContent=`${pfx}${em[mine]} vs ${em[ai]} — Round won!`;el.className='round-result win';}
+    else if(draw){el.textContent=`${pfx}${em[mine]} vs ${em[ai]} — Draw!`;el.className='round-result draw';}
+    else{aiTheirWins++;el.textContent=`${pfx}${em[mine]} vs ${em[ai]} — Round lost.`;el.className='round-result lose';}
+    document.getElementById('myScore').textContent=aiWins;
+    document.getElementById('theirScore').textContent=aiTheirWins;
+    document.getElementById('timerText').textContent=`Round ${aiRound}`;
+    if(aiWins>=3){log.textContent='🏆 Victory! Territory claimed!';finishAI(true);}
+    else if(aiTheirWins>=3){log.textContent='💀 Defeated! Forces retreat.';finishAI(false);}
+    else{log.textContent=`Need ${3-aiWins} more wins`;setTimeout(()=>startAIRound(),1800);}
+}
+
+async function finishAI(won) {
+    if(won){await applyWin(battleData.territory);showToast(`${battleData.territory} claimed!`);}
+    else{await updateDoc(doc(db,'players',currentUser.uid),{losses:(playerData.losses||0)+1});await refreshPlayerData();}
+    document.getElementById('battleCloseBtn').style.display='inline-block';
+    aiWins=0;aiTheirWins=0;aiRound=0;
+}
+
+// == PvP ROUND ==
+function listenToBattle(bId) {
+    if (roundListenerUnsub){roundListenerUnsub();roundListenerUnsub=null;}
+    roundListenerUnsub = onSnapshot(doc(db,'battles',bId), async snap => {
+        const d=snap.data(); if(!d) return;
+        battleData={...d};
+        const myW=battleRole==='attacker'?d.attackerWins:d.defenderWins;
+        const thW=battleRole==='attacker'?d.defenderWins:d.attackerWins;
+        document.getElementById('myScore').textContent=myW;
+        document.getElementById('theirScore').textContent=thW;
+        if (d.status==='round_result') showPvPResult(d);
+        if (d.status==='finished') await handleFinished(d);
+    });
+}
+
+function startPvPRound() {
+    myChoiceThisRound=null; enableRps();
+    document.getElementById('roundResult').textContent=''; document.getElementById('roundResult').className='round-result';
+    document.getElementById('waitingLabel').style.display='none';
+    let t=5; resetTimer(5);
+    clearInterval(roundTimerInterval);
+    roundTimerInterval = setInterval(()=>{ t--; document.getElementById('timerText').textContent=`Choose within ${t}s...`; if(t<=0){clearInterval(roundTimerInterval);if(!myChoiceThisRound)submitPvP(rng(),true);} },1000);
+}
+
+async function submitPvP(choice, auto=false) {
+    if (!battleDocId) return;
+    disableRps(choice); document.getElementById('waitingLabel').style.display='block';
+    document.getElementById('timerText').textContent='Choice locked in!';
+    const field=battleRole==='attacker'?'attackerChoice':'defenderChoice';
+    await updateDoc(doc(db,'battles',battleDocId),{[field]:choice});
+    // If attacker, check if both chose and resolve
+    if (battleRole==='attacker') {
+        const snap=await getDoc(doc(db,'battles',battleDocId));
+        const d=snap.data();
+        if (d.attackerChoice && d.defenderChoice) resolvePvP(d);
+    }
+}
+
+async function resolvePvP(d) {
+    const ac=d.attackerChoice, dc=d.defenderChoice;
+    const aW=(ac==='rock'&&dc==='scissors')||(ac==='paper'&&dc==='rock')||(ac==='scissors'&&dc==='paper');
+    const dW=(dc==='rock'&&ac==='scissors')||(dc==='paper'&&ac==='rock')||(dc==='scissors'&&ac==='paper');
+    const newAW=(d.attackerWins||0)+(aW?1:0);
+    const newDW=(d.defenderWins||0)+(dW?1:0);
+    let status='round_result', winnerId=null;
+    if(newAW>=3){status='finished';winnerId=d.attackerUid;}
+    else if(newDW>=3){status='finished';winnerId=d.defenderUid;}
+    await updateDoc(doc(db,'battles',battleDocId),{
+        attackerWins:newAW, defenderWins:newDW,
+        lastAttackerChoice:ac, lastDefenderChoice:dc,
+        attackerChoice:null, defenderChoice:null,
+        status, round:(d.round||0)+1, winnerId
+    });
+}
+
+function showPvPResult(d) {
+    clearInterval(roundTimerInterval);
+    document.getElementById('waitingLabel').style.display='none';
+    const em={rock:'✊',paper:'🖐',scissors:'✌'};
+    const ac=d.lastAttackerChoice, dc=d.lastDefenderChoice;
+    const myC=battleRole==='attacker'?ac:dc, thC=battleRole==='attacker'?dc:ac;
+    const aW=(ac==='rock'&&dc==='scissors')||(ac==='paper'&&dc==='rock')||(ac==='scissors'&&dc==='paper');
+    const iWon=(battleRole==='attacker'&&aW)||(battleRole==='defender'&&!aW&&ac!==dc);
+    const isDraw=ac===dc;
+    const el=document.getElementById('roundResult');
+    if(isDraw){el.textContent=`${em[myC]} vs ${em[thC]} — Draw!`;el.className='round-result draw';}
+    else if(iWon){el.textContent=`${em[myC]} vs ${em[thC]} — Round won!`;el.className='round-result win';}
+    else{el.textContent=`${em[myC]} vs ${em[thC]} — Round lost.`;el.className='round-result lose';}
+    document.getElementById('timerText').textContent=`Round ${d.round}`;
+    const myW=battleRole==='attacker'?d.attackerWins:d.defenderWins;
+    document.getElementById('battleLog').textContent=`${3-myW} wins needed`;
+    if(d.status!=='finished') setTimeout(()=>startPvPRound(),2000);
+}
+
+async function handleFinished(d) {
+    clearInterval(roundTimerInterval);
+    if(roundListenerUnsub){roundListenerUnsub();roundListenerUnsub=null;}
+    const iWon=d.winnerId===currentUser.uid;
+    disableRps(null);
+    document.getElementById('waitingLabel').style.display='none';
+    document.getElementById('roundResult').className='round-result '+(iWon?'win':'lose');
+    document.getElementById('roundResult').textContent=iWon?'🏆 VICTORY!':'💀 DEFEATED';
+    document.getElementById('battleLog').textContent=iWon?'Territory is yours!':'The territory holds.';
+    document.getElementById('battleCloseBtn').style.display='inline-block';
+    if(iWon){
+        await applyWin(d.territory);
+        const loserUid=battleRole==='attacker'?d.defenderUid:d.attackerUid;
+        await addDoc(collection(db,'notifications'),{
+            toUid:loserUid, type:'battle_result', winnerId:d.winnerId,
+            body:`${playerData.empire} defeated you and claimed ${d.territory}!`,
+            read:false, createdAt:serverTimestamp()
         });
+    } else {
+        await updateDoc(doc(db,'players',currentUser.uid),{losses:(playerData.losses||0)+1});
         await refreshPlayerData();
     }
-    document.getElementById('battleCloseBtn').style.display = 'inline-block';
+}
+
+async function applyWin(name) {
+    const t=allTerritories[name]; const level=t?(t.level||1):1; const income=getIncome(name,level);
+    await setDoc(doc(db,'territories',name),{owner:currentUser.uid,ownerEmpire:playerData.empire,ownerTag:playerData.tag,level,name});
+    const newT=[...new Set([...(playerData.territories||[]),name])];
+    await updateDoc(doc(db,'players',currentUser.uid),{territories:newT,wins:(playerData.wins||0)+1,money:(playerData.money||0)+income});
+    await refreshPlayerData();
 }
 
 window.closeBattle = function() {
-    battleState.active = false;
-    clearInterval(battleState.timerInterval);
+    clearInterval(roundTimerInterval);
+    if(roundListenerUnsub){roundListenerUnsub();roundListenerUnsub=null;}
+    if(challengeListenerUnsub){challengeListenerUnsub();challengeListenerUnsub=null;}
     document.getElementById('battleModal').classList.remove('open');
+    battleDocId=null; battleIsAI=false; aiWins=0; aiTheirWins=0; aiRound=0;
     refreshGlobeColors();
-    if (selectedCountry) selectCountry(selectedCountry);
-};
-
-// ======= SEARCH =======
-window.searchCountry = function() {
-    if (!worldData) return;
-    const query = document.getElementById('searchInput').value.trim().toLowerCase();
-    if (!query) return;
-    const features = topojson.feature(worldData, worldData.objects.countries).features;
-    const found = features.find(f => (f.properties.name || '').toLowerCase().includes(query));
-    if (!found) { showToast('Country not found.'); return; }
-
-    const centroid = d3.geoCentroid(found);
-    d3.transition().duration(1200).ease(d3.easeCubicInOut).tween("fly", () => {
-        const interp = d3.interpolate(projection.rotate(), [-centroid[0], -centroid[1]]);
-        return t => { projection.rotate(interp(t)); updateGlobe(); };
-    }).on("end", () => selectCountry(found));
-};
-
-document.getElementById('searchInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') window.searchCountry();
-});
-
-// ======= TOAST =======
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 3000);
-}
-window.showToast = showToast;
-
-// ======= PASSIVE INCOME (every 60s) =======
-setInterval(async () => {
-    if (!currentUser || !playerData) return;
-    const territories = playerData.territories || [];
-    if (territories.length === 0) return;
-    let totalIncome = 0;
-    territories.forEach(name => {
-        const t = allTerritories[name];
-        if (t && t.owner === currentUser.uid) {
-            totalIncome += getIncome(name, t.level || 1);
-        }
-    });
-    if (totalIncome > 0) {
-        await updateDoc(doc(db, 'players', currentUser.uid), {
-            money: (playerData.money || 0) + totalIncome
-        });
-        await refreshPlayerData();
-        showToast(`Income: +${totalIncome} Gold collected`);
+    if(selectedCountry){
+        const name=selectedCountry.properties.name;
+        const t=allTerritories[name];
+        selectTerritoryByData(name,selectedIsOcean,selectedCountry._oz,selectedIsOcean?null:selectedCountry);
     }
-}, 60000);
+};
 
+// === UPGRADE ===
+window.upgradeTerritory = async function() {
+    if(!selectedCountry||!currentUser||!playerData) return;
+    const name=selectedCountry.properties.name;
+    const t=allTerritories[name];
+    if(!t||t.owner!==currentUser.uid) return;
+    const level=t.level||1; if(level>=5) return;
+    const cost=UPGRADE_COSTS[level];
+    if(playerData.money<cost){showToast(`Need ${cost} Gold to upgrade!`);return;}
+    await updateDoc(doc(db,'territories',name),{level:level+1});
+    await updateDoc(doc(db,'players',currentUser.uid),{money:playerData.money-cost});
+    await refreshPlayerData();
+    showToast(`Upgraded to Level ${level+1}!`);
+    selectTerritoryByData(name,selectedIsOcean,selectedCountry._oz,selectedIsOcean?null:selectedCountry);
+};
+
+// === GIFT ===
+window.openGiftModal = function() {
+    if(!selectedCountry) return;
+    document.getElementById('giftModalSub').textContent=`Gift "${selectedCountry.properties.name}" to another player`;
+    document.getElementById('giftSearchInput').value='';
+    document.getElementById('userSearchResults').innerHTML='';
+    document.getElementById('selectedGiftUser').textContent='';
+    selectedGiftTargetUid=null; selectedGiftTargetTag=null;
+    document.getElementById('giftModal').classList.add('open');
+};
+
+window.closeGiftModal = () => { document.getElementById('giftModal').classList.remove('open'); };
+
+window.searchUsers = async function() {
+    const q=document.getElementById('giftSearchInput').value.trim().toLowerCase();
+    if(q.length<2){document.getElementById('userSearchResults').innerHTML='';return;}
+    const snap=await getDocs(collection(db,'players'));
+    const res=[];
+    snap.forEach(d=>{const p=d.data();if(d.id!==currentUser.uid&&(p.tag||'').toLowerCase().includes(q))res.push({uid:d.id,...p});});
+    const c=document.getElementById('userSearchResults');
+    if(!res.length){c.innerHTML='<div style="padding:10px;color:var(--muted);font-size:0.85rem">No players found.</div>';return;}
+    c.innerHTML=res.slice(0,6).map(r=>`<div class="user-result-row" onclick="selectGiftTarget('${r.uid}','${r.tag}','${r.empire||'—'}')"><span class="u-tag">@${r.tag}</span><span class="u-empire">${r.empire||'—'}</span></div>`).join('');
+};
+
+window.selectGiftTarget = function(uid, tag, empire) {
+    selectedGiftTargetUid=uid; selectedGiftTargetTag=tag;
+    document.getElementById('selectedGiftUser').textContent=`✓ Selected: @${tag} (${empire})`;
+};
+
+window.confirmGift = async function() {
+    if(!selectedGiftTargetUid||!selectedCountry){showToast('Select a player first.');return;}
+    const name=selectedCountry.properties.name;
+    const t=allTerritories[name];
+    if(!t||t.owner!==currentUser.uid){showToast("You don't own this territory.");return;}
+    const recip=await getDoc(doc(db,'players',selectedGiftTargetUid));
+    if(!recip.exists()){showToast('Player not found.');return;}
+    const rd=recip.data();
+    await updateDoc(doc(db,'territories',name),{owner:selectedGiftTargetUid,ownerEmpire:rd.empire,ownerTag:rd.tag});
+    const myT=(playerData.territories||[]).filter(x=>x!==name);
+    await updateDoc(doc(db,'players',currentUser.uid),{territories:myT});
+    const theirT=[...new Set([...(rd.territories||[]),name])];
+    await updateDoc(doc(db,'players',selectedGiftTargetUid),{territories:theirT});
+    await addDoc(collection(db,'notifications'),{
+        toUid:selectedGiftTargetUid, type:'land_gift', territory:name,
+        fromEmpire:playerData.empire, fromTag:playerData.tag,
+        read:false, createdAt:serverTimestamp()
+    });
+    await refreshPlayerData();
+    closeGiftModal();
+    document.getElementById('infoPanel').classList.remove('visible');
+    showToast(`${name} gifted to @${rd.tag}!`);
+};
+
+// === SEARCH ===
+window.searchCountry = function() {
+    const q=document.getElementById('searchInput').value.trim().toLowerCase(); if(!q) return;
+    const oz=OCEAN_ZONES.find(o=>o.name.toLowerCase().includes(q));
+    if(oz){
+        const interp=d3.interpolate(projection.rotate(),[-oz.coords[0],-oz.coords[1]]);
+        d3.transition().duration(1200).ease(d3.easeCubicInOut).tween("fly",()=>t=>{projection.rotate(interp(t));updateGlobe();}).on("end",()=>selectTerritoryByData(oz.name,true,oz));
+        return;
+    }
+    if(!worldData){return;}
+    const feats=topojson.feature(worldData,worldData.objects.countries).features;
+    const f=feats.find(f=>(f.properties.name||'').toLowerCase().includes(q));
+    if(!f){showToast('Territory not found.');return;}
+    const c=d3.geoCentroid(f);
+    const interp=d3.interpolate(projection.rotate(),[-c[0],-c[1]]);
+    d3.transition().duration(1200).ease(d3.easeCubicInOut).tween("fly",()=>t=>{projection.rotate(interp(t));updateGlobe();}).on("end",()=>selectTerritoryByData(f.properties.name,false,null,f));
+};
+
+document.getElementById('searchInput').addEventListener('keydown',e=>{if(e.key==='Enter')window.searchCountry();});
+
+// === HELPERS ===
+function rng(){return['rock','paper','scissors'][Math.floor(Math.random()*3)];}
+function resetTimer(s){const b=document.getElementById('timerBar');b.style.transition='none';b.style.width='100%';setTimeout(()=>{b.style.transition=`width ${s}s linear`;b.style.width='0%';},50);document.getElementById('timerText').textContent=`Choose within ${s}s...`;}
+function enableRps(){document.querySelectorAll('.rps-btn').forEach(b=>{b.disabled=false;b.classList.remove('chosen');});}
+function disableRps(chosen){document.querySelectorAll('.rps-btn').forEach(b=>{b.disabled=true;const m={rock:'btnRock',paper:'btnPaper',scissors:'btnScissors'};if(chosen&&b.id===m[chosen])b.classList.add('chosen');});}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3200);}
+window.showToast=showToast;
+
+// === PASSIVE INCOME ===
+setInterval(async()=>{
+    if(!currentUser||!playerData) return;
+    const territories=playerData.territories||[]; if(!territories.length) return;
+    let total=0;
+    territories.forEach(name=>{const t=allTerritories[name];if(t&&t.owner===currentUser.uid)total+=getIncome(name,t.level||1);});
+    if(total>0){await updateDoc(doc(db,'players',currentUser.uid),{money:(playerData.money||0)+total});await refreshPlayerData();showToast(`💰 Income: +${total} Gold`);}
+},60000);
 </script>
 </body>
 </html>
