@@ -178,6 +178,7 @@
     <div class="topbar-right">
         <div id="adminControls" style="display:none;margin-right:15px">
             <button class="nav-btn" onclick="resetWorld()" style="border-color:var(--red);color:var(--red)">☢ RESET WORLD</button>
+            <button class="nav-btn" onclick="adminTakeOverWorld()" style="border-color:var(--gold);color:var(--gold)">👑 TAKE WORLD</button>
         </div>
         <div id="empireTag">
             <div id="empireNameDisplay" style="font-size:0.85rem;color:var(--gold-light)">—</div>
@@ -207,8 +208,15 @@
         <div class="info-owner" id="infoOwner">Unclaimed</div>
         <div class="level-badges" id="infoBadges"></div>
         <button class="panel-btn gold" id="claimBtn" onclick="handleClaimOrAttack()">—</button>
+        <button class="panel-btn gold" id="buyBtn" onclick="buyTerritory()" style="display:none">💰 BUY TERRITORY</button>
         <button class="panel-btn blue" id="wikiBtn" onclick="openWikiDetails()">📖 WIKI DETAILS</button>
-        <button class="panel-btn green" id="upgradeBtn" onclick="upgradeTerritory()" style="display:none">⬆ UPGRADE</button>
+        <div id="upgradeSection" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+            <div class="panel-title" style="font-size:0.6rem">DEVELOPMENT</div>
+            <button class="panel-btn green" onclick="upgradeSpec('education')">🎓 EDUCATION (150 G)</button>
+            <button class="panel-btn green" onclick="upgradeSpec('economy')">📈 ECONOMY (200 G)</button>
+            <button class="panel-btn green" onclick="upgradeSpec('military')">🛡 MILITARY (250 G)</button>
+        </div>
+        <button class="panel-btn green" id="upgradeBtn" onclick="upgradeTerritory()" style="display:none">⬆ UPGRADE LVL</button>
         <button class="panel-btn blue" id="giftBtn" onclick="openGiftModal()" style="display:none">🎁 GIFT TERRITORY</button>
         
         <div id="adminPanelButtons" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
@@ -240,9 +248,10 @@
         <div class="modal-sub" id="attackConfirmSub">—</div>
         <p style="color:var(--cream);font-size:0.9rem;line-height:1.7;margin-bottom:16px" id="attackConfirmBody"></p>
         <div id="attackConfirmActions">
-            <div class="confirm-btns">
-                <button class="confirm-btn yes" onclick="sendAttackChallenge()">⚔ SEND CHALLENGE</button>
-                <button class="confirm-btn no" onclick="closeAttackConfirm()">CANCEL</button>
+            <div class="confirm-btns" style="flex-direction:column">
+                <button class="confirm-btn yes" onclick="sendAttackChallenge()" style="width:100%">⚔ SEND CHALLENGE</button>
+                <button class="confirm-btn yes" onclick="openInviteAfterAttack()" style="background:var(--blue);width:100%">👥 INVITE FRIENDS TO FIGHT</button>
+                <button class="confirm-btn no" onclick="closeAttackConfirm()" style="width:100%">CANCEL</button>
             </div>
         </div>
         <div id="attackConfirmWaiting" style="display:none;margin-top:14px">
@@ -441,10 +450,17 @@ const OCEAN_ZONES = [
     {id:"ocean_bering",name:"Bering Sea",coords:[-175,57],income:30}
 ];
 
-function getIncome(name, level) {
+function getIncome(name, level, upgrades = {}) {
     const oz = OCEAN_ZONES.find(o=>o.name===name);
     const base = oz ? oz.income : (COUNTRY_INCOME[name]||COUNTRY_INCOME["default"]);
-    return Math.floor(base*(level||1)*1.4);
+    let multiplier = (level||1) * 1.4;
+    
+    // Add upgrade bonuses
+    if (upgrades.education) multiplier += (upgrades.education * 0.1);
+    if (upgrades.economy) multiplier += (upgrades.economy * 0.2);
+    if (upgrades.military) multiplier += (upgrades.military * 0.05); // Military gives less income but maybe other perks later
+    
+    return Math.floor(base * multiplier);
 }
 
 // === AUTH ===
@@ -506,7 +522,8 @@ async function initializeNewUser(isRestart = false) {
         ownerEmpire: playerData.empire,
         ownerTag: playerData.tag,
         level: 1,
-        name: randomCountry
+        name: randomCountry,
+        upgrades: { education: 0, economy: 0, military: 0 }
     });
 
     await updateDoc(doc(db, 'players', currentUser.uid), {
@@ -560,8 +577,10 @@ window.resetWorld = async function() {
     for (const d of playersSnap.docs) {
         await updateDoc(doc(db, 'players', d.id), {
             territories: [],
-            money: 500,
-            isInitialized: false
+            money: 1000,
+            isInitialized: false,
+            wins: 0,
+            losses: 0
         });
     }
     
@@ -589,6 +608,102 @@ window.adminForcePeace = async function() {
     showToast("Admin: Forced Peace");
     closeBattle();
 };
+
+window.adminTakeOverWorld = async function() {
+    if (!confirm("Are you sure you want to take over the entire world?")) return;
+    const countries = Object.values(CONTINENTS).flat();
+    
+    showToast("Conquering world... please wait.");
+    for (const name of countries) {
+        await setDoc(doc(db, 'territories', name), {
+            owner: currentUser.uid,
+            ownerEmpire: playerData.empire,
+            ownerTag: playerData.tag,
+            level: 1,
+            name: name,
+            upgrades: { education: 0, economy: 0, military: 0 }
+        });
+    }
+    
+    await updateDoc(doc(db, 'players', currentUser.uid), {
+        territories: countries
+    });
+    
+    showToast("ADMIN: WORLD CONQUERED");
+    setTimeout(() => window.location.reload(), 2000);
+};
+
+window.buyTerritory = async function() {
+    if (!selectedCountry || !currentUser || !playerData) return;
+    const name = selectedCountry.properties.name || "Unknown";
+    const t = allTerritories[name];
+    const isEnemy = t && t.owner && t.owner !== currentUser.uid;
+    const cost = isEnemy ? ATTACK_COST * 5 : ATTACK_COST * 3;
+    
+    if (playerData.money < cost) {
+        showToast(`Need ${cost} Gold to buy this territory!`);
+        return;
+    }
+    
+    if (!confirm(`Buy ${name} for ${cost} Gold?`)) return;
+    
+    await updateDoc(doc(db, 'players', currentUser.uid), { money: playerData.money - cost });
+    await applyWin(name);
+    showToast(`${name} purchased!`);
+};
+
+window.upgradeSpec = async function(type) {
+    if (!selectedCountry || !currentUser || !playerData) return;
+    const name = selectedCountry.properties.name || "Unknown";
+    const t = allTerritories[name];
+    if (!t || t.owner !== currentUser.uid) return;
+    
+    const costs = { education: 150, economy: 200, military: 250 };
+    const cost = costs[type];
+    
+    if (playerData.money < cost) {
+        showToast(`Need ${cost} Gold for this upgrade!`);
+        return;
+    }
+    
+    const upgrades = t.upgrades || { education: 0, economy: 0, military: 0 };
+    upgrades[type] = (upgrades[type] || 0) + 1;
+    
+    await updateDoc(doc(db, 'players', currentUser.uid), { money: playerData.money - cost });
+    await updateDoc(doc(db, 'territories', name), { upgrades });
+    await refreshPlayerData();
+    selectTerritoryByData(name, selectedIsOcean, selectedCountry._oz, selectedCountry);
+    showToast(`${type.toUpperCase()} upgraded to level ${upgrades[type]}!`);
+};
+
+window.openInviteAfterAttack = function() {
+    if (!pendingAttackName) return;
+    // We reuse the existing invitation logic but targeted at this territory
+    showToast("Challenge sent! Now invite others to join your cause.");
+    sendAttackChallenge(); // Send the base challenge first
+    // The user can then use the player list to invite others as they could before
+};
+
+// Income Interval
+setInterval(async () => {
+    if (!currentUser || !playerData || !allTerritories) return;
+    let totalIncome = 0;
+    const owned = Object.values(allTerritories).filter(t => t.owner === currentUser.uid);
+    owned.forEach(t => {
+        totalIncome += getIncome(t.name, t.level, t.upgrades);
+    });
+    
+    if (totalIncome > 0) {
+        const userRef = doc(db, 'players', currentUser.uid);
+        const snap = await getDoc(userRef);
+        if (snap.exists()) {
+            const currentMoney = snap.data().money || 0;
+            await updateDoc(userRef, { money: currentMoney + totalIncome });
+            await refreshPlayerData();
+            showToast(`💰 Collected ${totalIncome} Gold from your empire!`);
+        }
+    }
+}, 60000); // Every minute
 
 // === GOLD GIFT ===
 let targetGoldUid = null, targetGoldTag = null;
@@ -1079,7 +1194,7 @@ function selectTerritoryByData(name, isOcean, oz, countryFeature) {
     const enemy = t && t.owner && t.owner!==currentUser.uid;
     document.getElementById('infoPanelName').textContent = name;
     document.getElementById('infoType').textContent = isOcean ? '🌊 Ocean Zone' : '🌍 Territory';
-    document.getElementById('infoIncome').textContent = `${getIncome(name,level)} Gold`;
+    document.getElementById('infoIncome').textContent = `${getIncome(name,level,t?t.upgrades:{})} Gold`;
     if (owned) document.getElementById('infoOwner').innerHTML = `Your Territory — <em>${playerData.empire}</em>`;
     else if (enemy) document.getElementById('infoOwner').innerHTML = `Owned by <em>${t.ownerEmpire||'an empire'}</em> (@${t.ownerTag||'?'})`;
     else document.getElementById('infoOwner').textContent = 'Unclaimed';
@@ -1087,17 +1202,26 @@ function selectTerritoryByData(name, isOcean, oz, countryFeature) {
     const badges = document.getElementById('infoBadges'); badges.innerHTML='';
     for(let i=1;i<=5;i++){const p=document.createElement('div');p.className='lvl-pip'+(i<=level?' active':'');badges.appendChild(p);}
     // Buttons
-    const btn=document.getElementById('claimBtn'), upBtn=document.getElementById('upgradeBtn'), giftBtn=document.getElementById('giftBtn');
+    const btn=document.getElementById('claimBtn'), upBtn=document.getElementById('upgradeBtn'), giftBtn=document.getElementById('giftBtn'), buyBtn=document.getElementById('buyBtn'), upSec=document.getElementById('upgradeSection');
+    
     if (owned) {
         btn.textContent='YOUR TERRITORY'; btn.className='panel-btn owned';
         if (level<5){upBtn.textContent=`⬆ UPGRADE LVL ${level+1} — ${UPGRADE_COSTS[level]} GOLD`;upBtn.style.display='block';}else upBtn.style.display='none';
         giftBtn.style.display='block';
+        buyBtn.style.display='none';
+        upSec.style.display='block';
     } else if (enemy) {
         btn.textContent=`⚔ ATTACK (${ATTACK_COST} GOLD)`; btn.className='panel-btn attack';
         upBtn.style.display='none'; giftBtn.style.display='none';
+        buyBtn.style.display='block';
+        buyBtn.textContent = `💰 BUY (${ATTACK_COST * 5} GOLD)`;
+        upSec.style.display='none';
     } else {
         btn.textContent = isOcean ? `⚓ CLAIM (${ATTACK_COST} GOLD)` : `⊕ CLAIM (${ATTACK_COST} GOLD)`;
         btn.className='panel-btn gold'; upBtn.style.display='none'; giftBtn.style.display='none';
+        buyBtn.style.display='block';
+        buyBtn.textContent = `💰 BUY (${ATTACK_COST * 3} GOLD)`;
+        upSec.style.display='none';
     }
     document.getElementById('infoPanel').classList.add('visible');
 }
@@ -1506,7 +1630,7 @@ async function handleFinished(d) {
 }
 
 async function applyWin(name, isPvPWin = false) {
-    const t=allTerritories[name]; const level=t?(t.level||1):1; const income=getIncome(name,level);
+    const t=allTerritories[name]; const level=t?(t.level||1):1; const income=getIncome(name,level,t?t.upgrades:{});
     
     // If PvP win, handle territory removal from loser's list
     if (isPvPWin && battleData && !battleIsAI) {
@@ -1523,7 +1647,14 @@ async function applyWin(name, isPvPWin = false) {
         }
     }
 
-    await setDoc(doc(db,'territories',name),{owner:currentUser.uid,ownerEmpire:playerData.empire,ownerTag:playerData.tag,level,name});
+    await setDoc(doc(db, 'territories', name), {
+        owner: currentUser.uid,
+        ownerEmpire: playerData.empire,
+        ownerTag: playerData.tag,
+        level,
+        name,
+        upgrades: t?.upgrades || { education: 0, economy: 0, military: 0 }
+    });
     const newT=[...new Set([...(playerData.territories||[]),name])];
     await updateDoc(doc(db,'players',currentUser.uid),{territories:newT,wins:(playerData.wins||0)+1,money:(playerData.money||0)+income});
     await refreshPlayerData();
