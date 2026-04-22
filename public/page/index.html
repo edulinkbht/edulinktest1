@@ -203,6 +203,7 @@
         <div class="info-owner" id="infoOwner">Unclaimed</div>
         <div class="level-badges" id="infoBadges"></div>
         <button class="panel-btn gold" id="claimBtn" onclick="handleClaimOrAttack()">—</button>
+        <button class="panel-btn blue" id="wikiBtn" onclick="openWikiDetails()">📖 WIKI DETAILS</button>
         <button class="panel-btn green" id="upgradeBtn" onclick="upgradeTerritory()" style="display:none">⬆ UPGRADE</button>
         <button class="panel-btn blue" id="giftBtn" onclick="openGiftModal()" style="display:none">🎁 GIFT TERRITORY</button>
     </div>
@@ -237,6 +238,19 @@
             <div class="load-spinner" style="margin:0 auto 8px"></div>
             <div style="font-family:'Cinzel',serif;font-size:0.72rem;color:var(--gold);letter-spacing:0.12em">WAITING FOR DEFENDER TO ACCEPT...</div>
             <button class="confirm-btn no" style="margin-top:12px" onclick="cancelChallenge()">WITHDRAW</button>
+        </div>
+    </div>
+</div>
+
+<!-- ATTACK CHALLENGE MODAL (DEFENDER) -->
+<div class="modal-overlay" id="defenderChallengeModal">
+    <div class="modal-box" style="width:440px">
+        <div class="modal-title">⚔ UNDER ATTACK!</div>
+        <div class="modal-sub" id="defenderChallengeSub">Incoming Siege</div>
+        <p style="color:var(--cream);font-size:0.95rem;line-height:1.7;margin:20px 0" id="defenderChallengeBody"></p>
+        <div class="confirm-btns">
+            <button class="confirm-btn yes" id="defenderAcceptBtn">⚔ DEFEND TERRITORY</button>
+            <button class="confirm-btn no" id="defenderDeclineBtn">SURRENDER</button>
         </div>
     </div>
 </div>
@@ -277,6 +291,20 @@
         <div class="confirm-btns">
             <button class="confirm-btn yes" onclick="confirmGift()">🎁 CONFIRM GIFT</button>
             <button class="confirm-btn no" onclick="closeGiftModal()">CANCEL</button>
+        </div>
+    </div>
+</div>
+
+<!-- WIKI MODAL -->
+<div class="modal-overlay" id="wikiModal">
+    <div class="modal-box" style="width:500px;text-align:left">
+        <div class="modal-title" id="wikiTitle" style="text-align:center">COUNTRY DETAILS</div>
+        <div id="wikiContent" style="color:var(--cream);font-size:0.95rem;line-height:1.6;max-height:300px;overflow-y:auto;margin:20px 0;padding-right:10px">
+            <div class="load-spinner" style="margin:20px auto"></div>
+            <div style="text-align:center;color:var(--muted)">Fetching history from Wikipedia...</div>
+        </div>
+        <div class="confirm-btns">
+            <button class="confirm-btn no" onclick="closeWikiModal()">CLOSE</button>
         </div>
     </div>
 </div>
@@ -475,10 +503,42 @@ function listenNotifications() {
         const items = [];
         snap.forEach(d => items.push({id:d.id,...d.data()}));
         renderNotifications(items);
+        
+        // Check for new attack challenges to show overlay
+        items.forEach(n => {
+            if (n.type === 'attack_challenge' && !n.overlayShown) {
+                showDefenderOverlay(n);
+                // Mark as shown locally to avoid multiple overlays for same notif
+                n.overlayShown = true; 
+            }
+        });
+
         const badge = document.getElementById('notifBadge');
         if (items.length>0) { badge.textContent=items.length; badge.classList.add('show'); }
         else badge.classList.remove('show');
     });
+}
+
+function showDefenderOverlay(n) {
+    const modal = document.getElementById('defenderChallengeModal');
+    document.getElementById('defenderChallengeBody').innerHTML = 
+        `<strong>${n.territory}</strong> is being attacked by <em>${n.attackerEmpire}</em> (@${n.attackerTag})!<br><br>
+        Defeat costs <strong>${DEFEAT_PENALTY} Gold</strong>. If you surrender, you lose the territory immediately.`;
+    
+    const acceptBtn = document.getElementById('defenderAcceptBtn');
+    const declineBtn = document.getElementById('defenderDeclineBtn');
+    
+    acceptBtn.onclick = async () => {
+        modal.classList.remove('open');
+        await acceptBattle(n.id, n.territory, n.attackerUid, n.attackerEmpire, n.attackerTag, n.battleId);
+    };
+    
+    declineBtn.onclick = async () => {
+        modal.classList.remove('open');
+        await declineChallenge(n.id, n.battleId);
+    };
+    
+    modal.classList.add('open');
 }
 
 function renderNotifications(items) {
@@ -953,7 +1013,7 @@ async function handleFinished(d) {
     document.getElementById('battleCloseBtn').style.display='inline-block';
     
     if(iWon){
-        await applyWin(d.territory);
+        await applyWin(d.territory, iWon);
         const loserUid = battleRole==='attacker' ? d.defenderUid : d.attackerUid;
         await addDoc(collection(db,'notifications'),{
             toUid:loserUid, type:'battle_result', winnerId:d.winnerId,
@@ -971,8 +1031,24 @@ async function handleFinished(d) {
     }
 }
 
-async function applyWin(name) {
+async function applyWin(name, isPvPWin = false) {
     const t=allTerritories[name]; const level=t?(t.level||1):1; const income=getIncome(name,level);
+    
+    // If PvP win, handle territory removal from loser's list
+    if (isPvPWin && battleData && !battleIsAI) {
+        const loserUid = battleRole === 'attacker' ? battleData.defenderUid : battleData.attackerUid;
+        const loserDoc = await getDoc(doc(db, 'players', loserUid));
+        if (loserDoc.exists()) {
+            const loserData = loserDoc.data();
+            const updatedLoserTerritories = (loserData.territories || []).filter(x => x !== name);
+            const updatedLoserMoney = Math.max(0, (loserData.money || 0) - DEFEAT_PENALTY);
+            await updateDoc(doc(db, 'players', loserUid), {
+                territories: updatedLoserTerritories,
+                money: updatedLoserMoney
+            });
+        }
+    }
+
     await setDoc(doc(db,'territories',name),{owner:currentUser.uid,ownerEmpire:playerData.empire,ownerTag:playerData.tag,level,name});
     const newT=[...new Set([...(playerData.territories||[]),name])];
     await updateDoc(doc(db,'players',currentUser.uid),{territories:newT,wins:(playerData.wins||0)+1,money:(playerData.money||0)+income});
@@ -1061,6 +1137,35 @@ window.confirmGift = async function() {
     document.getElementById('infoPanel').classList.remove('visible');
     showToast(`${name} gifted to @${rd.tag}!`);
 };
+
+// === WIKI DETAILS ===
+window.openWikiDetails = async function() {
+    if(!selectedCountry) return;
+    const name = selectedCountry.properties.name || (selectedCountry._oz ? selectedCountry._oz.name : "Unknown");
+    document.getElementById('wikiTitle').textContent = name.toUpperCase();
+    document.getElementById('wikiContent').innerHTML = `<div class="load-spinner" style="margin:20px auto"></div><div style="text-align:center;color:var(--muted)">Fetching details for ${name}...</div>`;
+    document.getElementById('wikiModal').classList.add('open');
+    
+    try {
+        const url = `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(name)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.extract) {
+            let content = data.extract_html || data.extract;
+            if (data.thumbnail) {
+                content = `<img src="${data.thumbnail.source}" style="width:100%;max-height:200px;object-fit:cover;border-radius:4px;margin-bottom:15px;border:1px solid var(--border)">` + content;
+            }
+            document.getElementById('wikiContent').innerHTML = content;
+        } else {
+            document.getElementById('wikiContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--muted)">No detailed history found for this region.</div>`;
+        }
+    } catch (e) {
+        document.getElementById('wikiContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--red)">Failed to connect to Wikipedia.</div>`;
+    }
+};
+
+window.closeWikiModal = () => { document.getElementById('wikiModal').classList.remove('open'); };
 
 // === SEARCH ===
 window.searchCountry = function() {
