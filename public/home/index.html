@@ -2604,10 +2604,10 @@
         <div class="absolute inset-0 bg-black/80 backdrop-blur-md transition-opacity" onclick="closePostView()"></div>
         
         <!-- Post Navigation Buttons -->
-        <button id="post-nav-prev" onclick="navigateToPreviousPost(event)" class="absolute left-4 md:left-8 z-20 w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-lg hover:bg-gray-100 transition-all opacity-0 pointer-events-none bottom-[100px] md:top-1/2 md:-translate-y-1/2">
+        <button id="post-nav-prev" onclick="navigateToPreviousPost(event)" class="absolute left-4 md:left-8 z-20 w-11 h-11 rounded-full bg-white hidden md:flex items-center justify-center shadow-lg hover:bg-gray-100 transition-all opacity-0 pointer-events-none bottom-[100px] md:top-1/2 md:-translate-y-1/2">
             <i data-lucide="chevron-left" class="w-6 h-6 text-gray-900"></i>
         </button>
-        <button id="post-nav-next" onclick="navigateToNextPost(event)" class="absolute right-4 md:right-8 z-20 w-11 h-11 rounded-full bg-white flex items-center justify-center shadow-lg hover:bg-gray-100 transition-all opacity-0 pointer-events-none bottom-[100px] md:top-1/2 md:-translate-y-1/2">
+        <button id="post-nav-next" onclick="navigateToNextPost(event)" class="absolute right-4 md:right-8 z-20 w-11 h-11 rounded-full bg-white hidden md:flex items-center justify-center shadow-lg hover:bg-gray-100 transition-all opacity-0 pointer-events-none bottom-[100px] md:top-1/2 md:-translate-y-1/2">
             <i data-lucide="chevron-right" class="w-6 h-6 text-gray-900"></i>
         </button>
 
@@ -5755,21 +5755,47 @@
             const currentIndex = window.currentViewingPostList.findIndex(x => x.id === pid);
             const prevBtn = document.getElementById('post-nav-prev');
             const nextBtn = document.getElementById('post-nav-next');
+            const mPrevBtn = document.getElementById('mobile-nav-prev');
+            const mNextBtn = document.getElementById('mobile-nav-next');
 
             if (currentIndex > 0) {
-                prevBtn.classList.remove('opacity-0', 'pointer-events-none');
-                prevBtn.classList.add('opacity-100', 'pointer-events-auto');
+                if (prevBtn) {
+                    prevBtn.classList.remove('opacity-0', 'pointer-events-none');
+                    prevBtn.classList.add('opacity-100', 'pointer-events-auto');
+                }
+                if (mPrevBtn) {
+                    mPrevBtn.classList.remove('opacity-50', 'pointer-events-none');
+                    mPrevBtn.classList.add('opacity-100', 'pointer-events-auto');
+                }
             } else {
-                prevBtn.classList.add('opacity-0', 'pointer-events-none');
-                prevBtn.classList.remove('opacity-100', 'pointer-events-auto');
+                if (prevBtn) {
+                    prevBtn.classList.add('opacity-0', 'pointer-events-none');
+                    prevBtn.classList.remove('opacity-100', 'pointer-events-auto');
+                }
+                if (mPrevBtn) {
+                    mPrevBtn.classList.add('opacity-50', 'pointer-events-none');
+                    mPrevBtn.classList.remove('opacity-100', 'pointer-events-auto');
+                }
             }
 
             if (currentIndex < window.currentViewingPostList.length - 1) {
-                nextBtn.classList.remove('opacity-0', 'pointer-events-none');
-                nextBtn.classList.add('opacity-100', 'pointer-events-auto');
+                if (nextBtn) {
+                    nextBtn.classList.remove('opacity-0', 'pointer-events-none');
+                    nextBtn.classList.add('opacity-100', 'pointer-events-auto');
+                }
+                if (mNextBtn) {
+                    mNextBtn.classList.remove('opacity-50', 'pointer-events-none');
+                    mNextBtn.classList.add('opacity-100', 'pointer-events-auto');
+                }
             } else {
-                nextBtn.classList.add('opacity-0', 'pointer-events-none');
-                nextBtn.classList.remove('opacity-100', 'pointer-events-auto');
+                if (nextBtn) {
+                    nextBtn.classList.add('opacity-0', 'pointer-events-none');
+                    nextBtn.classList.remove('opacity-100', 'pointer-events-auto');
+                }
+                if (mNextBtn) {
+                    mNextBtn.classList.add('opacity-50', 'pointer-events-none');
+                    mNextBtn.classList.remove('opacity-100', 'pointer-events-auto');
+                }
             }
 
             window.postViewOpenedFromNotifications = !!fromNotifications; 
@@ -6014,27 +6040,36 @@
                     <div class="px-4 py-2 text-[15px] leading-relaxed text-gray-800 whitespace-pre-wrap js-post-body-${p.id}">${postBodyHtml}</div>
                     <div class="px-4">${previewHtmlM}</div>
                     <div class="w-full mt-2">${mhMobile}</div>
-                    <div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
-                </div>
-                <div class="mobile-fixed-footer">
-                    <div class="post-actions w-full flex items-center justify-between px-4 h-14">
+                    <div class="post-actions w-full flex items-center justify-between px-4 py-4">
                         <div class="flex items-center gap-2">
-                            <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''} !px-4 !h-10 border border-gray-200 !bg-white rounded-full flex items-center gap-2" onclick="toggleLike('${p.id}')">
-                                <i data-lucide="heart" class="w-5 h-5"></i> 
-                                <span class="js-like-count-${p.id} font-bold text-sm">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
+                            <button class="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors" onclick="toggleLike('${p.id}')">
+                                <i data-lucide="heart" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}"></i>
+                                <span class="js-like-count-${p.id} font-bold text-sm text-gray-700">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
                             </button>
-                            <button class="action-btn comment !px-4 !h-10 border border-gray-200 !bg-white rounded-full flex items-center gap-2" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
-                                <i data-lucide="message-circle" class="w-5 h-5"></i> 
-                                <span class="js-comment-count-${p.id} font-bold text-sm">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
+                            <button class="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
+                                <i data-lucide="message-circle" class="w-5 h-5 text-gray-600"></i>
+                                <span class="js-comment-count-${p.id} font-bold text-sm text-gray-700">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
                             </button>
-                            <button class="action-btn share-btn !w-10 !h-10 !p-0 border border-gray-200 !bg-white rounded-full flex items-center justify-center" onclick="sharePost('${p.id}')">
-                                <i data-lucide="redo-2" class="w-5 h-5"></i> 
+                            <button class="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors" onclick="sharePost('${p.id}')">
+                                <i data-lucide="redo-2" class="w-5 h-5 text-gray-600"></i>
                             </button>
                         </div>
                         <div class="flex items-center">
-                            ${mobileAction}
+                            <button class="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')">
+                                <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}"></i>
+                            </button>
                         </div>
                     </div>
+                    <div class="border-b border-gray-100 mx-4"></div>
+                    <div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
+                </div>
+                <div class="mobile-fixed-footer bg-white border-t border-gray-100 h-20 flex items-center justify-between px-6">
+                    <button id="mobile-nav-prev" onclick="navigateToPreviousPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+                        <i data-lucide="chevron-left" class="w-7 h-7 text-gray-700"></i>
+                    </button>
+                    <button id="mobile-nav-next" onclick="navigateToNextPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+                        <i data-lucide="chevron-right" class="w-7 h-7 text-gray-700"></i>
+                    </button>
                 </div>
             </div>`; c.innerHTML = desktopHTML + mobileHTML; 
             renderCommentsInModal(pid);
