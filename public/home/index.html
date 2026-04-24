@@ -1687,7 +1687,7 @@
             .stage-content {
                 width: 100%;
                 height: auto;
-                object-fit: contain;
+                object-fit: cover;
                 border-radius: 0
             }
         }
@@ -1722,20 +1722,28 @@
                 overflow-y: auto;
                 display: flex;
                 flex-direction: column;
-                padding-bottom: 100px;
+                padding: 0 16px 100px 16px;
                 background: #fff
             }
 
             .mobile-fixed-footer {
-                min-height: 56px;
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 90px;
                 display: flex;
                 align-items: center;
-                padding: 0;
-                border-top: 1px solid var(--outline);
-                background: #fff;
-                flex-shrink: 0;
+                justify-content: space-between;
+                padding: 0 24px;
+                background: linear-gradient(to top, rgba(255,255,255,0.9), transparent);
+                pointer-events: none;
+                z-index: 20;
                 padding-bottom: env(safe-area-inset-bottom);
-                z-index: 20
+            }
+
+            .mobile-fixed-footer button {
+                pointer-events: auto;
             }
 
             .mobile-fixed-footer .post-actions {
@@ -5805,11 +5813,11 @@
                 const f = p.likes.filter(id => currentUser.following.includes(id) && id !== currentUser.id);
                 if (f.length > 0) {
                     const fri = f.map(id => users.find(u => u.id === id)).filter(Boolean).slice(0, 2);
-                    interactionsHtml = `<div class="px-4 py-4 bg-white flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors group" onclick="event.stopPropagation(); openLikes('${p.id}')">
-                            <div class="flex items-center -space-x-2">
-                                ${fri.map(u => `<img src="${u.avatar}" class="w-6 h-6 rounded-full border-2 border-white object-cover">`).join('')}
+                    interactionsHtml = `<div class="px-4 py-4 bg-white flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors group" onclick="event.stopPropagation(); openLikes('${p.id}')">
+                            <div class="flex items-center -space-x-1.5">
+                                ${fri.map(u => `<img src="${u.avatar}" class="w-7 h-7 rounded-full border-2 border-white object-cover shadow-sm">`).join('')}
                             </div>
-                            <div class="text-[14px] font-medium text-gray-700">Your friends interacted with this</div>
+                            <div class="text-[15px] font-semibold text-gray-800">Your friends interacted with this</div>
                             <div class="flex-1"></div>
                             <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400 group-hover:translate-x-0.5 transition-transform"></i>
                           </div>`;
@@ -5832,10 +5840,10 @@
             }
             let mhDesktop = '', mhMobile = '';
             if (p.embedVideo) {
-                const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
+                const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center max-md:-mx-4"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
                 mhDesktop = ehtml;
                 mhMobile = ehtml;
-            } else if (p.media) { const ma = Array.isArray(p.media) ? p.media : [p.media]; if (ma.length === 1) { const s = ma[0], iv = s.includes('video') || s.endsWith('.mp4') || s.startsWith('data:video'); const isCached = window.imageLoadCache.has(s); const mhtml = iv ? `<video src="${s}" class="stage-content rounded-none" controls playsinline></video>` : `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`; mhDesktop = mhtml; mhMobile = mhtml } else { mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id); mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id) } } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), postBodyHtml = window.renderTextWithReadMore(p.content, `post-${p.id}`), allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-blue-500 transition-all" onkeydown="handleMentionKeydown(event,'comment-input-desktop','mention-suggestions-desktop');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCommentDesktop();}" onkeyup="handleMentionInput('comment-input-desktop','mention-suggestions-desktop')"><button onclick="submitCommentDesktop()" class="w-10 h-10 bg-[#065fd4] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-blue-700 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-blue-500 transition-all" onkeydown="handleMentionKeydown(event,'mobile-comment-input','mention-suggestions-mobile')" onkeyup="handleMentionInput('mobile-comment-input','mention-suggestions-mobile')"><button onclick="submitCommentMobile()" class="w-10 h-10 bg-[#065fd4] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-blue-700 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const filterLabel = window.currentCommentFilter.charAt(0).toUpperCase() + window.currentCommentFilter.slice(1); const filterBtn = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="icon-btn hover:bg-gray-100"><i data-lucide="list-filter" class="w-5 h-5 text-gray-600"></i></button>`; const mobileCommentFilterCtrl = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-gray-200 transition-colors"><span id="current-filter-label">${filterLabel}</span> <i data-lucide="list-filter" class="w-4 h-4"></i></button>`; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button>${mobileCommentFilterCtrl}</div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
+            } else if (p.media) { const ma = Array.isArray(p.media) ? p.media : [p.media]; if (ma.length === 1) { const s = ma[0], iv = s.includes('video') || s.endsWith('.mp4') || s.startsWith('data:video'); const isCached = window.imageLoadCache.has(s); const mhtml = iv ? `<video src="${s}" class="stage-content rounded-none max-md:-mx-4" controls playsinline></video>` : `<div class="img-placeholder rounded-none overflow-hidden max-md:-mx-4"><img src="${s}" class="stage-content w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`; mhDesktop = mhtml; mhMobile = mhtml } else { mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id); mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id) } } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), postBodyHtml = window.renderTextWithReadMore(p.content, `post-${p.id}`), allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-blue-500 transition-all" onkeydown="handleMentionKeydown(event,'comment-input-desktop','mention-suggestions-desktop');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCommentDesktop();}" onkeyup="handleMentionInput('comment-input-desktop','mention-suggestions-desktop')"><button onclick="submitCommentDesktop()" class="w-10 h-10 bg-[#065fd4] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-blue-700 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-blue-500 transition-all" onkeydown="handleMentionKeydown(event,'mobile-comment-input','mention-suggestions-mobile')" onkeyup="handleMentionInput('mobile-comment-input','mention-suggestions-mobile')"><button onclick="submitCommentMobile()" class="w-10 h-10 bg-[#065fd4] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-blue-700 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const filterLabel = window.currentCommentFilter.charAt(0).toUpperCase() + window.currentCommentFilter.slice(1); const filterBtn = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="icon-btn hover:bg-gray-100"><i data-lucide="list-filter" class="w-5 h-5 text-gray-600"></i></button>`; const mobileCommentFilterCtrl = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-gray-200 transition-colors"><span id="current-filter-label">${filterLabel}</span> <i data-lucide="list-filter" class="w-4 h-4"></i></button>`; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button>${mobileCommentFilterCtrl}</div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
             let desktopAction = '', mobileAction = ''; if (p.claimLink) { const cb = `<button class="action-btn text-[#0b57d0] border-blue-100 bg-blue-50 hover:bg-blue-100 !px-4 !py-2.5 !rounded-full border border-gray-100" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`; desktopAction = cb; mobileAction = cb } else { desktopAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''} !p-2.5 !rounded-full border border-gray-100 hover:bg-gray-50" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>`; mobileAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>` }
             let desktopHTML = '';
             if (p.media || p.embedVideo) {
@@ -6038,7 +6046,7 @@
             const mobileHTML = `<div class="mobile-overlay-layout md:hidden">
                 ${mobileTopBar}
                 <div class="mobile-scroll-content">
-                    <div class="flex items-center justify-between p-4 pb-2">
+                    <div class="flex items-center justify-between py-4 pb-2 -mx-4 px-4">
                         <div class="flex items-center gap-3">
                             <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden cursor-pointer" onclick="event.stopPropagation();openProfilePreview('${a.id}')">
                                 <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
@@ -6055,40 +6063,40 @@
                             <i data-lucide="more-horizontal" class="w-6 h-6"></i>
                         </button>
                     </div>
-                    <div class="px-4 py-2 text-[15px] leading-relaxed text-gray-800 whitespace-pre-wrap js-post-body-${p.id} mt-1">${postBodyHtml}</div>
-                    <div class="px-4">${previewHtmlM}</div>
-                    <div class="w-full mt-2">${mhMobile}</div>
-                    <div class="post-actions w-full flex items-center justify-between px-4 py-4">
-                        <div class="flex items-center gap-2">
-                            <button class="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors" onclick="toggleLike('${p.id}')">
-                                <i data-lucide="heart" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}"></i>
-                                <span class="js-like-count-${p.id} font-bold text-sm text-gray-700">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
+                    <div class="py-2 text-[15px] leading-relaxed text-gray-800 whitespace-pre-wrap js-post-body-${p.id}">${postBodyHtml}</div>
+                    <div>${previewHtmlM}</div>
+                    <div class="w-full">${mhMobile}</div>
+                    <div class="post-actions w-full flex items-center justify-between py-5 -mx-4 px-4">
+                        <div class="flex items-center gap-3">
+                            <button class="flex items-center gap-2 px-5 py-2.5 border border-gray-100 rounded-full bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm" onclick="toggleLike('${p.id}')">
+                                <i data-lucide="heart" class="w-[22px] h-[22px] ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}"></i>
+                                <span class="js-like-count-${p.id} font-bold text-[16px] text-gray-800">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
                             </button>
-                            <button class="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
-                                <i data-lucide="message-circle" class="w-5 h-5 text-gray-600"></i>
-                                <span class="js-comment-count-${p.id} font-bold text-sm text-gray-700">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
+                            <button class="flex items-center gap-2 px-5 py-2.5 border border-gray-100 rounded-full bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
+                                <i data-lucide="message-circle" class="w-[22px] h-[22px] text-gray-600"></i>
+                                <span class="js-comment-count-${p.id} font-bold text-[16px] text-gray-800">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
                             </button>
-                            <button class="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors" onclick="sharePost('${p.id}')">
-                                <i data-lucide="redo-2" class="w-5 h-5 text-gray-600"></i>
+                            <button class="w-11 h-11 flex items-center justify-center border border-gray-100 rounded-full bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm" onclick="sharePost('${p.id}')">
+                                <i data-lucide="redo-2" class="w-[22px] h-[22px] text-gray-600"></i>
                             </button>
                         </div>
                         <div class="flex items-center">
-                            <button class="w-10 h-10 flex items-center justify-center border border-gray-200 rounded-full bg-white hover:bg-gray-50 transition-colors js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')">
-                                <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}"></i>
+                            <button class="w-11 h-11 flex items-center justify-center border border-gray-100 rounded-full bg-white hover:bg-gray-50 transition-all active:scale-95 shadow-sm js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')">
+                                <i data-lucide="bookmark" class="w-[22px] h-[22px] ${isSaved ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}"></i>
                             </button>
                         </div>
                     </div>
-                    <div class="border-b border-gray-100 w-full"></div>
-                    ${interactionsHtml}
-                    ${interactionsHtml ? '<div class="border-b border-gray-100 w-full"></div>' : ''}
-                    <div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
+                    <div class="border-b border-gray-100 w-full -mx-4" style="width: calc(100% + 32px)"></div>
+                    <div class="-mx-4 px-4">${interactionsHtml}</div>
+                    ${interactionsHtml ? `<div class="border-b border-gray-100 w-full -mx-4" style="width: calc(100% + 32px)"></div>` : ''}
+                    <div class="py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
                 </div>
-                <div class="mobile-fixed-footer bg-white border-t border-gray-100 h-20 flex items-center justify-between px-6">
-                    <button id="mobile-nav-prev" onclick="navigateToPreviousPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
-                        <i data-lucide="chevron-left" class="w-7 h-7 text-gray-700"></i>
+                <div class="mobile-fixed-footer">
+                    <button id="mobile-nav-prev" onclick="navigateToPreviousPost(event)" class="w-14 h-14 rounded-full border border-gray-100 bg-white/95 backdrop-blur flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-lg">
+                        <i data-lucide="chevron-left" class="w-8 h-8 text-gray-800"></i>
                     </button>
-                    <button id="mobile-nav-next" onclick="navigateToNextPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
-                        <i data-lucide="chevron-right" class="w-7 h-7 text-gray-700"></i>
+                    <button id="mobile-nav-next" onclick="navigateToNextPost(event)" class="w-14 h-14 rounded-full border border-gray-100 bg-white/95 backdrop-blur flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-lg">
+                        <i data-lucide="chevron-right" class="w-8 h-8 text-gray-800"></i>
                     </button>
                 </div>
             </div>`; c.innerHTML = desktopHTML + mobileHTML; 
