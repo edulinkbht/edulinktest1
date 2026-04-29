@@ -159,6 +159,14 @@
                 box-shadow: none;
                 background: transparent;
             }
+
+            .app-panel.bordered-panel {
+                border: 1px solid var(--outline);
+                border-radius: 20px;
+                box-shadow: 0 1px 2px rgba(0, 0, 0, .03);
+                background: white;
+                overflow: hidden;
+            }
         }
 
         @media (max-width:768px) {
@@ -3513,7 +3521,7 @@
     <div id="workspace-layout" class="flex-1 flex min-w-0 gap-2 relative overflow-hidden transition-all duration-300">
         <main id="main-panel" class="app-panel min-w-0 relative w-full lg:w-[640px] lg:ml-12">
             <header id="main-header"
-                class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 shrink-0 z-20 absolute top-0 w-full bg-white border-b border-[#f0f0f0] transition-transform duration-300">
+                class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 shrink-0 z-20 absolute top-0 w-full bg-white md:border-b-0 border-b border-[#f0f0f0] transition-transform duration-300">
                 <div class="md:hidden flex items-center gap-3 cursor-pointer" onclick="window.location.reload()"><img
                         src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
                     <h1 class="text-lg font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
@@ -4613,6 +4621,14 @@
             refreshIcons();
         };
         window.switchView = async (v, direction = 'none') => {
+            const mp = document.getElementById('main-panel');
+            if (mp) {
+                if (v === 'notifications' || v === 'profile') {
+                    mp.classList.add('bordered-panel');
+                } else {
+                    mp.classList.remove('bordered-panel');
+                }
+            }
             ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); const tp = document.getElementById('trending-panel'), mh = document.getElementById('main-header'), mbn = document.getElementById('mobile-bottom-nav'), mnh = document.getElementById('mobile-notifications-header'); window.currentViewName = v; if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } if (mbn) mbn.classList.remove('hidden'); if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } if (v === 'profile' && mh) mh.classList.add('hidden'); if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); if (window.innerWidth >= 1280) tp.classList.remove('hidden'), tp.classList.add('xl:flex'); if (v !== 'ai') { const el = document.getElementById(`view-${v}`); if (el) { el.classList.remove('hidden'); if (direction === 'left') el.classList.add('slide-in-left'); if (direction === 'right') el.classList.add('slide-in-right') } } document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); if (nav) nav.classList.add('active'); if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('top'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
 
             // Desktop header search placeholder
