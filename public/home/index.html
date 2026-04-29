@@ -158,6 +158,71 @@
                 border: 1px solid var(--outline);
                 box-shadow: 0 1px 2px rgba(0, 0, 0, .03)
             }
+
+            /* Home Page Desktop Redesign */
+            #main-panel.is-home-view {
+                border: none !important;
+                box-shadow: none !important;
+                background: transparent !important;
+            }
+
+            #main-panel.is-home-view #main-header {
+                border-bottom: none !important;
+                background: white !important;
+                backdrop-filter: none !important;
+                box-shadow: none !important;
+                position: absolute !important;
+            }
+
+            #main-panel.is-home-view #view-feed {
+                padding-top: 80px !important;
+                background: transparent !important;
+            }
+
+            #main-panel.is-home-view .post-card {
+                border: 1px solid #f0f0f0 !important;
+                border-radius: 24px !important;
+                margin-bottom: 24px !important;
+                overflow: hidden !important;
+                box-shadow: none !important;
+                background: white !important;
+            }
+
+            #main-panel.is-home-view .post-card:hover {
+                background-color: white !important;
+                border-color: #e5e7eb !important;
+            }
+
+            #main-panel.is-home-view .post-card .post-header {
+                margin-bottom: 12px !important;
+            }
+
+            #main-panel.is-home-view .post-card .post-body {
+                margin-bottom: 12px !important;
+            }
+
+            #main-panel.is-home-view .post-card .post-actions {
+                padding: 12px 0 0 0 !important;
+                border-top: none !important;
+                margin-top: 0 !important;
+            }
+
+            #main-panel.is-home-view .action-pill,
+            #main-panel.is-home-view .action-circle,
+            #main-panel.is-home-view .action-btn {
+                border-radius: 14px !important;
+                border: 1px solid #f0f0f0 !important;
+                background: #f9f9f9 !important;
+            }
+            
+            #main-panel.is-home-view .action-btn:hover {
+                background: #f0f0f0 !important;
+            }
+
+            #main-panel.is-home-view .action-btn.like.active {
+                background: #fff0f0 !important;
+                border-color: #ffe0e0 !important;
+            }
         }
 
         @media (max-width:768px) {
@@ -4603,6 +4668,11 @@
             refreshIcons();
         };
         window.switchView = async (v, direction = 'none') => {
+            const mp = document.getElementById('main-panel');
+            if (mp) {
+                if (v === 'feed') mp.classList.add('is-home-view');
+                else mp.classList.remove('is-home-view');
+            }
             ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); const tp = document.getElementById('trending-panel'), mh = document.getElementById('main-header'), mbn = document.getElementById('mobile-bottom-nav'), mnh = document.getElementById('mobile-notifications-header'); window.currentViewName = v; if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } if (mbn) mbn.classList.remove('hidden'); if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } if (v === 'profile' && mh) mh.classList.add('hidden'); if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); if (window.innerWidth >= 1280) tp.classList.remove('hidden'), tp.classList.add('xl:flex'); if (v !== 'ai') { const el = document.getElementById(`view-${v}`); if (el) { el.classList.remove('hidden'); if (direction === 'left') el.classList.add('slide-in-left'); if (direction === 'right') el.classList.add('slide-in-right') } } document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); if (nav) nav.classList.add('active'); if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('top'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
 
             // Desktop header search placeholder
