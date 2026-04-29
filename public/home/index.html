@@ -3503,12 +3503,12 @@
                 </div>
                 <span class="sidebar-label hidden lg:block">Profile</span></a></nav>
         <div class="mt-auto pt-4 border-t border-gray-100 flex flex-col gap-2">
-            <div class="sidebar-user group cursor-pointer">
-                <div onclick="toggleSidebar()"
+            <div class="sidebar-user group cursor-pointer" onclick="openSettings()">
+                <div
                     class="w-9 h-9 flex items-center justify-center text-gray-600 transition-colors rounded-xl hover:bg-gray-200">
                     <i class="bi bi-grid-1x2-fill text-[22px]"></i>
                 </div>
-                <div class="sidebar-label hidden lg:block" onclick="openSettings()">
+                <div class="sidebar-label hidden lg:block">
                     <div class="text-sm font-medium text-[#1f1f1f]">Settings</div>
                 </div>
             </div>
@@ -3521,6 +3521,15 @@
                     <div class="text-sm font-medium text-[#1f1f1f]">Blog</div>
                 </div>
             </a>
+            <div class="sidebar-user group cursor-pointer" onclick="toggleSidebar()">
+                <div
+                    class="w-9 h-9 flex items-center justify-center text-gray-600 transition-colors rounded-xl hover:bg-gray-200">
+                    <i id="sidebar-toggle-icon" class="bi bi-chevron-left text-[22px]"></i>
+                </div>
+                <div class="sidebar-label hidden lg:block">
+                    <div class="text-sm font-medium text-[#1f1f1f]" id="sidebar-toggle-text">Collapse</div>
+                </div>
+            </div>
         </div>
     </aside>
     <div id="workspace-layout" class="flex-1 flex min-w-0 gap-2 relative overflow-hidden transition-all duration-300">
@@ -7496,15 +7505,33 @@
 
         window.toggleSidebar = () => {
             const sidebar = document.getElementById('main-sidebar');
+            const icon = document.getElementById('sidebar-toggle-icon');
+            const text = document.getElementById('sidebar-toggle-text');
             if (!sidebar) return;
-            sidebar.classList.toggle('collapsed');
-            localStorage.setItem('sidebarCollapsed', sidebar.classList.contains('collapsed'));
+            
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            localStorage.setItem('sidebarCollapsed', isCollapsed);
+            
+            if (icon) {
+                icon.className = isCollapsed ? 'bi bi-chevron-right text-[22px]' : 'bi bi-chevron-left text-[22px]';
+            }
+            if (text) {
+                text.innerText = isCollapsed ? 'Expand' : 'Collapse';
+            }
         };
 
         // Initialize sidebar state immediately
-        if (localStorage.getItem('sidebarCollapsed') === 'true') {
-            document.getElementById('main-sidebar')?.classList.add('collapsed');
-        }
+        (function() {
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            if (isCollapsed) {
+                const sidebar = document.getElementById('main-sidebar');
+                if (sidebar) sidebar.classList.add('collapsed');
+                const icon = document.getElementById('sidebar-toggle-icon');
+                const text = document.getElementById('sidebar-toggle-text');
+                if (icon) icon.className = 'bi bi-chevron-right text-[22px]';
+                if (text) text.innerText = 'Expand';
+            }
+        })();
 
         // Custom icon state toggler
         window.updateNavIcons = (activeView) => {
