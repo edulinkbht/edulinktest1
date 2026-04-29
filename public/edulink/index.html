@@ -6,11 +6,10 @@
     <title>EduLink</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
         ::-webkit-scrollbar { display: none; }
         html, body {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
             font-family: 'Inter', sans-serif;
             background-color: #ffffff;
             color: #1a1919;
@@ -20,21 +19,86 @@
             letter-spacing: -0.03em;
             line-height: 1.1;
         }
-        /* Consistent image size for carousel */
-        .carousel-img-container {
-            aspect-ratio: 16 / 10;
+        .video-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 1200px;
+        }
+        .video-container {
+            position: relative;
+            border-radius: 24px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px -10px rgb(0 0 0 / 0.1);
+            background: #000;
+        }
+        .side-controls {
+            position: absolute;
+            right: -85px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            z-index: 30;
+        }
+        .control-btn {
+            background: transparent;
+            color: #666666;
+            border: 2px solid #cccccc;
+            width: 52px;
+            height: 52px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .control-btn:hover {
+            border-color: #1a1919;
+            color: #1a1919;
+            transform: scale(1.08);
+        }
+        .like-btn.liked {
+            background: #ef4444;
+            color: white;
+            border-color: #ef4444;
+        }
+        .like-btn.liked:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+        }
+
+        /* Carousel Navigation Buttons - Now matching control-btn style */
+        .carousel-nav-btn {
+            background: transparent;
+            color: #666666;
+            border: 2px solid #cccccc;
+            width: 56px;
+            height: 56px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px -5px rgb(0 0 0 / 0.1);
+        }
+        .carousel-nav-btn:hover {
+            border-color: #1a1919;
+            color: #1a1919;
+            transform: scale(1.1);
         }
     </style>
 </head>
 <body class="min-h-screen flex flex-col relative bg-white">
-
-    <!-- Header / Nav -->
     <nav class="fixed top-0 flex items-center justify-between px-6 py-4 md:px-10 w-full z-[100] bg-white">
         <div class="flex items-center gap-10">
             <div class="flex items-center gap-2 cursor-pointer">
                 <img src="https://i.imghippo.com/files/vgr8207c.png" alt="Edulink Logo" class="h-8 w-auto object-contain">
             </div>
-            
+           
             <div class="hidden lg:flex items-center gap-6 text-[15px] text-gray-700 font-medium">
                 <a href="#" class="hover:text-black transition-colors">Newton</a>
                 <a href="#" class="hover:text-black transition-colors">Research Center</a>
@@ -43,7 +107,6 @@
                 <a href="#" class="hover:text-black transition-colors">Terms</a>
             </div>
         </div>
-
         <div class="flex items-center gap-6 text-[15px] font-medium">
             <a href="#" class="hidden md:block text-gray-700 hover:text-black transition-colors">Contact team</a>
             <a href="#" class="hidden md:block text-gray-700 hover:text-black transition-colors">Log in</a>
@@ -54,7 +117,7 @@
     </nav>
 
     <main class="flex-grow flex flex-col items-center pt-28 w-full">
-        
+       
         <div class="text-center max-w-4xl mx-auto z-10 relative mt-12 md:mt-20 px-4">
             <h1 class="hero-heading text-[52px] md:text-[72px] lg:text-[80px] font-bold text-[#1a1919] mb-6">
                 Making Education Fun <br> Through Interaction
@@ -62,7 +125,7 @@
             <p class="text-[18px] md:text-[20px] text-gray-800 mb-10 max-w-3xl mx-auto leading-relaxed">
                 Making the first social media platform that helps users with their education and promoting e-learning.
             </p>
-            
+           
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <button class="w-full sm:w-auto bg-[#1a1919] text-white px-8 py-3.5 rounded-full text-lg font-medium hover:bg-black transition-colors">
                     Try EduLink
@@ -73,46 +136,66 @@
             </div>
         </div>
 
-        <!-- Main Hero Image -->
-        <div class="mt-20 w-full max-w-[1200px] mx-auto px-6 relative flex flex-col items-center mb-16">
-            <div class="w-full bg-white rounded-2xl flex flex-col overflow-hidden relative border border-gray-100 shadow-sm">
-                <img 
-                    src="https://i.imghippo.com/files/iBRQ4219VjI.png" 
-                    alt="Edulink AI Teammate Interface"
-                    class="w-full h-auto object-cover block"
-                />
+        <!-- Video Section -->
+        <div class="mt-20 w-full max-w-[1200px] mx-auto px-6 mb-16">
+            <div class="video-wrapper mx-auto">
+                <div class="video-container">
+                    <video id="heroVideo" class="w-full h-auto block" autoplay muted playsinline>
+                        <source src="https://res.cloudinary.com/dcpuyfslg/video/upload/v1777438588/s_rugwfl.mp4" type="video/mp4">
+                        Your browser does not support the video tag.
+                    </video>
+                    <div id="endScreen" class="hidden absolute inset-0 bg-white flex items-center justify-center">
+                        <img src="https://i.imghippo.com/files/iBRQ4219VjI.png" alt="Video Ended" class="w-full h-full object-cover">
+                    </div>
+                </div>
+                <!-- Side Controls -->
+                <div class="side-controls">
+                    <button id="playBtn" class="control-btn" title="Play/Pause">
+                        <i data-lucide="pause" class="w-6 h-6"></i>
+                    </button>
+                    <button id="muteBtn" class="control-btn" title="Mute/Unmute">
+                        <i data-lucide="volume-x" class="w-6 h-6"></i>
+                    </button>
+                    <button id="likeBtn" class="control-btn like-btn" title="Like">
+                        <i data-lucide="heart" class="w-6 h-6"></i>
+                    </button>
+                    <button id="commentBtn" class="control-btn" title="Comment">
+                        <i data-lucide="message-circle" class="w-6 h-6"></i>
+                    </button>
+                    <button id="shareBtn" class="control-btn" title="Share">
+                        <i data-lucide="share-2" class="w-6 h-6"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
+        <!-- Brands -->
         <div id="brands-section" class="w-full max-w-[1200px] mx-auto px-6 pb-24 flex items-center justify-center">
             <div class="flex items-center justify-center gap-6 md:gap-12 flex-wrap">
                 <div class="text-gray-400 font-semibold text-[13px] md:text-[15px] uppercase tracking-[0.15em] mr-2 md:mr-4">
                     Trusted by
                 </div>
-                <div class="font-extrabold text-[20px] md:text-[24px] tracking-tight text-[#1a1919]">
-                    The Royal Academy
-                </div>
-                <div class="font-extrabold text-[20px] md:text-[24px] tracking-tight text-[#1a1919]">
-                    Druk Gyalpo's Institute
-                </div>
-                <div class="font-extrabold text-[20px] md:text-[24px] tracking-tight text-[#1a1919]">
-                    Newton
-                </div>
-                <div class="font-extrabold text-[20px] md:text-[24px] tracking-tight text-[#1a1919]">
-                    Gravitas
-                </div>
+                <div class="font-extrabold text-[20px] md:text-[24px] tracking-tight text-[#1a1919]">The Royal Academy</div>
+                <div class="font-extrabold text-[20px] md:text-[24px] tracking-tight text-[#1a1919]">Druk Gyalpo's Institute</div>
+                <div class="font-extrabold text-[20px] md:text-[24px] tracking-tight text-[#1a1919]">Newton</div>
+                <div class="font-extrabold text-[20px] md:text-[24px] tracking-tight text-[#1a1919]">Gravitas</div>
             </div>
         </div>
 
         <!-- Carousel Section -->
         <div class="w-full min-h-screen bg-white py-20 flex flex-col items-center justify-center overflow-hidden">
             <div class="relative w-full max-w-[1400px] flex justify-center items-center px-4 md:px-20">
-                
-                <button id="prevBtn" class="absolute left-4 md:left-10 z-50 w-14 h-14 bg-white rounded-full border border-gray-200 hover:bg-gray-50 text-[#1a1919] transition-transform hover:scale-105 flex items-center justify-center">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                <!-- Updated Carousel Navigation Buttons -->
+                <button id="prevBtn" class="carousel-nav-btn absolute left-4 md:left-10 z-50">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"></path>
+                    </svg>
                 </button>
-                <button id="nextBtn" class="absolute right-4 md:right-10 z-50 w-14 h-14 bg-white rounded-full border border-gray-200 hover:bg-gray-50 text-[#1a1919] transition-transform hover:scale-105 flex items-center justify-center">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+
+                <button id="nextBtn" class="carousel-nav-btn absolute right-4 md:right-10 z-50">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+                    </svg>
                 </button>
 
                 <div id="carousel-track" class="relative w-full max-w-[1100px] h-[420px] md:h-[500px] flex justify-center items-center">
@@ -123,31 +206,84 @@
                 <p id="caption-desc" class="text-[#1a1919] text-sm md:text-base font-medium"></p>
             </div>
         </div>
-
     </main>
 
     <script>
-        const slideData = [
-            { 
-                img: "https://i.imghippo.com/files/jh6096NWY.gif", 
-                desc: "Social media often ruins meaningful conversation by stripping away non-verbal cues like tone, facial expressions, and body language — leading to misunderstandings, shallow interactions, and reduced empathy." 
-            },
-            { 
-                img: "https://i.pinimg.com/1200x/ea/01/b5/ea01b57cf4c0bec4548fc071a6aca751.jpg", 
-                desc: "Build your own personalized algorithm using your real data — likes, comments, and how you interact with others' posts. See exactly how your data is collected and used." 
-            },
-            { 
-                img: "https://i.pinimg.com/originals/c4/53/7a/c4537a681a8eb52da66b922f881d7073.gif", 
-                desc: "Journaling and sharing your honest opinions can greatly improve your mental health. It helps you process emotions, reduce stress and anxiety, gain mental clarity, and build emotional resilience through self-reflection and personal growth." 
-            },
-            { 
-                img: "https://i.pinimg.com/originals/07/ba/0e/07ba0e548544b6a63872725089a0f3bc.gif", 
-                desc: "Constant exposure to bad, negative, or low-quality content slowly fogs your brain. It increases anxiety, fuels comparison, scatters attention, drains motivation, and weakens your ability to think clearly and deeply." 
-            },
-            { 
-                img: "https://i.pinimg.com/originals/f8/68/3e/f8683ef3b636f7a535581ebc38336572.gif", 
-                desc: "Authentic research involves asking real questions, gathering reliable sources, analyzing information critically, and forming thoughtful conclusions. EduLink turns social media into a powerful tool that supports genuine learning and meaningful discovery." 
+        lucide.createIcons();
+
+        // Video Controls
+        const video = document.getElementById('heroVideo');
+        const muteBtn = document.getElementById('muteBtn');
+        const playBtn = document.getElementById('playBtn');
+        const likeBtn = document.getElementById('likeBtn');
+        const commentBtn = document.getElementById('commentBtn');
+        const shareBtn = document.getElementById('shareBtn');
+        const endScreen = document.getElementById('endScreen');
+
+        let isMuted = true;
+        let isLiked = false;
+
+        function updateVolumeIcon() {
+            const iconName = isMuted ? 'volume-x' : 'volume-2';
+            muteBtn.innerHTML = `<i data-lucide="${iconName}" class="w-6 h-6"></i>`;
+            lucide.createIcons();
+        }
+
+        muteBtn.addEventListener('click', () => {
+            isMuted = !isMuted;
+            video.muted = isMuted;
+            updateVolumeIcon();
+        });
+
+        playBtn.addEventListener('click', () => {
+            if (video.ended) {
+                endScreen.classList.add('hidden');
+                video.currentTime = 0;
+                video.play();
+            } else if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
             }
+        });
+
+        video.addEventListener('play', () => {
+            playBtn.innerHTML = `<i data-lucide="pause" class="w-6 h-6"></i>`;
+            lucide.createIcons();
+        });
+
+        video.addEventListener('pause', () => {
+            playBtn.innerHTML = `<i data-lucide="play" class="w-6 h-6"></i>`;
+            lucide.createIcons();
+        });
+
+        video.addEventListener('ended', () => {
+            endScreen.classList.remove('hidden');
+        });
+
+        likeBtn.addEventListener('click', () => {
+            isLiked = !isLiked;
+            if (isLiked) likeBtn.classList.add('liked');
+            else likeBtn.classList.remove('liked');
+        });
+
+        commentBtn.addEventListener('click', () => {
+            alert("💬 Comments feature coming soon on EduLink!");
+        });
+
+        shareBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert("✅ Link copied! Share this video with your friends.");
+            });
+        });
+
+        // Carousel
+        const slideData = [
+            { img: "https://i.imghippo.com/files/jh6096NWY.gif", desc: "Social media often ruins meaningful conversation by stripping away non-verbal cues..." },
+            { img: "https://i.pinimg.com/1200x/ea/01/b5/ea01b57cf4c0bec4548fc071a6aca751.jpg", desc: "Build your own personalized algorithm using your real data..." },
+            { img: "https://i.pinimg.com/originals/c4/53/7a/c4537a681a8eb52da66b922f881d7073.gif", desc: "Journaling and sharing your honest opinions can greatly improve your mental health..." },
+            { img: "https://i.pinimg.com/originals/07/ba/0e/07ba0e548544b6a63872725089a0f3bc.gif", desc: "Constant exposure to bad, negative content slowly fogs your brain..." },
+            { img: "https://i.pinimg.com/originals/f8/68/3e/f8683ef3b636f7a535581ebc38336572.gif", desc: "Authentic research involves asking real questions..." }
         ];
 
         let currentIndex = 0;
@@ -156,11 +292,7 @@
         const nextBtn = document.getElementById('nextBtn');
 
         function createCardHTML(slide) {
-            return `
-                <div class="flex-grow w-full h-full overflow-hidden rounded-[24px] carousel-img-container">
-                    <img src="${slide.img}" class="w-full h-full object-cover" alt="">
-                </div>
-            `;
+            return `<div class="flex-grow w-full h-full overflow-hidden rounded-[24px]"><img src="${slide.img}" class="w-full h-full object-cover" alt=""></div>`;
         }
 
         function updateCaption() {
@@ -177,15 +309,14 @@
                 if (offset > Math.floor(total / 2)) offset -= total;
 
                 const card = document.createElement('div');
-                card.className = 'absolute top-1/2 -translate-y-1/2 h-full rounded-[24px] overflow-hidden bg-white shadow-xl transition-all duration-500 ease-in-out flex flex-col';
+                card.className = 'absolute top-1/2 -translate-y-1/2 h-full rounded-[24px] overflow-hidden bg-white shadow-xl transition-all duration-500 ease-in-out';
 
                 if (offset === 0) {
                     card.classList.add('w-[85%]', 'md:w-[48%]', 'z-30', 'scale-100', 'blur-none', 'opacity-100', 'translate-x-0');
                 } else if (offset === -1 || offset === 1) {
                     card.classList.add('w-[75%]', 'md:w-[42%]', 'z-10', 'scale-[0.85]', 'blur-lg', 'opacity-75',
-                                       offset === -1 ? '-translate-x-[60%]' : 'translate-x-[60%]',
-                                       'md:' + (offset === -1 ? '-translate-x-[80%]' : 'translate-x-[80%]'),
-                                       'cursor-pointer');
+                        offset === -1 ? '-translate-x-[60%]' : 'translate-x-[60%]',
+                        'cursor-pointer');
                     card.onclick = () => moveCarousel(offset);
                 } else {
                     card.classList.add('w-[70%]', 'md:w-[38%]', 'z-0', 'scale-75', 'blur-3xl', 'opacity-0', 'pointer-events-none');
@@ -206,6 +337,7 @@
         prevBtn.addEventListener('click', () => moveCarousel(-1));
         nextBtn.addEventListener('click', () => moveCarousel(1));
 
+        // Initialize
         updateCarousel();
     </script>
 </body>
