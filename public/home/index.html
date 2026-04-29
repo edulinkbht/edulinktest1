@@ -335,6 +335,68 @@
             overflow: visible
         }
 
+        /* Home page specific post design */
+        .home-page-post {
+            border: 1px solid #e5e7eb !important;
+            border-radius: 20px !important;
+            margin: 16px !important;
+            background: #fff !important;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04) !important;
+            border-bottom: 1px solid #e5e7eb !important;
+        }
+
+        @media (max-width: 768px) {
+            .home-page-post {
+                margin: 12px !important;
+                border-radius: 16px !important;
+            }
+        }
+
+        .home-page-post .post-actions {
+            padding: 12px 0 8px 0 !important;
+            gap: 12px !important;
+            border-top: none !important;
+        }
+
+        .home-page-post .action-btn {
+            border-radius: 9999px !important;
+            border: 1px solid #e5e7eb !important;
+            padding: 8px 16px !important;
+            background: #fff !important;
+            height: 40px !important;
+            display: flex !important;
+            align-items: center !important;
+            gap: 8px !important;
+            font-weight: 600 !important;
+            color: #4b5563 !important;
+            transition: all 0.2s ease !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+        }
+
+        .home-page-post .action-btn:hover {
+            background: #f9fafb !important;
+            border-color: #d1d5db !important;
+            transform: translateY(-1px);
+        }
+
+        .home-page-post .action-btn i, 
+        .home-page-post .action-btn svg {
+            width: 18px !important;
+            height: 18px !important;
+        }
+
+        .home-page-post .action-btn.like.active {
+            color: #ef4444 !important;
+            background: #fef2f2 !important;
+            border-color: #fecaca !important;
+        }
+
+        .home-page-post .action-btn.bookmark.active {
+            color: #f59e0b !important;
+            background: #fffbeb !important;
+            border-color: #fef3c7 !important;
+        }
+
         .post-card:hover {
             background-color: var(--surface);
             cursor: pointer;
@@ -3503,7 +3565,7 @@
     <div id="workspace-layout" class="flex-1 flex min-w-0 gap-2 relative overflow-hidden transition-all duration-300">
         <main id="main-panel" class="app-panel min-w-0 relative w-full lg:w-[640px] lg:ml-12">
             <header id="main-header"
-                class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 shrink-0 z-20 absolute top-0 w-full bg-white/95 md:bg-white/90 backdrop-blur-md border-b border-[#f0f0f0] transition-transform duration-300">
+                class="h-16 md:h-20 flex items-center justify-between px-4 md:px-6 shrink-0 z-20 absolute top-0 w-full bg-white transition-transform duration-300">
                 <div class="md:hidden flex items-center gap-3 cursor-pointer" onclick="window.location.reload()"><img
                         src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
                     <h1 class="text-lg font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
@@ -4764,7 +4826,13 @@
         window.openFeedFilter = () => { manageHistory('feed-filter-overlay'); toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !0) }; window.closeFeedFilter = () => toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !1); window.switchFeedFilter = f => { window.activeFeedFilter = f; closeFeedFilter(); renderFeed(); const m = { all: 'All Posts', following: 'Following', friends: 'Friends Only' }; showToast(`Filter: ${m[f]}`, false, "Your feed has been updated based on your selection.") };
         let touchStartX = 0, touchEndX = 0; window.handleTouchStart = e => touchStartX = e.changedTouches[0].screenX; window.handleTouchEnd = (e, pid, ov) => { touchEndX = e.changedTouches[0].screenX; const w = e.currentTarget.closest('.post-carousel'); if (w && Math.abs(touchStartX - touchEndX) > 50) moveCarousel(w.id, touchStartX > touchEndX ? 1 : -1) };
         function createPostElement(p, ctx = 'feed') {
-            const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); d.id = `post-card-${ctx}-${p.id}`; d.className = "post-card group overflow-hidden"; d.onclick = () => { openPostView(p.id); trackInteraction(p.id, 'view', 1) };
+            const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); d.id = `post-card-${ctx}-${p.id}`; 
+            
+            // Add home-page-post class only for the feed (home page)
+            const isHome = ctx === 'feed';
+            d.className = `post-card group overflow-hidden ${isHome ? 'home-page-post' : ''}`;
+            
+            d.onclick = () => { openPostView(p.id); trackInteraction(p.id, 'view', 1) };
             let mh = "", lh = "";
             if (p.embedVideo) {
                 mh = `<div class="mt-3 md:rounded-xl max-md:-mx-4 max-md:mt-2 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
@@ -4780,7 +4848,7 @@
                     if (f.length === 1) txt = `Liked by <span class="font-bold text-gray-900">${fri[0].name}</span>`;
                     else if (f.length === 2) txt = `Liked by <span class="font-bold text-gray-900">${fri[0].name}</span> and others`;
                     else txt = `Liked by <span class="font-bold text-gray-900">${fri[0].name}</span> and ${f.length - 1} others`;
-                    lh = `<div class="px-4 py-3 bg-white border-t border-gray-100 flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors group" onclick="event.stopPropagation(); openLikes('${p.id}')">
+                    lh = `<div class="px-4 py-3 bg-white ${isHome ? '' : 'border-t border-gray-100'} flex items-center gap-3 cursor-pointer hover:bg-gray-50 transition-colors group" onclick="event.stopPropagation(); openLikes('${p.id}')">
                             <div class="flex items-center -space-x-2 pl-1">
                                 ${fri.map(u => `<img src="${u.avatar}" class="w-6 h-6 rounded-full border border-white object-cover">`).join('')}
                             </div>
@@ -4806,7 +4874,7 @@
                 const rUser = users.find(u => u.reposts?.includes(p.id));
                 if (rUser) {
                     const label = rUser.id === currentUser.id ? 'You reposted this' : `${rUser.name} reposted this`;
-                    rh = `<div class="px-4 py-3 bg-white border-b border-gray-100 flex items-center gap-3">
+                    rh = `<div class="px-4 py-3 bg-white ${isHome ? '' : 'border-b border-gray-100'} flex items-center gap-3">
                             <i data-lucide="repeat" class="w-4 h-4 text-gray-400"></i>
                             <div class="text-sm font-medium text-gray-700">${label}</div>
                           </div>`;
