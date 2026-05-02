@@ -401,13 +401,13 @@ const firebaseConfig = {
   apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
   authDomain: "edulinki.firebaseapp.com",
   projectId: "edulinki",
-  storageBucket: "edulinki.firebasestorage.app",
+  storageBucket: "edulinki.appspot.com",
   messagingSenderId: "248886466474",
   appId: "1:248886466474:web:160043201a6b28bafbbdd3",
   measurementId: "G-MQBH12VL7N"
 };
 
-const CLOUDINARY_CLOUD = "dkz1vjj8n"; // replace if your cloud name differs
+const CLOUDINARY_CLOUD = "ml_default"; // cloud name as provided
 const CLOUDINARY_UPLOAD_PRESET = "ml_default"; // unsigned preset
 
 const fbApp = initializeApp(firebaseConfig);
@@ -619,13 +619,16 @@ document.getElementById("publish-btn").addEventListener("click", async () => {
     };
 
     const videoUrl = await new Promise((resolve, reject) => {
-      xhr.open("POST", `https://api.cloudinary.com/v1_1/edulinki/video/upload`);
+      xhr.open("POST", `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/video/upload`);
       xhr.onload = () => {
-        const r = JSON.parse(xhr.responseText);
-        if (r.secure_url) resolve(r.secure_url);
-        else reject(new Error(r.error?.message || "Upload failed"));
+        try {
+          const r = JSON.parse(xhr.responseText);
+          console.log("Cloudinary response:", r);
+          if (r.secure_url) resolve(r.secure_url);
+          else reject(new Error(r.error?.message || JSON.stringify(r)));
+        } catch(e) { reject(new Error("Bad response from Cloudinary")); }
       };
-      xhr.onerror = ()=>reject(new Error("Network error"));
+      xhr.onerror = ()=>reject(new Error("Network error uploading to Cloudinary"));
       xhr.send(fd);
     });
 
