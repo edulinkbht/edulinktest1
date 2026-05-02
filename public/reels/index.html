@@ -278,6 +278,14 @@
 
 <!-- APP -->
 <div id="app">
+  <!-- Setup Banner -->
+  <div id="setup-banner" style="display:none;position:fixed;top:64px;left:72px;right:0;z-index:90;background:#fff3cd;border-bottom:2px solid #ffc107;padding:12px 20px;align-items:center;gap:12px;flex-wrap:wrap;">
+    <strong style="color:#856404;">⚠ Cloudinary Setup Required:</strong>
+    <span style="font-size:13px;color:#856404;">Find your <b>Cloud Name</b> at <a href="https://cloudinary.com/console" target="_blank" style="color:#2d6be4;">cloudinary.com/console</a> → Dashboard (top left, e.g. "myapp123")</span>
+    <input id="cloud-name-input" type="text" placeholder="Enter cloud name..." style="padding:7px 12px;border:1.5px solid #ffc107;border-radius:8px;font-size:13px;outline:none;min-width:160px;"/>
+    <button id="save-cloud-name" style="padding:8px 18px;border-radius:8px;background:#1a1916;color:#fff;border:none;font-size:13px;font-weight:600;cursor:pointer;">Save</button>
+  </div>
+
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-logo">
@@ -407,8 +415,8 @@ const firebaseConfig = {
   measurementId: "G-MQBH12VL7N"
 };
 
-const CLOUDINARY_CLOUD = "ml_default"; // cloud name as provided
-const CLOUDINARY_UPLOAD_PRESET = "ml_default"; // unsigned preset
+let CLOUDINARY_CLOUD = localStorage.getItem("edulink_cloud_name") || "";
+const CLOUDINARY_UPLOAD_PRESET = "ml_default"; // your unsigned preset name
 
 const fbApp = initializeApp(firebaseConfig);
 const auth = getAuth(fbApp);
@@ -434,12 +442,28 @@ onAuthStateChanged(auth, user => {
     const av = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName||'U')}&background=eee&color=333`;
     sidebarAvatar.src = av;
     topnavAvatar.src = av;
+    checkCloudSetup();
     loadFeed();
   } else {
     currentUser = null;
     authScreen.classList.remove("hidden");
     appEl.classList.remove("visible");
   }
+});
+
+// ── Cloud name setup
+function checkCloudSetup() {
+  const banner = document.getElementById("setup-banner");
+  if (!CLOUDINARY_CLOUD) { banner.style.display = "flex"; }
+  else { banner.style.display = "none"; }
+}
+document.getElementById("save-cloud-name").addEventListener("click", () => {
+  const val = document.getElementById("cloud-name-input").value.trim().toLowerCase();
+  if (!val) return showToast("Please enter your cloud name");
+  CLOUDINARY_CLOUD = val;
+  localStorage.setItem("edulink_cloud_name", val);
+  document.getElementById("setup-banner").style.display = "none";
+  showToast("Cloud name saved ✓");
 });
 
 // Google login
@@ -561,6 +585,10 @@ function truncate(s, n){ return s.length>n ? s.slice(0,n)+'…' : s; }
 const uploadModal = document.getElementById("upload-modal");
 document.getElementById("open-upload").addEventListener("click", () => {
   if (!currentUser) return showToast("Please sign in first");
+  if (!CLOUDINARY_CLOUD) {
+    document.getElementById("setup-banner").style.display = "flex";
+    return showToast("Enter your Cloudinary cloud name in the banner above ↑");
+  }
   uploadModal.classList.add("open");
 });
 document.getElementById("close-upload").addEventListener("click", closeUploadModal);
@@ -623,9 +651,15 @@ document.getElementById("publish-btn").addEventListener("click", async () => {
       xhr.onload = () => {
         try {
           const r = JSON.parse(xhr.responseText);
-          console.log("Cloudinary response:", r);
-          if (r.secure_url) resolve(r.secure_url);
-          else reject(new Error(r.error?.message || JSON.stringify(r)));
+          if (r.secure_url) { resolve(r.secure_url); return; }
+          const errMsg = r.error?.message || JSON.stringify(r);
+          // unknown api_key = wrong cloud name
+          if (errMsg.includes("unknown api_key") || errMsg.includes("cloud_name")) {
+            CLOUDINARY_CLOUD = "";
+            localStorage.removeItem("edulink_cloud_name");
+            document.getElementById("setup-banner").classList.add("show");
+          }
+          reject(new Error(errMsg));
         } catch(e) { reject(new Error("Bad response from Cloudinary")); }
       };
       xhr.onerror = ()=>reject(new Error("Network error uploading to Cloudinary"));
