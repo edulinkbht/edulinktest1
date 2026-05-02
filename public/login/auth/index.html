@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<!-- 
+    Edulink Authentication Page
+    ---------------------------
+    This file handles the user authentication flow for Edulink, including:
+    1. Saved Profile View: Shows the last logged-in user for quick login.
+    2. Login View: Standard email/password and Google authentication.
+    3. Sign Up View: User registration with email validation.
+    4. Password Modal: Secure password entry for returning users.
+    
+    Technologies: HTML5, CSS3 (with Dark Mode support), Firebase Auth, Firestore.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edulink </title>
+    
+    <link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* 
+           THEME & GLOBAL STYLES
+           - Root variables for light and dark modes
+           - Global reset and base typography
+        */
+        :root {
+            --bg-color: #ffffff;
+            --modal-bg: #ffffff;
+            --text-main: #111827;
+            --text-muted: #6b7280;
+            --btn-bg: #ffffff;
+            --btn-border: #e5e7eb;
+            --btn-hover: #f3f4f6;
+            --input-bg: #ffffff;
+            --input-border: #d1d5db;
+            --input-focus: #9ca3af;
+            --divider-line: #e5e7eb;
+            --primary-btn-bg: #2563eb; 
+            --primary-btn-text: #ffffff;
+            --primary-btn-hover: #1d4ed8;
+            --link-color: #3b82f6;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --overlay-bg: rgba(0, 0, 0, 0.5);
+        }
+
+        /* Dark Theme Variables (System Preference) */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-color: #121212;
+                --modal-bg: #121212;
+                --text-main: #ffffff;
+                --text-muted: #a1a1aa;
+                --btn-bg: transparent;
+                --btn-border: #363636;
+                --btn-hover: #1a1a1a;
+                --input-bg: #1c1c1c;
+                --input-border: #363636;
+                --input-focus: #555555;
+                --divider-line: #262626;
+                --primary-btn-bg: #00376b;
+                --primary-btn-text: #ffffff;
+                --primary-btn-hover: #002d57;
+                --link-color: #0095f6;
+                --overlay-bg: rgba(0, 0, 0, 0.85);
+            }
+        }
+
+        /* CSS Reset & Global Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .hidden { display: none !important; }
+
+       .left-panel {
+
+            flex: 1;
+
+            background-image: url('https://i.imghippo.com/files/f8587DVo.png');
+
+            background-size: cover;
+
+            background-position: center;
+
+            background-repeat: no-repeat;
+
+            transition: filter 0.5s ease;
+
+        }
+
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-color);
+            transition: background-color 0.3s ease;
+            overflow-y: auto;
+            position: relative;
+            padding: 1.5rem;
+        }
+
+        .form-container {
+            width: 100%;
+            max-width: 350px; 
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 0;
+            animation: fadeIn 0.4s ease forwards;
+            position: relative;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-header h1 {
+            font-size: 1.25rem;
+            font-weight: 500;
+            margin-bottom: 2.5rem;
+            letter-spacing: -0.01em;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 24px;
+        }
+
+        .back-btn {
+            cursor: pointer;
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Removed meta-branding and meta-logo styles */
+
+        /* Buttons */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--btn-border);
+            background-color: var(--btn-bg);
+            color: var(--text-main);
+        }
+
+        .btn:hover { background-color: var(--btn-hover); }
+
+        .btn.outline-btn {
+            background-color: transparent;
+            border-color: var(--btn-border);
+        }
+        
+        .btn.blue-outline {
+            border-color: var(--link-color);
+            color: var(--link-color);
+        }
+
+        .btn svg, .btn img {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            object-fit: contain;
+        }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 1.5rem 0;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--divider-line);
+        }
+
+        .divider span { padding: 0 10px; }
+
+        .status-msg {
+            font-size: 0.8rem;
+            margin-top: -0.25rem;
+            margin-bottom: 0.75rem;
+            padding: 0 0.5rem;
+        }
+        .status-error { color: var(--error-color); }
+        .status-success { color: var(--success-color); }
+        .status-loading { color: var(--text-muted); }
+
+        /* Inputs */
+        .input-group {
+            position: relative;
+            margin-bottom: 0.75rem;
+            width: 100%;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.85rem 1rem;
+            border-radius: 12px;
+            border: 1px solid var(--input-border);
+            background-color: var(--input-bg);
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s ease;
+        }
+
+        .input-group input:focus { border-color: var(--input-focus); }
+        
+        .input-group input::placeholder { 
+            color: var(--text-muted); 
+            opacity: 0.6;
+        }
+
+        /* Saved Profile View Elements */
+        .saved-profile-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .saved-avatar {
+            width: 96px;
+            height: 96px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 1.25rem;
+            background-color: var(--input-bg);
+        }
+
+        .saved-name {
+            font-size: 1.15rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 0.25rem;
+        }
+
+        .saved-email {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Primary Action Buttons */
+        .btn-primary {
+            background-color: var(--primary-btn-bg);
+            color: var(--primary-btn-text);
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            padding: 0.85rem;
+            margin: 1.5rem 0 1rem 0;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 20px;
+            transition: opacity 0.2s ease, background-color 0.2s ease;
+        }
+
+        .forgot-password {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .forgot-password a {
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .forgot-password a:hover { text-decoration: underline; }
+
+        .policy-text {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 1.5rem;
+            margin-top: 1rem;
+        }
+
+        .policy-text a { color: var(--link-color); text-decoration: none; }
+        .policy-text a:hover { text-decoration: underline; }
+
+        .footer-text { color: var(--text-muted); font-size: 0.85rem; text-align: center; margin-top: 1rem;}
+        .footer-text a { color: var(--link-color); text-decoration: none; cursor: pointer; font-weight: 500;}
+        .footer-text a:hover { text-decoration: underline; }
+        
+        .page-footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 1rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            border-top: 1px solid #1a1a1a;
+            background: transparent;
+        }
+        .page-footer a {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .page-footer a:hover { text-decoration: underline; }
+
+        /* =========================================
+           MODAL / OVERLAY STYLES 
+           ========================================= */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--overlay-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-box {
+            background-color: var(--modal-bg);
+            width: 90%;
+            max-width: 400px;
+            border-radius: 16px;
+            padding: 2.5rem 2rem 2rem 2rem;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            transform: scale(0.95);
+            transition: transform 0.2s ease;
+        }
+
+        .modal-overlay.active .modal-box {
+            transform: scale(1);
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            transition: color 0.2s ease;
+        }
+
+        .modal-close-btn:hover { color: var(--text-main); }
+        .modal-close-btn svg { width: 24px; height: 24px; }
+
+        .modal-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 1rem;
+            background-color: var(--input-bg);
+        }
+
+        .modal-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 1.5rem;
+        }
+
+        /* Specific input overrides for the modal to match screenshot 2 */
+        .modal-box .input-group input {
+            padding-left: 1rem; /* No icon in modal */
+            border-radius: 12px; /* Less pill-shaped in the modal */
+        }
+        
+        .modal-box .btn-primary {
+            border-radius: 12px; /* Less pill-shaped in the modal */
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-forgot-link {
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+        .modal-forgot-link:hover { text-decoration: underline; }
+
+        /* Custom Alert Modal Styles */
+        .alert-modal-box {
+            background-color: #262626;
+            width: 90%;
+            max-width: 320px;
+            border-radius: 12px;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        .alert-content {
+            padding: 2rem 1.5rem;
+            text-align: center;
+            color: #ffffff;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .alert-action-btn {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-top: 1px solid #363636;
+            background: transparent;
+            color: #0095f6;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .alert-action-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .left-panel { display: none; }
+            .right-panel { padding: 2rem; align-items: flex-start; }
+            .form-container { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="left-panel"></div>
+
+    <div class="right-panel">
+
+        <div id="saved-profile-view" class="form-container hidden">
+            <div class="saved-profile-container">
+                <img id="saved-avatar-img" class="saved-avatar" src="" alt="Profile">
+                <h2 id="saved-name-text" class="saved-name">User Name</h2>
+                <p id="saved-username-text" class="saved-email" style="color: var(--text-muted); font-size: 0.9rem;">@username</p>
+            </div>
+
+            <button class="btn-primary" id="continue-saved-btn">Log in</button>
+            <button class="btn outline-btn" id="use-another-btn">Log into another account</button>
+            <button class="btn outline-btn" id="create-new-saved-btn">Create new account</button>
+        </div>
+        
+        <div id="login-view" class="form-container hidden">
+            <div class="form-header">
+                <h1>
+                    <svg class="back-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Log into Edulink
+                </h1>
+            </div>
+
+            <div id="step-1">
+                <div class="input-group">
+                    <input type="text" id="login-email-input" placeholder="Username or email" autocomplete="username">
+                </div>
+                
+                <div class="input-group">
+                    <input type="password" id="login-password-input" placeholder="Password">
+                </div>
+
+                <button class="btn-primary" id="main-action-btn">Log in</button>
+
+                <div class="forgot-password">
+                    <a href="#">Forgot password?</a>
+                </div>
+
+                <button id="google-login-btn" class="btn outline-btn">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                    </svg>
+                    Continue with Google
+                </button>
+
+                <button class="btn outline-btn" id="go-to-signup">Create new account</button>
+            </div>
+        </div>
+
+
+        <div id="signup-view" class="form-container hidden">
+            <div class="form-header">
+                <h1>
+                    <svg class="back-btn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Sign Up
+                </h1>
+            </div>
+
+            <div class="input-group">
+                <input type="text" id="signup-name" placeholder="Full Name" required>
+            </div>
+            
+            <div class="input-group">
+                <input type="email" id="signup-email" placeholder="Email Address" required>
+            </div>
+            <small id="email-msg" class="status-msg"></small>
+
+            <div class="input-group">
+                <input type="password" id="signup-password" placeholder="Create Password" required>
+            </div>
+
+            <button class="btn-primary" id="signup-submit-btn" disabled>Create Account</button>
+            <button class="btn outline-btn" id="go-to-login">Log in</button>
+        </div>
+
+        <div class="page-footer">
+            <a href="#">Newton</a>
+            <a href="#">The advanture of the gyalsey</a>
+            <a href="#">Report</a>
+            <a href="#">Documentation</a>
+            <span>© 2026 Edulink</span>
+        </div>
+
+    </div>
+    
+    <div id="password-modal" class="modal-overlay">
+        <div class="modal-box">
+            <button class="modal-close-btn" id="modal-close-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            
+            <img id="modal-avatar-img" class="modal-avatar" src="https://i.imghippo.com/files/ID6752xZg.webp" alt="Profile">
+            <h3 id="modal-display-name" class="modal-name">username</h3>
+            <p id="modal-username-text" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem;">@username</p>
+
+            <div class="input-group">
+                <input type="password" id="modal-password-input" placeholder="Password">
+            </div>
+
+            <button class="btn-primary" id="modal-login-btn">Log in</button>
+            <a href="#" class="modal-forgot-link">Forgot password?</a>
+        </div>
+    </div>
+
+    <!-- Custom Alert Overlay -->
+    <div id="alert-modal" class="modal-overlay">
+        <div class="alert-modal-box">
+            <div id="alert-message" class="alert-content">Alert message here</div>
+            <button class="alert-action-btn" id="alert-ok-btn">OK</button>
+        </div>
+    </div>
+
+    <script type="module">
+        /* 
+           FIREBASE INITIALIZATION & AUTHENTICATION LOGIC
+           - Firebase configuration and services setup.
+           - View management (Login, Sign Up, Saved Profile).
+           - Authentication handlers for Email/Password and Google.
+        */
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+        import { 
+            getAuth, 
+            signInWithPopup, 
+            GoogleAuthProvider, 
+            onAuthStateChanged, 
+            signInWithEmailAndPassword,
+            createUserWithEmailAndPassword,
+            updateProfile
+        } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc,
+            setDoc,
+            collection,
+            query,
+            where,
+            getDocs,
+            getDoc
+        } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+        
+        // Fetch configuration from API
+        const configResponse = await fetch('/api/data');
+        const config = await configResponse.json();
+        const firebaseConfig = config.firebaseConfig;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // Listen for authentication state changes. 
+        // If a user is already authenticated, redirect them to the home page immediately.
+        onAuthStateChanged(auth, (user) => {
+            if (user) window.location.href = '/home';
+        });
+
+        // -----------------------------------------
+        // VIEW MANAGEMENT & LOCAL STORAGE
+        // -----------------------------------------
+        const savedProfileView = document.getElementById('saved-profile-view');
+        const loginView = document.getElementById('login-view');
+        const signupView = document.getElementById('signup-view');
+
+        // Alert Modal Elements
+        const alertModal = document.getElementById('alert-modal');
+        const alertMessage = document.getElementById('alert-message');
+        const alertOkBtn = document.getElementById('alert-ok-btn');
+
+        /**
+         * customAlert
+         * Shows a custom modal instead of the browser's default alert().
+         * @param {string} message - The message to display.
+         */
+        function customAlert(message) {
+            alertMessage.textContent = message;
+            alertModal.classList.add('active');
+        }
+
+        alertOkBtn.addEventListener('click', () => {
+            alertModal.classList.remove('active');
+        });
+
+        // Close alert on background click
+        alertModal.addEventListener('click', (e) => {
+            if (e.target === alertModal) alertModal.classList.remove('active');
+        });
+
+        /**
+         * switchView
+         * Handles transitioning between different authentication screens.
+         * @param {HTMLElement} viewElement - The view element to show.
+         */
+        function switchView(viewElement) {
+            savedProfileView.classList.add('hidden');
+            loginView.classList.add('hidden');
+            signupView.classList.add('hidden');
+            viewElement.classList.remove('hidden');
+        }
+
+        document.querySelectorAll('.back-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const savedData = localStorage.getItem('edulink_saved_user');
+                if (savedData) switchView(savedProfileView);
+                else switchView(loginView);
+            });
+        });
+
+        const DEFAULT_PFP = 'https://i.imghippo.com/files/ID6752xZg.webp';
+        const DEFAULT_BIO = 'No bio yet';
+
+        /**
+         * saveUserToLocal
+         * Persists user info to localStorage to enable the "Saved Profile" view on future visits.
+         * @param {string} email - User's email address.
+         * @param {string} name - User's display name.
+         * @param {string} photoURL - URL to user's avatar image.
+         * @param {string} username - User's unique username handle.
+         * @param {string} bio - User's bio description.
+         * @param {string} provider - Auth provider used ('password' or 'google').
+         */
+        function saveUserToLocal(email, name, photoURL, username, bio = '', provider = 'password') {
+            const userData = {
+                email,
+                name: name || email,
+                photoURL: photoURL || DEFAULT_PFP,
+                username: username || name?.split(' ')[0]?.toLowerCase() || 'user',
+                bio: bio || DEFAULT_BIO,
+                provider: provider || 'password'
+            };
+            localStorage.setItem('edulink_saved_user', JSON.stringify(userData));
+        }
+
+        /**
+         * getUserProfileByEmail
+         * Fetches a user's full profile document from the Firestore "users" collection.
+         * @param {string} email - Email to query by.
+         * @returns {Object|null} The profile data or null if not found.
+         */
+        async function getUserProfileByEmail(email) {
+            try {
+                const q = query(collection(db, "users"), where("email", "==", email));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    return querySnapshot.docs[0].data();
+                }
+            } catch (error) {
+                console.error('Error fetching profile by email:', error);
+            }
+            return null;
+        }
+
+        /**
+         * initializeSavedProfile
+         * Checks for saved user data and updates the "Saved Profile" view if found.
+         * Fetches fresh profile data from Firestore if possible.
+         */
+        async function initializeSavedProfile() {
+            const savedData = localStorage.getItem('edulink_saved_user');
+            if (!savedData) {
+                switchView(loginView);
+                return;
+            }
+
+            const localUser = JSON.parse(savedData);
+            // Fetch fresh data from Firestore to ensure UI is always current
+            const profile = await getUserProfileByEmail(localUser.email);
+            const activeProfile = profile || localUser;
+            const avatarUrl = activeProfile.avatar || activeProfile.photoURL || localUser.photoURL || DEFAULT_PFP;
+            const name = activeProfile.name || localUser.name || localUser.email;
+            const username = activeProfile.username || localUser.username || 'user';
+            const bio = activeProfile.bio || localUser.bio || DEFAULT_BIO;
+            const provider = activeProfile.provider || localUser.provider || 'password';
+
+            // Resave the potentially updated data back to localStorage
+            saveUserToLocal(localUser.email, name, avatarUrl, username, bio, provider);
+            document.getElementById('saved-avatar-img').src = avatarUrl;
+            document.getElementById('saved-name-text').textContent = name;
+            document.getElementById('saved-username-text').textContent = '@' + username;
+            switchView(savedProfileView);
+        }
+
+        initializeSavedProfile();
+
+        /**
+         * continue-saved-btn click listener
+         * Log in the saved user based on their stored authentication provider.
+         */
+        document.getElementById('continue-saved-btn').addEventListener('click', async () => {
+            const savedData = localStorage.getItem('edulink_saved_user');
+            if (!savedData) {
+                switchView(loginView);
+                return;
+            }
+            const user = JSON.parse(savedData);
+
+            // Always try to get fresh profile from Firestore to ensure UI is up-to-date
+            let activeProfile = user;
+            try {
+                const profile = await getUserProfileByEmail(user.email);
+                if (profile) activeProfile = profile;
+            } catch(e) {
+                console.warn('Could not fetch fresh profile, using cached:', e);
+            }
+
+            const avatarUrl = activeProfile.avatar || activeProfile.photoURL || user.photoURL || DEFAULT_PFP;
+            const name = activeProfile.name || user.name || user.email;
+            const username = activeProfile.username || user.username || 'user';
+            const bio = activeProfile.bio || user.bio || DEFAULT_BIO;
+            const savedProvider = activeProfile.provider || user.provider || 'password';
+
+            if (savedProvider === 'google') {
+                try {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    // Update localStorage with the most current info after Google login
+                    saveUserToLocal(result.user.email, name, avatarUrl, username, bio, 'google');
+                    window.location.href = '/home';
+                    return;
+                } catch (error) {
+                    console.error('Google continue failed:', error);
+                    customAlert('Please sign in with Google to continue.');
+                    return;
+                }
+            }
+
+            // For email/password users: set the resolved email and open password modal
+            resolvedLoginEmail = user.email;
+            openPasswordModal(name, avatarUrl, username);
+        });
+
+        document.getElementById('use-another-btn').addEventListener('click', () => {
+            switchView(loginView);
+        });
+
+        document.getElementById('create-new-saved-btn').addEventListener('click', () => {
+            switchView(signupView);
+        });
+
+        document.getElementById('go-to-signup').addEventListener('click', () => switchView(signupView));
+        document.getElementById('go-to-login').addEventListener('click', () => switchView(loginView));
+
+
+        // -----------------------------------------
+        // LIVE VALIDATION
+        // -----------------------------------------
+        const signupName = document.getElementById('signup-name');
+        const signupEmail = document.getElementById('signup-email');
+        const signupPassword = document.getElementById('signup-password');
+        const signupSubmitBtn = document.getElementById('signup-submit-btn');
+        const emailMsg = document.getElementById('email-msg');
+
+        let isEmailValid = false;
+        let typingTimer;
+
+        signupEmail.addEventListener('input', () => {
+            clearTimeout(typingTimer);
+            const email = signupEmail.value.trim().toLowerCase();
+            isEmailValid = false;
+            validateSignupForm();
+
+            if (!email.includes('@') || !email.includes('.')) {
+                emailMsg.textContent = '';
+                return;
+            }
+
+            emailMsg.textContent = 'Checking availability...';
+            emailMsg.className = 'status-msg status-loading';
+
+            typingTimer = setTimeout(async () => {
+                try {
+                    const q = query(collection(db, "users"), where("email", "==", email));
+                    const querySnapshot = await getDocs(q);
+                    
+                    if (!querySnapshot.empty) {
+                        emailMsg.textContent = '❌ Email is already in use.';
+                        emailMsg.className = 'status-msg status-error';
+                        isEmailValid = false;
+                    } else {
+                        emailMsg.textContent = '✔ Email is available.';
+                        emailMsg.className = 'status-msg status-success';
+                        isEmailValid = true;
+                    }
+                } catch (error) {
+                    emailMsg.textContent = '✔ Email looks good.';
+                    emailMsg.className = 'status-msg status-success';
+                    isEmailValid = true;
+                }
+                validateSignupForm();
+            }, 600);
+        });
+
+        function validateSignupForm() {
+            const hasName = signupName.value.trim().length > 0;
+            const hasPassword = signupPassword.value.length >= 6;
+            signupSubmitBtn.disabled = !(isEmailValid && hasName && hasPassword);
+        }
+
+        signupName.addEventListener('input', validateSignupForm);
+        signupPassword.addEventListener('input', validateSignupForm);
+
+
+        // -----------------------------------------
+        // SIGN UP LOGIC
+        // -----------------------------------------
+        /**
+         * signupSubmitBtn click listener
+         * Creates a new user with Firebase Authentication and stores their profile in Firestore.
+         */
+        signupSubmitBtn.addEventListener('click', async () => {
+            if (signupSubmitBtn.disabled) return;
+
+            const name = signupName.value.trim();
+            const email = signupEmail.value.trim().toLowerCase();
+            const password = signupPassword.value;
+            const username = email.split('@')[0].toLowerCase();
+
+            try {
+                signupSubmitBtn.textContent = 'Creating account...';
+                signupSubmitBtn.disabled = true;
+
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                
+                await updateProfile(userCredential.user, { displayName: name, photoURL: DEFAULT_PFP });
+
+                await setDoc(doc(db, "users", userCredential.user.uid), {
+                    email: email,
+                    name: name,
+                    username: username,
+                    photoURL: DEFAULT_PFP,
+                    avatar: DEFAULT_PFP,
+                    bio: DEFAULT_BIO,
+                    provider: 'password',
+                    createdAt: new Date()
+                });
+
+                // Save locally so the "Saved Profile" view works next time they log out
+                saveUserToLocal(email, name, DEFAULT_PFP, username, DEFAULT_BIO, 'password');
+                window.location.href = '/home';
+
+            } catch (error) {
+                if (error.code === 'auth/email-already-in-use') {
+                    emailMsg.textContent = '❌ Email is already in use.';
+                    emailMsg.className = 'status-msg status-error';
+                    isEmailValid = false;
+                } else {
+                    customAlert(error.message);
+                }
+                signupSubmitBtn.textContent = 'Create Account';
+                signupSubmitBtn.disabled = false;
+                validateSignupForm(); 
+            }
+        });
+
+        // -----------------------------------------
+        // LOGIN & MODAL LOGIC
+        // -----------------------------------------
+        const loginEmailInput = document.getElementById('login-email-input');
+        const loginPasswordInput = document.getElementById('login-password-input');
+        const mainActionBtn = document.getElementById('main-action-btn');
+
+        const passwordModal = document.getElementById('password-modal');
+        const modalCloseBtn = document.getElementById('modal-close-btn');
+        const modalPasswordInput = document.getElementById('modal-password-input');
+        const modalLoginBtn = document.getElementById('modal-login-btn');
+        const modalAvatarImg = document.getElementById('modal-avatar-img');
+        const modalDisplayName = document.getElementById('modal-display-name');
+        const modalUsernameText = document.getElementById('modal-username-text');
+
+        function openPasswordModal(displayName, photoURL, username) {
+            modalDisplayName.textContent = displayName || 'User';
+            modalUsernameText.textContent = '@' + (username || 'user');
+            modalAvatarImg.src = photoURL || DEFAULT_PFP;
+            modalPasswordInput.value = '';
+            modalPasswordInput.style.borderColor = 'var(--input-border)';
+            passwordModal.classList.add('active');
+            setTimeout(() => modalPasswordInput.focus(), 200);
+        }
+
+        // Helper: resolve username/email input → email + user data from Firestore
+        async function resolveUserByInput(input) {
+            const isEmail = input.includes('@');
+            if (isEmail) {
+                // Search by email
+                const q = query(collection(db, "users"), where("email", "==", input));
+                const snap = await getDocs(q);
+                if (!snap.empty) return snap.docs[0].data();
+                return null;
+            } else {
+                // Search by username
+                const q = query(collection(db, "users"), where("username", "==", input));
+                const snap = await getDocs(q);
+                if (!snap.empty) return snap.docs[0].data();
+                return null;
+            }
+        }
+
+        // Store the resolved email for use in modal login
+        let resolvedLoginEmail = '';
+
+        mainActionBtn.addEventListener('click', async () => {
+            const rawInput = loginEmailInput.value.trim().toLowerCase();
+            const password = loginPasswordInput.value;
+
+            if (rawInput === '') {
+                loginEmailInput.style.borderColor = 'var(--error-color)';
+                return;
+            }
+            loginEmailInput.style.borderColor = 'var(--input-border)';
+
+            if (password === '') {
+                loginPasswordInput.style.borderColor = 'var(--error-color)';
+                return;
+            }
+            loginPasswordInput.style.borderColor = 'var(--input-border)';
+
+            mainActionBtn.textContent = 'Logging in...';
+            mainActionBtn.disabled = true;
+
+            try {
+                // First resolve user to get email
+                const userData = await resolveUserByInput(rawInput);
+                
+                if (userData) {
+                    const email = userData.email;
+                    const provider = userData.provider || 'password';
+
+                    if (provider === 'google') {
+                        customAlert('This account uses Google sign-in. Please use "Log in with Google".');
+                        mainActionBtn.textContent = 'Log in';
+                        mainActionBtn.disabled = false;
+                        return;
+                    }
+
+                    // Perform actual login
+                    const userCred = await signInWithEmailAndPassword(auth, email, password);
+                    const data = await getUserProfileByEmail(userCred.user.email);
+                    if (data) {
+                        saveUserToLocal(data.email, data.name, data.avatar || data.photoURL, data.username, data.bio, data.provider || 'password');
+                    }
+                    window.location.href = '/home';
+                } else {
+                    // Not found - use generic error for security
+                    customAlert("The username or password you entered is incorrect. Please try again.");
+                }
+            } catch (error) {
+                console.error("Login error:", error);
+                loginPasswordInput.style.borderColor = 'var(--error-color)';
+                customAlert("The username or password you entered is incorrect. Please try again.");
+            } finally {
+                mainActionBtn.textContent = 'Log in';
+                mainActionBtn.disabled = false;
+            }
+        });
+
+        modalCloseBtn.addEventListener('click', () => {
+            passwordModal.classList.remove('active');
+        });
+
+        // Handle clicking outside the modal box to close it
+        passwordModal.addEventListener('click', (e) => {
+            if (e.target === passwordModal) {
+                passwordModal.classList.remove('active');
+            }
+        });
+
+        modalLoginBtn.addEventListener('click', async () => {
+            // Use the resolved email (from username lookup or direct email entry)
+            const email = resolvedLoginEmail || loginEmailInput.value.trim().toLowerCase();
+            const password = modalPasswordInput.value;
+
+            if (password.trim() === '') {
+                modalPasswordInput.style.borderColor = 'var(--error-color)';
+                return;
+            }
+
+            if (!email) {
+                customAlert('Could not determine email. Please go back and try again.');
+                return;
+            }
+
+            modalLoginBtn.textContent = 'Logging in...';
+            modalLoginBtn.disabled = true;
+
+            try {
+                const userCred = await signInWithEmailAndPassword(auth, email, password);
+                
+                // Fetch the full profile from Firestore and save to localStorage
+                const data = await getUserProfileByEmail(userCred.user.email);
+                if (data) {
+                    saveUserToLocal(data.email, data.name, data.avatar || data.photoURL, data.username, data.bio, data.provider || 'password');
+                } else {
+                    saveUserToLocal(userCred.user.email, userCred.user.displayName, userCred.user.photoURL, userCred.user.displayName?.split(' ')[0]?.toLowerCase() || 'user', DEFAULT_BIO, 'password');
+                }
+                window.location.href = '/home';
+            } catch(error) {
+                console.error('Login error:', error);
+                modalPasswordInput.style.borderColor = 'var(--error-color)';
+                if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                    customAlert('The username or password you entered is incorrect. Please try again.');
+                } else if (error.code === 'auth/too-many-requests') {
+                    customAlert('Too many attempts. Please wait a moment and try again.');
+                } else {
+                    customAlert('The username or password you entered is incorrect. Please try again.');
+                }
+                modalLoginBtn.textContent = 'Log in';
+                modalLoginBtn.disabled = false;
+            }
+        });
+
+        loginEmailInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') mainActionBtn.click(); });
+        loginPasswordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') mainActionBtn.click(); });
+        modalPasswordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') modalLoginBtn.click(); });
+
+        // -----------------------------------------
+        // GOOGLE AUTH HANDLER
+        // -----------------------------------------
+        /**
+         * googleLoginBtn click listener
+         * Authenticates user via Google popup and syncs their profile with Firestore and localStorage.
+         */
+        const googleLoginBtn = document.getElementById('google-login-btn');
+        if (googleLoginBtn) {
+            googleLoginBtn.addEventListener('click', async () => {
+                try {
+                    const result = await signInWithPopup(auth, googleProvider);
+                    const userRef = doc(db, "users", result.user.uid);
+                    const userSnapshot = await getDoc(userRef);
+                    
+                    let finalName = result.user.displayName;
+                    let finalUsername = result.user.displayName?.split(' ')[0]?.toLowerCase() || 'user';
+                    let finalAvatar = result.user.photoURL || DEFAULT_PFP;
+                    let finalBio = DEFAULT_BIO;
+
+                    if (userSnapshot.exists()) {
+                        const existingData = userSnapshot.data();
+                        // DO NOT overwrite existing data from Firestore with Google default data
+                        finalName = existingData.name || finalName;
+                        finalUsername = existingData.username || finalUsername;
+                        finalAvatar = existingData.avatar || existingData.photoURL || finalAvatar;
+                        finalBio = existingData.bio || finalBio;
+                    } else {
+                        // Create new user entry if it doesn't exist
+                        const googleData = {
+                            email: result.user.email,
+                            name: finalName,
+                            username: finalUsername,
+                            photoURL: result.user.photoURL,
+                            avatar: finalAvatar,
+                            bio: finalBio,
+                            provider: 'google',
+                            createdAt: new Date()
+                        };
+                        await setDoc(userRef, googleData);
+                    }
+
+                    // Update local storage with the final resolved data for next visit
+                    saveUserToLocal(result.user.email, finalName, finalAvatar, finalUsername, finalBio, 'google');
+                    window.location.href = '/home';
+                } catch (error) {
+                    console.error("Google Sign In Error:", error);
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
