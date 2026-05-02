@@ -1,288 +1,728 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduLink Reels</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    
-    <style>
-        /* Custom scrollbar hiding for the feed */
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
-        }
-    </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>EduLink</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e8e6e0;
+    --text: #1a1916;
+    --muted: #8a8780;
+    --accent: #2d6be4;
+    --accent2: #e84040;
+    --sidebar-w: 72px;
+    --nav-h: 64px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+
+  /* ── AUTH SCREEN ── */
+  #auth-screen {
+    display:flex;align-items:center;justify-content:center;
+    min-height:100vh;
+    background: linear-gradient(135deg,#1a1916 0%,#2d2c28 50%,#1a1916 100%);
+    position:fixed;inset:0;z-index:1000;
+    transition:opacity .4s,visibility .4s;
+  }
+  #auth-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+  .auth-card {
+    background:#fff;border-radius:24px;padding:48px 40px;
+    width:min(420px,92vw);text-align:center;
+    box-shadow:0 32px 80px rgba(0,0,0,.35);
+  }
+  .auth-logo{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:32px;}
+  .auth-logo-icon{width:44px;height:44px;background:#1a1916;border-radius:12px;display:flex;align-items:center;justify-content:center;}
+  .auth-logo-icon svg{width:26px;height:26px;fill:#fff;}
+  .auth-logo-text{font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#1a1916;}
+  .auth-tagline{font-size:14px;color:var(--muted);margin-bottom:36px;line-height:1.5;}
+  .auth-tagline strong{color:var(--text);}
+  .btn-google {
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    width:100%;padding:14px 20px;border-radius:12px;
+    background:#fff;border:2px solid #e0ddd6;
+    font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;
+    cursor:pointer;transition:all .2s;color:#1a1916;
+    box-shadow:0 2px 8px rgba(0,0,0,.06);
+  }
+  .btn-google:hover{border-color:#2d6be4;box-shadow:0 4px 16px rgba(45,107,228,.15);transform:translateY(-1px);}
+  .btn-google img{width:20px;height:20px;}
+  .auth-divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted);font-size:13px;}
+  .auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+  .auth-footer{font-size:12px;color:var(--muted);margin-top:24px;line-height:1.6;}
+
+  /* ── APP SHELL ── */
+  #app{display:none;}
+  #app.visible{display:flex;}
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width:var(--sidebar-w);height:100vh;position:fixed;left:0;top:0;
+    background:var(--surface);border-right:1px solid var(--border);
+    display:flex;flex-direction:column;align-items:center;
+    padding:16px 0;z-index:100;gap:4px;
+  }
+  .sidebar-logo{margin-bottom:20px;}
+  .sidebar-logo .logo-box{width:40px;height:40px;background:#1a1916;border-radius:10px;display:flex;align-items:center;justify-content:center;}
+  .sidebar-logo .logo-box svg{width:22px;height:22px;fill:#fff;}
+  .nav-btn {
+    width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;transition:all .2s;border:none;background:transparent;color:var(--muted);
+    position:relative;
+  }
+  .nav-btn:hover,.nav-btn.active{background:#f0ede6;color:var(--text);}
+  .nav-btn.active{background:#1a1916;color:#fff;}
+  .nav-btn svg{width:20px;height:20px;}
+  .sidebar-bottom{margin-top:auto;display:flex;flex-direction:column;align-items:center;gap:8px;}
+  .sidebar-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid var(--border);}
+
+  /* ── TOP NAV ── */
+  .topnav {
+    position:fixed;top:0;left:var(--sidebar-w);right:0;height:var(--nav-h);
+    background:var(--surface);border-bottom:1px solid var(--border);
+    display:flex;align-items:center;padding:0 24px;gap:12px;z-index:99;
+  }
+  .search-wrap{flex:1;max-width:480px;position:relative;}
+  .search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);}
+  .search-wrap input{
+    width:100%;padding:10px 14px 10px 38px;
+    border:1.5px solid var(--border);border-radius:40px;
+    background:var(--bg);font-family:'DM Sans',sans-serif;font-size:14px;
+    outline:none;transition:border-color .2s;color:var(--text);
+  }
+  .search-wrap input:focus{border-color:var(--accent);}
+  .search-wrap input::placeholder{color:var(--muted);}
+  .topnav-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+  .filter-btn{
+    display:flex;align-items:center;gap:6px;padding:8px 16px;
+    border:1.5px solid var(--border);border-radius:40px;
+    background:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;
+    font-size:13px;font-weight:500;color:var(--text);transition:all .2s;
+  }
+  .filter-btn:hover{border-color:var(--accent);color:var(--accent);}
+  .topnav-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;cursor:pointer;border:2px solid var(--border);}
+
+  /* ── MAIN FEED ── */
+  .main{
+    margin-left:var(--sidebar-w);padding-top:var(--nav-h);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;
+    padding-bottom:40px;
+  }
+  .feed{width:min(580px,92vw);padding-top:32px;display:flex;flex-direction:column;gap:32px;}
+
+  /* ── REEL CARD ── */
+  .reel-card{background:#fff;border-radius:20px;overflow:hidden;border:1px solid var(--border);box-shadow:0 2px 12px rgba(0,0,0,.04);}
+  .video-wrap{position:relative;background:#111;aspect-ratio:9/16;max-height:520px;cursor:pointer;overflow:hidden;}
+  .video-wrap video{width:100%;height:100%;object-fit:cover;display:block;}
+  .play-overlay{
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.25);transition:opacity .2s;
+  }
+  .play-overlay.hidden{opacity:0;pointer-events:none;}
+  .play-btn{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,.9);display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);}
+  .play-btn svg{width:24px;height:24px;fill:#1a1916;margin-left:3px;}
+  .reel-actions{
+    position:absolute;right:14px;bottom:80px;
+    display:flex;flex-direction:column;gap:12px;
+  }
+  .action-btn{
+    width:44px;height:44px;border-radius:50%;
+    background:rgba(255,255,255,.9);border:none;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    backdrop-filter:blur(4px);transition:all .2s;color:#1a1916;
+  }
+  .action-btn:hover{background:#fff;transform:scale(1.08);}
+  .action-btn.liked svg{fill:var(--accent2);stroke:var(--accent2);}
+  .action-btn svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;}
+  .reel-meta{padding:14px 16px 16px;}
+  .reel-user{display:flex;align-items:center;gap:10px;}
+  .reel-avatar{width:36px;height:36px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+  .reel-username{font-weight:600;font-size:14px;}
+  .reel-caption{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4;}
+  .see-more{color:var(--accent);font-size:13px;cursor:pointer;background:none;border:none;padding:0;font-family:'DM Sans',sans-serif;}
+
+  /* ── RIGHT ARROWS ── */
+  .nav-arrows{
+    position:fixed;right:24px;top:50%;transform:translateY(-50%);
+    display:flex;flex-direction:column;gap:12px;z-index:50;
+  }
+  .arrow-btn{
+    width:44px;height:44px;border-radius:50%;background:#fff;border:1.5px solid var(--border);
+    display:flex;align-items:center;justify-content:center;cursor:pointer;
+    transition:all .2s;color:var(--muted);
+  }
+  .arrow-btn:hover{border-color:var(--text);color:var(--text);}
+  .arrow-btn svg{width:18px;height:18px;}
+
+  /* ── UPLOAD MODAL ── */
+  .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.5);
+    display:flex;align-items:center;justify-content:center;
+    z-index:200;backdrop-filter:blur(4px);
+    opacity:0;visibility:hidden;transition:all .3s;
+  }
+  .modal-overlay.open{opacity:1;visibility:visible;}
+  .modal{
+    background:#fff;border-radius:24px;padding:36px;
+    width:min(480px,92vw);max-height:90vh;overflow-y:auto;
+    transform:scale(.95);transition:transform .3s;
+  }
+  .modal-overlay.open .modal{transform:scale(1);}
+  .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+  .modal-title{font-family:'Syne',sans-serif;font-size:20px;font-weight:700;}
+  .modal-close{width:36px;height:36px;border-radius:50%;border:none;background:var(--bg);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:18px;}
+  .upload-zone{
+    border:2px dashed var(--border);border-radius:16px;padding:40px 20px;
+    text-align:center;cursor:pointer;transition:all .2s;
+    background:var(--bg);
+  }
+  .upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:#f0f5ff;}
+  .upload-zone svg{width:40px;height:40px;color:var(--muted);margin-bottom:12px;}
+  .upload-zone p{font-size:14px;color:var(--muted);}
+  .upload-zone strong{color:var(--text);}
+  #video-file-input{display:none;}
+  .upload-preview{margin-top:16px;border-radius:12px;overflow:hidden;position:relative;}
+  .upload-preview video{width:100%;max-height:280px;object-fit:cover;border-radius:12px;}
+  .form-group{margin-top:16px;}
+  .form-label{font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;display:block;}
+  .form-input{
+    width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;
+    font-family:'DM Sans',sans-serif;font-size:14px;outline:none;
+    transition:border-color .2s;color:var(--text);background:#fff;resize:none;
+  }
+  .form-input:focus{border-color:var(--accent);}
+  .btn-primary{
+    width:100%;margin-top:20px;padding:14px;border-radius:12px;
+    background:#1a1916;color:#fff;border:none;
+    font-family:'DM Sans',sans-serif;font-size:15px;font-weight:600;
+    cursor:pointer;transition:all .2s;
+  }
+  .btn-primary:hover{background:#2d2c28;transform:translateY(-1px);}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+  .progress-bar{height:4px;background:var(--border);border-radius:4px;margin-top:12px;overflow:hidden;display:none;}
+  .progress-fill{height:100%;background:var(--accent);width:0%;transition:width .3s;border-radius:4px;}
+
+  /* ── TOAST ── */
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+    background:#1a1916;color:#fff;padding:12px 24px;border-radius:40px;
+    font-size:13px;font-weight:500;z-index:999;transition:transform .3s;
+    white-space:nowrap;
+  }
+  .toast.show{transform:translateX(-50%) translateY(0);}
+
+  /* ── EMPTY STATE ── */
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-state svg{width:48px;height:48px;margin-bottom:16px;opacity:.3;}
+  .empty-state h3{font-family:'Syne',sans-serif;font-size:18px;color:var(--text);margin-bottom:8px;}
+
+  /* ── LOADING ── */
+  .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:40px auto;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* ── COMMENT PANEL ── */
+  .comment-panel{
+    position:fixed;right:0;top:0;bottom:0;width:min(360px,100vw);
+    background:#fff;border-left:1px solid var(--border);
+    z-index:150;transform:translateX(100%);transition:transform .3s;
+    display:flex;flex-direction:column;
+  }
+  .comment-panel.open{transform:translateX(0);}
+  .comment-panel-header{padding:20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+  .comment-panel-header h3{font-family:'Syne',sans-serif;font-size:16px;font-weight:700;}
+  .comment-list{flex:1;overflow-y:auto;padding:16px;}
+  .comment-item{display:flex;gap:10px;margin-bottom:16px;}
+  .comment-avatar{width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0;}
+  .comment-body{flex:1;}
+  .comment-username{font-size:13px;font-weight:600;}
+  .comment-text{font-size:13px;color:var(--muted);margin-top:2px;line-height:1.4;}
+  .comment-input-wrap{padding:16px;border-top:1px solid var(--border);display:flex;gap:10px;}
+  .comment-input{flex:1;padding:10px 14px;border:1.5px solid var(--border);border-radius:40px;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;}
+  .comment-input:focus{border-color:var(--accent);}
+  .comment-send{width:36px;height:36px;border-radius:50%;background:#1a1916;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .comment-send svg{width:14px;height:14px;fill:#fff;}
+
+  @media(max-width:600px){
+    .nav-arrows{display:none;}
+    .feed{padding-top:16px;}
+  }
+</style>
 </head>
-<body class="bg-white text-gray-900 font-sans h-screen w-screen overflow-hidden flex flex-col">
+<body>
 
-    <div id="login-page" class="flex flex-col items-center justify-center h-full w-full bg-gray-50 absolute z-50">
-        <div class="bg-white p-10 rounded-2xl shadow-lg flex flex-col items-center space-y-6 max-w-sm w-full border border-gray-100">
-            <div class="bg-black text-white p-3 rounded-xl flex items-center justify-center">
-                <i class="ph-bold ph-graduation-cap text-3xl"></i>
-            </div>
-            <h1 class="text-2xl font-bold">Welcome to EduLink</h1>
-            <p class="text-gray-500 text-center text-sm">Sign in to watch and share educational reels.</p>
-            <button id="google-login-btn" class="w-full flex items-center justify-center space-x-3 bg-white border border-gray-300 rounded-full py-3 px-4 hover:bg-gray-50 transition font-medium">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google">
-                <span>Continue with Google</span>
-            </button>
+<!-- AUTH SCREEN -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      </div>
+      <span class="auth-logo-text">EduLink</span>
+    </div>
+    <p class="auth-tagline">
+      <strong>The learning social network.</strong><br/>
+      Share knowledge, discover ideas, grow together.
+    </p>
+    <button class="btn-google" id="btn-google-login">
+      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google"/>
+      Continue with Google
+    </button>
+    <div class="auth-divider">or</div>
+    <p style="font-size:13px;color:var(--muted);">Sign in to start sharing educational videos with the world.</p>
+    <p class="auth-footer">By continuing you agree to EduLink's Terms of Service and Privacy Policy.</p>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-box">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+      </div>
+    </div>
+    <button class="nav-btn active" title="Home">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+    </button>
+    <button class="nav-btn" title="Search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+    <button class="nav-btn" id="open-upload" title="Create Post">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    </button>
+    <button class="nav-btn" title="Notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </button>
+    <button class="nav-btn" title="Saved">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+    </button>
+    <div class="sidebar-bottom">
+      <button class="nav-btn" title="Layout">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      </button>
+      <button class="nav-btn" title="Grid">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+      </button>
+      <img id="sidebar-avatar" class="sidebar-avatar" src="https://ui-avatars.com/api/?name=U&background=eee&color=333" alt="Profile"/>
+    </div>
+  </aside>
+
+  <!-- Top Nav -->
+  <nav class="topnav">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      <input type="text" placeholder="Search EduLink" id="search-input"/>
+    </div>
+    <div class="topnav-right">
+      <button class="filter-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+        Filter
+      </button>
+      <img id="topnav-avatar" class="topnav-avatar" src="https://ui-avatars.com/api/?name=U&background=eee&color=333" alt="Profile"/>
+    </div>
+  </nav>
+
+  <!-- Feed -->
+  <main class="main">
+    <div class="feed" id="feed">
+      <div class="spinner"></div>
+    </div>
+  </main>
+
+  <!-- Right Arrows -->
+  <div class="nav-arrows">
+    <button class="arrow-btn" id="prev-btn" title="Previous">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="18 15 12 9 6 15"/></svg>
+    </button>
+    <button class="arrow-btn" id="next-btn" title="Next">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Upload Modal -->
+<div class="modal-overlay" id="upload-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Share a Video</span>
+      <button class="modal-close" id="close-upload">✕</button>
+    </div>
+    <div class="upload-zone" id="upload-zone">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <p><strong>Click to upload</strong> or drag & drop</p>
+      <p style="margin-top:4px;font-size:12px;">MP4, MOV, WebM · Max 100MB</p>
+    </div>
+    <input type="file" id="video-file-input" accept="video/*"/>
+    <div class="upload-preview" id="upload-preview" style="display:none">
+      <video id="preview-video" controls muted></video>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Caption</label>
+      <textarea class="form-input" id="post-caption" rows="3" placeholder="What's this video about?"></textarea>
+    </div>
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <button class="btn-primary" id="publish-btn" disabled>Publish</button>
+  </div>
+</div>
+
+<!-- Comment Panel -->
+<div class="comment-panel" id="comment-panel">
+  <div class="comment-panel-header">
+    <h3>Comments</h3>
+    <button class="modal-close" id="close-comments">✕</button>
+  </div>
+  <div class="comment-list" id="comment-list"></div>
+  <div class="comment-input-wrap">
+    <input class="comment-input" id="comment-input" placeholder="Add a comment…"/>
+    <button class="comment-send" id="comment-send">
+      <svg viewBox="0 0 24 24"><path d="M22 2L11 13"/><path d="M22 2L15 22 11 13 2 9l20-7z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Firebase + App Script -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, arrayUnion, arrayRemove, orderBy, query, serverTimestamp, onSnapshot }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
+  authDomain: "edulinki.firebaseapp.com",
+  projectId: "edulinki",
+  storageBucket: "edulinki.firebasestorage.app",
+  messagingSenderId: "248886466474",
+  appId: "1:248886466474:web:160043201a6b28bafbbdd3",
+  measurementId: "G-MQBH12VL7N"
+};
+
+const CLOUDINARY_CLOUD = "dkz1vjj8n"; // replace if your cloud name differs
+const CLOUDINARY_UPLOAD_PRESET = "ml_default"; // unsigned preset
+
+const fbApp = initializeApp(firebaseConfig);
+const auth = getAuth(fbApp);
+const db = getFirestore(fbApp);
+
+let currentUser = null;
+let currentCommentPostId = null;
+let selectedFile = null;
+
+// ── DOM refs
+const authScreen = document.getElementById("auth-screen");
+const appEl = document.getElementById("app");
+const feedEl = document.getElementById("feed");
+const sidebarAvatar = document.getElementById("sidebar-avatar");
+const topnavAvatar = document.getElementById("topnav-avatar");
+
+// ── Auth state
+onAuthStateChanged(auth, user => {
+  if (user) {
+    currentUser = user;
+    authScreen.classList.add("hidden");
+    appEl.classList.add("visible");
+    const av = user.photoURL || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName||'U')}&background=eee&color=333`;
+    sidebarAvatar.src = av;
+    topnavAvatar.src = av;
+    loadFeed();
+  } else {
+    currentUser = null;
+    authScreen.classList.remove("hidden");
+    appEl.classList.remove("visible");
+  }
+});
+
+// Google login
+document.getElementById("btn-google-login").addEventListener("click", async () => {
+  const provider = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, provider); }
+  catch(e){ showToast("Login failed: " + e.message); }
+});
+
+// ── Feed
+async function loadFeed() {
+  feedEl.innerHTML = '<div class="spinner"></div>';
+  const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+  onSnapshot(q, snap => {
+    feedEl.innerHTML = "";
+    if (snap.empty) {
+      feedEl.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+          <h3>No videos yet</h3>
+          <p>Be the first to share something!</p>
+        </div>`;
+      return;
+    }
+    snap.forEach(docSnap => {
+      const p = docSnap.data();
+      feedEl.appendChild(buildCard(docSnap.id, p));
+    });
+  });
+}
+
+function buildCard(id, p) {
+  const likes = p.likes || [];
+  const liked = currentUser && likes.includes(currentUser.uid);
+  const card = document.createElement("div");
+  card.className = "reel-card";
+  card.dataset.id = id;
+  card.innerHTML = `
+    <div class="video-wrap" id="vw-${id}">
+      <video src="${p.videoUrl}" loop playsinline preload="metadata" id="vid-${id}"></video>
+      <div class="play-overlay" id="po-${id}">
+        <div class="play-btn">
+          <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         </div>
+      </div>
+      <div class="reel-actions">
+        <button class="action-btn like-btn ${liked?'liked':''}" data-id="${id}" title="Like">
+          <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        </button>
+        <button class="action-btn comment-btn" data-id="${id}" title="Comment">
+          <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button class="action-btn" title="Save">
+          <svg viewBox="0 0 24 24"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button class="action-btn share-btn" data-url="${p.videoUrl}" title="Share">
+          <svg viewBox="0 0 24 24"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+        </button>
+      </div>
     </div>
-
-    <div id="main-app" class="hidden flex h-full w-full">
-        
-        <aside class="w-20 border-r border-gray-100 flex flex-col items-center py-6 justify-between h-full flex-shrink-0">
-            <div class="flex flex-col items-center space-y-8">
-                <div class="bg-black text-white p-2 rounded-lg cursor-pointer">
-                    <i class="ph-bold ph-graduation-cap text-xl"></i>
-                </div>
-                
-                <div class="flex flex-col items-center space-y-6 text-gray-600">
-                    <button class="bg-gray-100 text-black p-3 rounded-xl"><i class="ph-fill ph-house text-2xl"></i></button>
-                    <button class="hover:text-black p-3"><i class="ph ph-magnifying-glass text-2xl"></i></button>
-                    <button id="upload-trigger-btn" class="hover:text-black p-3"><i class="ph ph-plus-square text-2xl"></i></button>
-                    <button class="hover:text-black p-3"><i class="ph ph-bell text-2xl"></i></button>
-                    <button class="hover:text-black p-3"><i class="ph ph-bookmark-simple text-2xl"></i></button>
-                    <img id="sidebar-profile-img" src="https://ui-avatars.com/api/?name=User" class="w-8 h-8 rounded-full border border-gray-200 mt-2 cursor-pointer">
-                </div>
-            </div>
-
-            <div class="flex flex-col items-center space-y-6 text-gray-400">
-                <button class="hover:text-gray-600"><i class="ph-fill ph-squares-four text-2xl"></i></button>
-                <button class="hover:text-gray-600"><i class="ph ph-grid-four text-2xl"></i></button>
-                <button class="hover:text-gray-600"><i class="ph ph-sidebar-simple text-2xl"></i></button>
-            </div>
-        </aside>
-
-        <main class="flex-1 flex flex-col relative">
-            
-            <header class="flex items-center justify-between px-8 py-4 w-full max-w-5xl mx-auto">
-                <div class="flex-1 flex justify-center ml-20">
-                    <div class="relative w-96">
-                        <i class="ph ph-magnifying-glass absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg"></i>
-                        <input type="text" placeholder="Search EduLink" class="w-full bg-gray-50 border border-gray-100 rounded-full py-2.5 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-gray-200 text-sm">
-                    </div>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <button class="flex items-center space-x-2 border border-gray-200 rounded-full py-2 px-4 hover:bg-gray-50 text-sm font-medium text-gray-700">
-                        <i class="ph ph-sliders-horizontal text-lg"></i>
-                        <span>Filter</span>
-                    </button>
-                    <img id="top-profile-img" src="https://ui-avatars.com/api/?name=User" class="w-8 h-8 rounded-full border border-gray-200 cursor-pointer">
-                    <button id="logout-btn" class="text-xs text-red-500 hover:underline hidden">Logout</button>
-                </div>
-            </header>
-
-            <div class="flex-1 overflow-y-scroll no-scrollbar flex justify-center items-center pb-10">
-                
-                <div class="relative flex items-end">
-                    <div class="relative bg-black rounded-[2.5rem] overflow-hidden w-[450px] h-[550px] shadow-sm">
-                        <img src="https://images.unsplash.com/photo-1518331539958-316279f53c9b?q=80&w=1000&auto=format&fit=crop" class="w-full h-full object-cover opacity-80" alt="Video thumbnail">
-                        
-                        <div class="absolute inset-0 flex items-center justify-center">
-                            <button class="bg-gray-900/60 text-white rounded-full p-4 backdrop-blur-sm hover:bg-gray-900/80 transition">
-                                <i class="ph-fill ph-play text-2xl"></i>
-                            </button>
-                        </div>
-
-                        <div class="absolute bottom-0 left-0 w-full p-6 bg-gradient-to-t from-black/60 to-transparent">
-                            <div class="flex items-start space-x-3 text-white">
-                                <div class="bg-green-500 w-10 h-10 rounded-full flex items-center justify-center overflow-hidden border-2 border-white">
-                                    <i class="ph-fill ph-globe-hemisphere-west text-2xl text-blue-800"></i>
-                                </div>
-                                <div>
-                                    <h3 class="font-semibold text-sm">@dino</h3>
-                                    <p class="text-xs text-gray-200 mt-1 leading-tight">introducing the new things that are really <span class="text-gray-400 cursor-pointer">see more..</span></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex flex-col space-y-4 ml-6 mb-10">
-                        <button class="w-12 h-12 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-sm text-gray-600">
-                            <i class="ph ph-heart text-2xl"></i>
-                        </button>
-                        <button class="w-12 h-12 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-sm text-gray-600">
-                            <i class="ph ph-chat-circle text-2xl"></i>
-                        </button>
-                        <button class="w-12 h-12 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-sm text-gray-600">
-                            <i class="ph ph-bookmark-simple text-2xl"></i>
-                        </button>
-                        <button class="w-12 h-12 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-sm text-gray-600">
-                            <i class="ph ph-share-fat text-2xl"></i>
-                        </button>
-                    </div>
-
-                    <div class="absolute -right-32 top-1/2 transform -translate-y-1/2 flex flex-col space-y-16">
-                        <button class="w-12 h-12 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-sm text-gray-400">
-                            <i class="ph-bold ph-caret-up text-xl"></i>
-                        </button>
-                        <button class="w-12 h-12 bg-white border border-gray-200 rounded-full flex items-center justify-center hover:bg-gray-50 shadow-sm text-gray-400">
-                            <i class="ph-bold ph-caret-down text-xl"></i>
-                        </button>
-                    </div>
-                </div>
-
-            </div>
-        </main>
-    </div>
-
-    <div id="upload-modal" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm">
-        <div class="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl relative">
-            <button id="close-upload-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-800"><i class="ph-bold ph-x text-xl"></i></button>
-            <h2 class="text-xl font-bold mb-4">Post a new Reel</h2>
-            <input type="file" id="video-input" accept="video/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-50 file:text-gray-700 hover:file:bg-gray-100 mb-4 border border-gray-200 rounded-xl p-2">
-            <textarea id="caption-input" placeholder="Write a caption..." class="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-gray-200 resize-none h-24 mb-4" required></textarea>
-            <button id="submit-post-btn" class="w-full bg-black text-white font-semibold py-3 rounded-full hover:bg-gray-800 transition">Upload Video</button>
-            <p id="upload-status" class="text-sm text-center mt-3 text-gray-500 hidden">Uploading...</p>
+    <div class="reel-meta">
+      <div class="reel-user">
+        <img class="reel-avatar" src="${p.authorPhoto||'https://ui-avatars.com/api/?name=U&background=eee&color=333'}" alt="${p.authorName}"/>
+        <div>
+          <div class="reel-username">@${(p.authorName||'user').toLowerCase().replace(/\s+/g,'')}</div>
+          <div class="reel-caption">${truncate(p.caption||'',80)} ${p.caption&&p.caption.length>80?'<button class="see-more">see more..</button>':''}</div>
         </div>
-    </div>
+      </div>
+    </div>`;
+  // Video play/pause
+  const vw = card.querySelector(`#vw-${id}`);
+  const vid = card.querySelector(`#vid-${id}`);
+  const po = card.querySelector(`#po-${id}`);
+  vw.addEventListener("click", () => {
+    if (vid.paused) { vid.play(); po.classList.add("hidden"); }
+    else { vid.pause(); po.classList.remove("hidden"); }
+  });
+  // Intersection observer auto-play
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) vid.play().then(()=>po.classList.add("hidden")).catch(()=>{});
+      else { vid.pause(); po.classList.remove("hidden"); }
+    });
+  }, { threshold: 0.6 });
+  obs.observe(vw);
 
-    <script type="module">
-        // Import Firebase functions
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
-        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+  // Like
+  card.querySelector(".like-btn").addEventListener("click", async e => {
+    if (!currentUser) return showToast("Please sign in");
+    const btn = e.currentTarget;
+    const ref = doc(db, "posts", id);
+    const isLiked = btn.classList.contains("liked");
+    btn.classList.toggle("liked");
+    await updateDoc(ref, { likes: isLiked ? arrayRemove(currentUser.uid) : arrayUnion(currentUser.uid) });
+  });
 
-        // Firebase Configuration (from prompt)
-        const firebaseConfig = {
-            apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
-            authDomain: "edulinki.firebaseapp.com",
-            projectId: "edulinki",
-            storageBucket: "edulinki.firebasestorage.app",
-            messagingSenderId: "248886466474",
-            appId: "1:248886466474:web:160043201a6b28bafbbdd3",
-            measurementId: "G-MQBH12VL7N"
-        };
+  // Comment
+  card.querySelector(".comment-btn").addEventListener("click", () => openComments(id, p));
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const auth = getAuth(app);
-        const provider = new GoogleAuthProvider();
+  // Share
+  card.querySelector(".share-btn").addEventListener("click", e => {
+    const url = e.currentTarget.dataset.url;
+    navigator.clipboard.writeText(url).then(()=>showToast("Link copied!")).catch(()=>showToast("Could not copy"));
+  });
 
-        // DOM Elements
-        const loginPage = document.getElementById('login-page');
-        const mainApp = document.getElementById('main-app');
-        const googleLoginBtn = document.getElementById('google-login-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const sidebarProfileImg = document.getElementById('sidebar-profile-img');
-        const topProfileImg = document.getElementById('top-profile-img');
+  // See more
+  const sm = card.querySelector(".see-more");
+  if (sm) sm.addEventListener("click", e => {
+    const cap = card.querySelector(".reel-caption");
+    cap.textContent = p.caption;
+  });
 
-        // Cloudinary Credentials (from prompt)
-        // WARNING: Storing Secret in frontend is dangerous. Using Unsigned Presets is recommended.
-        const CLOUDINARY_API_KEY = "628741775643666";
-        const CLOUDINARY_API_SECRET = "gCCrAX5SjBbtD4THU1hDji-PkZQ";
-        const CLOUDINARY_CLOUD_NAME = "YOUR_CLOUD_NAME_HERE"; // <--- Add your cloud name here!
-        const CLOUDINARY_UPLOAD_URL = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/video/upload`;
+  return card;
+}
 
-        // Authentication State Listener
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                // User is signed in
-                loginPage.classList.add('hidden');
-                mainApp.classList.remove('hidden');
-                logoutBtn.classList.remove('hidden');
-                
-                // Update profile pictures
-                if(user.photoURL) {
-                    sidebarProfileImg.src = user.photoURL;
-                    topProfileImg.src = user.photoURL;
-                }
-            } else {
-                // User is signed out
-                loginPage.classList.remove('hidden');
-                mainApp.classList.add('hidden');
-                logoutBtn.classList.add('hidden');
-            }
-        });
+function truncate(s, n){ return s.length>n ? s.slice(0,n)+'…' : s; }
 
-        // Login Logic
-        googleLoginBtn.addEventListener('click', () => {
-            signInWithPopup(auth, provider).catch((error) => {
-                console.error("Error signing in:", error);
-                alert("Login failed: " + error.message);
-            });
-        });
+// ── Upload
+const uploadModal = document.getElementById("upload-modal");
+document.getElementById("open-upload").addEventListener("click", () => {
+  if (!currentUser) return showToast("Please sign in first");
+  uploadModal.classList.add("open");
+});
+document.getElementById("close-upload").addEventListener("click", closeUploadModal);
+uploadModal.addEventListener("click", e => { if(e.target===uploadModal) closeUploadModal(); });
 
-        // Logout Logic
-        topProfileImg.addEventListener('click', () => {
-             logoutBtn.classList.toggle('hidden');
-        });
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth);
-        });
+function closeUploadModal(){
+  uploadModal.classList.remove("open");
+  selectedFile = null;
+  document.getElementById("upload-preview").style.display="none";
+  document.getElementById("post-caption").value="";
+  document.getElementById("publish-btn").disabled=true;
+  document.getElementById("progress-bar").style.display="none";
+  document.getElementById("progress-fill").style.width="0%";
+}
 
-        // ================= Upload Logic =================
-        const uploadModal = document.getElementById('upload-modal');
-        const uploadTriggerBtn = document.getElementById('upload-trigger-btn');
-        const closeUploadBtn = document.getElementById('close-upload-btn');
-        const submitPostBtn = document.getElementById('submit-post-btn');
-        const videoInput = document.getElementById('video-input');
-        const uploadStatus = document.getElementById('upload-status');
+const uploadZone = document.getElementById("upload-zone");
+const fileInput = document.getElementById("video-file-input");
+uploadZone.addEventListener("click", () => fileInput.click());
+uploadZone.addEventListener("dragover", e=>{ e.preventDefault(); uploadZone.classList.add("drag"); });
+uploadZone.addEventListener("dragleave", ()=>uploadZone.classList.remove("drag"));
+uploadZone.addEventListener("drop", e=>{ e.preventDefault(); uploadZone.classList.remove("drag"); handleFile(e.dataTransfer.files[0]); });
+fileInput.addEventListener("change", ()=>handleFile(fileInput.files[0]));
 
-        uploadTriggerBtn.addEventListener('click', () => uploadModal.classList.remove('hidden'));
-        closeUploadBtn.addEventListener('click', () => uploadModal.classList.add('hidden'));
+function handleFile(file) {
+  if (!file || !file.type.startsWith("video/")) return showToast("Please select a video file");
+  if (file.size > 100*1024*1024) return showToast("File too large (max 100MB)");
+  selectedFile = file;
+  const url = URL.createObjectURL(file);
+  const prev = document.getElementById("upload-preview");
+  const prevVid = document.getElementById("preview-video");
+  prevVid.src = url;
+  prev.style.display = "block";
+  document.getElementById("publish-btn").disabled = false;
+}
 
-        submitPostBtn.addEventListener('click', async () => {
-            const file = videoInput.files[0];
-            if (!file) {
-                alert("Please select a video file first.");
-                return;
-            }
+document.getElementById("publish-btn").addEventListener("click", async () => {
+  if (!selectedFile || !currentUser) return;
+  const caption = document.getElementById("post-caption").value.trim();
+  const btn = document.getElementById("publish-btn");
+  const pb = document.getElementById("progress-bar");
+  const pf = document.getElementById("progress-fill");
+  btn.disabled = true;
+  btn.textContent = "Uploading…";
+  pb.style.display = "block";
 
-            if(CLOUDINARY_CLOUD_NAME === "YOUR_CLOUD_NAME_HERE") {
-                alert("Please set your CLOUDINARY_CLOUD_NAME in the code to enable uploads.");
-                return;
-            }
+  try {
+    // Upload to Cloudinary via unsigned preset
+    const fd = new FormData();
+    fd.append("file", selectedFile);
+    fd.append("upload_preset", "ml_default");
+    fd.append("resource_type", "video");
 
-            uploadStatus.classList.remove('hidden');
-            uploadStatus.textContent = "Uploading to Cloudinary...";
-            submitPostBtn.disabled = true;
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) pf.style.width = Math.round(e.loaded/e.total*100) + "%";
+    };
 
-            // Constructing upload data
-            // NOTE: For a secure production app, use an 'upload_preset' for unsigned uploads instead of api_key directly.
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("api_key", CLOUDINARY_API_KEY);
-            // formData.append("upload_preset", "your_unsigned_preset"); // Recommended approach
-            
-            try {
-                const response = await fetch(CLOUDINARY_UPLOAD_URL, {
-                    method: "POST",
-                    body: formData
-                });
-                
-                const data = await response.json();
-                
-                if(data.secure_url) {
-                    uploadStatus.textContent = "Upload successful!";
-                    uploadStatus.classList.add('text-green-500');
-                    console.log("Video URL:", data.secure_url);
-                    
-                    // Here you would typically save data.secure_url and the caption to your Firebase Firestore database
-                    setTimeout(() => {
-                        uploadModal.classList.add('hidden');
-                        uploadStatus.classList.add('hidden');
-                        submitPostBtn.disabled = false;
-                        videoInput.value = "";
-                    }, 2000);
-                } else {
-                    throw new Error(data.error?.message || "Upload failed");
-                }
-            } catch (error) {
-                console.error("Upload error:", error);
-                uploadStatus.textContent = "Error: " + error.message;
-                uploadStatus.classList.add('text-red-500');
-                submitPostBtn.disabled = false;
-            }
-        });
+    const videoUrl = await new Promise((resolve, reject) => {
+      xhr.open("POST", `https://api.cloudinary.com/v1_1/edulinki/video/upload`);
+      xhr.onload = () => {
+        const r = JSON.parse(xhr.responseText);
+        if (r.secure_url) resolve(r.secure_url);
+        else reject(new Error(r.error?.message || "Upload failed"));
+      };
+      xhr.onerror = ()=>reject(new Error("Network error"));
+      xhr.send(fd);
+    });
 
-    </script>
+    await addDoc(collection(db, "posts"), {
+      videoUrl,
+      caption,
+      authorId: currentUser.uid,
+      authorName: currentUser.displayName || "Anonymous",
+      authorPhoto: currentUser.photoURL || "",
+      likes: [],
+      createdAt: serverTimestamp()
+    });
+
+    showToast("Posted successfully! 🎉");
+    closeUploadModal();
+  } catch(err) {
+    console.error(err);
+    showToast("Error: " + err.message);
+    btn.disabled = false;
+    btn.textContent = "Publish";
+  }
+});
+
+// ── Comments
+async function openComments(postId, post) {
+  currentCommentPostId = postId;
+  const panel = document.getElementById("comment-panel");
+  panel.classList.add("open");
+  const list = document.getElementById("comment-list");
+  list.innerHTML = '<div class="spinner"></div>';
+
+  const q = query(collection(db, "posts", postId, "comments"), orderBy("createdAt","asc"));
+  onSnapshot(q, snap => {
+    list.innerHTML = "";
+    if (snap.empty) {
+      list.innerHTML = '<p style="color:var(--muted);font-size:13px;text-align:center;padding:20px">No comments yet. Be the first!</p>';
+      return;
+    }
+    snap.forEach(d => {
+      const c = d.data();
+      const el = document.createElement("div");
+      el.className = "comment-item";
+      el.innerHTML = `
+        <img class="comment-avatar" src="${c.authorPhoto||'https://ui-avatars.com/api/?name=U&background=eee&color=333'}" alt=""/>
+        <div class="comment-body">
+          <div class="comment-username">@${(c.authorName||'user').toLowerCase().replace(/\s+/g,'')}</div>
+          <div class="comment-text">${escHtml(c.text)}</div>
+        </div>`;
+      list.appendChild(el);
+    });
+    list.scrollTop = list.scrollHeight;
+  });
+}
+
+document.getElementById("close-comments").addEventListener("click", ()=>{
+  document.getElementById("comment-panel").classList.remove("open");
+});
+
+document.getElementById("comment-send").addEventListener("click", postComment);
+document.getElementById("comment-input").addEventListener("keydown", e => { if(e.key==="Enter") postComment(); });
+
+async function postComment() {
+  if (!currentUser) return showToast("Please sign in");
+  const input = document.getElementById("comment-input");
+  const text = input.value.trim();
+  if (!text || !currentCommentPostId) return;
+  input.value = "";
+  await addDoc(collection(db, "posts", currentCommentPostId, "comments"), {
+    text,
+    authorId: currentUser.uid,
+    authorName: currentUser.displayName || "Anonymous",
+    authorPhoto: currentUser.photoURL || "",
+    createdAt: serverTimestamp()
+  });
+}
+
+// ── Nav arrows (scroll)
+const cards = () => document.querySelectorAll(".reel-card");
+let activeIdx = 0;
+document.getElementById("next-btn").addEventListener("click", ()=>{
+  const cs = cards();
+  if (activeIdx < cs.length-1) { activeIdx++; cs[activeIdx].scrollIntoView({behavior:"smooth",block:"center"}); }
+});
+document.getElementById("prev-btn").addEventListener("click", ()=>{
+  const cs = cards();
+  if (activeIdx > 0) { activeIdx--; cs[activeIdx].scrollIntoView({behavior:"smooth",block:"center"}); }
+});
+
+// ── Toast
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 3000);
+}
+
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
 </body>
 </html>
