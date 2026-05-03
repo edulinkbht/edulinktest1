@@ -7,15 +7,15 @@
     <style>
         :root {
             /* Claude/Grok Dark Mode Palette */
-            --bg-main: #1e1e1e;
-            --bg-sidebar: #171717;
-            --bg-panel: #262626;
+            --bg-main: #191919;
+            --bg-sidebar: #131313;
+            --bg-panel: #212121;
             --bg-input: #2a2a2a;
             --bg-user-msg: #2d2d2d;
-            --bg-chip: rgba(255, 255, 255, 0.05);
+            --bg-chip: rgba(255, 255, 255, 0.08);
             
             --text-primary: #ededed;
-            --text-secondary: #a1a1a1;
+            --text-secondary: #999999;
             --text-tertiary: #666666;
             
             --border-color: #333333;
@@ -92,8 +92,8 @@
             width: 32px;
             height: 32px;
             border-radius: 50%;
-            background-color: #ddd;
-            color: #000;
+            background-color: #e5e5e5;
+            color: #111;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -213,7 +213,7 @@
             display: none;
             flex: 1;
             overflow-y: auto;
-            padding: 40px 20px 140px 20px;
+            padding: 60px 20px 140px 20px;
             flex-direction: column;
             align-items: center;
             width: 100%;
@@ -221,7 +221,7 @@
 
         .message-wrapper {
             width: 100%;
-            max-width: 760px;
+            max-width: 800px;
             display: flex;
             flex-direction: column;
         }
@@ -229,12 +229,12 @@
         .user-message {
             align-self: flex-end;
             background-color: var(--bg-user-msg);
-            padding: 16px 20px;
+            padding: 16px 24px;
             border-radius: 16px;
             max-width: 80%;
             font-size: 15px;
-            line-height: 1.5;
-            margin-bottom: 24px;
+            line-height: 1.6;
+            margin-bottom: 30px;
             white-space: pre-wrap;
         }
 
@@ -242,16 +242,46 @@
             align-self: flex-start;
             max-width: 100%;
             font-size: 16px;
-            line-height: 1.6;
+            line-height: 1.7;
             margin-bottom: 40px;
             color: var(--text-primary);
-            white-space: pre-wrap;
         }
         
+        /* Markdown Rendering Styles */
+        .ai-message p { margin-bottom: 16px; }
+        .ai-message strong { color: #fff; font-weight: 600; }
+        .ai-message em { font-style: italic; }
+        .ai-message ul { margin-left: 20px; margin-bottom: 16px; }
+        .ai-message li { margin-bottom: 8px; }
+        
+        .ai-message pre {
+            background-color: #111;
+            padding: 16px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin-bottom: 16px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .ai-message code {
+            font-family: var(--font-mono);
+            font-size: 14px;
+            color: #d1d1d1;
+        }
+
+        .ai-message :not(pre) > code {
+            background-color: rgba(255,255,255,0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ff8b8b;
+            font-size: 14px;
+        }
+
         /* Loading Dots Animation */
         .typing-indicator {
             display: inline-flex;
             gap: 4px;
+            padding: 10px 0;
         }
         .typing-indicator span {
             width: 6px; height: 6px;
@@ -269,7 +299,7 @@
         /* --- Input Area --- */
         .input-wrapper {
             width: 100%;
-            max-width: 760px;
+            max-width: 800px;
             margin: 0 auto;
             z-index: 10;
         }
@@ -277,12 +307,12 @@
         .input-container {
             background-color: var(--bg-input);
             width: 100%;
-            border-radius: 16px;
+            border-radius: 20px;
             padding: 16px 20px;
             display: flex;
             flex-direction: column;
             border: 1px solid transparent;
-            box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             transition: border-color 0.2s;
         }
 
@@ -349,7 +379,7 @@
         }
         body.chat-active .input-wrapper {
             position: absolute;
-            bottom: 24px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
         }
@@ -358,8 +388,8 @@
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -437,6 +467,7 @@
             <button class="icon-btn" title="New Chat" onclick="location.reload()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
             <button class="icon-btn" title="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></button>
             <button class="icon-btn" title="Chats"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg></button>
+            <button class="icon-btn" title="Code"><svg viewBox="0 0 24 24"><path d="m18 16 4-4-4-4M6 8l-4 4 4 4M14.5 4l-5 16"></path></svg></button>
         </div>
         <div class="user-profile">
             NT
@@ -457,12 +488,12 @@
                 Free plan &bull; <a href="#">Upgrade</a>
             </div>
             <h1 class="greeting">
-                <span class="greeting-icon">✴</span> Back at it, Ngawang
+                <span class="greeting-icon">✴</span> Back at it, Ngawang Tshogyal Phuentshok
             </h1>
             
             <div class="input-wrapper" id="mainInputWrapper">
                 <div class="input-container">
-                    <textarea class="message-input" id="chatInput" placeholder="Type a message or / for skills" rows="1"></textarea>
+                    <textarea class="message-input" id="chatInput" placeholder="Type / for skills" rows="1"></textarea>
                     
                     <div class="input-controls">
                         <div class="control-group">
@@ -472,7 +503,7 @@
                         </div>
                         <div class="control-group">
                             <button class="model-selector">
-                                Groq Llama-3
+                                Groq Llama 3.3
                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
                             </button>
                             <button class="icon-btn" style="width: 24px; height: 24px;">
@@ -487,7 +518,8 @@
                 <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg>Code</button>
                 <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>Write</button>
                 <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>Learn</button>
-                <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M2 12h2"/><path d="M20 12h2"/></svg>Surprise Me</button>
+                <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>Life stuff</button>
+                <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>Claude's choice</button>
             </div>
         </div>
 
@@ -509,7 +541,6 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-analytics.js";
         import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
 
         const firebaseConfig = {
@@ -528,7 +559,7 @@
         onAuthStateChanged(auth, (user) => {
             if (!user) {
                 console.log("Not logged in. Redirecting to /login");
-                // window.location.href = '/login'; // Uncomment to enable redirect
+                // window.location.href = '/login'; // Uncomment when ready to enforce login
             }
         });
     </script>
@@ -539,7 +570,7 @@
         const messageWrapper = document.getElementById('messageWrapper');
         const chatHistoryContainer = document.getElementById('chatHistory');
         
-        let conversationHistory = []; // Stores context for the API
+        let conversationHistory = []; 
 
         // Auto-resize textarea
         chatInput.addEventListener('input', function() {
@@ -558,8 +589,6 @@
                 }
             }
         });
-
-        // --- API & UI Flow ---
 
         function checkApiKey() {
             const key = localStorage.getItem("groqApiKey");
@@ -580,31 +609,58 @@
             }
         }
 
+        // Lightweight Markdown Parser to make AI look "smart" like Claude
+        function parseMarkdown(text) {
+            let html = text
+                // Code blocks
+                .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
+                // Inline code
+                .replace(/`([^`]+)`/g, '<code>$1</code>')
+                // Bold
+                .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                // Italics
+                .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+                // Unordered Lists
+                .replace(/^\s*[-*]\s+(.+)/gm, '<ul><li>$1</li></ul>')
+                .replace(/<\/ul>\n<ul>/g, '') // Merge adjacent lists
+                // Paragraphs/Newlines
+                .replace(/\n\n/g, '</p><p>')
+                .replace(/\n/g, '<br>');
+            return `<p>${html}</p>`;
+        }
+
         async function handleUserSubmit(text) {
             const apiKey = checkApiKey();
-            if (!apiKey) return; // Stop if no key
+            if (!apiKey) return; 
 
             // 1. Enter Chat Mode UI
             if (!appBody.classList.contains('chat-active')) {
                 appBody.classList.add('chat-active');
-                // Move input to be attached to the main window layout visually
                 document.getElementById('appMain').appendChild(document.getElementById('mainInputWrapper'));
             }
 
-            // 2. Clear input
             chatInput.value = '';
             chatInput.style.height = '48px';
 
-            // 3. Render User Message
+            // 2. Render User Message
             appendMessage(text, 'user');
             conversationHistory.push({ role: "user", content: text });
 
-            // 4. Render AI Loading State
+            // 3. Render AI Loading State
             const loadingId = 'ai-msg-' + Date.now();
             appendLoading(loadingId);
 
-            // 5. Call API
+            // 4. Call Groq API using latest Versatile model
             try {
+                // Inject System Prompt to act like Claude if history is empty
+                let messagesToSend = [...conversationHistory];
+                if (messagesToSend.length === 1) {
+                    messagesToSend.unshift({ 
+                        role: "system", 
+                        content: "You are a highly capable, eloquent, and helpful AI assistant. Structure your answers beautifully using markdown (bolding, lists, and code blocks). Provide comprehensive, nuanced, and extremely accurate responses similar to Claude." 
+                    });
+                }
+
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
                     headers: {
@@ -612,9 +668,10 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "llama3-8b-8192", // Fast Groq model
-                        messages: conversationHistory,
-                        temperature: 0.7
+                        model: "llama-3.3-70b-versatile", // REPLACED THE DECOMMISSIONED MODEL
+                        messages: messagesToSend,
+                        temperature: 0.6,
+                        max_tokens: 4096
                     })
                 });
 
@@ -629,15 +686,13 @@
                 // Update Context History
                 conversationHistory.push({ role: "assistant", content: aiResponseText });
                 
-                // Update UI
-                replaceLoadingWithMessage(loadingId, aiResponseText);
+                // Update UI with Parsed Markdown
+                replaceLoadingWithMessage(loadingId, parseMarkdown(aiResponseText));
 
             } catch (error) {
-                replaceLoadingWithMessage(loadingId, "⚠️ Error: " + error.message);
+                replaceLoadingWithMessage(loadingId, `<p style="color: #ff8b8b;">⚠️ Error: ${error.message}</p>`);
             }
         }
-
-        // --- DOM Manipulation Helpers ---
 
         function appendMessage(text, sender) {
             const div = document.createElement('div');
@@ -651,20 +706,15 @@
             const div = document.createElement('div');
             div.className = 'ai-message';
             div.id = id;
-            div.innerHTML = `
-                <div class="typing-indicator">
-                    <span></span><span></span><span></span>
-                </div>
-            `;
+            div.innerHTML = `<div class="typing-indicator"><span></span><span></span><span></span></div>`;
             messageWrapper.appendChild(div);
             scrollToBottom();
         }
 
-        function replaceLoadingWithMessage(id, text) {
+        function replaceLoadingWithMessage(id, htmlContent) {
             const el = document.getElementById(id);
             if (el) {
-                el.innerHTML = ''; 
-                el.textContent = text;
+                el.innerHTML = htmlContent;
                 scrollToBottom();
             }
         }
