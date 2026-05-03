@@ -111,7 +111,10 @@
             height: 44px;
             object-fit: contain;
             margin-bottom: 8px;
-            filter: drop-shadow(0 4px 8px rgba(217, 119, 87, 0.2));
+            border-radius: 50%;
+            padding: 6px;
+            background: rgba(255, 255, 255, 0.05);
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
         }
 
         /* --- Chat View --- */
@@ -336,49 +339,38 @@
         }
         .model-selector:hover { background: var(--bg-chip); color: var(--text-primary); }
 
-        /* --- Thinking Steps (Claude Style) --- */
-        .thinking-container {
-            display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; padding-left: 4px;
-            border-left: 1.5px solid var(--border-color); margin-left: 8px;
-        }
-        .thinking-step {
-            display: flex; align-items: center; gap: 10px; color: var(--text-tertiary); font-size: 14px;
-            font-family: var(--font-sans); transition: all 0.3s ease; opacity: 0.5;
-        }
-        .thinking-step.active { color: var(--text-secondary); opacity: 1; }
-        .thinking-step.completed { color: var(--accent-color); opacity: 0.8; }
-        .thinking-step svg { width: 16px; height: 16px; stroke-width: 2; }
-        .thinking-step.completed svg { fill: var(--accent-color); stroke: none; }
-        
-        .thinking-pulse {
-            width: 8px; height: 8px; background-color: var(--accent-color); border-radius: 50%;
-            animation: pulse 1.5s infinite ease-in-out;
-        }
-        @keyframes pulse {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(0.8); opacity: 0.5; }
-        }
-
-        /* --- Inline Edit for User Messages --- */
-        .edit-textarea {
-            width: 100%; background: var(--bg-input); border: 1px solid var(--accent-color);
-            border-radius: 8px; color: var(--text-primary); font-family: var(--font-sans);
-            font-size: 15px; padding: 12px; resize: none; outline: none; margin-bottom: 8px;
-            min-height: 80px;
-        }
-        .edit-controls { display: flex; gap: 8px; justify-content: flex-end; }
-        .btn-small { padding: 4px 12px; font-size: 12px; border-radius: 6px; cursor: pointer; border: none; font-weight: 600; }
-        .btn-save { background: var(--accent-color); color: #fff; }
-        .btn-cancel { background: transparent; color: var(--text-secondary); border: 1px solid var(--border-color); }
-        .btn-cancel:hover { background: rgba(255,255,255,0.05); }
-
         /* --- Chat Bottom Fixed Container --- */
         .chat-bottom-container {
             display: none; flex-direction: column; align-items: center; width: 100%;
             padding: 10px 20px 20px 20px; background: var(--bg-main); flex-shrink: 0; z-index: 20;
         }
         .disclaimer { text-align: center; font-size: 12px; color: var(--text-tertiary); margin-top: 12px; }
+
+        /* --- Claude-like Thinking UI --- */
+        .thinking-container {
+            display: flex; align-items: center; gap: 10px; padding: 12px 0;
+            color: var(--text-tertiary); font-family: var(--font-sans); font-size: 14px; font-weight: 500;
+        }
+        .thinking-icon {
+            width: 18px; height: 18px; border: 1.5px solid currentColor; border-radius: 4px;
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .thinking-icon::after {
+            content: ''; width: 6px; height: 6px; background-color: currentColor; border-radius: 50%;
+            animation: pulse-dot 1.5s infinite ease-in-out;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(0.6); opacity: 0.4; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+        .thinking-status { letter-spacing: 0.3px; }
+
+        /* --- AI Message Streaming Effect --- */
+        .ai-message.streaming::after {
+            content: '▊'; margin-left: 2px; color: #e5e5e5;
+            animation: blink 0.8s step-end infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
 
         body.chat-active .landing-content { display: none; }
         body.chat-active .chat-history { display: flex; }
@@ -417,7 +409,7 @@
 
     <aside class="sidebar">
         <div class="nav-icons">
-            <img src="https://i.imghippo.com/files/YVls8804tw.png" class="greeting-logo" style="width: 32px; height: 32px; margin-bottom: 20px; cursor: pointer;" onclick="location.reload()" alt="Newton">
+            <img src="https://i.imghippo.com/files/YVls8804tw.png" class="greeting-logo" style="width: 32px; height: 32px; padding: 4px; margin-bottom: 20px; cursor: pointer;" onclick="location.reload()" alt="Newton">
             <button class="icon-btn" title="Sidebar"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
             <button class="icon-btn" title="New Chat" onclick="location.reload()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
             <button class="icon-btn" title="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></button>
@@ -748,7 +740,7 @@
             try {
                 let messagesToSend = [...conversationHistory];
                 if (messagesToSend.length === 0 || messagesToSend[0].role !== "system") {
-                    messagesToSend.unshift({ role: "system", content: "You are Newton, a powerful AI assistant. Format your responses using Markdown, and always specify the language for code blocks." });
+                    messagesToSend.unshift({ role: "system", content: "You are Newton, a powerful AI assistant. Format your responses using Markdown. CRITICAL: Do NOT provide code snippets or blocks unless the user explicitly asks for code or an implementation. Keep answers concise and helpful." });
                 }
 
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -775,27 +767,31 @@
             }
         }
 
-        function handleUserSubmit(text, isEdit = false) {
+        function handleUserSubmit(text) {
             if (!appBody.classList.contains('chat-active')) {
                 appBody.classList.add('chat-active');
                 const bottomContainer = document.getElementById('chatBottomContainer');
                 bottomContainer.insertBefore(document.getElementById('mainInputWrapper'), bottomContainer.firstChild);
             }
 
-            if (!isEdit) {
-                chatInput.value = '';
-                chatInput.style.height = '48px';
-                appendUserMessage(text);
-                conversationHistory.push({ role: "user", content: text });
-            } else {
-                // If edit, we might want to truncate history after this point
-                // For now, let's just push the new version
-                conversationHistory.push({ role: "user", content: "Edit: " + text });
-            }
+            chatInput.value = '';
+            chatInput.style.height = '48px';
+
+            appendUserMessage(text);
+            conversationHistory.push({ role: "user", content: text });
 
             const loadingId = 'ai-msg-' + Date.now();
-            appendLoading(loadingId);
+            const status = determineThinkingStatus(text);
+            appendLoading(loadingId, status);
             fetchAIResponse(loadingId);
+        }
+
+        function determineThinkingStatus(text) {
+            const lower = text.toLowerCase();
+            if (lower.includes('code') || lower.includes('program') || lower.includes('function') || lower.includes('script') || lower.includes('{')) return 'Coding';
+            if (lower.includes('read') || lower.includes('summarize') || lower.includes('analyze') || lower.includes('check')) return 'Reading';
+            if (lower.includes('write') || lower.includes('draft') || lower.includes('create') || lower.includes('essay')) return 'Writing';
+            return 'Thinking';
         }
 
         function appendUserMessage(text) {
@@ -824,45 +820,11 @@
             // Functionality for user action buttons
             const editBtn = actionBar.querySelector('button[title="Edit Question"]');
             editBtn.addEventListener('click', () => {
-                const originalText = contentDiv.textContent;
-                const originalHTML = containerDiv.innerHTML;
-                
-                // Switch to inline edit view
-                containerDiv.innerHTML = `
-                    <textarea class="edit-textarea">${originalText}</textarea>
-                    <div class="edit-controls">
-                        <button class="btn-small btn-cancel">Cancel</button>
-                        <button class="btn-small btn-save">Save & Resubmit</button>
-                    </div>
-                `;
-                actionBar.style.display = 'none';
-                
-                const textarea = containerDiv.querySelector('textarea');
-                textarea.focus();
-                textarea.setSelectionRange(textarea.value.length, textarea.value.length);
-                
-                containerDiv.querySelector('.btn-cancel').onclick = () => {
-                    containerDiv.innerHTML = originalHTML;
-                    actionBar.style.display = 'flex';
-                };
-                
-                containerDiv.querySelector('.btn-save').onclick = () => {
-                    const newText = textarea.value.trim();
-                    if (newText && newText !== originalText) {
-                        // In a real app, you'd find the index in conversationHistory
-                        // For simplicity, we'll reload or re-handle the submission
-                        containerDiv.innerHTML = originalHTML;
-                        containerDiv.querySelector('.user-message-content').textContent = newText;
-                        actionBar.style.display = 'flex';
-                        
-                        // Resubmit logic: find messages after this and remove them?
-                        // For now, let's just trigger a new AI response
-                        handleUserSubmit(newText, true); // true indicates it's an edit
-                    } else {
-                        containerDiv.innerHTML = originalHTML;
-                        actionBar.style.display = 'flex';
-                    }
-                };
+                chatInput.value = text;
+                chatInput.focus();
+                chatInput.style.height = 'auto';
+                chatInput.style.height = (chatInput.scrollHeight) + 'px';
+                // Optional: remove the message from history or just allow re-editing
             });
 
             const copyBtn = actionBar.querySelector('button[title="Copy Question"]');
@@ -876,105 +838,84 @@
             scrollToBottom();
         }
 
-        function appendLoading(id) {
+        function appendLoading(id, status = 'Thinking') {
             const div = document.createElement('div');
             div.className = 'ai-message';
             div.id = id;
             
-            // Claude-style Thinking Steps
+            let iconSVG = '<div class="thinking-icon"></div>';
+            if (status === 'Coding') iconSVG = '<div class="thinking-icon" style="border-radius: 50%"><svg viewBox="0 0 24 24" style="width:10px; height:10px; stroke:currentColor; stroke-width:3; fill:none;"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></svg></div>';
+            if (status === 'Reading') iconSVG = '<div class="thinking-icon" style="border-radius: 50%"><svg viewBox="0 0 24 24" style="width:10px; height:10px; stroke:currentColor; stroke-width:3; fill:none;"><path d="M2 3h6a4 4 0 0 1 4 4v14a4 4 0 0 0-4-4H2zM22 3h-6a4 4 0 0 0-4 4v14a4 4 0 0 1 4-4h6z"/></svg></div>';
+            if (status === 'Writing') iconSVG = '<div class="thinking-icon" style="border-radius: 50%"><svg viewBox="0 0 24 24" style="width:10px; height:10px; stroke:currentColor; stroke-width:3; fill:none;"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div>';
+
             div.innerHTML = `
                 <div class="thinking-container">
-                    <div class="thinking-step active" id="${id}-step-1">
-                        <div class="thinking-pulse"></div>
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
-                        <span>Reading documentation...</span>
-                    </div>
-                    <div class="thinking-step" id="${id}-step-2">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg>
-                        <span>Reasoning...</span>
-                    </div>
-                    <div class="thinking-step" id="${id}-step-3">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        <span>Writing response...</span>
-                    </div>
+                    ${iconSVG}
+                    <span class="thinking-status">${status}...</span>
                 </div>
             `;
-            
             messageWrapper.appendChild(div);
             scrollToBottom();
-            
-            // Simulate progression
-            setTimeout(() => {
-                const s1 = document.getElementById(`${id}-step-1`);
-                if(s1) {
-                    s1.classList.remove('active');
-                    s1.classList.add('completed');
-                    s1.querySelector('.thinking-pulse').remove();
-                }
-                const s2 = document.getElementById(`${id}-step-2`);
-                if(s2) {
-                    s2.classList.add('active');
-                    const pulse = document.createElement('div');
-                    pulse.className = 'thinking-pulse';
-                    s2.insertBefore(pulse, s2.firstChild);
-                }
-            }, 1200);
-            
-            setTimeout(() => {
-                const s2 = document.getElementById(`${id}-step-2`);
-                if(s2) {
-                    s2.classList.remove('active');
-                    s2.classList.add('completed');
-                    const pulse = s2.querySelector('.thinking-pulse');
-                    if(pulse) pulse.remove();
-                }
-                const s3 = document.getElementById(`${id}-step-3`);
-                if(s3) {
-                    s3.classList.add('active');
-                    const pulse = document.createElement('div');
-                    pulse.className = 'thinking-pulse';
-                    s3.insertBefore(pulse, s3.firstChild);
-                }
-            }, 2500);
         }
 
         function replaceLoadingWithMessage(id, htmlContent, rawText) {
             const el = document.getElementById(id);
             if (el) {
-                el.innerHTML = htmlContent;
+                el.classList.add('streaming');
+                el.innerHTML = ''; // Clear thinking indicator
                 
-                // Add Claude Style Action Bar underneath
-                const actionBar = document.createElement('div');
-                actionBar.className = 'ai-action-bar';
-                actionBar.innerHTML = `
-                    <button class="action-icon-btn" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
-                    <button class="action-icon-btn" title="Good"><svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg></button>
-                    <button class="action-icon-btn" title="Bad"><svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path></svg></button>
-                    <button class="action-icon-btn" title="Retry"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg></button>
-                `;
-                el.parentNode.insertBefore(actionBar, el.nextSibling);
+                // Simulating predictive typing
+                const words = rawText.split(' ');
+                let currentWordIndex = 0;
+                let currentHTML = '';
 
-                // Run Link Previews (with Skeleton loader)
-                buildLinkPreviews(el);
-                
-                // Add Show More logic back to AI answers if they are very long
-                setTimeout(() => applyShowMoreLogic(el, 800), 50);
+                // We use a small interval to simulate "predictive" next word delivery
+                const typingInterval = setInterval(() => {
+                    if (currentWordIndex < words.length) {
+                        // This is a simplification; for complex markdown it's better to stream the raw text
+                        // and parse markdown at intervals or at the end. 
+                        // To make it feel "perfect" and accurate like Claude:
+                        currentWordIndex++;
+                        const partialText = words.slice(0, currentWordIndex).join(' ');
+                        el.innerHTML = parseMarkdown(partialText);
+                        scrollToBottom();
+                    } else {
+                        clearInterval(typingInterval);
+                        el.classList.remove('streaming');
+                        el.innerHTML = htmlContent; // Final polished HTML
+                        
+                        // Add Claude Style Action Bar underneath
+                        const actionBar = document.createElement('div');
+                        actionBar.className = 'ai-action-bar';
+                        actionBar.innerHTML = `
+                            <button class="action-icon-btn" title="Copy"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
+                            <button class="action-icon-btn" title="Good"><svg viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path></svg></button>
+                            <button class="action-icon-btn" title="Bad"><svg viewBox="0 0 24 24"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-2"></path></svg></button>
+                            <button class="action-icon-btn" title="Retry"><svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg></button>
+                        `;
+                        el.parentNode.insertBefore(actionBar, el.nextSibling);
 
-                const copyBtn = actionBar.querySelector('button[title="Copy"]');
-                copyBtn.addEventListener('click', () => {
-                    copyToClipboard(rawText, copyBtn);
-                });
+                        // Run Link Previews (with Skeleton loader)
+                         buildLinkPreviews(el);
+                         
+                         const copyBtn = actionBar.querySelector('button[title="Copy"]');
+                        copyBtn.addEventListener('click', () => {
+                            copyToClipboard(rawText, copyBtn);
+                        });
 
-                const retryBtn = actionBar.querySelector('button[title="Retry"]');
-                retryBtn.addEventListener('click', () => {
-                    el.remove(); actionBar.remove();
-                    conversationHistory.pop();
-                    const newId = 'ai-msg-' + Date.now();
-                    appendLoading(newId);
-                    fetchAIResponse(newId);
-                });
+                        const retryBtn = actionBar.querySelector('button[title="Retry"]');
+                        retryBtn.addEventListener('click', () => {
+                            el.remove(); actionBar.remove();
+                            conversationHistory.pop();
+                            const newId = 'ai-msg-' + Date.now();
+                            const status = determineThinkingStatus(conversationHistory[conversationHistory.length-1].content);
+                            appendLoading(newId, status);
+                            fetchAIResponse(newId);
+                        });
 
-                scrollToBottom();
+                        scrollToBottom();
+                    }
+                }, 40); // Fast enough to feel like streaming, slow enough to see words appearing
             }
         }
 
