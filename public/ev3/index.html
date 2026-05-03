@@ -11,7 +11,7 @@
             --bg-main: #212121; 
             --bg-sidebar: #1a1a1a;
             --bg-input: #2f2f2f;
-            --bg-user-msg: #2a2a2a;
+            --bg-user-msg: #2a2a2a; /* rgb(42, 42, 42) */
             --bg-chip: rgba(255, 255, 255, 0.05);
             
             --text-primary: #ededed;
@@ -139,23 +139,29 @@
         .user-message-content {
             padding: 16px 20px; font-size: 15px; font-family: var(--font-sans);
             line-height: 1.6; white-space: pre-wrap;
-            max-height: 200px; /* Truncation height */
+            max-height: 150px; /* Truncation height */
             overflow: hidden; transition: max-height 0.3s ease;
         }
 
-        .user-message-content.expanded { max-height: 5000px; }
+        .user-message-content.expanded { max-height: 5000px; padding-bottom: 20px; }
 
+        /* PERFECTED FADE DESIGN */
         .message-fade {
-            position: absolute; bottom: 0; left: 0; right: 0; height: 70px;
-            background: linear-gradient(to bottom, transparent, var(--bg-user-msg) 70%);
-            display: flex; align-items: flex-end; padding: 12px 20px; pointer-events: none;
+            position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
+            /* Matches the exact user message background color (#2a2a2a) to create a seamless fade */
+            background: linear-gradient(180deg, rgba(42, 42, 42, 0) 0%, rgba(42, 42, 42, 0.9) 60%, rgba(42, 42, 42, 1) 100%);
+            display: flex; align-items: flex-end; justify-content: flex-start;
+            padding: 12px 20px; pointer-events: none;
+            border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
         }
 
         .show-more-btn {
-            pointer-events: auto; background: none; border: none; color: var(--text-secondary);
-            font-size: 13px; cursor: pointer; font-weight: 500; font-family: var(--font-sans);
+            pointer-events: auto; background: none; border: none; color: #fff;
+            font-size: 14px; cursor: pointer; font-weight: 600; font-family: var(--font-sans);
+            padding: 0; margin-bottom: 4px; text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            transition: color 0.2s;
         }
-        .show-more-btn:hover { color: var(--text-primary); }
+        .show-more-btn:hover { color: var(--accent-color); }
 
         /* --- AI Markdown Styling --- */
         .ai-message {
@@ -203,8 +209,6 @@
         }
         .action-icon-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,0.05); }
         .action-icon-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.8; fill: none; transition: stroke 0.2s; }
-        
-        /* Active states for thumbs up/down */
         .action-icon-btn.active { color: var(--accent-color); }
 
         /* --- Input Area --- */
@@ -260,7 +264,7 @@
             <button class="icon-btn" title="New Chat" onclick="location.reload()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
             <button class="icon-btn" title="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></button>
         </div>
-        <div class="user-profile">NT<div class="status-dot"></div></div>
+        <div class="user-profile" id="userAvatar">NT<div class="status-dot"></div></div>
     </aside>
 
     <main class="main-content" id="appMain">
@@ -273,9 +277,10 @@
 
         <div class="landing-content" id="landingView">
             <div class="plan-badge">Free plan &bull; <a href="#">Upgrade</a></div>
+            
             <h1 class="greeting">
                 <img src="https://i.imghippo.com/files/YVls8804tw.png" class="greeting-icon" alt="Newton"> 
-                Are You Curious, Name?
+                Are You Curious, <span id="userNameDisplay">User</span>?
             </h1>
             
             <div class="input-wrapper" id="mainInputWrapper">
@@ -318,7 +323,27 @@
         const appBody = document.body;
         const messageWrapper = document.getElementById('messageWrapper');
         const chatHistoryContainer = document.getElementById('chatHistory');
+        const userNameDisplay = document.getElementById('userNameDisplay');
+        const userAvatar = document.getElementById('userAvatar');
         let conversationHistory = []; 
+
+        // Set User Name Logic
+        window.addEventListener('DOMContentLoaded', () => {
+            let storedName = localStorage.getItem('newtonUserName');
+            if (!storedName) {
+                storedName = prompt("What is your name?") || "Friend";
+                localStorage.setItem('newtonUserName', storedName);
+            }
+            userNameDisplay.textContent = storedName;
+            
+            // Set initials for the avatar
+            let initials = storedName.substring(0, 2).toUpperCase();
+            if(storedName.includes(' ')) {
+                const parts = storedName.split(' ');
+                initials = (parts[0][0] + parts[1][0]).toUpperCase();
+            }
+            userAvatar.innerHTML = `${initials}<div class="status-dot"></div>`;
+        });
 
         chatInput.addEventListener('input', function() {
             this.style.height = 'auto';
@@ -369,7 +394,6 @@
             return html;
         }
 
-        // Separated out the fetch logic so "Regenerate" can use it easily
         async function fetchAIResponse(loadingId) {
             const apiKey = getApiKey();
             if (!apiKey) return;
@@ -441,7 +465,8 @@
             messageWrapper.appendChild(wrapperDiv);
 
             requestAnimationFrame(() => {
-                if (contentDiv.scrollHeight > 200) {
+                // If text is larger than the max-height, add the perfect fade
+                if (contentDiv.scrollHeight > 150) {
                     const fadeDiv = document.createElement('div');
                     fadeDiv.className = 'message-fade';
                     
@@ -476,7 +501,6 @@
             if (el) {
                 el.innerHTML = htmlContent;
                 
-                // Construct the functional Action Bar
                 const actionBar = document.createElement('div');
                 actionBar.className = 'ai-action-bar';
                 actionBar.innerHTML = `
@@ -496,18 +520,15 @@
                 
                 el.parentNode.insertBefore(actionBar, el.nextSibling);
 
-                // --- 1. Copy Functionality ---
                 const copyBtn = actionBar.querySelector('button[title="Copy"]');
                 copyBtn.addEventListener('click', () => {
                     navigator.clipboard.writeText(rawText || el.innerText);
-                    // Temporarily show checkmark
                     copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
                     setTimeout(() => {
                         copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
                     }, 2000);
                 });
 
-                // --- 2. Thumbs Up / Thumbs Down Visual Toggles ---
                 const likeBtn = actionBar.querySelector('button[title="Good response"]');
                 const dislikeBtn = actionBar.querySelector('button[title="Bad response"]');
                 
@@ -521,19 +542,13 @@
                     likeBtn.classList.remove('active');
                 });
 
-                // --- 3. Regenerate (Retry) Functionality ---
                 const retryBtn = actionBar.querySelector('button[title="Retry"]');
                 retryBtn.addEventListener('click', () => {
-                    // Remove the current AI message and its action bar from DOM
                     el.remove();
                     actionBar.remove();
-                    
-                    // Remove the last AI response from memory to try again
                     if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === "assistant") {
                         conversationHistory.pop();
                     }
-
-                    // Trigger the API fetch again
                     const newLoadingId = 'ai-msg-' + Date.now();
                     appendLoading(newLoadingId);
                     fetchAIResponse(newLoadingId);
