@@ -111,9 +111,6 @@
             height: 44px;
             object-fit: contain;
             margin-bottom: 8px;
-            border-radius: 50%;
-            padding: 6px;
-            background: rgba(217, 119, 87, 0.1);
             filter: drop-shadow(0 4px 8px rgba(217, 119, 87, 0.2));
         }
 
@@ -135,6 +132,21 @@
         }
         .user-message-content { padding: 14px 18px; font-size: 15px; font-family: var(--font-sans); line-height: 1.5; white-space: pre-wrap; }
         
+        /* Inline Edit Styling */
+        .inline-edit-area {
+            width: 100%; background: transparent; border: none; color: #fff;
+            font-family: var(--font-sans); font-size: 15px; line-height: 1.5;
+            resize: none; outline: none; padding: 14px 18px;
+        }
+        .inline-edit-actions {
+            display: flex; justify-content: flex-end; gap: 8px; padding: 0 14px 14px 14px;
+        }
+        .btn-small {
+            padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: none;
+        }
+        .btn-save { background: var(--accent-color); color: #fff; }
+        .btn-cancel { background: rgba(255,255,255,0.1); color: var(--text-secondary); }
+
         .user-action-bar {
             display: flex; gap: 4px; align-self: flex-end; margin-bottom: 32px; margin-top: 4px; opacity: 0; transition: opacity 0.2s;
         }
@@ -260,11 +272,12 @@
 
         .code-block.expanded-view {
             position: fixed;
-            top: 50px; left: 50px; right: 50px; bottom: 50px;
+            top: 20px; left: 84px; right: 20px; bottom: 20px;
             z-index: 10000;
             margin: 0;
             background: #0d0d0d;
-            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+            box-shadow: 0 10px 50px rgba(0,0,0,0.8);
+            border: 1px solid #333;
         }
         .code-block.expanded-view .code-content-wrapper pre {
             height: calc(100% - 50px);
@@ -308,6 +321,30 @@
         .skeleton-title { width: 70%; height: 16px; }
         .skeleton-desc { width: 90%; }
         .skeleton-footer { width: 40%; height: 12px; margin-top: auto; }
+
+        /* --- Thinking Steps --- */
+        .thinking-container {
+            display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; position: relative;
+            padding-left: 12px;
+        }
+        .thinking-step {
+            display: flex; align-items: center; gap: 12px; color: var(--text-tertiary); font-size: 14px;
+            font-family: var(--font-sans); position: relative; z-index: 2;
+        }
+        .thinking-step.active { color: var(--text-primary); }
+        .thinking-step.completed { color: var(--text-secondary); }
+        .step-icon {
+            width: 20px; height: 20px; border-radius: 50%; background: var(--bg-input);
+            display: flex; align-items: center; justify-content: center; font-size: 10px;
+            border: 1px solid var(--border-color); transition: all 0.3s;
+        }
+        .thinking-step.active .step-icon { border-color: var(--accent-color); color: var(--accent-color); box-shadow: 0 0 8px rgba(217, 119, 87, 0.3); }
+        .thinking-step.completed .step-icon { background: var(--accent-color); color: #fff; border-color: var(--accent-color); }
+        .step-line {
+            position: absolute; left: 21px; top: 10px; bottom: -22px; width: 1px;
+            background: var(--border-color); z-index: 1;
+        }
+        .thinking-step:last-child .step-line { display: none; }
 
         /* --- AI Action Buttons Bar --- */
         .ai-action-bar { display: flex; gap: 6px; margin-bottom: 40px; margin-top: 4px; }
@@ -356,7 +393,7 @@
 
     <div class="auth-overlay" id="authOverlay" style="display: none;">
         <div class="auth-card">
-            <img src="https://i.imghippo.com/files/YVls8804tw.png" class="greeting-logo" style="width: 56px; height: 56px; margin: 0 auto 16px auto;" alt="Newton">
+            <img src="https://i.imghippo.com/files/YVls8804tw.png" class="greeting-logo" style="width: 56px; height: 56px; margin: 0 auto 16px auto; background: none; border-radius: 0; padding: 0; filter: none;" alt="Newton">
             <div class="auth-title">Welcome to Newton</div>
             <div class="auth-subtitle">Sign in to continue your learning journey</div>
             
@@ -383,7 +420,7 @@
 
     <aside class="sidebar">
         <div class="nav-icons">
-            <img src="https://i.imghippo.com/files/YVls8804tw.png" class="greeting-logo" style="width: 32px; height: 32px; padding: 4px; margin-bottom: 20px; cursor: pointer;" onclick="location.reload()" alt="Newton">
+            <img src="https://i.imghippo.com/files/YVls8804tw.png" class="greeting-logo" style="width: 32px; height: 32px; margin-bottom: 20px; cursor: pointer; background: none; border-radius: 0; padding: 0; filter: none;" onclick="location.reload()" alt="Newton">
             <button class="icon-btn" title="Sidebar"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
             <button class="icon-btn" title="New Chat" onclick="location.reload()"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></svg></button>
             <button class="icon-btn" title="Search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg></button>
@@ -785,11 +822,42 @@
             // Functionality for user action buttons
             const editBtn = actionBar.querySelector('button[title="Edit Question"]');
             editBtn.addEventListener('click', () => {
-                chatInput.value = text;
-                chatInput.focus();
-                chatInput.style.height = 'auto';
-                chatInput.style.height = (chatInput.scrollHeight) + 'px';
-                // Optional: remove the message from history or just allow re-editing
+                const originalText = contentDiv.textContent;
+                containerDiv.innerHTML = `
+                    <textarea class="inline-edit-area">${originalText}</textarea>
+                    <div class="inline-edit-actions">
+                        <button class="btn-small btn-cancel">Cancel</button>
+                        <button class="btn-small btn-save">Save & Send</button>
+                    </div>
+                `;
+                
+                const textarea = containerDiv.querySelector('textarea');
+                textarea.focus();
+                textarea.style.height = textarea.scrollHeight + 'px';
+                textarea.addEventListener('input', function() {
+                    this.style.height = 'auto';
+                    this.style.height = this.scrollHeight + 'px';
+                });
+
+                containerDiv.querySelector('.btn-cancel').onclick = () => {
+                    containerDiv.innerHTML = '';
+                    containerDiv.appendChild(contentDiv);
+                };
+
+                containerDiv.querySelector('.btn-save').onclick = () => {
+                    const newText = textarea.value.trim();
+                    if(newText && newText !== originalText) {
+                        // For simplicity in this UI, we just update the text and re-trigger
+                        // In a real app, we might delete following messages
+                        contentDiv.textContent = newText;
+                        containerDiv.innerHTML = '';
+                        containerDiv.appendChild(contentDiv);
+                        handleUserSubmit(newText); 
+                    } else {
+                        containerDiv.innerHTML = '';
+                        containerDiv.appendChild(contentDiv);
+                    }
+                };
             });
 
             const copyBtn = actionBar.querySelector('button[title="Copy Question"]');
@@ -805,16 +873,54 @@
 
         function appendLoading(id) {
             const div = document.createElement('div');
-            div.className = 'ai-message';
+            div.className = 'ai-message loading-state';
             div.id = id;
-            div.innerHTML = `<span style="opacity:0.5;">Thinking...</span>`;
+            div.innerHTML = `
+                <div class="thinking-container">
+                    <div class="thinking-step active" id="${id}-step-1">
+                        <div class="step-icon">1</div>
+                        <div class="step-line"></div>
+                        <span>Reading your request...</span>
+                    </div>
+                    <div class="thinking-step" id="${id}-step-2">
+                        <div class="step-icon">2</div>
+                        <div class="step-line"></div>
+                        <span>Reasoning with Newton...</span>
+                    </div>
+                    <div class="thinking-step" id="${id}-step-3">
+                        <div class="step-icon">3</div>
+                        <div class="step-line"></div>
+                        <span>Formulating response...</span>
+                    </div>
+                </div>
+            `;
             messageWrapper.appendChild(div);
             scrollToBottom();
+
+            // Simulate progress
+            setTimeout(() => {
+                const s1 = document.getElementById(`${id}-step-1`);
+                const s2 = document.getElementById(`${id}-step-2`);
+                if(s1 && s2) {
+                    s1.classList.remove('active'); s1.classList.add('completed');
+                    s2.classList.add('active');
+                }
+            }, 800);
+
+            setTimeout(() => {
+                const s2 = document.getElementById(`${id}-step-2`);
+                const s3 = document.getElementById(`${id}-step-3`);
+                if(s2 && s3) {
+                    s2.classList.remove('active'); s2.classList.add('completed');
+                    s3.classList.add('active');
+                }
+            }, 1800);
         }
 
         function replaceLoadingWithMessage(id, htmlContent, rawText) {
             const el = document.getElementById(id);
             if (el) {
+                el.classList.remove('loading-state');
                 el.innerHTML = htmlContent;
                 
                 // Add Claude Style Action Bar underneath
