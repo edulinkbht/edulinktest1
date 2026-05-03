@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexus AI Chat</title>
+    <title>Newton</title>
+    <link rel="icon" href="https://i.imghippo.com/files/YVls8804tw.png" type="image/png">
     <style>
         :root {
-            /* Claude Dark Mode Palette */
+            /* Dark Mode Palette */
             --bg-main: #212121; 
             --bg-sidebar: #1a1a1a;
             --bg-input: #2f2f2f;
-            --bg-user-msg: #2a2a2a; /* Matched to screenshot */
+            --bg-user-msg: #2a2a2a;
             --bg-chip: rgba(255, 255, 255, 0.05);
             
             --text-primary: #ededed;
@@ -18,7 +19,7 @@
             --text-tertiary: #737373;
             
             --border-color: #3d3d3d;
-            --accent-color: #d97757; /* Claude copper color */
+            --accent-color: #d97757; /* Accent copper color */
             
             --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
@@ -99,7 +100,12 @@
             margin-bottom: 40px; display: flex; align-items: center; gap: 12px;
             letter-spacing: -0.2px; color: #f0f0f0;
         }
-        .greeting-icon { color: var(--accent-color); font-size: 34px; user-select: none; }
+        
+        .greeting-icon { 
+            width: 44px; height: 44px; 
+            border-radius: 8px; 
+            object-fit: contain; 
+        }
 
         .action-chips {
             display: flex; gap: 10px; flex-wrap: wrap; justify-content: center;
@@ -137,7 +143,7 @@
             overflow: hidden; transition: max-height 0.3s ease;
         }
 
-        .user-message-content.expanded { max-height: 5000px; /* Arbitrary large to expand */ }
+        .user-message-content.expanded { max-height: 5000px; }
 
         .message-fade {
             position: absolute; bottom: 0; left: 0; right: 0; height: 70px;
@@ -155,6 +161,7 @@
         .ai-message {
             align-self: flex-start; max-width: 100%; font-family: var(--font-serif);
             font-size: 17px; line-height: 1.7; margin-bottom: 10px; color: var(--text-primary);
+            width: 100%;
         }
         
         .ai-message p { margin-bottom: 16px; }
@@ -195,7 +202,10 @@
             align-items: center; justify-content: center; transition: all 0.2s;
         }
         .action-icon-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,0.05); }
-        .action-icon-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.8; fill: none; }
+        .action-icon-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.8; fill: none; transition: stroke 0.2s; }
+        
+        /* Active states for thumbs up/down */
+        .action-icon-btn.active { color: var(--accent-color); }
 
         /* --- Input Area --- */
         .input-wrapper { width: 100%; max-width: 760px; margin: 0 auto; z-index: 10; }
@@ -263,11 +273,14 @@
 
         <div class="landing-content" id="landingView">
             <div class="plan-badge">Free plan &bull; <a href="#">Upgrade</a></div>
-            <h1 class="greeting"><span class="greeting-icon">✴</span> Back at it, Ngawang</h1>
+            <h1 class="greeting">
+                <img src="https://i.imghippo.com/files/YVls8804tw.png" class="greeting-icon" alt="Newton"> 
+                Are You Curious, Name?
+            </h1>
             
             <div class="input-wrapper" id="mainInputWrapper">
                 <div class="input-container">
-                    <textarea class="message-input" id="chatInput" placeholder="Type a message or / for skills" rows="1"></textarea>
+                    <textarea class="message-input" id="chatInput" placeholder="Spend a learning experience with Newton" rows="1"></textarea>
                     
                     <div class="input-controls">
                         <div class="control-group">
@@ -296,7 +309,7 @@
         </div>
 
         <div class="chat-bottom-container" id="chatBottomContainer">
-            <div class="disclaimer">Claude is AI and can make mistakes. Please double-check responses.</div>
+            <div class="disclaimer">Newton is AI and can make mistakes. Please double-check responses.</div>
         </div>
     </main>
 
@@ -356,31 +369,17 @@
             return html;
         }
 
-        async function handleUserSubmit(text) {
+        // Separated out the fetch logic so "Regenerate" can use it easily
+        async function fetchAIResponse(loadingId) {
             const apiKey = getApiKey();
-            if (!apiKey) return; 
-
-            if (!appBody.classList.contains('chat-active')) {
-                appBody.classList.add('chat-active');
-                const bottomContainer = document.getElementById('chatBottomContainer');
-                bottomContainer.insertBefore(document.getElementById('mainInputWrapper'), bottomContainer.firstChild);
-            }
-
-            chatInput.value = '';
-            chatInput.style.height = '48px';
-
-            appendUserMessage(text);
-            conversationHistory.push({ role: "user", content: text });
-
-            const loadingId = 'ai-msg-' + Date.now();
-            appendLoading(loadingId);
+            if (!apiKey) return;
 
             try {
                 let messagesToSend = [...conversationHistory];
-                if (messagesToSend.length === 1) {
+                if (messagesToSend.length > 0 && messagesToSend[0].role !== "system") {
                     messagesToSend.unshift({ 
                         role: "system", 
-                        content: "You are an intelligent, articulate AI assistant. Structure your responses beautifully using standard markdown." 
+                        content: "You are Newton, an intelligent and articulate AI assistant. Structure your responses beautifully using standard markdown formatting." 
                     });
                 }
 
@@ -404,11 +403,30 @@
                 const aiResponseText = data.choices[0].message.content;
 
                 conversationHistory.push({ role: "assistant", content: aiResponseText });
-                replaceLoadingWithMessage(loadingId, parseMarkdown(aiResponseText));
+                replaceLoadingWithMessage(loadingId, parseMarkdown(aiResponseText), aiResponseText);
 
             } catch (error) {
-                replaceLoadingWithMessage(loadingId, `<p style="color: #ff8b8b;">⚠️ Error: ${error.message}</p>`);
+                replaceLoadingWithMessage(loadingId, `<p style="color: #ff8b8b;">⚠️ Error: ${error.message}</p>`, "");
             }
+        }
+
+        async function handleUserSubmit(text) {
+            if (!appBody.classList.contains('chat-active')) {
+                appBody.classList.add('chat-active');
+                const bottomContainer = document.getElementById('chatBottomContainer');
+                bottomContainer.insertBefore(document.getElementById('mainInputWrapper'), bottomContainer.firstChild);
+            }
+
+            chatInput.value = '';
+            chatInput.style.height = '48px';
+
+            appendUserMessage(text);
+            conversationHistory.push({ role: "user", content: text });
+
+            const loadingId = 'ai-msg-' + Date.now();
+            appendLoading(loadingId);
+            
+            await fetchAIResponse(loadingId);
         }
 
         function appendUserMessage(text) {
@@ -422,8 +440,6 @@
             wrapperDiv.appendChild(contentDiv);
             messageWrapper.appendChild(wrapperDiv);
 
-            // Add 'Show more' button + Fade if the message height exceeds limits
-            // Using requestAnimationFrame to allow DOM to render and calculate scrollHeight
             requestAnimationFrame(() => {
                 if (contentDiv.scrollHeight > 200) {
                     const fadeDiv = document.createElement('div');
@@ -435,7 +451,7 @@
                     
                     btn.onclick = () => {
                         contentDiv.classList.add('expanded');
-                        fadeDiv.style.opacity = '0'; // Fade out the overlay
+                        fadeDiv.style.opacity = '0'; 
                         setTimeout(() => fadeDiv.remove(), 300);
                     };
                     
@@ -455,12 +471,12 @@
             scrollToBottom();
         }
 
-        function replaceLoadingWithMessage(id, htmlContent) {
+        function replaceLoadingWithMessage(id, htmlContent, rawText) {
             const el = document.getElementById(id);
             if (el) {
                 el.innerHTML = htmlContent;
                 
-                // Add the action icons under the response
+                // Construct the functional Action Bar
                 const actionBar = document.createElement('div');
                 actionBar.className = 'ai-action-bar';
                 actionBar.innerHTML = `
@@ -478,17 +494,49 @@
                     </button>
                 `;
                 
-                // Insert right after the AI message text
                 el.parentNode.insertBefore(actionBar, el.nextSibling);
 
-                // Add simple copy logic to the Copy button
+                // --- 1. Copy Functionality ---
                 const copyBtn = actionBar.querySelector('button[title="Copy"]');
                 copyBtn.addEventListener('click', () => {
-                    navigator.clipboard.writeText(el.innerText);
+                    navigator.clipboard.writeText(rawText || el.innerText);
+                    // Temporarily show checkmark
                     copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
                     setTimeout(() => {
                         copyBtn.innerHTML = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
                     }, 2000);
+                });
+
+                // --- 2. Thumbs Up / Thumbs Down Visual Toggles ---
+                const likeBtn = actionBar.querySelector('button[title="Good response"]');
+                const dislikeBtn = actionBar.querySelector('button[title="Bad response"]');
+                
+                likeBtn.addEventListener('click', () => {
+                    likeBtn.classList.toggle('active');
+                    dislikeBtn.classList.remove('active');
+                });
+                
+                dislikeBtn.addEventListener('click', () => {
+                    dislikeBtn.classList.toggle('active');
+                    likeBtn.classList.remove('active');
+                });
+
+                // --- 3. Regenerate (Retry) Functionality ---
+                const retryBtn = actionBar.querySelector('button[title="Retry"]');
+                retryBtn.addEventListener('click', () => {
+                    // Remove the current AI message and its action bar from DOM
+                    el.remove();
+                    actionBar.remove();
+                    
+                    // Remove the last AI response from memory to try again
+                    if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === "assistant") {
+                        conversationHistory.pop();
+                    }
+
+                    // Trigger the API fetch again
+                    const newLoadingId = 'ai-msg-' + Date.now();
+                    appendLoading(newLoadingId);
+                    fetchAIResponse(newLoadingId);
                 });
 
                 scrollToBottom();
