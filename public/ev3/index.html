@@ -106,7 +106,17 @@
             font-family: var(--font-serif); font-size: 38px; font-weight: 400; margin-bottom: 40px;
             display: flex; align-items: center; gap: 12px; letter-spacing: -0.2px; color: #f0f0f0; text-align: center;
         }
-        .greeting-icon { width: 40px; height: 40px; object-fit: contain; color: var(--accent-color); }
+        .greeting-logo { 
+            font-size: 40px; 
+            font-weight: 600; 
+            color: var(--accent-color); 
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+        }
 
         /* --- Chat View --- */
         .chat-history {
@@ -121,6 +131,10 @@
             align-self: flex-end; background-color: var(--bg-user-msg); border-radius: 16px;
             max-width: 85%; margin-bottom: 32px; overflow: hidden;
             border: 1px solid var(--border-color);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .user-message-container.collapsible-wrapper:not(.expanded) {
+            border-bottom: 2px solid var(--accent-color);
         }
         .user-message-content { padding: 14px 18px; font-size: 15px; font-family: var(--font-sans); line-height: 1.5; white-space: pre-wrap; }
 
@@ -154,62 +168,113 @@
         /* --- Collapsible "Show More" Wrapper --- */
         .collapsible-wrapper {
             position: relative;
-            max-height: 250px;
+            max-height: 200px; /* Reduced for user questions */
             overflow: hidden;
-            transition: max-height 0.3s ease;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .collapsible-wrapper.expanded {
-            max-height: 5000px; /* Arbitrary large number to allow full expansion */
+            max-height: 5000px;
         }
         .fade-overlay {
             position: absolute;
             bottom: 0; left: 0; right: 0;
-            height: 100px;
-            background: linear-gradient(to bottom, transparent, var(--bg-main));
-            display: flex; align-items: flex-end; padding-bottom: 8px;
+            height: 80px;
+            background: linear-gradient(to bottom, transparent, var(--bg-user-msg));
+            display: flex; align-items: flex-end; justify-content: center;
+            padding-bottom: 12px;
             z-index: 2; pointer-events: none;
+            transition: opacity 0.3s;
         }
-        /* Adjusted fade for inside code blocks */
-        .code-block .fade-overlay { background: linear-gradient(to bottom, transparent, #151515); padding-left: 16px; padding-bottom: 16px; }
+        /* When expanded, we still show the button at the bottom but without the fade */
+        .collapsible-wrapper.expanded .fade-overlay {
+            position: relative;
+            height: 40px;
+            background: none;
+            padding-top: 8px;
+            pointer-events: auto;
+            opacity: 1;
+        }
         
         .show-more-btn {
-            background: none; border: none; color: var(--text-secondary); cursor: pointer;
-            font-size: 13px; font-weight: 600; pointer-events: auto; font-family: var(--font-sans);
-            display: flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 4px; transition: color 0.2s;
+            background: rgba(255, 255, 255, 0.08); 
+            border: 1px solid var(--border-color); 
+            color: var(--text-secondary); 
+            cursor: pointer;
+            font-size: 12px; font-weight: 500; pointer-events: auto; font-family: var(--font-sans);
+            display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 20px; 
+            transition: all 0.2s;
+            backdrop-filter: blur(4px);
         }
-        .show-more-btn:hover { color: #fff; background: rgba(255,255,255,0.1); }
-        .collapsible-wrapper.expanded .fade-overlay {
-            height: auto; position: static; background: none; padding-top: 12px; pointer-events: auto;
+        .show-more-btn:hover { 
+            color: #fff; 
+            background: rgba(255,255,255,0.15); 
+            border-color: #666;
+            transform: translateY(-1px);
         }
+        .show-more-btn svg { width: 12px; height: 12px; transition: transform 0.3s; }
+        .collapsible-wrapper.expanded .show-more-btn svg { transform: rotate(180deg); }
+
+        /* Adjusted fade for inside code blocks - though we might disable it for AI as per request */
+        .code-block .fade-overlay { background: linear-gradient(to bottom, transparent, #151515); }
 
         /* --- UPDATED Code Block Container --- */
         .code-block {
-            background-color: #151515; /* Deeper dark */
+            background-color: #0d0d0d; /* Even darker */
             border-radius: 12px;
             margin: 24px 0;
-            border: 1px solid #333;
+            border: 1px solid #222;
             font-family: var(--font-sans);
             position: relative;
+            overflow: hidden;
         }
         .code-header {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 12px 16px; color: #a1a1a1;
+            padding: 8px 12px; border-bottom: 1px solid #1a1a1a;
+            color: #a1a1a1;
         }
         .code-lang {
-            display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;
+            display: flex; align-items: center; gap: 10px; font-size: 12px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.8px; color: #888;
         }
-        .code-lang svg { width: 16px; height: 16px; fill: currentColor; }
-        .code-actions { display: flex; align-items: center; gap: 6px; }
+        .code-lang svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2.5; fill: none; }
+        .code-actions { display: flex; align-items: center; gap: 8px; }
         .code-action-btn {
-            background: rgba(255,255,255,0.05); border: 1px solid transparent; color: #a1a1a1; cursor: pointer;
-            width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
+            background: #1a1a1a; border: 1px solid #2a2a2a; color: #999; cursor: pointer;
+            width: 30px; height: 30px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .code-action-btn:hover { background: rgba(255,255,255,0.1); border-color: #444; color: #fff; }
-        .code-action-btn svg { width: 16px; height: 16px; stroke: currentColor; stroke-width: 2; fill: none; }
+        .code-action-btn:hover { background: #252525; border-color: #444; color: #fff; transform: scale(1.05); }
+        .code-action-btn.copy-success { color: #4ade80; border-color: #4ade80; }
+        .code-action-btn svg { width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none; }
         
-        .code-content-wrapper pre { margin: 0; padding: 0 16px 16px 16px; overflow-x: auto; }
-        .code-content-wrapper code { font-family: var(--font-mono); font-size: 14px; color: #e5e5e5; line-height: 1.6; tab-size: 4; }
+        .code-content-wrapper pre { 
+            margin: 0; padding: 16px; overflow-x: auto; 
+            background: #0d0d0d;
+        }
+        .code-content-wrapper code { 
+            font-family: var(--font-mono); font-size: 13px; color: #d1d1d1; line-height: 1.6; tab-size: 4; 
+            display: block;
+        }
+
+        .code-block.expanded-view {
+            position: fixed;
+            top: 50px; left: 50px; right: 50px; bottom: 50px;
+            z-index: 10000;
+            margin: 0;
+            background: #0d0d0d;
+            box-shadow: 0 0 100px rgba(0,0,0,0.8);
+        }
+        .code-block.expanded-view .code-content-wrapper pre {
+            height: calc(100% - 50px);
+            max-height: none;
+        }
+
+        /* Basic syntax highlight colors */
+        .code-content-wrapper .token-keyword { color: #c678dd; }
+        .code-content-wrapper .token-string { color: #98c379; }
+        .code-content-wrapper .token-comment { color: #5c6370; font-style: italic; }
+        .code-content-wrapper .token-function { color: #61afef; }
+        .code-content-wrapper .token-attr { color: #d19a66; }
+        .code-content-wrapper .token-tag { color: #e06c75; }
 
         /* --- Link Preview Cards (Skeleton & Loaded) --- */
         .link-preview-card {
@@ -248,6 +313,7 @@
             border-radius: 6px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
         }
         .action-icon-btn:hover { color: var(--text-secondary); background: rgba(255,255,255,0.05); }
+        .action-icon-btn.copy-success { color: #4ade80; }
         .action-icon-btn svg { width: 18px; height: 18px; stroke: currentColor; stroke-width: 1.8; fill: none; }
 
         /* --- Input Area --- */
@@ -330,7 +396,7 @@
 
         <div class="landing-content" id="landingView">
             <h1 class="greeting">
-                <svg class="greeting-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <span class="greeting-logo">$</span>
                 Back at it, <span id="userNameDisplay">User</span>
             </h1>
             
@@ -468,13 +534,26 @@
         // Collapse functionality for Show More/Less
         window.toggleCollapse = function(btn) {
             const wrapper = btn.closest('.collapsible-wrapper');
-            if(wrapper.classList.contains('expanded')) {
+            const isExpanded = wrapper.classList.contains('expanded');
+            if(isExpanded) {
                 wrapper.classList.remove('expanded');
-                btn.innerHTML = 'Show more';
+                btn.innerHTML = `See more <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg>`;
             } else {
                 wrapper.classList.add('expanded');
-                btn.innerHTML = 'Show less';
+                btn.innerHTML = `See less <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m18 15-6-6-6 6"/></svg>`;
             }
+        }
+
+        window.copyToClipboard = function(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+                btn.classList.add('copy-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('copy-success');
+                }, 2000);
+            });
         }
 
         function parseMarkdown(text) {
@@ -482,21 +561,46 @@
             
             // NEW Code Container matched to image
             html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
-                const language = lang ? lang.toUpperCase() : 'TEXT';
-                return `<div class="code-block collapsible-wrapper">
+                const language = lang ? lang.toUpperCase() : 'CODE';
+                
+                // Basic Syntax Highlighting Logic
+                let highlightedCode = code.trim();
+                if (language === 'HTML' || language === 'XML') {
+                    highlightedCode = highlightedCode
+                        .replace(/(&lt;!--[\s\S]*?--&gt;)/g, '<span class="token-comment">$1</span>')
+                        .replace(/(&lt;\/?[a-z1-6]+)/gi, '<span class="token-tag">$1</span>')
+                        .replace(/([a-z-]+)=(&quot;.*?&quot;)/gi, '<span class="token-attr">$1</span>=<span class="token-string">$2</span>');
+                } else {
+                    highlightedCode = highlightedCode
+                        .replace(/(\/\/.+)/g, '<span class="token-comment">$1</span>')
+                        .replace(/\b(const|let|var|function|return|if|else|for|while|import|export|from|class|extends|new|try|catch|finally|async|await)\b/g, '<span class="token-keyword">$1</span>')
+                        .replace(/(&quot;.*?&quot;|'.*?'|`.*?`)/g, '<span class="token-string">$1</span>')
+                        .replace(/\b([a-z_][a-z0-9_]*)(?=\s*\()/gi, '<span class="token-function">$1</span>');
+                }
+
+                return `<div class="code-block">
                             <div class="code-header">
                                 <div class="code-lang">
-                                    <svg viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"></path></svg> ${language}
+                                    <svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="m18 16 4-4-4-4M6 8l-4 4 4 4"/></svg>
+                                    ${language}
                                 </div>
                                 <div class="code-actions">
-                                    <button class="code-action-btn" title="Copy" onclick="navigator.clipboard.writeText(this.closest('.code-block').querySelector('code').innerText);"><svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button>
-                                    <button class="code-action-btn" title="Edit"><svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg></button>
-                                    <button class="code-action-btn" title="Expand"><svg viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg></button>
-                                    <button class="code-action-btn" title="Run"><svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>
+                                    <button class="code-action-btn" title="Copy" onclick="copyToClipboard(this.closest('.code-block').querySelector('code').innerText, this);">
+                                        <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                                    </button>
+                                    <button class="code-action-btn" title="Edit" onclick="console.log('Edit clicked')">
+                                        <svg viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+                                    </button>
+                                    <button class="code-action-btn" title="Expand" onclick="this.closest('.code-block').classList.toggle('expanded-view')">
+                                        <svg viewBox="0 0 24 24"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"></path></svg>
+                                    </button>
+                                    <button class="code-action-btn" title="Run" onclick="window.open().document.write(this.closest('.code-block').querySelector('code').innerText)">
+                                        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                                    </button>
                                 </div>
                             </div>
                             <div class="code-content-wrapper">
-                                <pre><code>${code}</code></pre>
+                                <pre><code>${highlightedCode}</code></pre>
                             </div>
                         </div>`;
             });
@@ -580,25 +684,24 @@
             }
         }
 
-        function applyShowMoreLogic(element) {
-            // Check code blocks
+        function applyShowMoreLogic(element, maxHeight = 600) {
+            // Check code blocks separately if they exist within the element
             element.querySelectorAll('.code-block').forEach(block => {
-                if (block.scrollHeight > 250) {
+                if (block.scrollHeight > 400) { // Specific limit for code blocks
+                    block.classList.add('collapsible-wrapper');
                     const fade = document.createElement('div');
                     fade.className = 'fade-overlay';
-                    fade.innerHTML = `<button class="show-more-btn" onclick="toggleCollapse(this)">Show more</button>`;
+                    fade.innerHTML = `<button class="show-more-btn" onclick="toggleCollapse(this)">See more <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button>`;
                     block.appendChild(fade);
-                } else {
-                    block.classList.remove('collapsible-wrapper'); // Remove if not tall enough
                 }
             });
 
-            // Check overall message length for generic text fade
-            if (element.scrollHeight > 600) {
+            // Generic check for the whole element (e.g., user message)
+            if (element.scrollHeight > maxHeight) {
                 element.classList.add('collapsible-wrapper');
                 const fade = document.createElement('div');
                 fade.className = 'fade-overlay';
-                fade.innerHTML = `<button class="show-more-btn" onclick="toggleCollapse(this)">Show more</button>`;
+                fade.innerHTML = `<button class="show-more-btn" onclick="toggleCollapse(this)">See more <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m6 9 6 6 6-6"/></svg></button>`;
                 element.appendChild(fade);
             }
         }
@@ -663,6 +766,10 @@
             contentDiv.textContent = text;
             wrapperDiv.appendChild(contentDiv);
             messageWrapper.appendChild(wrapperDiv);
+            
+            // Apply show more logic to user message (e.g., if it's very long)
+            setTimeout(() => applyShowMoreLogic(wrapperDiv, 250), 50);
+            
             scrollToBottom();
         }
 
@@ -694,12 +801,9 @@
                 // Run Link Previews (with Skeleton loader)
                 buildLinkPreviews(el);
                 
-                // Run Show More logic
-                setTimeout(() => applyShowMoreLogic(el), 50);
-
                 const copyBtn = actionBar.querySelector('button[title="Copy"]');
                 copyBtn.addEventListener('click', () => {
-                    navigator.clipboard.writeText(rawText);
+                    copyToClipboard(rawText, copyBtn);
                 });
 
                 const retryBtn = actionBar.querySelector('button[title="Retry"]');
