@@ -11,7 +11,7 @@
             --bg-main: #212121; 
             --bg-sidebar: #1a1a1a;
             --bg-input: #2f2f2f;
-            --bg-user-msg: #2a2a2a; /* rgb(42, 42, 42) */
+            --bg-user-msg: #2a2a2a; 
             --bg-chip: rgba(255, 255, 255, 0.05);
             
             --text-primary: #ededed;
@@ -129,7 +129,7 @@
 
         .message-wrapper { width: 100%; max-width: 760px; display: flex; flex-direction: column; }
 
-        /* User Message with Fade & Expand */
+        /* User Message */
         .user-message-container {
             position: relative; align-self: flex-end; background-color: var(--bg-user-msg);
             border-radius: 16px; max-width: 80%; margin-bottom: 30px; 
@@ -139,16 +139,14 @@
         .user-message-content {
             padding: 16px 20px; font-size: 15px; font-family: var(--font-sans);
             line-height: 1.6; white-space: pre-wrap;
-            max-height: 150px; /* Truncation height */
+            max-height: 150px; 
             overflow: hidden; transition: max-height 0.3s ease;
         }
 
         .user-message-content.expanded { max-height: 5000px; padding-bottom: 20px; }
 
-        /* PERFECTED FADE DESIGN */
         .message-fade {
             position: absolute; bottom: 0; left: 0; right: 0; height: 80px;
-            /* Matches the exact user message background color (#2a2a2a) to create a seamless fade */
             background: linear-gradient(180deg, rgba(42, 42, 42, 0) 0%, rgba(42, 42, 42, 0.9) 60%, rgba(42, 42, 42, 1) 100%);
             display: flex; align-items: flex-end; justify-content: flex-start;
             padding: 12px 20px; pointer-events: none;
@@ -182,11 +180,11 @@
         .ai-message h3 { font-size: 1.2em; color: #f0f0f0; }
         .ai-message ul, .ai-message ol { margin-left: 24px; margin-bottom: 16px; }
         .ai-message li { margin-bottom: 10px; padding-left: 4px; }
-        .ai-message a {
+        .ai-message a:not(.link-preview-card) {
             color: var(--accent-color); text-decoration: none;
             border-bottom: 1px solid transparent; transition: border-color 0.2s ease;
         }
-        .ai-message a:hover { border-bottom-color: var(--accent-color); }
+        .ai-message a:not(.link-preview-card):hover { border-bottom-color: var(--accent-color); }
         .ai-message pre {
             background-color: #1a1a1a; padding: 16px; border-radius: 8px;
             overflow-x: auto; margin-bottom: 16px; border: 1px solid var(--border-color);
@@ -196,6 +194,79 @@
         .ai-message :not(pre) > code {
             background-color: rgba(255,255,255,0.08); padding: 2px 6px; border-radius: 4px;
             color: #e59c7a; font-size: 14px;
+        }
+
+        /* --- Link Preview Card --- */
+        .link-preview-card {
+            display: block;
+            text-decoration: none;
+            background-color: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            max-width: 500px;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            cursor: pointer;
+        }
+
+        .link-preview-card:hover {
+            border-color: #555;
+            background-color: #383838;
+        }
+
+        .link-preview-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background-color: #1a1a1a;
+            border-bottom: 1px solid var(--border-color);
+            display: block;
+        }
+
+        .link-preview-content {
+            padding: 16px;
+            font-family: var(--font-sans);
+        }
+
+        .link-preview-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 6px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .link-preview-desc {
+            font-size: 14px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            margin-bottom: 14px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .link-preview-footer {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        .link-preview-favicon {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            object-fit: contain;
         }
 
         /* --- AI Action Buttons Bar --- */
@@ -336,7 +407,6 @@
             }
             userNameDisplay.textContent = storedName;
             
-            // Set initials for the avatar
             let initials = storedName.substring(0, 2).toUpperCase();
             if(storedName.includes(' ')) {
                 const parts = storedName.split(' ');
@@ -392,6 +462,62 @@
                     return `<p>${cleanP.replace(/\n/g, '<br>')}</p>`;
                 }).join('');
             return html;
+        }
+
+        // Fetches Link Metadata to Build Web Previews
+        async function buildLinkPreviews(messageElement) {
+            const anchorTags = messageElement.querySelectorAll('a');
+            const links = Array.from(anchorTags).map(a => a.href);
+            // Get unique links and limit to a max of 2 previews per message to avoid spam
+            const uniqueLinks = [...new Set(links)].slice(0, 2);
+
+            for (const url of uniqueLinks) {
+                try {
+                    if (!url.startsWith('http')) continue;
+                    
+                    const hostname = new URL(url).hostname;
+                    // Using Microlink API to fetch Open Graph Data seamlessly
+                    const res = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}`);
+                    const json = await res.json();
+                    
+                    if (json.status === 'success' && json.data) {
+                        const data = json.data;
+                        const title = data.title || hostname;
+                        const desc = data.description || '';
+                        const imgUrl = data.image?.url;
+                        // Use Microlink logo or fallback to reliable Google S2 Favicon service
+                        const favUrl = data.logo?.url || `https://www.google.com/s2/favicons?domain=${hostname}&sz=32`;
+                        
+                        const card = document.createElement('a');
+                        card.href = url;
+                        card.target = "_blank";
+                        card.className = 'link-preview-card';
+                        
+                        let imgHtml = '';
+                        if (imgUrl) {
+                            imgHtml = `<img src="${imgUrl}" class="link-preview-image" alt="Preview Image" onerror="this.style.display='none'">`;
+                        }
+                        
+                        card.innerHTML = `
+                            ${imgHtml}
+                            <div class="link-preview-content">
+                                <div class="link-preview-title">${title}</div>
+                                ${desc ? `<div class="link-preview-desc">${desc}</div>` : ''}
+                                <div class="link-preview-footer">
+                                    <img src="${favUrl}" class="link-preview-favicon" onerror="this.style.display='none'">
+                                    <span>${hostname.replace('www.', '')}</span>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Append the preview inside the message container, above the action buttons
+                        messageElement.appendChild(card);
+                        scrollToBottom();
+                    }
+                } catch (e) {
+                    console.error("Link preview failed for", url);
+                }
+            }
         }
 
         async function fetchAIResponse(loadingId) {
@@ -465,7 +591,6 @@
             messageWrapper.appendChild(wrapperDiv);
 
             requestAnimationFrame(() => {
-                // If text is larger than the max-height, add the perfect fade
                 if (contentDiv.scrollHeight > 150) {
                     const fadeDiv = document.createElement('div');
                     fadeDiv.className = 'message-fade';
@@ -519,6 +644,9 @@
                 `;
                 
                 el.parentNode.insertBefore(actionBar, el.nextSibling);
+
+                // Initialize link previews for this newly rendered message
+                buildLinkPreviews(el);
 
                 const copyBtn = actionBar.querySelector('button[title="Copy"]');
                 copyBtn.addEventListener('click', () => {
