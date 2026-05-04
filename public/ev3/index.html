@@ -783,10 +783,24 @@
         async function getComments(postId) {
             if (!window.db) return [];
             try {
-                const { collection, getDocs, query, orderBy } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const { doc, getDoc, collection, getDocs, query, orderBy } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                
+                // 1. Try fetching from the 'comments' array field in the post document (matches your screenshot)
+                const postDoc = await getDoc(doc(window.db, "posts", postId));
+                if (postDoc.exists()) {
+                    const data = postDoc.data();
+                    if (Array.isArray(data.comments)) {
+                        return data.comments.map(c => ({
+                            authorName: c.authorName || "User",
+                            content: c.content || ""
+                        }));
+                    }
+                }
+
+                // 2. Fallback: Try fetching from subcollection
                 const q = query(collection(window.db, `posts/${postId}/comments`), orderBy("timestamp", "desc"));
                 const snap = await getDocs(q);
-                return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                return snap.docs.map(d => ({ authorName: d.data().authorName || "User", content: d.data().content || "" }));
             } catch (e) {
                 console.error("Error fetching comments:", e);
                 return [];
@@ -816,14 +830,14 @@
         async function searchPosts(keyword) {
             if (!window.db) return [];
             try {
-                // Fetch more for search to find older matches
                 const all = await getLatestPosts(60);
                 const kw = keyword.toLowerCase();
-                return all.filter(p => 
-                    p.content.toLowerCase().includes(kw) || 
-                    (p.authorName && p.authorName.toLowerCase().includes(kw)) ||
-                    (p.authorUsername && p.authorUsername.toLowerCase().includes(kw))
-                );
+                return all.filter(p => {
+                    const content = (p.content || "").toLowerCase();
+                    const name = (p.authorName || "").toLowerCase();
+                    const username = (p.authorUsername || "").toLowerCase();
+                    return content.includes(kw) || name.includes(kw) || username.includes(kw);
+                });
             } catch (e) {
                 console.error("Error searching posts:", e);
                 return [];
@@ -1143,7 +1157,10 @@
 
                         additionalContext = "\n\n### LIVE DATABASE POSTS (ID|Author|Username|Avatar|Content|MediaUrls|Likes|Comments):\n" + posts.map(p => {
                             const mediaStr = (p.media ? (Array.isArray(p.media) ? p.media.join(',') : p.media) : "");
-                            return `${p.id}|${p.authorName || 'User'}|${p.authorUsername || 'user'}|${p.authorAvatar || ''}|${p.content.replace(/\n/g, ' ')}|${mediaStr}|${p.likes?.length || 0}|${p.comments?.length || 0}`;
+                            const content = (p.content || "").replace(/\n/g, ' ').substring(0, 500);
+                            const likeCount = Array.isArray(p.likes) ? p.likes.length : 0;
+                            const commentCount = Array.isArray(p.comments) ? p.comments.length : 0;
+                            return `${p.id}|${p.authorName || 'User'}|${p.authorUsername || 'user'}|${p.authorAvatar || ''}|${content}|${mediaStr}|${likeCount}|${commentCount}`;
                         }).join('\n');
                         
                         console.log("EduLink Context:", additionalContext);
@@ -1194,7 +1211,11 @@
                     })
                 });
 
-                if (!response.ok) throw new Error("Failed to fetch response.");
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    console.error("Groq API Error:", errData);
+                    throw new Error(errData.error?.message || `API Error: ${response.status}`);
+                }
 
                 const data = await response.json();
                 const aiResponseText = data.choices[0].message.content;
