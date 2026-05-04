@@ -830,8 +830,8 @@
         async function searchPosts(keyword) {
             if (!window.db) return [];
             try {
-                // Fetch up to 100 posts for a broad search
-                const all = await getLatestPosts(100);
+                // Fetch up to 150 posts for a very broad search to ensure we don't miss anything
+                const all = await getLatestPosts(150);
                 const kw = keyword.toLowerCase().trim();
                 
                 // If it's just "any" or general browsing, return the latest posts
@@ -840,11 +840,24 @@
                 }
 
                 // Smart filtering: Check content, author, and username
+                // Also split keywords for partial matching
+                const kwParts = kw.split(/\s+/).filter(p => p.length > 1);
+
                 return all.filter(p => {
                     const content = (p.content || "").toLowerCase();
                     const name = (p.authorName || "").toLowerCase();
                     const username = (p.authorUsername || "").toLowerCase();
-                    return content.includes(kw) || name.includes(kw) || username.includes(kw);
+                    
+                    // Direct match
+                    if (content.includes(kw) || name.includes(kw) || username.includes(kw)) return true;
+                    
+                    // Partial match (if all parts of the search are found somewhere)
+                    if (kwParts.length > 0) {
+                        return kwParts.every(part => 
+                            content.includes(part) || name.includes(part) || username.includes(part)
+                        );
+                    }
+                    return false;
                 });
             } catch (e) {
                 console.error("Error searching posts:", e);
@@ -1268,14 +1281,19 @@
             // EduLink Mode: Bypass AI for Keyword Search
             if (window.selectedModel === 'EduLink') {
                 const lowerText = text.toLowerCase();
-                const searchKeywords = text.replace(/find|search|the|post|from|saying|about|give|me|show|latest|any/gi, '').trim();
                 
-                // Always try to search or show latest if in EduLink mode
+                // Better keyword extraction: Remove "post", "of", "find", etc.
+                let searchKeywords = text.replace(/\b(find|search|the|post|of|from|saying|about|give|me|show|latest|any)\b/gi, '').trim();
+                
+                // If the user pasted a long quote in parentheses, extract it
+                const quoteMatch = text.match(/\((.*?)\)/);
+                if (quoteMatch) searchKeywords = quoteMatch[1].trim();
+
                 appendLoading(loadingId, 'Searching');
                 searchPosts(searchKeywords || "latest").then(posts => {
                     if (posts.length > 0) {
                         const topPosts = posts.slice(0, 5);
-                        let responseText = searchKeywords ? `I found these posts matching "${searchKeywords}":\n\n` : "Here are the latest posts from EduLink:\n\n";
+                        let responseText = searchKeywords ? `I found ${posts.length} posts matching "${searchKeywords}":\n\n` : "Here are the latest posts from EduLink:\n\n";
                         topPosts.forEach(p => {
                             responseText += `[POST:${JSON.stringify({
                                 authorName: p.authorName,
