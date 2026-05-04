@@ -977,6 +977,7 @@
 
         function parseMarkdown(text) {
             // First, handle the special EduLink Post Rendering before any HTML escaping
+            // Handle multiple types of JSON formatting the AI might use
             let processedText = text.replace(/\[POST:(\{[\s\S]*?\})\]/g, function(match, jsonStr) {
                 try {
                     // Try to parse as-is
@@ -985,11 +986,31 @@
                 } catch (e) {
                     try {
                         // Try unescaping common HTML entities if the AI escaped them
-                        const unescaped = jsonStr.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+                        const unescaped = jsonStr
+                            .replace(/&quot;/g, '"')
+                            .replace(/&lt;/g, '<')
+                            .replace(/&gt;/g, '>')
+                            .replace(/&amp;/g, '&')
+                            .replace(/\\n/g, '\n') // Handle escaped newlines
+                            .replace(/\\"/g, '"'); // Handle escaped quotes
                         const postData = JSON.parse(unescaped);
                         return renderPostCardHTML(postData);
                     } catch (e2) {
-                        console.error("Failed to parse post JSON", e2);
+                        console.error("Failed to parse post JSON", e2, jsonStr);
+                        // Final fallback: try to extract fields with regex if JSON is totally broken
+                        const authorName = jsonStr.match(/"authorName"\s*:\s*"([^"]*)"/)?.[1];
+                        const content = jsonStr.match(/"content"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"|})/)?.[1];
+                        if (authorName && content) {
+                            return renderPostCardHTML({
+                                authorName,
+                                content: content.replace(/\\n/g, '\n'),
+                                authorUsername: jsonStr.match(/"authorUsername"\s*:\s*"([^"]*)"/)?.[1],
+                                authorAvatar: jsonStr.match(/"authorAvatar"\s*:\s*"([^"]*)"/)?.[1],
+                                media: jsonStr.match(/"media"\s*:\s*\["([^"]*)"\]/)?.[1],
+                                likes: [],
+                                comments: []
+                            });
+                        }
                         return match;
                     }
                 }
@@ -1295,15 +1316,21 @@
                         const topPosts = posts.slice(0, 5);
                         let responseText = searchKeywords ? `I found ${posts.length} posts matching "${searchKeywords}":\n\n` : "Here are the latest posts from EduLink:\n\n";
                         topPosts.forEach(p => {
-                            responseText += `[POST:${JSON.stringify({
-                                authorName: p.authorName,
-                                authorUsername: p.authorUsername,
-                                authorAvatar: p.authorAvatar,
-                                content: p.content,
-                                media: p.media,
-                                likes: p.likes,
-                                comments: p.comments
-                            })}]\n\n`;
+                            // Ensure JSON is clean and doesn't contain unescaped control characters
+                            const cleanContent = (p.content || "").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                            const cleanMedia = Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []);
+                            
+                            const postJson = JSON.stringify({
+                                authorName: p.authorName || "User",
+                                authorUsername: p.authorUsername || "user",
+                                authorAvatar: p.authorAvatar || "",
+                                content: cleanContent,
+                                media: cleanMedia,
+                                likes: Array.isArray(p.likes) ? p.likes : [],
+                                comments: Array.isArray(p.comments) ? p.comments : []
+                            });
+                            
+                            responseText += `[POST:${postJson}]\n\n`;
                         });
                         conversationHistory.push({ role: "assistant", content: responseText });
                         replaceLoadingWithMessage(loadingId, parseMarkdown(responseText), responseText);
