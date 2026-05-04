@@ -703,7 +703,7 @@
         const chatInput = document.getElementById('chatInput');
         
         // EduLink Firebase Helpers
-        async function getLatestPosts(limitCount = 10) {
+        async function getLatestPosts(limitCount = 50) {
             if (!window.db) return [];
             try {
                 const { collection, getDocs, query, orderBy, limit, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -830,8 +830,16 @@
         async function searchPosts(keyword) {
             if (!window.db) return [];
             try {
-                const all = await getLatestPosts(60);
-                const kw = keyword.toLowerCase();
+                // Fetch up to 100 posts for a broad search
+                const all = await getLatestPosts(100);
+                const kw = keyword.toLowerCase().trim();
+                
+                // If it's just "any" or general browsing, return the latest posts
+                if (kw === "" || kw === "any" || kw === "latest" || kw === "feed") {
+                    return all.slice(0, 5);
+                }
+
+                // Smart filtering: Check content, author, and username
                 return all.filter(p => {
                     const content = (p.content || "").toLowerCase();
                     const name = (p.authorName || "").toLowerCase();
@@ -1259,33 +1267,34 @@
             
             // EduLink Mode: Bypass AI for Keyword Search
             if (window.selectedModel === 'EduLink') {
-                const searchKeywords = text.replace(/find|search|the|post|from|saying|about|give|me|show|latest/gi, '').trim();
-                if (searchKeywords.length > 2) {
-                    appendLoading(loadingId, 'Searching');
-                    searchPosts(searchKeywords).then(posts => {
-                        if (posts.length > 0) {
-                            const topPosts = posts.slice(0, 5);
-                            let responseText = "I found these posts matching your search:\n\n";
-                            topPosts.forEach(p => {
-                                responseText += `[POST:${JSON.stringify({
-                                    authorName: p.authorName,
-                                    authorUsername: p.authorUsername,
-                                    authorAvatar: p.authorAvatar,
-                                    content: p.content,
-                                    media: p.media,
-                                    likes: p.likes,
-                                    comments: p.comments
-                                })}]\n\n`;
-                            });
-                            conversationHistory.push({ role: "assistant", content: responseText });
-                            replaceLoadingWithMessage(loadingId, parseMarkdown(responseText), responseText);
-                        } else {
-                            const noResults = "I couldn't find any posts matching those keywords in the EduLink database.";
-                            replaceLoadingWithMessage(loadingId, `<p>${noResults}</p>`, noResults);
-                        }
-                    });
-                    return;
-                }
+                const lowerText = text.toLowerCase();
+                const searchKeywords = text.replace(/find|search|the|post|from|saying|about|give|me|show|latest|any/gi, '').trim();
+                
+                // Always try to search or show latest if in EduLink mode
+                appendLoading(loadingId, 'Searching');
+                searchPosts(searchKeywords || "latest").then(posts => {
+                    if (posts.length > 0) {
+                        const topPosts = posts.slice(0, 5);
+                        let responseText = searchKeywords ? `I found these posts matching "${searchKeywords}":\n\n` : "Here are the latest posts from EduLink:\n\n";
+                        topPosts.forEach(p => {
+                            responseText += `[POST:${JSON.stringify({
+                                authorName: p.authorName,
+                                authorUsername: p.authorUsername,
+                                authorAvatar: p.authorAvatar,
+                                content: p.content,
+                                media: p.media,
+                                likes: p.likes,
+                                comments: p.comments
+                            })}]\n\n`;
+                        });
+                        conversationHistory.push({ role: "assistant", content: responseText });
+                        replaceLoadingWithMessage(loadingId, parseMarkdown(responseText), responseText);
+                    } else {
+                        const noResults = `I couldn't find any posts matching "${searchKeywords}" in the EduLink database.`;
+                        replaceLoadingWithMessage(loadingId, `<p>${noResults}</p>`, noResults);
+                    }
+                });
+                return;
             }
 
             appendLoading(loadingId, status);
