@@ -1136,52 +1136,59 @@
                     messagesToSend.shift();
                 }
 
-                // System Prompt for EduLink Mode
                 if (isEduLink) {
                     const lastUserMsg = messagesToSend.findLast(m => m.role === 'user')?.content.toLowerCase() || "";
-                    
                     let additionalContext = "";
                     
-                    // Broad trigger: Fetch a large batch of posts to let the AI use its "full power" to browse
+                    // Smart System: Only fetch and send what is actually needed
                     if (lastUserMsg.length > 3) {
-                        // Fetch latest 100 posts to give the AI a deep view of the database
-                        const posts = await getLatestPosts(100); 
+                        let posts = [];
+                        
+                        // 1. Detect if the user is looking for something specific (Smart Search)
+                        const searchKeywords = lastUserMsg.replace(/find|search|the|post|from|saying|about|give|me|show|latest/g, '').trim();
+                        
+                        if (searchKeywords.length > 2) {
+                            // Use the smart search system to filter 60 posts and find matches
+                            posts = await searchPosts(searchKeywords);
+                            console.log(`Smart Search found ${posts.length} relevant posts.`);
+                        }
+                        
+                        // 2. Fallback to latest posts if no specific search or no results found
+                        if (posts.length === 0) {
+                            posts = await getLatestPosts(6); // Only 6 posts to keep it fast and within limits
+                        } else {
+                            posts = posts.slice(0, 5); // Only send top 5 relevant matches to the AI
+                        }
 
-                        additionalContext = "\n\n### LIVE EDULINK DATABASE (Latest 100 Posts):\n" + posts.map(p => {
+                        additionalContext = "\n\n### RELEVANT DATABASE POSTS:\n" + posts.map(p => {
                             const mediaStr = (p.media ? (Array.isArray(p.media) ? p.media.join(',') : p.media) : "");
-                            const content = (p.content || "").replace(/\n/g, ' ');
+                            const content = (p.content || "").replace(/\n/g, ' ').substring(0, 400);
                             const likeCount = Array.isArray(p.likes) ? p.likes.length : 0;
                             const commentCount = Array.isArray(p.comments) ? p.comments.length : 0;
-                            // Compact format to fit more posts into the AI's context window
-                            return `[ID:${p.id}|By:${p.authorName}|User:${p.authorUsername}|Pfp:${p.authorAvatar}|Content:${content}|Media:${mediaStr}|Likes:${likeCount}|Comments:${commentCount}]`;
+                            return `[ID:${p.id}|Author:${p.authorName}|User:${p.authorUsername}|Pfp:${p.authorAvatar}|Content:${content}|Media:${mediaStr}|Likes:${likeCount}|Comments:${commentCount}]`;
                         }).join('\n');
                         
-                        // Add comments context for the most likely relevant post (latest one)
+                        // Smart Comment Fetching: Only fetch comments if explicitly asked
                         if (posts.length > 0 && (lastUserMsg.includes('comment') || lastUserMsg.includes('saying'))) {
-                            const firstPost = posts[0];
-                            const comments = await getComments(firstPost.id);
+                            const comments = await getComments(posts[0].id);
                             if (comments.length > 0) {
-                                additionalContext += `\n\n### DETAILED COMMENTS FOR "${firstPost.authorName}":\n` + comments.map(c => `- ${c.authorName}: "${c.content}"`).join('\n');
+                                additionalContext += `\n\n### TOP COMMENTS FOR "${posts[0].authorName}":\n` + comments.map(c => `- ${c.authorName}: "${c.content}"`).join('\n');
                             }
                         }
                     }
 
                     messagesToSend.unshift({ 
                         role: "system", 
-                        content: `You are Newton, an AI with "Full Power" access to the EduLink Firebase database. You are currently browsing a live feed of the latest 100 posts.
+                        content: `You are Newton, an AI in EduLink Mode. You are using a SMART SEARCH SYSTEM to browse the database.
                         
-                        ### YOUR CAPABILITIES:
-                        1. **Intelligent Browsing**: Do not just look for exact keywords. Use your reasoning to find posts that match the *intent* or *topic* of the user's request.
-                        2. **Deep Search**: You have 100 posts in your context. Look through all of them to find the specific ones the user wants.
-                        3. **Rich Rendering**: When you find relevant posts, you MUST display them using the [POST:{...}] tag.
+                        ### YOUR MISSION:
+                        1. **Analyze**: Review the RELEVANT posts provided below. They were selected by the smart search system based on the user's query.
+                        2. **Render**: Use the [POST:{...}] tag to display any post you discuss.
                         
-                        ### RENDER FORMAT (MANDATORY):
-                        [POST:{"authorName": "...", "authorUsername": "...", "authorAvatar": "...", "content": "...", "media": ["..."], "likes": [], "comments": []}]
+                        ### DATABASE CONTEXT (FILTERED):
+                        ${additionalContext || "No highly relevant posts found. Summarize general platform activity or ask for more details."}
                         
-                        ### DATABASE CONTEXT (100 POSTS):
-                        ${additionalContext || "The database is currently empty. Ask the user if they want to create the first post!"}
-                        
-                        If the user asks for "posts related to X", find every single relevant post in the list above and render them one by one. Be thorough.` 
+                        Keep your response concise and focused on the relevant data provided.` 
                     });
                 } else {
                     messagesToSend.unshift({ role: "system", content: "You are Newton, a highly organized and helpful AI assistant created by the EduLink team. Your goal is to provide the best possible responses that are easy for users to understand.\n\n### Response Guidelines:\n1. **Organization**: Always structure your answers with clear paragraphs and bullet points where appropriate. Use bold text for key terms to improve readability.\n2. **Clarity**: Use simple, direct language that is easy to follow. Break down complex concepts into manageable parts.\n3. **Resources**: If a user's query can be better answered or supplemented by external resources, provide relevant and high-quality website links.\n4. **Insightful & Accurate**: Ensure your information is correct and provides valuable insights to the user's task or study.\n5. **No Code Unless Asked**: CRITICAL: Do NOT provide code snippets unless the user explicitly requests them.\n\n### Team Information:\nIf asked about the team, you MUST provide this exact format:\n### Team Members\nMy team consists of the following dedicated individuals:\n- **Ngawang Tshogyal Phuentshok** (Founder)\n- **Sonam Rigsel** (Co-founder)\n- **Pema Thinley** (Dzongkha Research Head)\n- **Jigdral Namgyel** (Researcher)\n- **Jampel Dorji** (Researcher)\n\nLearn more at [edulinkbht.vercel.app/teams](https://edulinkbht.vercel.app/teams) or visit [edulinkbht.vercel.app](https://edulinkbht.vercel.app)." });
