@@ -630,10 +630,25 @@
         async function getLatestPosts(limitCount = 5) {
             if (!window.db) return [];
             try {
-                const { collection, getDocs, query, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const { collection, getDocs, query, orderBy, limit, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
                 const q = query(collection(window.db, "posts"), orderBy("timestamp", "desc"), limit(limitCount));
                 const snap = await getDocs(q);
-                return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                
+                const posts = [];
+                for (const d of snap.docs) {
+                    const data = d.data();
+                    // Fallback: If authorName is missing, try to fetch it from the users collection
+                    if (!data.authorName && data.authorId) {
+                        try {
+                            const userDoc = await getDoc(doc(window.db, "users", data.authorId));
+                            if (userDoc.exists()) {
+                                data.authorName = userDoc.data().name || userDoc.data().username;
+                            }
+                        } catch (err) { console.warn("User fetch error", err); }
+                    }
+                    posts.push({ id: d.id, ...data });
+                }
+                return posts;
             } catch (e) {
                 console.error("Error fetching posts:", e);
                 return [];
@@ -650,6 +665,26 @@
             } catch (e) {
                 console.error("Error fetching comments:", e);
                 return [];
+            }
+        }
+
+        async function createPost(content) {
+            if (!window.db || !window.auth.currentUser) return { success: false, error: "Not authenticated" };
+            try {
+                const { collection, addDoc, serverTimestamp } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const user = window.auth.currentUser;
+                const docRef = await addDoc(collection(window.db, "posts"), {
+                    content: content,
+                    authorId: user.uid,
+                    authorName: user.displayName || user.email.split('@')[0],
+                    timestamp: serverTimestamp(),
+                    likes: [],
+                    comments: []
+                });
+                return { success: true, id: docRef.id };
+            } catch (e) {
+                console.error("Error creating post:", e);
+                return { success: false, error: e.message };
             }
         }
 
@@ -932,20 +967,45 @@
                     
                     let additionalContext = "";
                     
-                    if (lastUserMsg.includes('show post') || lastUserMsg.includes('latest post') || lastUserMsg.includes('summarize post')) {
-                        const posts = await getLatestPosts();
-                        additionalContext = "\n\n### Latest Posts from EduLink:\n" + posts.map(p => `Post ID: ${p.id}\nAuthor: ${p.authorName}\nContent: ${p.content}\nLikes: ${p.likes?.length || 0}\nComments: ${p.comments?.length || 0}`).join('\n---\n');
-                    } else if (lastUserMsg.includes('comments of') || lastUserMsg.includes('browse comments')) {
-                        const posts = await getLatestPosts(1);
-                        if (posts.length > 0) {
-                            const comments = await getComments(posts[0].id);
-                            additionalContext = `\n\n### Comments for Post ${posts[0].id}:\n` + comments.map(c => `- ${c.authorName}: ${c.content}`).join('\n');
+                    // Improved logic: Fetch posts if the user asks for anything related to posts, feed, or latest activity
+                    if (lastUserMsg.includes('post') || lastUserMsg.includes('feed') || lastUserMsg.includes('latest') || lastUserMsg.includes('activity')) {
+                        const posts = await getLatestPosts(10); // Fetch more for variety
+                        additionalContext = "\n\n### REAL-TIME DATA FROM FIREBASE (EduLink Posts):\n" + posts.map(p => {
+                            return `[POST_START]\nPost ID: ${p.id}\nBy: ${p.authorName || 'Unknown User'}\nContent: ${p.content}\nEngagement: ${p.likes?.length || 0} Likes, ${p.comments?.length || 0} Comments\nTimestamp: ${p.timestamp?.toDate ? p.timestamp.toDate().toLocaleString() : 'Recent'}\n[POST_END]`;
+                        }).join('\n\n');
+                        
+                        // If they specifically asked for comments of a post or latest comments
+                        if (lastUserMsg.includes('comment')) {
+                            const firstPost = posts[0];
+                            if (firstPost) {
+                                const comments = await getComments(firstPost.id);
+                                if (comments.length > 0) {
+                                    additionalContext += `\n\n### RECENT COMMENTS FOR LATEST POST (${firstPost.id}):\n` + comments.map(c => `- ${c.authorName || 'User'}: "${c.content}"`).join('\n');
+                                }
+                            }
                         }
                     }
 
                     messagesToSend.unshift({ 
                         role: "system", 
-                        content: `You are Newton, an AI in EduLink Mode. You have access to EduLink's Firebase database.${additionalContext}\n\n### EduLink Capabilities:\n1. **Show Posts**: You can see and summarize recent posts.\n2. **Summarize**: Provide concise summaries of post content.\n3. **Browse Comments**: You can view what people are saying about posts.\n\nAlways mention that you are in EduLink Mode when discussing posts.` 
+                        content: `You are Newton, an AI in EduLink Mode with direct read/write access to the EduLink Firebase database. 
+                        
+                        ### YOUR MISSION:
+                        When a user asks about posts, activity, or comments, you MUST use the provided REAL-TIME DATA to:
+                        1. **Display the Post**: Quote the post content directly.
+                        2. **Attribute the Author**: Clearly state who wrote the post (e.g., "Post by [Author Name]").
+                        3. **Provide Insights**: Summarize or analyze the content as requested.
+                        4. **Create Posts**: If the user wants to "post" or "store" something on EduLink, confirm the content with them and inform them that you can save it to the database.
+                        
+                        ### DATABASE CONTEXT:
+                        ${additionalContext || "No recent posts found in the database."}
+                        
+                        ### FORMATTING:
+                        - Use bold for author names.
+                        - Use blockquotes or clear separators for post content.
+                        - If multiple posts are provided, present them in a clean, readable list.
+                        
+                        Always acknowledge you are browsing the live EduLink database.` 
                     });
                 } else {
                     messagesToSend.unshift({ role: "system", content: "You are Newton, a highly organized and helpful AI assistant created by the EduLink team. Your goal is to provide the best possible responses that are easy for users to understand.\n\n### Response Guidelines:\n1. **Organization**: Always structure your answers with clear paragraphs and bullet points where appropriate. Use bold text for key terms to improve readability.\n2. **Clarity**: Use simple, direct language that is easy to follow. Break down complex concepts into manageable parts.\n3. **Resources**: If a user's query can be better answered or supplemented by external resources, provide relevant and high-quality website links.\n4. **Insightful & Accurate**: Ensure your information is correct and provides valuable insights to the user's task or study.\n5. **No Code Unless Asked**: CRITICAL: Do NOT provide code snippets unless the user explicitly requests them.\n\n### Team Information:\nIf asked about the team, you MUST provide this exact format:\n### Team Members\nMy team consists of the following dedicated individuals:\n- **Ngawang Tshogyal Phuentshok** (Founder)\n- **Sonam Rigsel** (Co-founder)\n- **Pema Thinley** (Dzongkha Research Head)\n- **Jigdral Namgyel** (Researcher)\n- **Jampel Dorji** (Researcher)\n\nLearn more at [edulinkbht.vercel.app/teams](https://edulinkbht.vercel.app/teams) or visit [edulinkbht.vercel.app](https://edulinkbht.vercel.app)." });
