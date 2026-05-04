@@ -393,45 +393,6 @@
         body.chat-active .chat-history { display: flex; }
         body.chat-active .chat-bottom-container { display: flex; }
 
-        /* --- EduLink Container --- */
-        .edulink-overlay {
-            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
-            z-index: 10001; display: none; align-items: center; justify-content: center;
-            opacity: 0; transition: opacity 0.3s ease;
-        }
-        .edulink-card {
-            width: 100%; max-width: 600px; background: var(--bg-sidebar); border: 1px solid var(--border-color);
-            border-radius: 16px; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);
-            display: flex; flex-direction: column; max-height: 80vh;
-        }
-        .edulink-header {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
-        }
-        .edulink-title { font-size: 20px; font-weight: 600; color: var(--accent-color); }
-        .edulink-search-container {
-            display: flex; gap: 10px; margin-bottom: 20px;
-        }
-        .edulink-input {
-            flex: 1; padding: 10px 14px; background: var(--bg-input); border: 1px solid var(--border-color);
-            border-radius: 8px; color: var(--text-primary); font-size: 14px; outline: none;
-        }
-        .edulink-input:focus { border-color: var(--accent-color); }
-        .edulink-results {
-            flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px;
-        }
-        .post-card {
-            background: rgba(255,255,255,0.03); border: 1px solid var(--border-color);
-            border-radius: 12px; padding: 16px; transition: all 0.2s;
-        }
-        .post-card:hover { background: rgba(255,255,255,0.05); border-color: #555; }
-        .post-author { font-weight: 600; color: #fff; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-        .post-author-initials { width: 24px; height: 24px; border-radius: 50%; background: var(--accent-color); display: flex; align-items: center; justify-content: center; font-size: 11px; }
-        .post-content { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
-        .post-meta { font-size: 12px; color: var(--text-tertiary); margin-top: 10px; }
-        .no-results { text-align: center; color: var(--text-tertiary); padding: 40px 0; }
-        .close-edulink { background: none; border: none; color: var(--text-tertiary); cursor: pointer; padding: 4px; border-radius: 4px; }
-        .close-edulink:hover { color: #fff; background: rgba(255,255,255,0.1); }
-
     </style>
 </head>
 <body>
@@ -460,25 +421,6 @@
                 </svg>
                 Sign in with Google
             </button>
-        </div>
-    </div>
-
-    <!-- EduLink Search Modal -->
-    <div class="edulink-overlay" id="edulinkOverlay">
-        <div class="edulink-card">
-            <div class="edulink-header">
-                <div class="edulink-title">EduLink</div>
-                <button class="close-edulink" id="closeEduLinkBtn">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-                </button>
-            </div>
-            <div class="edulink-search-container">
-                <input type="text" class="edulink-input" id="edulinkSearchInput" placeholder="Search for posts by user or content...">
-                <button class="btn btn-primary" style="width: auto; padding: 0 20px;" id="edulinkSearchBtn">Search</button>
-            </div>
-            <div class="edulink-results" id="edulinkResults">
-                <div class="no-results">Type something to search for posts</div>
-            </div>
         </div>
     </div>
 
@@ -534,7 +476,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { getFirestore, collection, query, where, getDocs, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
@@ -547,7 +488,6 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
-        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
         
         const overlay = document.getElementById('authOverlay');
@@ -564,97 +504,6 @@
                 setTimeout(() => overlay.style.opacity = '1', 10);
             }
         });
-
-        // EduLink Logic
-        const edulinkOverlay = document.getElementById('edulinkOverlay');
-        const closeEduLinkBtn = document.getElementById('closeEduLinkBtn');
-        const edulinkSearchInput = document.getElementById('edulinkSearchInput');
-        const edulinkSearchBtn = document.getElementById('edulinkSearchBtn');
-        const edulinkResults = document.getElementById('edulinkResults');
-
-        window.toggleEduLink = (show) => {
-            if (show) {
-                edulinkOverlay.style.display = 'flex';
-                setTimeout(() => edulinkOverlay.style.opacity = '1', 10);
-                edulinkSearchInput.focus();
-            } else {
-                edulinkOverlay.style.opacity = '0';
-                setTimeout(() => edulinkOverlay.style.display = 'none', 300);
-            }
-        };
-
-        closeEduLinkBtn.addEventListener('click', () => toggleEduLink(false));
-        edulinkOverlay.addEventListener('click', (e) => { if(e.target === edulinkOverlay) toggleEduLink(false); });
-
-        async function performSearch() {
-            const searchTerm = edulinkSearchInput.value.trim();
-            if (!searchTerm) return;
-
-            edulinkResults.innerHTML = '<div class="no-results">Searching...</div>';
-
-            try {
-                // We'll search for posts. Since Firestore doesn't support easy full-text search,
-                // we'll fetch recent posts and filter them client-side for better UX if needed,
-                // or try to match fields like 'authorName' or 'content' if they exist.
-                const postsRef = collection(db, "posts");
-                
-                // Try searching by authorName first (exact match or prefix if we had better indexing)
-                // For now, let's fetch the 20 most recent posts and filter client-side for "related to"
-                const q = query(postsRef, limit(50));
-                const querySnapshot = await getDocs(q);
-                
-                const results = [];
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const content = data.content || "";
-                    const authorName = data.authorName || "Anonymous";
-                    const userName = data.userName || "";
-                    const title = data.title || "";
-                    
-                    if (content.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        authorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                        title.toLowerCase().includes(searchTerm.toLowerCase())) {
-                        results.push({ id: doc.id, ...data });
-                    }
-                });
-
-                renderResults(results);
-            } catch (error) {
-                console.error("Search error:", error);
-                edulinkResults.innerHTML = `<div class="no-results">Error searching posts: ${error.message}</div>`;
-            }
-        }
-
-        function renderResults(results) {
-            if (results.length === 0) {
-                edulinkResults.innerHTML = '<div class="no-results">No posts found matching your search.</div>';
-                return;
-            }
-
-            edulinkResults.innerHTML = results.map(post => {
-                const author = post.authorName || post.userName || "Anonymous";
-                const initials = author.substring(0, 2).toUpperCase();
-                const date = post.timestamp ? new Date(post.timestamp.seconds * 1000).toLocaleDateString() : "Recent";
-                
-                return `
-                    <div class="post-card">
-                        <div class="post-author">
-                            <div class="post-author-initials">${initials}</div>
-                            <span>${author}</span>
-                        </div>
-                        <div class="post-content">${post.content || "No content"}</div>
-                        <div class="post-meta">Posted on ${date}</div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        edulinkSearchBtn.addEventListener('click', performSearch);
-        edulinkSearchInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') performSearch(); });
-
-        // Global access for toggle
-        window.db = db;
 
         document.getElementById('googleLoginBtn').addEventListener('click', async () => {
             try { await signInWithPopup(auth, googleProvider); } 
@@ -750,13 +599,6 @@
                 isRecording = true;
                 voiceInputBtn.classList.add('recording');
             }
-        });
-
-        // Toggle EduLink when Sherig 1.1 is clicked
-        document.querySelectorAll('.model-selector').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (window.toggleEduLink) window.toggleEduLink(true);
-            });
         });
 
         chatInput.addEventListener('input', function() {
@@ -976,7 +818,7 @@
             try {
                 let messagesToSend = [...conversationHistory];
                 if (messagesToSend.length === 0 || messagesToSend[0].role !== "system") {
-                    messagesToSend.unshift({ role: "system", content: "You are Newton, an ai that helps the user with their task and studies. Your goal is to provide perfectly formatted, accurate, and insightful responses. CRITICAL: Do NOT provide code snippets unless explicitly requested. Use Markdown for all formatting. You are created by the EduLink team, founded by Ngawang Tshogyal Phuentshok. If asked about the team, you MUST provide a response in this EXACT organized format:\n\n### Team Members\nMy team consists of the following dedicated individuals:\n- **Ngawang Tshogyal Phuentshok** (Founder)\n- **Sonam Rigsel** (Co-founder)\n- **Pema Thinley** (Dzongkha Research Head)\n- **Jigdral Namgyel** (Researcher)\n- **Jampel Dorji** (Researcher)\n\nYou can find more details at edulinkbht.vercel.app/teams or visit our main site at edulinkbht.vercel.app. Mention the team only when asked, and ALWAYS ensure EVERY member is on their own bulleted line." });
+                    messagesToSend.unshift({ role: "system", content: "You are Newton, a highly organized and helpful AI assistant created by the EduLink team. Your goal is to provide the best possible responses that are easy for users to understand.\n\n### Response Guidelines:\n1. **Organization**: Always structure your answers with clear paragraphs and bullet points where appropriate. Use bold text for key terms to improve readability.\n2. **Clarity**: Use simple, direct language that is easy to follow. Break down complex concepts into manageable parts.\n3. **Resources**: If a user's query can be better answered or supplemented by external resources, provide relevant and high-quality website links.\n4. **Insightful & Accurate**: Ensure your information is correct and provides valuable insights to the user's task or study.\n5. **No Code Unless Asked**: CRITICAL: Do NOT provide code snippets unless the user explicitly requests them.\n\n### Team Information:\nIf asked about the team, you MUST provide this exact format:\n### Team Members\nMy team consists of the following dedicated individuals:\n- **Ngawang Tshogyal Phuentshok** (Founder)\n- **Sonam Rigsel** (Co-founder)\n- **Pema Thinley** (Dzongkha Research Head)\n- **Jigdral Namgyel** (Researcher)\n- **Jampel Dorji** (Researcher)\n\nLearn more at [edulinkbht.vercel.app/teams](https://edulinkbht.vercel.app/teams) or visit [edulinkbht.vercel.app](https://edulinkbht.vercel.app)." });
                 }
 
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
