@@ -816,9 +816,14 @@
         async function searchPosts(keyword) {
             if (!window.db) return [];
             try {
-                // Firestore doesn't support full-text search easily, so we fetch latest and filter client-side for simplicity
-                const all = await getLatestPosts(50);
-                return all.filter(p => p.content.toLowerCase().includes(keyword.toLowerCase()));
+                // Fetch more for search to find older matches
+                const all = await getLatestPosts(60);
+                const kw = keyword.toLowerCase();
+                return all.filter(p => 
+                    p.content.toLowerCase().includes(kw) || 
+                    (p.authorName && p.authorName.toLowerCase().includes(kw)) ||
+                    (p.authorUsername && p.authorUsername.toLowerCase().includes(kw))
+                );
             } catch (e) {
                 console.error("Error searching posts:", e);
                 return [];
@@ -936,19 +941,27 @@
         }
 
         function parseMarkdown(text) {
-            let html = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            
-            // Special EduLink Post Rendering
-            html = html.replace(/\[POST:(\{.*?\})\]/g, function(match, jsonStr) {
+            // First, handle the special EduLink Post Rendering before any HTML escaping
+            let processedText = text.replace(/\[POST:(\{[\s\S]*?\})\]/g, function(match, jsonStr) {
                 try {
-                    const postData = JSON.parse(jsonStr.replace(/&quot;/g, '"'));
+                    // Try to parse as-is
+                    const postData = JSON.parse(jsonStr);
                     return renderPostCardHTML(postData);
                 } catch (e) {
-                    console.error("Failed to parse post JSON", e);
-                    return match;
+                    try {
+                        // Try unescaping common HTML entities if the AI escaped them
+                        const unescaped = jsonStr.replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+                        const postData = JSON.parse(unescaped);
+                        return renderPostCardHTML(postData);
+                    } catch (e2) {
+                        console.error("Failed to parse post JSON", e2);
+                        return match;
+                    }
                 }
             });
 
+            let html = processedText.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            
             // NEW Code Container matched to image
             html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
                 const language = lang ? lang.toUpperCase() : 'CODE';
@@ -1115,38 +1128,33 @@
                     
                     let additionalContext = "";
                     
-                    // Improved logic: Fetch posts if the user asks for anything related to posts, feed, or latest activity
-                    if (lastUserMsg.includes('post') || lastUserMsg.includes('feed') || lastUserMsg.includes('latest') || lastUserMsg.includes('activity') || lastUserMsg.includes('search')) {
+                    // Broad trigger for EduLink mode
+                    if (lastUserMsg.length > 5) {
                         let posts = [];
-                        if (lastUserMsg.includes('search') || lastUserMsg.includes('find')) {
-                            const keyword = lastUserMsg.split('search')[1]?.trim() || lastUserMsg.split('find')[1]?.trim() || "";
-                            if (keyword) posts = await searchPosts(keyword);
+                        // Improved keyword extraction for search
+                        const keywords = lastUserMsg.replace(/find|search|the|post|from|saying|about|give|me/g, '').trim();
+                        if (keywords.length > 2) {
+                            posts = await searchPosts(keywords);
                         }
                         
-                        if (posts.length === 0) posts = await getLatestPosts(15);
+                        if (posts.length === 0) {
+                            posts = await getLatestPosts(10);
+                        }
 
-                        additionalContext = "\n\n### REAL-TIME DATA FROM FIREBASE (EduLink Posts):\n" + posts.map(p => {
-                            // Minimize JSON for the prompt but keep all requested fields
-                            const promptData = {
-                                id: p.id,
-                                authorName: p.authorName,
-                                authorUsername: p.authorUsername,
-                                authorAvatar: p.authorAvatar,
-                                content: p.content,
-                                media: p.media,
-                                likes: p.likes,
-                                comments: p.comments
-                            };
-                            return `[DATABASE_POST_DATA]${JSON.stringify(promptData)}[END_DATA]`;
-                        }).join('\n\n');
+                        additionalContext = "\n\n### LIVE DATABASE POSTS (ID|Author|Username|Avatar|Content|MediaUrls|Likes|Comments):\n" + posts.map(p => {
+                            const mediaStr = (p.media ? (Array.isArray(p.media) ? p.media.join(',') : p.media) : "");
+                            return `${p.id}|${p.authorName || 'User'}|${p.authorUsername || 'user'}|${p.authorAvatar || ''}|${p.content.replace(/\n/g, ' ')}|${mediaStr}|${p.likes?.length || 0}|${p.comments?.length || 0}`;
+                        }).join('\n');
                         
-                        // If they specifically asked for comments
+                        console.log("EduLink Context:", additionalContext);
+                        
+                        // Comments context
                         if (lastUserMsg.includes('comment')) {
                             const firstPost = posts[0];
                             if (firstPost) {
                                 const comments = await getComments(firstPost.id);
                                 if (comments.length > 0) {
-                                    additionalContext += `\n\n### RECENT COMMENTS FOR LATEST POST (${firstPost.authorName}):\n` + comments.map(c => `- ${c.authorName || 'User'}: "${c.content}"`).join('\n');
+                                    additionalContext += `\n\n### RECENT COMMENTS FOR "${firstPost.authorName}":\n` + comments.map(c => `- ${c.authorName || 'User'}: "${c.content}"`).join('\n');
                                 }
                             }
                         }
@@ -1154,22 +1162,21 @@
 
                     messagesToSend.unshift({ 
                         role: "system", 
-                        content: `You are Newton, an AI in EduLink Mode with direct access to the EduLink Firebase database.
+                        content: `You are Newton, an AI in EduLink Mode. You have direct access to the live EduLink database.
+                        
+                        ### DATA FORMAT:
+                        The posts below are formatted as: ID|Author|Username|Avatar|Content|MediaUrls|Likes|Comments
                         
                         ### YOUR MISSION:
-                        When displaying posts from the database, you MUST use the following special format to render them beautifully in the chat:
-                        [POST:{"authorName": "...", "authorUsername": "...", "authorAvatar": "...", "content": "...", "media": ["url1", "url2"], "likes": [], "comments": []}]
+                        1. **Search**: Find the specific post or posts the user is asking about.
+                        2. **Render**: You MUST use this exact format to display a post: 
+                           [POST:{"authorName": "Author", "authorUsername": "Username", "authorAvatar": "PfpURL", "content": "FullContent", "media": ["MediaURL"], "likes": [], "comments": []}]
+                        3. **Media**: Always include Avatar and Media URLs in the JSON so images/videos appear. 
                         
-                        ### GUIDELINES:
-                        1. **Fetch and Render**: Use the [DATABASE_POST_DATA] provided below to fill in the JSON for the [POST:...] tag.
-                        2. **Media & PFP**: Always include the 'authorAvatar' (pfp) and 'media' (images/videos) fields in the tag so they appear in the chat.
-                        3. **Interactive**: After rendering a post, summarize it or answer questions about it.
-                        4. **Browsing**: If multiple posts are available, show the most relevant ones.
+                        ### DATABASE CONTEXT:
+                        ${additionalContext || "No posts found. Ask for more details."}
                         
-                        ### LIVE DATABASE CONTEXT:
-                        ${additionalContext || "No recent posts found. Ask the user if they want to create one."}
-                        
-                        Always mention you are browsing the live EduLink database with full media support.` 
+                        Always be helpful and accurate.` 
                     });
                 } else {
                     messagesToSend.unshift({ role: "system", content: "You are Newton, a highly organized and helpful AI assistant created by the EduLink team. Your goal is to provide the best possible responses that are easy for users to understand.\n\n### Response Guidelines:\n1. **Organization**: Always structure your answers with clear paragraphs and bullet points where appropriate. Use bold text for key terms to improve readability.\n2. **Clarity**: Use simple, direct language that is easy to follow. Break down complex concepts into manageable parts.\n3. **Resources**: If a user's query can be better answered or supplemented by external resources, provide relevant and high-quality website links.\n4. **Insightful & Accurate**: Ensure your information is correct and provides valuable insights to the user's task or study.\n5. **No Code Unless Asked**: CRITICAL: Do NOT provide code snippets unless the user explicitly requests them.\n\n### Team Information:\nIf asked about the team, you MUST provide this exact format:\n### Team Members\nMy team consists of the following dedicated individuals:\n- **Ngawang Tshogyal Phuentshok** (Founder)\n- **Sonam Rigsel** (Co-founder)\n- **Pema Thinley** (Dzongkha Research Head)\n- **Jigdral Namgyel** (Researcher)\n- **Jampel Dorji** (Researcher)\n\nLearn more at [edulinkbht.vercel.app/teams](https://edulinkbht.vercel.app/teams) or visit [edulinkbht.vercel.app](https://edulinkbht.vercel.app)." });
