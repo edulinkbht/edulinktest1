@@ -389,6 +389,36 @@
             100% { transform: scale(1); }
         }
 
+        .model-selector-dropdown {
+            position: absolute; bottom: 100%; right: 0; background: var(--bg-sidebar);
+            border: 1px solid var(--border-color); border-radius: 12px; padding: 8px;
+            display: none; flex-direction: column; gap: 4px; min-width: 180px; z-index: 100;
+            margin-bottom: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .model-opt {
+            padding: 10px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
+            display: flex; align-items: center; gap: 10px; transition: all 0.2s; color: var(--text-secondary);
+        }
+        .model-opt:hover { background: var(--bg-chip); color: var(--text-primary); }
+        .model-opt.active { color: var(--accent-color); background: rgba(217, 119, 87, 0.1); }
+        
+        /* EduLink Firestore Container */
+        .edulink-search-container {
+            width: 100%; max-width: 760px; margin: 20px auto; background: #1a1a1a;
+            border: 1px solid var(--border-color); border-radius: 16px; padding: 20px;
+            display: none; flex-direction: column; gap: 16px;
+        }
+        .edulink-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; padding-bottom: 12px; }
+        .edulink-title { font-size: 18px; font-weight: 600; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .post-card {
+            background: #252525; border: 1px solid #333; border-radius: 12px; padding: 16px;
+            margin-bottom: 12px; transition: transform 0.2s;
+        }
+        .post-card:hover { transform: translateY(-2px); border-color: #444; }
+        .post-user { font-weight: 600; color: var(--accent-color); font-size: 14px; margin-bottom: 4px; }
+        .post-content { font-size: 14px; line-height: 1.5; color: #ccc; }
+        .post-meta { font-size: 12px; color: var(--text-tertiary); margin-top: 10px; display: flex; gap: 12px; }
+
         body.chat-active .landing-content { display: none; }
         body.chat-active .chat-history { display: flex; }
         body.chat-active .chat-bottom-container { display: flex; }
@@ -454,8 +484,12 @@
                         <div class="control-group">
                             <button class="icon-btn" style="width: 28px; height: 28px;"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
                         </div>
-                        <div class="control-group">
-                            <button class="model-selector">Sherig 1.1 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+                        <div class="control-group" style="position: relative;">
+                            <button class="model-selector" id="modelSelectorBtn">Sherig 1.1 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+                            <div class="model-selector-dropdown" id="modelDropdown">
+                                <div class="model-opt" data-model="groq">Groq Llama 3.3</div>
+                                <div class="model-opt active" data-model="sherig">Sherig 1.1</div>
+                            </div>
                             <button class="icon-btn" id="stopResponseBtn" title="Stop Response"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
                             <button class="icon-btn" id="voiceInputBtn" style="width: 28px; height: 28px;" title="Voice Input"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg></button>
                         </div>
@@ -466,6 +500,21 @@
 
         <div class="chat-history" id="chatHistory">
             <div class="message-wrapper" id="messageWrapper"></div>
+            <!-- EduLink Sherig Container -->
+            <div class="edulink-search-container" id="edulinkSearchContainer">
+                <div class="edulink-header">
+                    <div class="edulink-title">
+                        <img src="https://i.imghippo.com/files/YVls8804tw.png" style="width: 24px; height: 24px;" alt="EduLink">
+                        EduLink Search
+                    </div>
+                    <button class="icon-btn" onclick="document.getElementById('edulinkSearchContainer').style.display='none'"><svg viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
+                </div>
+                <div id="edulinkResults" style="max-height: 500px; overflow-y: auto;">
+                    <div style="text-align: center; padding: 40px; color: var(--text-tertiary);">
+                        Search for posts by user or content in Sherig 1.1 mode
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="chat-bottom-container" id="chatBottomContainer">
@@ -476,6 +525,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
@@ -488,8 +538,46 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
         
+        window.searchEduLink = async (searchTerm) => {
+            const resultsEl = document.getElementById('edulinkResults');
+            const container = document.getElementById('edulinkSearchContainer');
+            container.style.display = 'flex';
+            resultsEl.innerHTML = '<div style="text-align:center; padding:20px;">Searching EduLink...</div>';
+            
+            try {
+                // We'll try searching by content first
+                const postsRef = collection(db, "posts");
+                const q = query(postsRef, orderBy("timestamp", "desc"), limit(10));
+                const querySnapshot = await getDocs(q);
+                
+                let html = '';
+                querySnapshot.forEach((doc) => {
+                    const data = doc.data();
+                    // Simple client-side filtering for demonstration
+                    if (data.content?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        data.userName?.toLowerCase().includes(searchTerm.toLowerCase())) {
+                        html += `
+                            <div class="post-card">
+                                <div class="post-user">${data.userName || 'Anonymous'}</div>
+                                <div class="post-content">${data.content || ''}</div>
+                                <div class="post-meta">
+                                    <span>${data.timestamp?.toDate().toLocaleDateString() || ''}</span>
+                                </div>
+                            </div>
+                        `;
+                    }
+                });
+                
+                resultsEl.innerHTML = html || '<div style="text-align:center; padding:20px;">No matching posts found.</div>';
+            } catch (err) {
+                console.error("Firestore error:", err);
+                resultsEl.innerHTML = `<div style="text-align:center; padding:20px; color:#ff8b8b;">Error fetching data: ${err.message}</div>`;
+            }
+        };
+
         const overlay = document.getElementById('authOverlay');
         const errBox = document.getElementById('authError');
 
@@ -892,7 +980,47 @@
             }
         });
 
+        const modelSelectorBtn = document.getElementById('modelSelectorBtn');
+        const modelDropdown = document.getElementById('modelDropdown');
+        let currentModel = 'groq';
+
+        modelSelectorBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modelDropdown.style.display = modelDropdown.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        document.addEventListener('click', () => {
+            modelDropdown.style.display = 'none';
+        });
+
+        document.querySelectorAll('.model-opt').forEach(opt => {
+            opt.addEventListener('click', function() {
+                document.querySelectorAll('.model-opt').forEach(o => o.classList.remove('active'));
+                this.classList.add('active');
+                currentModel = this.dataset.model;
+                modelSelectorBtn.innerHTML = `${this.textContent} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>`;
+                
+                if (currentModel === 'sherig') {
+                    chatInput.placeholder = "Search EduLink posts by user or content...";
+                } else {
+                    chatInput.placeholder = "Spend a learning experience with Newton";
+                }
+            });
+        });
+
         function handleUserSubmit(text) {
+            if (currentModel === 'sherig') {
+                if (!appBody.classList.contains('chat-active')) {
+                    appBody.classList.add('chat-active');
+                    const bottomContainer = document.getElementById('chatBottomContainer');
+                    bottomContainer.insertBefore(document.getElementById('mainInputWrapper'), bottomContainer.firstChild);
+                }
+                appendUserMessage(text);
+                chatInput.value = '';
+                window.searchEduLink(text);
+                return;
+            }
+
             if (!appBody.classList.contains('chat-active')) {
                 appBody.classList.add('chat-active');
                 const bottomContainer = document.getElementById('chatBottomContainer');
