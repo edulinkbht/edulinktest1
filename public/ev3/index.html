@@ -38,6 +38,39 @@
             -webkit-font-smoothing: antialiased;
         }
 
+        /* --- Dropdown Menu --- */
+        .dropdown-menu {
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            background: #2f2f2f;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            display: none;
+            flex-direction: column;
+            min-width: 180px;
+            z-index: 100;
+            margin-bottom: 8px;
+            overflow: hidden;
+            animation: dropdownFade 0.2s ease;
+        }
+        @keyframes dropdownFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .dropdown-item {
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background: rgba(255,255,255,0.05); }
+        .dropdown-item.active { background: rgba(217, 119, 87, 0.1); }
+        .dropdown-item .item-title { font-weight: 600; font-size: 14px; color: #fff; }
+        .dropdown-item .item-desc { font-size: 12px; color: var(--text-secondary); }
+
         /* --- Auth Overlay Modal --- */
         .auth-overlay {
             position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
@@ -454,8 +487,18 @@
                         <div class="control-group">
                             <button class="icon-btn" style="width: 28px; height: 28px;"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg></button>
                         </div>
-                        <div class="control-group">
-                            <button class="model-selector">Sherig 1.1 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+                        <div class="control-group" style="position: relative;">
+                            <button class="model-selector" id="modelSelectorBtn">Sherig 1.1 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button>
+                            <div class="dropdown-menu" id="modelDropdown">
+                                <div class="dropdown-item active" data-model="Sherig 1.1">
+                                    <div class="item-title">Sherig 1.1</div>
+                                    <div class="item-desc">Answers quickly</div>
+                                </div>
+                                <div class="dropdown-item" data-model="EduLink">
+                                    <div class="item-title">EduLink</div>
+                                    <div class="item-desc">Browse posts & comments</div>
+                                </div>
+                            </div>
                             <button class="icon-btn" id="stopResponseBtn" title="Stop Response"><svg viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/></svg></button>
                             <button class="icon-btn" id="voiceInputBtn" style="width: 28px; height: 28px;" title="Voice Input"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg></button>
                         </div>
@@ -476,6 +519,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, query, where, getDocs, limit, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
@@ -488,7 +532,10 @@
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
+        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
+
+        window.db = db; // Expose db for chat logic
         
         const overlay = document.getElementById('authOverlay');
         const errBox = document.getElementById('authError');
@@ -504,6 +551,33 @@
                 setTimeout(() => overlay.style.opacity = '1', 10);
             }
         });
+
+        // Dropdown Logic
+        const modelBtn = document.getElementById('modelSelectorBtn');
+        const modelDropdown = document.getElementById('modelDropdown');
+        const dropdownItems = document.querySelectorAll('.dropdown-item');
+        let selectedModel = 'Sherig 1.1';
+
+        modelBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            modelDropdown.style.display = modelDropdown.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        document.addEventListener('click', () => {
+            modelDropdown.style.display = 'none';
+        });
+
+        dropdownItems.forEach(item => {
+            item.addEventListener('click', () => {
+                dropdownItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                selectedModel = item.getAttribute('data-model');
+                modelBtn.innerHTML = `${selectedModel} <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>`;
+                window.selectedModel = selectedModel;
+                modelDropdown.style.display = 'none';
+            });
+        });
+        window.selectedModel = selectedModel;
 
         document.getElementById('googleLoginBtn').addEventListener('click', async () => {
             try { await signInWithPopup(auth, googleProvider); } 
@@ -551,6 +625,34 @@
 
     <script>
         const chatInput = document.getElementById('chatInput');
+        
+        // EduLink Firebase Helpers
+        async function getLatestPosts(limitCount = 5) {
+            if (!window.db) return [];
+            try {
+                const { collection, getDocs, query, orderBy, limit } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const q = query(collection(window.db, "posts"), orderBy("timestamp", "desc"), limit(limitCount));
+                const snap = await getDocs(q);
+                return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (e) {
+                console.error("Error fetching posts:", e);
+                return [];
+            }
+        }
+
+        async function getComments(postId) {
+            if (!window.db) return [];
+            try {
+                const { collection, getDocs, query, orderBy } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const q = query(collection(window.db, `posts/${postId}/comments`), orderBy("timestamp", "desc"));
+                const snap = await getDocs(q);
+                return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            } catch (e) {
+                console.error("Error fetching comments:", e);
+                return [];
+            }
+        }
+
         const appBody = document.body;
         const messageWrapper = document.getElementById('messageWrapper');
         const chatHistoryContainer = document.getElementById('chatHistory');
@@ -817,7 +919,35 @@
 
             try {
                 let messagesToSend = [...conversationHistory];
-                if (messagesToSend.length === 0 || messagesToSend[0].role !== "system") {
+                const isEduLink = window.selectedModel === 'EduLink';
+                
+                // Remove existing system prompt if any to avoid duplicates
+                if (messagesToSend.length > 0 && messagesToSend[0].role === "system") {
+                    messagesToSend.shift();
+                }
+
+                // System Prompt for EduLink Mode
+                if (isEduLink) {
+                    const lastUserMsg = messagesToSend.findLast(m => m.role === 'user')?.content.toLowerCase() || "";
+                    
+                    let additionalContext = "";
+                    
+                    if (lastUserMsg.includes('show post') || lastUserMsg.includes('latest post') || lastUserMsg.includes('summarize post')) {
+                        const posts = await getLatestPosts();
+                        additionalContext = "\n\n### Latest Posts from EduLink:\n" + posts.map(p => `Post ID: ${p.id}\nAuthor: ${p.authorName}\nContent: ${p.content}\nLikes: ${p.likes?.length || 0}\nComments: ${p.comments?.length || 0}`).join('\n---\n');
+                    } else if (lastUserMsg.includes('comments of') || lastUserMsg.includes('browse comments')) {
+                        const posts = await getLatestPosts(1);
+                        if (posts.length > 0) {
+                            const comments = await getComments(posts[0].id);
+                            additionalContext = `\n\n### Comments for Post ${posts[0].id}:\n` + comments.map(c => `- ${c.authorName}: ${c.content}`).join('\n');
+                        }
+                    }
+
+                    messagesToSend.unshift({ 
+                        role: "system", 
+                        content: `You are Newton, an AI in EduLink Mode. You have access to EduLink's Firebase database.${additionalContext}\n\n### EduLink Capabilities:\n1. **Show Posts**: You can see and summarize recent posts.\n2. **Summarize**: Provide concise summaries of post content.\n3. **Browse Comments**: You can view what people are saying about posts.\n\nAlways mention that you are in EduLink Mode when discussing posts.` 
+                    });
+                } else {
                     messagesToSend.unshift({ role: "system", content: "You are Newton, a highly organized and helpful AI assistant created by the EduLink team. Your goal is to provide the best possible responses that are easy for users to understand.\n\n### Response Guidelines:\n1. **Organization**: Always structure your answers with clear paragraphs and bullet points where appropriate. Use bold text for key terms to improve readability.\n2. **Clarity**: Use simple, direct language that is easy to follow. Break down complex concepts into manageable parts.\n3. **Resources**: If a user's query can be better answered or supplemented by external resources, provide relevant and high-quality website links.\n4. **Insightful & Accurate**: Ensure your information is correct and provides valuable insights to the user's task or study.\n5. **No Code Unless Asked**: CRITICAL: Do NOT provide code snippets unless the user explicitly requests them.\n\n### Team Information:\nIf asked about the team, you MUST provide this exact format:\n### Team Members\nMy team consists of the following dedicated individuals:\n- **Ngawang Tshogyal Phuentshok** (Founder)\n- **Sonam Rigsel** (Co-founder)\n- **Pema Thinley** (Dzongkha Research Head)\n- **Jigdral Namgyel** (Researcher)\n- **Jampel Dorji** (Researcher)\n\nLearn more at [edulinkbht.vercel.app/teams](https://edulinkbht.vercel.app/teams) or visit [edulinkbht.vercel.app](https://edulinkbht.vercel.app)." });
                 }
 
