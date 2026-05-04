@@ -402,6 +402,82 @@
         }
         .retry-btn:hover { background: rgba(255,255,255,0.1); border-color: #555; }
 
+        /* --- EduLink Post Card (Dark) --- */
+        .newton-post-card {
+            background: #2a2a2a;
+            border: 1px solid #3d3d3d;
+            border-radius: 16px;
+            margin: 16px 0;
+            padding: 16px;
+            font-family: var(--font-sans);
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .post-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #333;
+        }
+        .post-author-info {
+            display: flex;
+            flex-direction: column;
+        }
+        .post-author-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #fff;
+        }
+        .post-author-username {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .post-content {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #e5e5e5;
+            margin-bottom: 12px;
+            white-space: pre-wrap;
+        }
+        .post-media {
+            width: 100%;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+        .post-media img, .post-media video {
+            width: 100%;
+            display: block;
+        }
+        .post-footer {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding-top: 12px;
+            border-top: 1px solid #3d3d3d;
+        }
+        .post-action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .post-action svg {
+            width: 18px;
+            height: 18px;
+        }
+
         /* --- Stop Button --- */
         #stopResponseBtn {
             display: none; background: #222; border: 1px solid #333; color: #eee;
@@ -627,7 +703,7 @@
         const chatInput = document.getElementById('chatInput');
         
         // EduLink Firebase Helpers
-        async function getLatestPosts(limitCount = 5) {
+        async function getLatestPosts(limitCount = 10) {
             if (!window.db) return [];
             try {
                 const { collection, getDocs, query, orderBy, limit, doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -637,12 +713,15 @@
                 const posts = [];
                 for (const d of snap.docs) {
                     const data = d.data();
-                    // Fallback: If authorName is missing, try to fetch it from the users collection
-                    if (!data.authorName && data.authorId) {
+                    // Fetch full author profile if needed
+                    if (data.authorId) {
                         try {
                             const userDoc = await getDoc(doc(window.db, "users", data.authorId));
                             if (userDoc.exists()) {
-                                data.authorName = userDoc.data().name || userDoc.data().username;
+                                const userData = userDoc.data();
+                                data.authorName = userData.name || data.authorName || "User";
+                                data.authorUsername = userData.username || "user";
+                                data.authorAvatar = userData.avatar || userData.photoURL || "https://i.imghippo.com/files/ID6752xZg.webp";
                             }
                         } catch (err) { console.warn("User fetch error", err); }
                     }
@@ -653,6 +732,52 @@
                 console.error("Error fetching posts:", e);
                 return [];
             }
+        }
+
+        function renderPostCardHTML(p) {
+            const avatar = p.authorAvatar || "https://i.imghippo.com/files/ID6752xZg.webp";
+            const name = p.authorName || "User";
+            const username = p.authorUsername ? `@${p.authorUsername}` : "";
+            const content = p.content || "";
+            const likes = p.likes?.length || 0;
+            const comments = p.comments?.length || 0;
+            
+            let mediaHtml = "";
+            if (p.media) {
+                const mediaArr = Array.isArray(p.media) ? p.media : [p.media];
+                mediaArr.forEach(url => {
+                    const isVid = url.includes("video") || url.includes(".mp4");
+                    if (isVid) {
+                        mediaHtml += `<div class="post-media"><video src="${url}" controls preload="metadata"></video></div>`;
+                    } else {
+                        mediaHtml += `<div class="post-media"><img src="${url}" loading="lazy"></div>`;
+                    }
+                });
+            }
+
+            return `
+                <div class="newton-post-card">
+                    <div class="post-header">
+                        <img src="${avatar}" class="post-avatar">
+                        <div class="post-author-info">
+                            <span class="post-author-name">${name}</span>
+                            <span class="post-author-username">${username}</span>
+                        </div>
+                    </div>
+                    <div class="post-content">${content}</div>
+                    ${mediaHtml}
+                    <div class="post-footer">
+                        <div class="post-action">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                            <span>${likes}</span>
+                        </div>
+                        <div class="post-action">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                            <span>${comments}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         async function getComments(postId) {
@@ -685,6 +810,18 @@
             } catch (e) {
                 console.error("Error creating post:", e);
                 return { success: false, error: e.message };
+            }
+        }
+
+        async function searchPosts(keyword) {
+            if (!window.db) return [];
+            try {
+                // Firestore doesn't support full-text search easily, so we fetch latest and filter client-side for simplicity
+                const all = await getLatestPosts(50);
+                return all.filter(p => p.content.toLowerCase().includes(keyword.toLowerCase()));
+            } catch (e) {
+                console.error("Error searching posts:", e);
+                return [];
             }
         }
 
@@ -801,6 +938,17 @@
         function parseMarkdown(text) {
             let html = text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
             
+            // Special EduLink Post Rendering
+            html = html.replace(/\[POST:(\{.*?\})\]/g, function(match, jsonStr) {
+                try {
+                    const postData = JSON.parse(jsonStr.replace(/&quot;/g, '"'));
+                    return renderPostCardHTML(postData);
+                } catch (e) {
+                    console.error("Failed to parse post JSON", e);
+                    return match;
+                }
+            });
+
             // NEW Code Container matched to image
             html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(match, lang, code) {
                 const language = lang ? lang.toUpperCase() : 'CODE';
@@ -968,19 +1116,37 @@
                     let additionalContext = "";
                     
                     // Improved logic: Fetch posts if the user asks for anything related to posts, feed, or latest activity
-                    if (lastUserMsg.includes('post') || lastUserMsg.includes('feed') || lastUserMsg.includes('latest') || lastUserMsg.includes('activity')) {
-                        const posts = await getLatestPosts(10); // Fetch more for variety
+                    if (lastUserMsg.includes('post') || lastUserMsg.includes('feed') || lastUserMsg.includes('latest') || lastUserMsg.includes('activity') || lastUserMsg.includes('search')) {
+                        let posts = [];
+                        if (lastUserMsg.includes('search') || lastUserMsg.includes('find')) {
+                            const keyword = lastUserMsg.split('search')[1]?.trim() || lastUserMsg.split('find')[1]?.trim() || "";
+                            if (keyword) posts = await searchPosts(keyword);
+                        }
+                        
+                        if (posts.length === 0) posts = await getLatestPosts(15);
+
                         additionalContext = "\n\n### REAL-TIME DATA FROM FIREBASE (EduLink Posts):\n" + posts.map(p => {
-                            return `[POST_START]\nPost ID: ${p.id}\nBy: ${p.authorName || 'Unknown User'}\nContent: ${p.content}\nEngagement: ${p.likes?.length || 0} Likes, ${p.comments?.length || 0} Comments\nTimestamp: ${p.timestamp?.toDate ? p.timestamp.toDate().toLocaleString() : 'Recent'}\n[POST_END]`;
+                            // Minimize JSON for the prompt but keep all requested fields
+                            const promptData = {
+                                id: p.id,
+                                authorName: p.authorName,
+                                authorUsername: p.authorUsername,
+                                authorAvatar: p.authorAvatar,
+                                content: p.content,
+                                media: p.media,
+                                likes: p.likes,
+                                comments: p.comments
+                            };
+                            return `[DATABASE_POST_DATA]${JSON.stringify(promptData)}[END_DATA]`;
                         }).join('\n\n');
                         
-                        // If they specifically asked for comments of a post or latest comments
+                        // If they specifically asked for comments
                         if (lastUserMsg.includes('comment')) {
                             const firstPost = posts[0];
                             if (firstPost) {
                                 const comments = await getComments(firstPost.id);
                                 if (comments.length > 0) {
-                                    additionalContext += `\n\n### RECENT COMMENTS FOR LATEST POST (${firstPost.id}):\n` + comments.map(c => `- ${c.authorName || 'User'}: "${c.content}"`).join('\n');
+                                    additionalContext += `\n\n### RECENT COMMENTS FOR LATEST POST (${firstPost.authorName}):\n` + comments.map(c => `- ${c.authorName || 'User'}: "${c.content}"`).join('\n');
                                 }
                             }
                         }
@@ -988,24 +1154,22 @@
 
                     messagesToSend.unshift({ 
                         role: "system", 
-                        content: `You are Newton, an AI in EduLink Mode with direct read/write access to the EduLink Firebase database. 
+                        content: `You are Newton, an AI in EduLink Mode with direct access to the EduLink Firebase database.
                         
                         ### YOUR MISSION:
-                        When a user asks about posts, activity, or comments, you MUST use the provided REAL-TIME DATA to:
-                        1. **Display the Post**: Quote the post content directly.
-                        2. **Attribute the Author**: Clearly state who wrote the post (e.g., "Post by [Author Name]").
-                        3. **Provide Insights**: Summarize or analyze the content as requested.
-                        4. **Create Posts**: If the user wants to "post" or "store" something on EduLink, confirm the content with them and inform them that you can save it to the database.
+                        When displaying posts from the database, you MUST use the following special format to render them beautifully in the chat:
+                        [POST:{"authorName": "...", "authorUsername": "...", "authorAvatar": "...", "content": "...", "media": ["url1", "url2"], "likes": [], "comments": []}]
                         
-                        ### DATABASE CONTEXT:
-                        ${additionalContext || "No recent posts found in the database."}
+                        ### GUIDELINES:
+                        1. **Fetch and Render**: Use the [DATABASE_POST_DATA] provided below to fill in the JSON for the [POST:...] tag.
+                        2. **Media & PFP**: Always include the 'authorAvatar' (pfp) and 'media' (images/videos) fields in the tag so they appear in the chat.
+                        3. **Interactive**: After rendering a post, summarize it or answer questions about it.
+                        4. **Browsing**: If multiple posts are available, show the most relevant ones.
                         
-                        ### FORMATTING:
-                        - Use bold for author names.
-                        - Use blockquotes or clear separators for post content.
-                        - If multiple posts are provided, present them in a clean, readable list.
+                        ### LIVE DATABASE CONTEXT:
+                        ${additionalContext || "No recent posts found. Ask the user if they want to create one."}
                         
-                        Always acknowledge you are browsing the live EduLink database.` 
+                        Always mention you are browsing the live EduLink database with full media support.` 
                     });
                 } else {
                     messagesToSend.unshift({ role: "system", content: "You are Newton, a highly organized and helpful AI assistant created by the EduLink team. Your goal is to provide the best possible responses that are easy for users to understand.\n\n### Response Guidelines:\n1. **Organization**: Always structure your answers with clear paragraphs and bullet points where appropriate. Use bold text for key terms to improve readability.\n2. **Clarity**: Use simple, direct language that is easy to follow. Break down complex concepts into manageable parts.\n3. **Resources**: If a user's query can be better answered or supplemented by external resources, provide relevant and high-quality website links.\n4. **Insightful & Accurate**: Ensure your information is correct and provides valuable insights to the user's task or study.\n5. **No Code Unless Asked**: CRITICAL: Do NOT provide code snippets unless the user explicitly requests them.\n\n### Team Information:\nIf asked about the team, you MUST provide this exact format:\n### Team Members\nMy team consists of the following dedicated individuals:\n- **Ngawang Tshogyal Phuentshok** (Founder)\n- **Sonam Rigsel** (Co-founder)\n- **Pema Thinley** (Dzongkha Research Head)\n- **Jigdral Namgyel** (Researcher)\n- **Jampel Dorji** (Researcher)\n\nLearn more at [edulinkbht.vercel.app/teams](https://edulinkbht.vercel.app/teams) or visit [edulinkbht.vercel.app](https://edulinkbht.vercel.app)." });
