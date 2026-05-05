@@ -737,13 +737,13 @@
         function renderPostCardHTML(p) {
             const avatar = p.authorAvatar || "https://i.imghippo.com/files/ID6752xZg.webp";
             const name = p.authorName || "User";
-            const username = p.authorUsername || "user";
+            const username = (p.authorUsername || "user").replace('@', '');
             const content = (p.content || "").replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
-            const postId = p.id || "";
+            const postId = p.id || p.postId || "";
             
-            // Fixed Engagement Counts - Ensure they pull real data from arrays if they exist
-            const likesCount = (Array.isArray(p.likes)) ? p.likes.length : (p.likeCount || 0);
-            const commentsCount = (Array.isArray(p.comments)) ? p.comments.length : (p.commentCount || 0);
+            // Fixed Engagement Counts - Ensure they pull real data
+            const likesCount = p.likesCount !== undefined ? p.likesCount : (Array.isArray(p.likes) ? p.likes.length : 0);
+            const commentsCount = p.commentsCount !== undefined ? p.commentsCount : (Array.isArray(p.comments) ? p.comments.length : 0);
             
             let mediaHtml = "";
             if (p.media) {
@@ -776,8 +776,7 @@
                 }
             }
 
-            // Fixed Post Link Format: https://edulinkbht.vercel.app/username/post/postId
-            const postUrl = `https://edulinkbht.vercel.app/${username.replace('@', '')}/post/${postId}`;
+            const postUrl = `https://edulinkbht.vercel.app/${username}/post/${postId}`;
 
             return `
                 <div class="newton-post-card" style="background:#1a1a1a; border:1px solid #333; border-radius:16px; padding:16px; margin:16px 0; width:100%; max-width:550px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: transform 0.2s ease;">
@@ -786,7 +785,7 @@
                             <img src="${avatar}" class="post-avatar" style="width:42px; height:42px; border-radius:50%; object-fit:cover; border: 1px solid #333;">
                             <div class="post-author-info" style="display:flex; flex-direction:column;">
                                 <span class="post-author-name" style="font-weight:600; font-size:15px; color:#fff;">${name}</span>
-                                <span class="post-author-username" style="font-size:13px; color:#888;">@${username.replace('@', '')}</span>
+                                <span class="post-author-username" style="font-size:13px; color:#888;">@${username}</span>
                             </div>
                         </div>
                         <div style="display: flex; gap: 8px;">
@@ -1386,15 +1385,15 @@
                                 const cleanContent = (p.content || "").replace(/"/g, '\\"').replace(/\n/g, '\\n');
                                 const cleanMedia = Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []);
                                 const postJson = JSON.stringify({
-                                    authorName: p.authorName || "User",
-                                    authorUsername: p.authorUsername || "user",
-                                    authorAvatar: p.authorAvatar || "",
-                                    content: cleanContent,
-                                    media: cleanMedia,
-                                    likes: Array.isArray(p.likes) ? p.likes : [],
-                                    comments: Array.isArray(p.comments) ? p.comments : [],
-                                    timestamp: p.timestamp
-                                });
+                                id: p.id,
+                                authorName: p.authorName || "User",
+                                authorUsername: p.authorUsername || "user",
+                                authorAvatar: p.authorAvatar || "",
+                                content: cleanContent,
+                                media: cleanMedia,
+                                likesCount: Array.isArray(p.likes) ? p.likes.length : 0,
+                                commentsCount: Array.isArray(p.comments) ? p.comments.length : 0
+                            });
                                 responseText += `[POST:${postJson}]\n\n`;
                             });
                             conversationHistory.push({ role: "assistant", content: responseText });
