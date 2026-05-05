@@ -3,20 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Edulinki | Official Dzongkha AI</title>
+    <title>Edulinki | Gemini Dzongkha AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic&display=swap');
         .dzongkha-text { font-family: 'Noto Sans', sans-serif; }
+        /* Custom scrollbar for output */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #ea580c; border-radius: 4px; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
 
     <div id="authScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
         <div class="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center shadow-2xl">
-            <h1 class="text-4xl font-bold text-orange-500 mb-2">Edulinki AI</h1>
-            <p class="text-slate-400 mb-8">Bhutan's Open-Source Grammar & Dictionary AI</p>
+            <h1 class="text-4xl font-bold text-blue-500 mb-2">Edulinki AI</h1>
+            <p class="text-slate-400 mb-8">Powered by Google Gemini & DDC 2023</p>
             <button id="loginBtn" class="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-slate-200 transition-all">
                 <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6" alt="Google">
                 Sign in with Google
@@ -24,46 +27,44 @@
         </div>
     </div>
 
-    <div id="mainApp" class="hidden opacity-0 transition-opacity duration-500 max-w-4xl mx-auto p-6">
-        <header class="flex justify-between items-center mb-10 border-b border-slate-800 pb-6">
+    <div id="mainApp" class="hidden opacity-0 transition-opacity duration-500 max-w-4xl mx-auto p-6 flex flex-col h-screen max-h-screen">
+        <header class="flex justify-between items-center mb-6 border-b border-slate-800 pb-4 shrink-0">
             <div>
-                <h2 class="text-2xl font-bold text-orange-500">Edulinki Translator</h2>
-                <div id="pdfStatus" class="text-xs text-yellow-500 italic mt-1 animate-pulse">
-                    ⏳ Synchronizing with 2023 DDC Dictionary...
+                <h2 class="text-2xl font-bold text-blue-500">Gemini Dzongkha Assistant</h2>
+                <div id="pdfStatus" class="text-xs text-yellow-500 italic mt-1 animate-pulse flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-yellow-500"></div> Syncing Dictionary...
                 </div>
             </div>
             <div class="flex items-center gap-4">
-                <button onclick="setGroqKey()" class="text-xs bg-slate-800 px-3 py-2 rounded border border-slate-700 hover:bg-slate-700 transition">Update Groq Key</button>
+                <button onclick="setGeminiKey()" class="text-xs bg-slate-800 px-3 py-2 rounded border border-slate-700 hover:bg-slate-700 transition">Update Gemini Key</button>
                 <button id="logoutBtn" class="text-xs text-red-400 font-bold hover:text-red-300">LOGOUT</button>
             </div>
         </header>
 
-        <main class="space-y-6">
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-                <label class="block text-sm font-medium text-slate-400 mb-3">Enter English Phrase to Translate:</label>
-                <div class="flex flex-col md:flex-row gap-3">
-                    <input type="text" id="userInput" class="flex-1 bg-slate-950 border border-slate-700 p-4 rounded-xl text-lg outline-none focus:border-orange-500 transition" placeholder="e.g. Bhutan is a beautiful country...">
-                    <button id="translateBtn" class="bg-orange-600 hover:bg-orange-500 px-8 py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2">
-                        Translate
-                        <div id="loader" class="hidden animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
-                    </button>
-                </div>
-            </div>
-
-            <div id="resultBox" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 border-l-4 border-l-orange-600 shadow-2xl">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Dzongkha (Uchen) Output</h3>
-                    <div id="output" class="dzongkha-text text-3xl leading-loose text-orange-50 whitespace-pre-wrap"></div>
-                </div>
+        <main class="flex-1 overflow-y-auto mb-6 space-y-6 pr-2" id="chatContainer">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg border-l-4 border-l-blue-500 mr-12">
+                <p class="text-xs text-slate-500 font-bold mb-2 uppercase">Edulinki AI</p>
+                <p class="dzongkha-text text-2xl leading-loose text-blue-50">སྐུ་གཟུགས་བཟང་པོ་ལགས། ང་འདི་རྫོང་ཁའི་རིག་རྩལ་སྦྱོར་འཕྲུལ་(AI)ཅིག་ཨིན། ང་གིས་ཁྱོད་ལུ་ག་དེ་སྦེ་ཆ་རོགས་འབད་ནི་ལགས?</p>
+                <p class="text-sm text-slate-400 mt-2 italic">(Hello! I am a Dzongkha AI assistant. How can I help you today?)</p>
             </div>
         </main>
+
+        <div class="shrink-0 bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-2xl">
+            <div class="flex gap-3">
+                <input type="text" id="userInput" class="flex-1 bg-slate-950 border border-slate-700 p-4 rounded-xl text-lg outline-none focus:border-blue-500 transition" placeholder="Ask a question or say something in English..." onkeypress="if(event.key === 'Enter') document.getElementById('sendBtn').click()">
+                <button id="sendBtn" class="bg-blue-600 hover:bg-blue-500 px-8 py-4 rounded-xl font-bold text-lg transition flex items-center justify-center gap-2">
+                    Ask
+                    <div id="loader" class="hidden animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                </button>
+            </div>
+        </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // 1. Firebase Initialization
+        // 1. Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
             authDomain: "edulinki.firebaseapp.com",
@@ -77,10 +78,10 @@
         const auth = getAuth(app);
         const provider = new GoogleAuthProvider();
 
-        // UI Variables
         const authScreen = document.getElementById('authScreen');
         const mainApp = document.getElementById('mainApp');
         const pdfStatus = document.getElementById('pdfStatus');
+        const chatContainer = document.getElementById('chatContainer');
 
         // 2. Auth Listeners
         document.getElementById('loginBtn').onclick = () => signInWithPopup(auth, provider);
@@ -91,7 +92,7 @@
                 authScreen.classList.add('hidden');
                 mainApp.classList.remove('hidden');
                 setTimeout(() => mainApp.classList.add('opacity-100'), 50);
-                checkGroqKey();
+                checkGeminiKey();
                 loadDictionary();
             } else {
                 authScreen.classList.remove('hidden');
@@ -100,99 +101,118 @@
             }
         });
 
-        // 3. Groq API Key Handling
-        window.setGroqKey = () => {
-            const key = prompt("Enter your Groq API Key (gsk_...):");
-            if (key) localStorage.setItem('groq_api_key', key);
+        // 3. Gemini API Key Handling
+        window.setGeminiKey = () => {
+            const key = prompt("Enter your Google Gemini API Key:");
+            if (key) localStorage.setItem('gemini_api_key', key);
         };
-        function checkGroqKey() {
-            if (!localStorage.getItem('groq_api_key')) setGroqKey();
+        function checkGeminiKey() {
+            if (!localStorage.getItem('gemini_api_key')) setGeminiKey();
         }
 
-        // 4. Load PDF Dictionary
+        // 4. Load PDF Dictionary (RAG Memory)
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         let dictText = "";
 
         async function loadDictionary() {
             try {
-                // Ensure the PDF is in the public/data folder on your server!
                 const url = '/data/Eng-Dzo_Dictionary_2023_3ead53caad0798894c3908a9aedceb84.pdf';
                 const response = await fetch(url);
                 const buffer = await response.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument(buffer).promise;
                 
                 let text = "";
-                // Load first 1500 pages for the dictionary context
-                for (let i = 1; i <= Math.min(pdf.numPages, 1500); i++) {
+                for (let i = 1; i <= Math.min(pdf.numPages, 1000); i++) {
                     const page = await pdf.getPage(i);
                     const content = await page.getTextContent();
                     text += content.items.map(s => s.str).join(" ") + "\n";
                 }
                 dictText = text;
-                pdfStatus.innerHTML = `<span class="text-green-500">✅ 2023 DDC Dictionary Active</span>`;
+                pdfStatus.innerHTML = `<div class="w-2 h-2 rounded-full bg-green-500"></div> <span class="text-green-500 not-italic">Dictionary Active</span>`;
                 pdfStatus.classList.remove('animate-pulse');
             } catch (error) {
-                console.error(error);
-                pdfStatus.innerHTML = `<span class="text-red-500">❌ Error: PDF not found in /data/ folder</span>`;
+                pdfStatus.innerHTML = `<div class="w-2 h-2 rounded-full bg-red-500"></div> <span class="text-red-500">PDF not found in /data/</span>`;
                 pdfStatus.classList.remove('animate-pulse');
             }
         }
 
-        // 5. AI Translation Logic with Grammar Enforcement
-        document.getElementById('translateBtn').onclick = async () => {
-            const query = document.getElementById('userInput').value.trim();
-            const key = localStorage.getItem('groq_api_key');
-            const output = document.getElementById('output');
+        // Add message to UI
+        function appendMessage(text, isUser = false) {
+            const div = document.createElement('div');
+            if (isUser) {
+                div.className = "bg-slate-800 rounded-2xl p-4 ml-auto w-fit max-w-[80%] shadow-md border border-slate-700";
+                div.innerHTML = `<p class="text-lg">${text}</p>`;
+            } else {
+                div.className = "bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-lg border-l-4 border-l-blue-500 mr-12 max-w-[90%]";
+                div.innerHTML = `
+                    <p class="text-xs text-slate-500 font-bold mb-2 uppercase">Edulinki AI</p>
+                    <p class="dzongkha-text text-2xl leading-loose text-blue-50 whitespace-pre-wrap">${text}</p>
+                `;
+            }
+            chatContainer.appendChild(div);
+            chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll
+        }
+
+        // 5. Gemini API Call
+        document.getElementById('sendBtn').onclick = async () => {
+            const inputEl = document.getElementById('userInput');
+            const query = inputEl.value.trim();
+            const key = localStorage.getItem('gemini_api_key');
             const loader = document.getElementById('loader');
-            const resultBox = document.getElementById('resultBox');
 
             if (!query) return;
-            if (!key) return setGroqKey();
-            if (!dictText) return alert("Please wait for the dictionary to finish loading.");
-
+            if (!key) return setGeminiKey();
+            
+            appendMessage(query, true);
+            inputEl.value = '';
             loader.classList.remove('hidden');
-            resultBox.classList.remove('hidden');
-            output.innerText = "Analyzing grammar and fetching dictionary records...";
 
-            // Find context in PDF
+            // Find Dictionary Context
             const index = dictText.toLowerCase().indexOf(query.toLowerCase());
-            let context = "Word not directly found, use standard open-source Dzongkha knowledge.";
-            if (index !== -1) {
+            let context = "Context not explicitly found. Reply naturally in proper Dzongkha.";
+            if (index !== -1 && dictText) {
                 context = dictText.substring(Math.max(0, index - 800), index + 1500);
             }
 
             try {
-                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-                    method: "POST",
-                    headers: {
-                        "Authorization": `Bearer ${key}`,
-                        "Content-Type": "application/json"
+                // Gemini REST API Payload Structure
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+                
+                const payload = {
+                    systemInstruction: {
+                        parts: [{
+                            text: `You are Edulinki, a conversational AI representing Bhutan. 
+                            RULES:
+                            1. You must understand English but ALWAYS reply fluently in Dzongkha (Uchen script).
+                            2. Do not just translate the user's sentence. Converse with them. If they ask a question, answer it in Dzongkha. If they greet you, greet them back in Dzongkha.
+                            3. Use proper Dzongkha grammar (Subject-Object-Verb, honorifics where appropriate).
+                            4. NEVER use Tibetan script or Romanized Dzongkha.
+                            5. Reference this 2023 DDC Dictionary context for correct vocabulary if needed: [${context}]`
+                        }]
                     },
-                    body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
-                        messages: [
-                            {
-                                role: "system",
-                                content: `You are the Edulinki Dzongkha Translation Engine. 
-                                INSTRUCTIONS:
-                                1. Output strictly in the Dzongkha Uchen script. Do NOT use Romanized English or Tibetan.
-                                2. Apply proper Dzongkha grammar rules (Subject-Object-Verb architecture, correct use of genitive/ergative particles like གི་/གིས་).
-                                3. Make the sentence logically structured, natural, and respectful.
-                                4. Use the following vocabulary data from the official 2023 DDC dictionary if applicable:
-                                [DICTIONARY DATA: ${context}]
-                                
-                                Provide ONLY the translated Dzongkha text.`
-                            },
-                            { role: "user", content: `Translate: "${query}"` }
-                        ],
-                        temperature: 0.1
-                    })
+                    contents: [
+                        { role: "user", parts: [{ text: query }] }
+                    ],
+                    generationConfig: {
+                        temperature: 0.3 // Slightly higher than 0 for conversational flow, but low enough for accuracy
+                    }
+                };
+
+                const response = await fetch(endpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
-                output.innerText = data.choices[0].message.content;
+                
+                if (data.error) throw new Error(data.error.message);
+                
+                const aiResponseText = data.candidates[0].content.parts[0].text;
+                appendMessage(aiResponseText, false);
+
             } catch (err) {
-                output.innerText = "Error connecting to Llama-3 AI. Check your Groq Key.";
+                appendMessage("⚠️ Error: " + err.message, false);
             } finally {
                 loader.classList.add('hidden');
             }
