@@ -11,7 +11,8 @@
         .dzongkha-text { font-family: 'Noto Sans', sans-serif; }
         /* Custom scrollbar for output */
         ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-thumb { background: #ea580c; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #3b82f6; border-radius: 4px; }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen">
@@ -64,7 +65,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-        // 1. Firebase Configuration
+        // 1. Firebase Configuration (Your exact keys)
         const firebaseConfig = {
             apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
             authDomain: "edulinki.firebaseapp.com",
@@ -103,7 +104,7 @@
 
         // 3. Gemini API Key Handling
         window.setGeminiKey = () => {
-            const key = prompt("Enter your Google Gemini API Key:");
+            const key = prompt("Enter your Google Gemini API Key (AIzaSy...):");
             if (key) localStorage.setItem('gemini_api_key', key);
         };
         function checkGeminiKey() {
@@ -116,12 +117,15 @@
 
         async function loadDictionary() {
             try {
+                // Ensure this path matches exactly where your PDF is located!
                 const url = '/data/Eng-Dzo_Dictionary_2023_3ead53caad0798894c3908a9aedceb84.pdf';
                 const response = await fetch(url);
+                if (!response.ok) throw new Error("File not found");
                 const buffer = await response.arrayBuffer();
                 const pdf = await pdfjsLib.getDocument(buffer).promise;
                 
                 let text = "";
+                // Loading the first 1000 pages to ensure good speed and enough data
                 for (let i = 1; i <= Math.min(pdf.numPages, 1000); i++) {
                     const page = await pdf.getPage(i);
                     const content = await page.getTextContent();
@@ -150,7 +154,7 @@
                 `;
             }
             chatContainer.appendChild(div);
-            chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll
+            chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to bottom
         }
 
         // 5. Gemini API Call
@@ -167,7 +171,7 @@
             inputEl.value = '';
             loader.classList.remove('hidden');
 
-            // Find Dictionary Context
+            // Find Dictionary Context for RAG
             const index = dictText.toLowerCase().indexOf(query.toLowerCase());
             let context = "Context not explicitly found. Reply naturally in proper Dzongkha.";
             if (index !== -1 && dictText) {
@@ -175,8 +179,8 @@
             }
 
             try {
-                // Gemini REST API Payload Structure
-                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+                // FIXED ENDPOINT: Using gemini-2.5-flash
+                const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
                 
                 const payload = {
                     systemInstruction: {
@@ -194,7 +198,7 @@
                         { role: "user", parts: [{ text: query }] }
                     ],
                     generationConfig: {
-                        temperature: 0.3 // Slightly higher than 0 for conversational flow, but low enough for accuracy
+                        temperature: 0.3
                     }
                 };
 
