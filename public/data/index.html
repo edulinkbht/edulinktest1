@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edulinki | Dzongkha AI Dictionary</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Ethiopic&display=swap');
+        .dzongkha-text { font-family: 'Noto Sans', sans-serif; }
+        .glass { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(10px); }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen">
+
+    <div id="authOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950 p-4">
+        <div class="max-w-md w-full bg-slate-900 border border-slate-800 p-8 rounded-3xl text-center shadow-2xl">
+            <h1 class="text-4xl font-bold text-orange-500 mb-2">Edulinki</h1>
+            <p class="text-slate-400 mb-8">Login to access the 2023 DDC Dictionary AI</p>
+            <button id="loginBtn" class="w-full bg-white text-black font-bold py-4 rounded-xl flex items-center justify-center gap-3 hover:bg-slate-200 transition-all">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" class="w-6" alt="Google">
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <div id="mainDashboard" class="hidden opacity-0 transition-opacity duration-500 max-w-4xl mx-auto p-6">
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h2 class="text-2xl font-bold text-orange-500">Edulinki AI</h2>
+                <div id="pdfStatus" class="flex items-center gap-2 text-xs text-slate-500 italic mt-1">
+                    <div class="h-2 w-2 rounded-full bg-yellow-500 animate-pulse"></div>
+                    Initializing Dictionary Data...
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="updateGroqKey()" class="text-[10px] bg-slate-800 hover:bg-slate-700 px-3 py-2 rounded-lg border border-slate-700">API SETTINGS</button>
+                <button id="logoutBtn" class="text-[10px] text-red-400 font-bold hover:underline px-2">LOGOUT</button>
+            </div>
+        </header>
+
+        <main class="space-y-6">
+            <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-xl">
+                <div class="flex flex-col md:flex-row gap-3">
+                    <input type="text" id="searchInput" class="flex-1 bg-slate-950 border border-slate-700 p-4 rounded-2xl text-xl outline-none focus:ring-2 focus:ring-orange-500 transition-all" placeholder="Enter English word...">
+                    <button id="translateBtn" class="bg-orange-600 hover:bg-orange-500 px-10 py-4 rounded-2xl font-bold text-lg transition-all flex items-center justify-center gap-3">
+                        Translate
+                        <div id="btnLoader" class="hidden animate-spin h-5 w-5 border-2 border-white border-t-transparent rounded-full"></div>
+                    </button>
+                </div>
+            </div>
+
+            <div id="resultCard" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-1 h-full bg-orange-600"></div>
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4">Official Translation (DDC 2023)</h3>
+                    <div id="output" class="dzongkha-text text-4xl leading-relaxed text-orange-50 whitespace-pre-wrap"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        // Your Firebase config
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
+            authDomain: "edulinki.firebaseapp.com",
+            projectId: "edulinki",
+            storageBucket: "edulinki.firebasestorage.app",
+            messagingSenderId: "248886466474",
+            appId: "1:248886466474:web:160043201a6b28bafbbdd3",
+            measurementId: "G-MQBH12VL7N"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const provider = new GoogleAuthProvider();
+
+        // UI Elements
+        const authOverlay = document.getElementById('authOverlay');
+        const mainDashboard = document.getElementById('mainDashboard');
+        const pdfStatus = document.getElementById('pdfStatus');
+        
+        // 1. Authentication Handlers
+        document.getElementById('loginBtn').onclick = () => signInWithPopup(auth, provider);
+        document.getElementById('logoutBtn').onclick = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                authOverlay.classList.add('hidden');
+                mainDashboard.classList.remove('hidden');
+                setTimeout(() => mainDashboard.classList.add('opacity-100'), 100);
+                
+                checkGroqKey();
+                initDictionary();
+            } else {
+                authOverlay.classList.remove('hidden');
+                mainDashboard.classList.add('hidden');
+                mainDashboard.classList.remove('opacity-100');
+            }
+        });
+
+        // 2. Groq API Key Management
+        window.updateGroqKey = () => {
+            const key = prompt("Enter your Groq API Key (gsk_...):");
+            if (key) {
+                localStorage.setItem('edulinki_groq_key', key);
+                alert("Key saved locally!");
+            }
+        };
+
+        function checkGroqKey() {
+            if (!localStorage.getItem('edulinki_groq_key')) {
+                updateGroqKey();
+            }
+        }
+
+        // 3. PDF Dictionary Processing (RAG)
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        let fullDictionaryText = "";
+
+        async function initDictionary() {
+            try {
+                // Adjust this path to your exact local folder structure
+                const url = '/data/Eng-Dzo_Dictionary_2023_3ead53caad0798894c3908a9aedceb84.pdf';
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                
+                let combinedText = "";
+                // Processing first 1500 pages for the full dictionary
+                for (let i = 1; i <= Math.min(pdf.numPages, 1600); i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    combinedText += content.items.map(s => s.str).join(" ") + "\n";
+                }
+                
+                fullDictionaryText = combinedText;
+                pdfStatus.innerHTML = `<div class="h-2 w-2 rounded-full bg-green-500"></div> Dictionary Ready (2023 Edition)`;
+            } catch (err) {
+                console.error(err);
+                pdfStatus.innerHTML = `<div class="h-2 w-2 rounded-full bg-red-500"></div> Error: PDF not found in /public/data/`;
+            }
+        }
+
+        // 4. Translation Logic
+        document.getElementById('translateBtn').onclick = async () => {
+            const query = document.getElementById('searchInput').value.trim();
+            const groqKey = localStorage.getItem('edulinki_groq_key');
+            const output = document.getElementById('output');
+            const btnLoader = document.getElementById('btnLoader');
+            const resultCard = document.getElementById('resultCard');
+
+            if (!query) return;
+            if (!groqKey) return updateGroqKey();
+            if (!fullDictionaryText) return alert("Still loading dictionary data. Please wait...");
+
+            btnLoader.classList.remove('hidden');
+            resultCard.classList.remove('hidden');
+            output.innerText = "Consulting DDC Archives...";
+
+            // Search for word index in the PDF text
+            const index = fullDictionaryText.toLowerCase().indexOf(query.toLowerCase());
+            let context = "Word not found in dictionary text.";
+            if (index !== -1) {
+                // Grab 2000 characters around the found word for the AI
+                context = fullDictionaryText.substring(Math.max(0, index - 500), index + 1500);
+            }
+
+            try {
+                const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${groqKey}`,
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            {
+                                role: "system",
+                                content: `You are the Edulinki Official Dzongkha Translator. 
+                                USE ONLY the following dictionary data to translate. 
+                                DATA: ${context}
+                                Provide the Dzongkha (Uchen script) and pronunciation.`
+                            },
+                            { role: "user", content: `Translate the English word: ${query}` }
+                        ],
+                        temperature: 0.1
+                    })
+                });
+
+                const data = await response.json();
+                output.innerText = data.choices[0].message.content;
+            } catch (err) {
+                output.innerText = "Error: Invalid API Key or Connection issue.";
+            } finally {
+                btnLoader.classList.add('hidden');
+            }
+        };
+    </script>
+</body>
+</html>
