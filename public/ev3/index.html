@@ -740,6 +740,7 @@
             const username = (p.authorUsername || "user").replace('@', '');
             const content = (p.content || "").replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
             const postId = p.id || p.postId || "";
+            const postIndex = p.postIndex;
             
             // Fixed Engagement Counts - Ensure they pull real data
             const likesCount = p.likesCount !== undefined ? p.likesCount : (Array.isArray(p.likes) ? p.likes.length : 0);
@@ -776,7 +777,7 @@
                 }
             }
 
-            const postUrl = `https://edulinkbht.vercel.app/${username}/post/${postId}`;
+            const postUrl = postIndex ? `https://edulinkbht.vercel.app/${username}/post/${postIndex}` : `https://edulinkbht.vercel.app/${username}/post/${postId}`;
 
             return `
                 <div class="newton-post-card" style="background:#1a1a1a; border:1px solid #333; border-radius:16px; padding:16px; margin:16px 0; width:100%; max-width:550px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: transform 0.2s ease;">
@@ -857,6 +858,21 @@
             } catch (e) {
                 console.error("Error creating post:", e);
                 return { success: false, error: e.message };
+            }
+        }
+
+        async function getPostIndexForUser(authorId, postId) {
+            if (!window.db) return null;
+            try {
+                const { collection, getDocs, query, where, orderBy } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const q = query(collection(window.db, "posts"), where("authorId", "==", authorId), orderBy("timestamp", "asc"));
+                const snap = await getDocs(q);
+                const authorPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                const idx = authorPosts.findIndex(p => p.id === postId);
+                return idx !== -1 ? idx + 1 : null;
+            } catch (e) {
+                console.error("Error getting post index:", e);
+                return null;
             }
         }
 
@@ -1377,10 +1393,16 @@
                     const finalKeywords = quoteMatch ? quoteMatch[1].trim() : searchKeywords;
 
                     appendLoading(loadingId, 'Searching');
-                    searchPosts(finalKeywords || "latest").then(posts => {
+                    searchPosts(finalKeywords || "latest").then(async posts => {
                         if (posts.length > 0) {
                             const topPosts = posts.slice(0, 5);
                             let responseText = finalKeywords ? `I found ${posts.length} posts matching your search:\n\n` : "Here are the latest posts from EduLink:\n\n";
+                            
+                            // Calculate indices for topPosts to support index-based links
+                            for (const p of topPosts) {
+                                p.postIndex = await getPostIndexForUser(p.authorId, p.id);
+                            }
+
                             topPosts.forEach(p => {
                                 const cleanContent = (p.content || "").replace(/"/g, '\\"').replace(/\n/g, '\\n');
                                 const cleanMedia = Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []);
@@ -1391,6 +1413,7 @@
                                 authorAvatar: p.authorAvatar || "",
                                 content: cleanContent,
                                 media: cleanMedia,
+                                postIndex: p.postIndex,
                                 likesCount: Array.isArray(p.likes) ? p.likes.length : 0,
                                 commentsCount: Array.isArray(p.comments) ? p.comments.length : 0
                             });
