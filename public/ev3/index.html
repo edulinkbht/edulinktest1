@@ -876,7 +876,7 @@
             }
         }
 
-        async function getPostByUsernameAndIndex(username, index) {
+        async function getPostByUsernameAndReference(username, reference) {
             if (!window.db) return null;
             try {
                 const { collection, getDocs, query, where, limit, doc, getDoc, orderBy } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
@@ -890,23 +890,39 @@
                 const authorId = userDoc.id;
                 const userData = userDoc.data();
 
-                // 2. Fetch author's posts sorted by timestamp ASC
+                // 2. Fetch author's posts sorted by timestamp ASC to determine index
                 const postsQ = query(collection(window.db, "posts"), where("authorId", "==", authorId), orderBy("timestamp", "asc"));
                 const postsSnap = await getDocs(postsQ);
                 const authorPosts = postsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
                 
-                const post = authorPosts[index - 1];
+                let post = null;
+                let postIndex = null;
+
+                // Check if reference is a numeric index or a post ID
+                if (/^\d+$/.test(reference)) {
+                    const idx = parseInt(reference);
+                    post = authorPosts[idx - 1];
+                    postIndex = idx;
+                } else {
+                    // Treat as post ID
+                    post = authorPosts.find(p => p.id === reference);
+                    if (post) {
+                        const idx = authorPosts.findIndex(p => p.id === reference);
+                        postIndex = idx !== -1 ? idx + 1 : null;
+                    }
+                }
+
                 if (!post) return null;
 
                 // Add author info to post object
                 post.authorName = userData.name || "User";
                 post.authorUsername = userData.username || username;
                 post.authorAvatar = userData.avatar || userData.photoURL || "";
-                post.postIndex = index;
+                post.postIndex = postIndex;
 
                 return post;
             } catch (e) {
-                console.error("Error fetching post by index:", e);
+                console.error("Error fetching post by reference:", e);
                 return null;
             }
         }
@@ -1094,6 +1110,7 @@
                                 authorUsername: jsonStr.match(/"authorUsername"\s*:\s*"([^"]*)"/)?.[1],
                                 authorAvatar: jsonStr.match(/"authorAvatar"\s*:\s*"([^"]*)"/)?.[1],
                                 media: jsonStr.match(/"media"\s*:\s*\["([^"]*)"\]/)?.[1],
+                                postIndex: jsonStr.match(/"postIndex"\s*:\s*(\d+)/)?.[1],
                                 likes: [],
                                 comments: []
                             });
@@ -1328,9 +1345,9 @@
                         
                         ### SMART SEARCH & LINKS:
                         1. If the user provided a link, the system has already fetched it. You should answer their question based on that post's content.
-                        2. ALWAYS use index-based links for EduLink posts: https://edulinkbht.vercel.app/username/post/index (e.g., https://edulinkbht.vercel.app/ngawang/post/1)
-                        3. NEVER use the raw post ID (like R6x8IQneErx3r0oFqGKX) in links. Always use the numeric index.
-                        4. If you mention a post, you can use the [POST:{"authorName":"...","content":"...","postIndex":X}] format to render a card. Ensure you include the "postIndex".
+                        2. ALWAYS use index-based links for EduLink posts: https://edulinkbht.vercel.app/username/post/postcount (e.g., https://edulinkbht.vercel.app/ngawang/post/1)
+                        3. NEVER use the raw Firebase Document ID (like R6x8IQneErx3r0oFqGKX) in any link you generate.
+                        4. If you mention a post, you can use the [POST:{"authorName":"...","content":"...","postIndex":X}] format to render a card. The "postIndex" is the numeric count of the post for that user.
                         
                         ### DATABASE CONTEXT:
                         ${additionalContext || "No posts provided."}` 
@@ -1426,14 +1443,14 @@
                 appendLoading(newId, status);
                 
                 // If the last message was a link, we should probably re-detect it or just call fetchAIResponse
-                const postLinkMatch = lastUserMsg.content.match(/https?:\/\/edulinkbht\.vercel\.app\/([^/]+)\/post\/(\d+)/);
-                if (postLinkMatch) {
-                    const username = postLinkMatch[1];
-                    const index = parseInt(postLinkMatch[2]);
-                    getPostByUsernameAndIndex(username, index).then(post => {
-                        fetchAIResponse(newId, false, post);
-                    });
-                } else {
+                 const postLinkMatch = lastUserMsg.content.match(/https?:\/\/edulinkbht\.vercel\.app\/([^/]+)\/post\/([^/?#\s]+)/);
+                 if (postLinkMatch) {
+                     const username = postLinkMatch[1];
+                     const reference = postLinkMatch[2];
+                     getPostByUsernameAndReference(username, reference).then(post => {
+                         fetchAIResponse(newId, false, post);
+                     });
+                 } else {
                     fetchAIResponse(newId);
                 }
             }
@@ -1463,26 +1480,26 @@
             
                 // EduLink Mode Logic
                 if (window.selectedModel === 'EduLink') {
-                    // Check for direct post link: https://edulinkbht.vercel.app/:username/post/:index
-                    const postLinkMatch = text.match(/https?:\/\/edulinkbht\.vercel\.app\/([^/]+)\/post\/(\d+)/);
+                    // Check for direct post link: https://edulinkbht.vercel.app/:username/post/:index_or_id
+                    const postLinkMatch = text.match(/https?:\/\/edulinkbht\.vercel\.app\/([^/]+)\/post\/([^/?#\s]+)/);
                     
                     if (postLinkMatch) {
-                         const username = postLinkMatch[1];
-                         const index = parseInt(postLinkMatch[2]);
-                         
-                         appendLoading(loadingId, 'Fetching Post');
-                         getPostByUsernameAndIndex(username, index).then(post => {
-                             if (post) {
-                                 // Add post context to conversation for AI to "see" it
-                                 const postContext = `[USER PROVIDED LINK TO POST]\nAuthor: ${post.authorName} (@${post.authorUsername})\nContent: ${post.content}\nPost Index: ${post.postIndex}`;
-                                 
-                                 // We'll add this as a hidden system message or just part of the conversation
-                                 conversationHistory.push({ role: "system", content: `Context for the post the user just linked: ${postContext}` });
+                        const username = postLinkMatch[1];
+                        const reference = postLinkMatch[2];
+                        
+                        appendLoading(loadingId, 'Fetching Post');
+                        getPostByUsernameAndReference(username, reference).then(post => {
+                            if (post) {
+                                // Add post context to conversation for AI to "see" it
+                                const postContext = `[USER PROVIDED LINK TO POST]\nAuthor: ${post.authorName} (@${post.authorUsername})\nContent: ${post.content}\nPost Index: ${post.postIndex}`;
+                                
+                                // We'll add this as a hidden system message or just part of the conversation
+                                conversationHistory.push({ role: "system", content: `Context for the post the user just linked: ${postContext}` });
 
-                                 // Now call AI to actually respond to the user's query about this post
-                                 appendLoading(loadingId, 'Analyzing');
-                                 fetchAIResponse(loadingId, false, post); // Pass post object to fetchAIResponse
-                             } else {
+                                // Now call AI to actually respond to the user's query about this post
+                                appendLoading(loadingId, 'Analyzing');
+                                fetchAIResponse(loadingId, false, post); // Pass post object to fetchAIResponse
+                            } else {
                                  // Fallback to normal AI response if post not found
                                  appendLoading(loadingId, 'Analyzing');
                                  fetchAIResponse(loadingId, true);
