@@ -876,6 +876,41 @@
             }
         }
 
+        async function getPostByUsernameAndIndex(username, index) {
+            if (!window.db) return null;
+            try {
+                const { collection, getDocs, query, where, limit, doc, getDoc, orderBy } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                
+                // 1. Find user by username
+                const usersQ = query(collection(window.db, "users"), where("username", "==", username.replace('@', '')), limit(1));
+                const userSnap = await getDocs(usersQ);
+                if (userSnap.empty) return null;
+                
+                const userDoc = userSnap.docs[0];
+                const authorId = userDoc.id;
+                const userData = userDoc.data();
+
+                // 2. Fetch author's posts sorted by timestamp ASC
+                const postsQ = query(collection(window.db, "posts"), where("authorId", "==", authorId), orderBy("timestamp", "asc"));
+                const postsSnap = await getDocs(postsQ);
+                const authorPosts = postsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                
+                const post = authorPosts[index - 1];
+                if (!post) return null;
+
+                // Add author info to post object
+                post.authorName = userData.name || "User";
+                post.authorUsername = userData.username || username;
+                post.authorAvatar = userData.avatar || userData.photoURL || "";
+                post.postIndex = index;
+
+                return post;
+            } catch (e) {
+                console.error("Error fetching post by index:", e);
+                return null;
+            }
+        }
+
         async function searchPosts(keyword) {
             if (!window.db) return [];
             try {
@@ -1230,7 +1265,7 @@
             }
         }
 
-        async function fetchAIResponse(loadingId, isEduLinkHelp = false) {
+        async function fetchAIResponse(loadingId, isEduLinkHelp = false, linkedPost = null) {
             const apiKey = getApiKey();
             if (!apiKey) return;
 
@@ -1251,7 +1286,10 @@
                     
                     // Fetch latest activity for AI context to find "related" things
                     const latestBatch = await getLatestPosts(20);
-                    const contextFeed = latestBatch.map(p => `[${p.authorName}: ${p.content.substring(0,100)}]`).join('\n');
+                    for (const p of latestBatch) {
+                        p.postIndex = await getPostIndexForUser(p.authorId, p.id);
+                    }
+                    const contextFeed = latestBatch.map(p => `[${p.authorName} (@${p.authorUsername}) - Index: ${p.postIndex}: ${p.content.substring(0,100)}]`).join('\n');
 
                     messagesToSend.unshift({ 
                         role: "system", 
@@ -1273,10 +1311,13 @@
                     if (lastUserMsg.length > 3) {
                         // Fetch a very small sample just for AI context if needed
                         const posts = await getLatestPosts(3); 
+                        for (const p of posts) {
+                            p.postIndex = await getPostIndexForUser(p.authorId, p.id);
+                        }
 
                         additionalContext = "\n\n### RECENT ACTIVITY (CONTEXT ONLY):\n" + posts.map(p => {
                             const content = (p.content || "").replace(/\n/g, ' ').substring(0, 200);
-                            return `[Post by ${p.authorName}: ${content}]`;
+                            return `[Post by ${p.authorName} (@${p.authorUsername}) - Index: ${p.postIndex}: ${content}]`;
                         }).join('\n');
                     }
 
@@ -1284,9 +1325,10 @@
                         role: "system", 
                         content: `You are Newton in EduLink Mode. 
                         
-                        ### SMART SEARCH:
-                        If the user is asking to find a specific post, the system has already tried to fetch it. 
-                        If you see no posts in your context, politely inform the user or answer general questions.
+                        ### SMART SEARCH & LINKS:
+                        1. If the user provided a link, the system has already fetched it. You should answer their question based on that post's content.
+                        2. ALWAYS use index-based links for EduLink posts: https://edulinkbht.vercel.app/username/post/index
+                        3. If you mention a post, you can use the [POST:{"authorName":"...","content":"..."}] format to render a card.
                         
                         ### DATABASE CONTEXT:
                         ${additionalContext || "No posts provided."}` 
@@ -1314,7 +1356,25 @@
                 }
 
                 const data = await response.json();
-                const aiResponseText = data.choices[0].message.content;
+                let aiResponseText = data.choices[0].message.content;
+
+                // If we had a linked post, prepend the card rendering to the AI's response
+                if (linkedPost) {
+                    const cleanContent = (linkedPost.content || "").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                    const cleanMedia = Array.isArray(linkedPost.media) ? linkedPost.media : (linkedPost.media ? [linkedPost.media] : []);
+                    const postJson = JSON.stringify({
+                        id: linkedPost.id,
+                        authorName: linkedPost.authorName,
+                        authorUsername: linkedPost.authorUsername,
+                        authorAvatar: linkedPost.authorAvatar,
+                        content: cleanContent,
+                        media: cleanMedia,
+                        postIndex: linkedPost.postIndex,
+                        likesCount: Array.isArray(linkedPost.likes) ? linkedPost.likes.length : 0,
+                        commentsCount: Array.isArray(linkedPost.comments) ? linkedPost.comments.length : 0
+                    });
+                    aiResponseText = `[POST:${postJson}]\n\n${aiResponseText}`;
+                }
 
                 conversationHistory.push({ role: "assistant", content: aiResponseText });
                 replaceLoadingWithMessage(loadingId, parseMarkdown(aiResponseText), aiResponseText);
@@ -1350,9 +1410,11 @@
             const el = document.getElementById(loadingId);
             if (el) el.remove();
             
-            // Remove last assistant message if it was interrupted
-            if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length-1].role === 'assistant') {
-                // Do nothing if it's already there, but here it likely isn't because of AbortError
+            // Check for previous linked post in history if we're retrying a link-based query
+            const lastSystemMsg = conversationHistory.findLast(m => m.role === 'system' && m.content.includes('[USER PROVIDED LINK TO POST]'));
+            let linkedPostData = null;
+            if (lastSystemMsg) {
+                // This is a bit complex to reconstruct, but we can at least try to see if the last user message had a link
             }
             
             const lastUserMsg = conversationHistory.findLast(m => m.role === 'user');
@@ -1360,7 +1422,18 @@
                 const newId = 'ai-msg-' + Date.now();
                 const status = determineThinkingStatus(lastUserMsg.content);
                 appendLoading(newId, status);
-                fetchAIResponse(newId);
+                
+                // If the last message was a link, we should probably re-detect it or just call fetchAIResponse
+                const postLinkMatch = lastUserMsg.content.match(/https?:\/\/edulinkbht\.vercel\.app\/([^/]+)\/post\/(\d+)/);
+                if (postLinkMatch) {
+                    const username = postLinkMatch[1];
+                    const index = parseInt(postLinkMatch[2]);
+                    getPostByUsernameAndIndex(username, index).then(post => {
+                        fetchAIResponse(newId, false, post);
+                    });
+                } else {
+                    fetchAIResponse(newId);
+                }
             }
         }
 
@@ -1388,6 +1461,34 @@
             
                 // EduLink Mode Logic
                 if (window.selectedModel === 'EduLink') {
+                    // Check for direct post link: https://edulinkbht.vercel.app/:username/post/:index
+                    const postLinkMatch = text.match(/https?:\/\/edulinkbht\.vercel\.app\/([^/]+)\/post\/(\d+)/);
+                    
+                    if (postLinkMatch) {
+                         const username = postLinkMatch[1];
+                         const index = parseInt(postLinkMatch[2]);
+                         
+                         appendLoading(loadingId, 'Fetching Post');
+                         getPostByUsernameAndIndex(username, index).then(post => {
+                             if (post) {
+                                 // Add post context to conversation for AI to "see" it
+                                 const postContext = `[USER PROVIDED LINK TO POST]\nAuthor: ${post.authorName} (@${post.authorUsername})\nContent: ${post.content}\nPost Index: ${post.postIndex}`;
+                                 
+                                 // We'll add this as a hidden system message or just part of the conversation
+                                 conversationHistory.push({ role: "system", content: `Context for the post the user just linked: ${postContext}` });
+
+                                 // Now call AI to actually respond to the user's query about this post
+                                 appendLoading(loadingId, 'Analyzing');
+                                 fetchAIResponse(loadingId, false, post); // Pass post object to fetchAIResponse
+                             } else {
+                                 // Fallback to normal AI response if post not found
+                                 appendLoading(loadingId, 'Analyzing');
+                                 fetchAIResponse(loadingId, true);
+                             }
+                         });
+                         return;
+                     }
+
                     const searchKeywords = text.replace(/\b(find|search|the|post|of|from|saying|about|give|me|show|latest|any|on|by)\b/gi, '').trim();
                     const quoteMatch = text.match(/\((.*?)\)/);
                     const finalKeywords = quoteMatch ? quoteMatch[1].trim() : searchKeywords;
