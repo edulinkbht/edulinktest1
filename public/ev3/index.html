@@ -777,7 +777,7 @@
                 }
             }
 
-            const postUrl = postIndex ? `https://edulinkbht.vercel.app/${username}/post/${postIndex}` : `https://edulinkbht.vercel.app/${username}/post/${postId}`;
+            const postUrl = postIndex ? `${window.location.origin}/${username}/post/${postIndex}` : `${window.location.origin}/feed?postId=${postId}`;
 
             return `
                 <div class="newton-post-card" style="background:#1a1a1a; border:1px solid #333; border-radius:16px; padding:16px; margin:16px 0; width:100%; max-width:550px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); transition: transform 0.2s ease;">
@@ -864,10 +864,18 @@
         async function getPostIndexForUser(authorId, postId) {
             if (!window.db) return null;
             try {
-                const { collection, getDocs, query, where, orderBy } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
-                const q = query(collection(window.db, "posts"), where("authorId", "==", authorId), orderBy("timestamp", "asc"));
+                const { collection, getDocs, query, where } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                // Fetch all posts by this author - sorting in memory to avoid Firestore index requirements
+                const q = query(collection(window.db, "posts"), where("authorId", "==", authorId));
                 const snap = await getDocs(q);
                 const authorPosts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+                
+                authorPosts.sort((a, b) => {
+                    const ta = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp || 0).getTime();
+                    const tb = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp || 0).getTime();
+                    return ta - tb;
+                });
+
                 const idx = authorPosts.findIndex(p => p.id === postId);
                 return idx !== -1 ? idx + 1 : null;
             } catch (e) {
@@ -879,7 +887,7 @@
         async function getPostByUsernameAndReference(username, reference) {
             if (!window.db) return null;
             try {
-                const { collection, getDocs, query, where, limit, doc, getDoc, orderBy } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                const { collection, getDocs, query, where, limit } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
                 
                 // 1. Find user by username
                 const usersQ = query(collection(window.db, "users"), where("username", "==", username.replace('@', '')), limit(1));
@@ -890,10 +898,16 @@
                 const authorId = userDoc.id;
                 const userData = userDoc.data();
 
-                // 2. Fetch author's posts sorted by timestamp ASC to determine index
-                const postsQ = query(collection(window.db, "posts"), where("authorId", "==", authorId), orderBy("timestamp", "asc"));
+                // 2. Fetch author's posts and sort in memory to determine index
+                const postsQ = query(collection(window.db, "posts"), where("authorId", "==", authorId));
                 const postsSnap = await getDocs(postsQ);
                 const authorPosts = postsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+                
+                authorPosts.sort((a, b) => {
+                    const ta = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp || 0).getTime();
+                    const tb = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp || 0).getTime();
+                    return ta - tb;
+                });
                 
                 let post = null;
                 let postIndex = null;
@@ -1316,7 +1330,7 @@
                         1. **Spelling Correction**: If the search looks like it has typos (e.g., "frank ocian"), politely suggest the correct spelling and ask if they meant that.
                         2. **Related Posts**: Based on the context of recent activity provided below, suggest topics or authors that are *actually* in the database that might be related to what they want.
                         3. **Friendly Guidance**: Don't just say "no results". Help them find something interesting on EduLink.
-                        4. **Links**: ALWAYS use index-based links: https://edulinkbht.vercel.app/username/post/index (e.g., https://edulinkbht.vercel.app/ngawang/post/1). NEVER use raw post IDs.
+                        4. **Links**: ALWAYS use index-based links: ${window.location.origin}/username/post/postcount (e.g., ${window.location.origin}/ngawang/post/1). NEVER use raw post IDs.
                         
                         ### CURRENT FEED CONTEXT (For Related Suggestions):
                         ${contextFeed || "The feed is currently quiet."}` 
@@ -1345,8 +1359,8 @@
                         
                         ### SMART SEARCH & LINKS:
                         1. If the user provided a link, the system has already fetched it. You should answer their question based on that post's content.
-                        2. ALWAYS use index-based links for EduLink posts: https://edulinkbht.vercel.app/username/post/postcount (e.g., https://edulinkbht.vercel.app/ngawang/post/1)
-                        3. NEVER use the raw Firebase Document ID (like R6x8IQneErx3r0oFqGKX) in any link you generate.
+                        2. ALWAYS use index-based links for EduLink posts: ${window.location.origin}/username/post/postcount (e.g., ${window.location.origin}/ngawang/post/1)
+                        3. NEVER use the raw Firebase Document ID (like R6x8IQneErx3r0oFqGKX) in any link or text. IF YOU SEE AN ID, CONVERT IT TO THE NUMERIC INDEX.
                         4. If you mention a post, you can use the [POST:{"authorName":"...","content":"...","postIndex":X}] format to render a card. The "postIndex" is the numeric count of the post for that user.
                         
                         ### DATABASE CONTEXT:
