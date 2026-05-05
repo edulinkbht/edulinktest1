@@ -6,27 +6,25 @@
     <title>Newton</title>
     <link rel="icon" href="https://i.imghippo.com/files/YVls8804tw.png" type="image/png">
     <style>
+        /* --- Dark Mode Palette --- */
         :root {
-            /* Dark Mode Palette */
-            --bg-main: #212121; 
-            --bg-sidebar: #1a1a1a;
-            --bg-input: #2f2f2f;
-            --bg-user-msg: #2f2f2f; 
+            --bg-main: #171717; 
+            --bg-sidebar: #0f0f0f;
+            --bg-input: #212121;
+            --bg-user-msg: #212121; 
             --bg-chip: rgba(255, 255, 255, 0.05);
             
-            --text-primary: #e5e5e5;
-            --text-secondary: #a1a1a1;
-            --text-tertiary: #737373;
+            --text-primary: #ececec;
+            --text-secondary: #b4b4b4;
+            --text-tertiary: #8e8e8e;
             
-            --border-color: #3d3d3d;
-            --accent-color: #d97757; /* Accent copper color */
+            --border-color: #303030;
+            --accent-color: #d97757;
             
-            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-            --font-serif: "Merriweather", Georgia, Cambria, "Times New Roman", Times, serif;
-            --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-serif: "Merriweather", Georgia, serif;
+            --font-mono: "Fira Code", monospace;
         }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
             font-family: var(--font-sans);
@@ -38,148 +36,18 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* --- Dropdown Menu --- */
-        .dropdown-menu {
-            position: absolute;
-            bottom: 100%;
-            left: 0;
-            background: #2f2f2f;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-            display: none;
-            flex-direction: column;
-            min-width: 180px;
-            z-index: 100;
-            margin-bottom: 8px;
-            overflow: hidden;
-            animation: dropdownFade 0.2s ease;
-        }
-        @keyframes dropdownFade { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .dropdown-item {
-            padding: 12px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-            cursor: pointer;
-            transition: background 0.2s;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .dropdown-item:last-child { border-bottom: none; }
-        .dropdown-item:hover { background: rgba(255,255,255,0.05); }
-        .dropdown-item.active { background: rgba(217, 119, 87, 0.1); }
-        .dropdown-item .item-title { font-weight: 600; font-size: 14px; color: #fff; }
-        .dropdown-item .item-desc { font-size: 12px; color: var(--text-secondary); }
-
-        /* --- Auth Overlay Modal --- */
-        .auth-overlay {
-            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(8px);
-            z-index: 9999; display: flex; align-items: center; justify-content: center;
-            opacity: 1; transition: opacity 0.3s ease;
-        }
-        .auth-card {
-            width: 100%; max-width: 400px; background: var(--bg-sidebar); border: 1px solid var(--border-color);
-            border-radius: 16px; padding: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center;
-            animation: slideUp 0.4s ease;
-        }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .auth-logo { width: 56px; height: 56px; border-radius: 12px; margin-bottom: 16px; }
-        .auth-title { font-family: var(--font-sans); font-weight: 600; font-size: 24px; color: var(--text-primary); margin-bottom: 8px; }
-        .auth-subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 28px; }
-        .auth-input {
-            width: 100%; padding: 12px 16px; margin-bottom: 16px; background: var(--bg-input); border: 1px solid var(--border-color);
-            border-radius: 8px; color: var(--text-primary); font-size: 15px; outline: none;
-        }
-        .auth-input:focus { border-color: var(--accent-color); }
-        .btn {
-            width: 100%; padding: 12px; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; border: none; transition: all 0.2s;
-        }
-        .btn-primary { background: var(--accent-color); color: #fff; }
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-google { background: #fff; color: #111; margin-top: 16px; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-google:hover { background: #eee; }
-        .auth-divider { display: flex; align-items: center; text-align: center; color: var(--text-tertiary); font-size: 12px; margin: 24px 0; }
-        .auth-divider::before, .auth-divider::after { content: ''; flex: 1; border-bottom: 1px solid var(--border-color); }
-        .auth-divider:not(:empty)::before { margin-right: .25em; }
-        .auth-divider:not(:empty)::after { margin-left: .25em; }
-        .auth-error { color: #ff6b6b; font-size: 13px; margin-bottom: 16px; display: none; }
-
-        /* --- Sidebar --- */
-        .sidebar {
-            width: 64px; background-color: var(--bg-sidebar); display: flex; flex-direction: column; align-items: center;
-            padding: 20px 0; border-right: 1px solid var(--border-color); z-index: 10;
-        }
-        .nav-icons { display: flex; flex-direction: column; gap: 20px; flex: 1; }
-        .icon-btn {
-            background: none; border: none; color: var(--text-secondary); cursor: pointer; width: 36px; height: 36px;
-            border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: all 0.2s;
-        }
-        .icon-btn:hover { background-color: var(--bg-chip); color: var(--text-primary); }
-        .icon-btn svg { width: 20px; height: 20px; stroke: currentColor; stroke-width: 1.5; fill: none; }
-        .user-profile {
-            position: relative; width: 32px; height: 32px; border-radius: 50%; background-color: #e5e5e5; color: #111;
-            display: flex; align-items: center; justify-content: center; font-weight: 600; font-size: 13px; cursor: pointer;
-            margin-bottom: 10px; text-transform: uppercase;
-        }
-        .status-dot {
-            position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; background-color: #4d90fe;
-            border: 2px solid var(--bg-sidebar); border-radius: 50%;
-        }
-
-        /* --- Main Content Area --- */
-        .main-content { flex: 1; display: flex; flex-direction: column; position: relative; height: 100vh; }
-        .top-right-nav { position: absolute; top: 20px; right: 20px; z-index: 5; }
-
-        /* --- Landing View --- */
-        .landing-content {
-            flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-            padding: 0 20px; transform: translateY(-8vh); transition: opacity 0.3s ease;
-        }
-        .greeting {
-            font-family: var(--font-serif); font-size: 38px; font-weight: 400; margin-bottom: 40px;
-            display: flex; flex-direction: column; align-items: center; gap: 16px; letter-spacing: -0.2px; color: #f0f0f0; text-align: center;
-        }
-        .greeting-logo { 
-            width: 44px;
-            height: 44px;
-            object-fit: contain;
-            margin-bottom: 8px;
-        }
-
-        /* --- Chat View --- */
-        .chat-history {
-            display: none; flex: 1; overflow-y: auto; padding: 60px 20px 20px 20px;
-            flex-direction: column; align-items: center; width: 100%;
-            scroll-behavior: smooth;
-        }
-        .message-wrapper { width: 100%; max-width: 760px; display: flex; flex-direction: column; }
-
-        /* User Message */
-        .user-message-container {
-            align-self: flex-end; background-color: var(--bg-user-msg); border-radius: 16px;
-            max-width: 85%; margin-bottom: 12px; overflow: hidden;
-            border: 1px solid var(--border-color);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-        }
-        .user-message-content { padding: 14px 18px; font-size: 15px; font-family: var(--font-sans); line-height: 1.5; white-space: pre-wrap; }
-        
-        .user-action-bar {
-            display: flex; gap: 4px; align-self: flex-end; margin-bottom: 32px; margin-top: 4px; opacity: 0; transition: opacity 0.2s;
-        }
-        .user-message-wrapper:hover .user-action-bar { opacity: 1; }
-        .user-message-wrapper { display: flex; flex-direction: column; width: 100%; align-items: flex-end; }
-
-        /* AI Message (Reverted to Serif per request) */
+        /* --- AI Message (Claude Style) --- */
         .ai-message {
             align-self: flex-start; max-width: 100%; font-family: var(--font-serif);
-            font-size: 16px; line-height: 1.65; margin-bottom: 12px; color: var(--text-primary); width: 100%;
+            font-size: 16px; line-height: 1.6; margin-bottom: 8px; color: #ececec; width: 100%;
+            font-weight: 400; letter-spacing: -0.01em;
         }
-        .ai-message p { margin-bottom: 16px; }
+        .ai-message p { margin-bottom: 20px; }
         .ai-message strong { color: #fff; font-weight: 600; }
-        .ai-message em { font-style: italic; }
+        .ai-message em { font-style: italic; color: #fff; }
         .ai-message h1, .ai-message h2, .ai-message h3 {
-            color: #fff; margin-top: 32px; margin-bottom: 16px; font-weight: 600; line-height: 1.3; font-family: var(--font-serif);
+            color: #fff; margin-top: 32px; margin-bottom: 16px; font-weight: 600; line-height: 1.25;
+            font-family: var(--font-serif);
         }
         .ai-message h1 { font-size: 1.5em; }
         .ai-message h2 { font-size: 1.25em; border-bottom: 1px solid var(--border-color); padding-bottom: 8px; }
@@ -739,68 +607,63 @@
             const name = p.authorName || "User";
             const username = p.authorUsername ? `@${p.authorUsername}` : "";
             const content = (p.content || "").replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
-            const likes = p.likes?.length || 0;
-            const comments = p.comments?.length || 0;
-            const timestamp = p.timestamp ? (p.timestamp.toDate ? p.timestamp.toDate().toLocaleDateString() : new Date(p.timestamp).toLocaleDateString()) : "";
+            const likes = (Array.isArray(p.likes) ? p.likes.length : (parseInt(p.likes) || 0));
+            const comments = (Array.isArray(p.comments) ? p.comments.length : (parseInt(p.comments) || 0));
             
             let mediaHtml = "";
             if (p.media) {
                 const mediaArr = Array.isArray(p.media) ? p.media : [p.media];
                 if (mediaArr.length > 1) {
-                    // Carousel Design
+                    // Functional Carousel
+                    const carouselId = `carousel-${Math.random().toString(36).substr(2, 9)}`;
                     let slides = '';
                     mediaArr.forEach((url, i) => {
                         if (!url) return;
                         const isVid = url.includes("video") || url.includes(".mp4");
-                        slides += `<div class="carousel-slide" style="flex: 0 0 100%; width: 100%; display: ${i === 0 ? 'block' : 'none'};">
-                            ${isVid ? `<video src="${url}" controls preload="metadata" style="width:100%; aspect-ratio: 1; object-fit: cover; display:block;"></video>` : `<img src="${url}" loading="lazy" style="width:100%; aspect-ratio: 1; object-fit: cover; display:block;">`}
+                        slides += `<div class="carousel-slide-${carouselId}" style="flex: 0 0 100%; width: 100%; display: ${i === 0 ? 'block' : 'none'}; height: 100%;">
+                            ${isVid ? `<video src="${url}" controls preload="metadata" style="width:100%; height:100%; object-fit: cover; display:block;"></video>` : `<img src="${url}" loading="lazy" style="width:100%; height:100%; object-fit: cover; display:block;">`}
                         </div>`;
                     });
                     mediaHtml = `
-                        <div class="post-carousel" style="position: relative; margin-top: 12px; border-radius: 12px; overflow: hidden; background: #000;">
-                            <div class="carousel-inner" style="display: flex; width: 100%; transition: transform 0.3s ease;">
+                        <div class="post-carousel" style="position: relative; margin-top: 12px; border-radius: 12px; overflow: hidden; background: #000; aspect-ratio: 1;">
+                            <div id="${carouselId}-inner" style="display: flex; width: 100%; height: 100%;">
                                 ${slides}
                             </div>
-                            ${mediaArr.length > 1 ? `
-                                <div style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 4px;">
-                                    ${mediaArr.map((_, i) => `<div style="width: 6px; height: 6px; border-radius: 50%; background: ${i === 0 ? '#fff' : 'rgba(255,255,255,0.5)'};"></div>`).join('')}
-                                </div>
-                                <button onclick="const slides = this.parentElement.querySelectorAll('.carousel-slide'); let active = 0; slides.forEach((s, i) => { if(s.style.display === 'block') active = i; s.style.display = 'none'; }); const next = (active + 1) % slides.length; slides[next].style.display = 'block'; event.stopPropagation();" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: #fff; border: none; width: 30px; height: 30px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center;"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>
-                            ` : ''}
+                            <div style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 2;">
+                                ${mediaArr.map((_, i) => `<div class="dot-${carouselId}" style="width: 6px; height: 6px; border-radius: 50%; background: ${i === 0 ? '#fff' : 'rgba(255,255,255,0.4)'}; transition: all 0.2s;"></div>`).join('')}
+                            </div>
+                            <button onclick="const s = document.querySelectorAll('.carousel-slide-${carouselId}'); const d = document.querySelectorAll('.dot-${carouselId}'); let idx=0; s.forEach((el,i)=>{if(el.style.display==='block')idx=i; el.style.display='none'; d[i].style.background='rgba(255,255,255,0.4)';}); const n=(idx+1)%s.length; s[n].style.display='block'; d[n].style.background='#fff'; event.stopPropagation();" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.5); color: #fff; border: none; width: 32px; height: 32px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; backdrop-filter: blur(4px); border: 1px solid rgba(255,255,255,0.1);"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m9 18 6-6-6-6"/></svg></button>
                         </div>`;
                 } else if (mediaArr.length === 1 && mediaArr[0]) {
                     const url = mediaArr[0];
                     const isVid = url.includes("video") || url.includes(".mp4");
-                    mediaHtml = `<div class="post-media" style="margin-top:12px; border-radius:12px; overflow:hidden; background: #000;">
+                    mediaHtml = `<div class="post-media" style="margin-top:12px; border-radius:12px; overflow:hidden; background: #000; border: 1px solid #333;">
                         ${isVid ? `<video src="${url}" controls preload="metadata" style="width:100%; display:block;"></video>` : `<img src="${url}" loading="lazy" style="width:100%; display:block;">`}
                     </div>`;
                 }
             }
 
             return `
-                <div class="newton-post-card" style="background:#1a1a1a; border:1px solid #333; border-radius:16px; padding:16px; margin:16px 0; width:100%; max-width:550px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);">
+                <div class="newton-post-card" onclick="window.location.href='/home/index.html?post=${p.id}'" style="background:#1a1a1a; border:1px solid #333; border-radius:16px; padding:16px; margin:16px 0; width:100%; max-width:550px; cursor: pointer; transition: transform 0.2s ease, border-color 0.2s ease;" onmouseover="this.style.borderColor='#444'; this.style.transform='translateY(-2px)';" onmouseout="this.style.borderColor='#333'; this.style.transform='translateY(0)';" >
                     <div class="post-header" style="display:flex; align-items:center; gap:12px; margin-bottom:12px;">
                         <img src="${avatar}" class="post-avatar" style="width:42px; height:42px; border-radius:50%; object-fit:cover; border: 1px solid #333;">
                         <div class="post-author-info" style="display:flex; flex-direction:column;">
-                            <div style="display: flex; align-items: center; gap: 4px;">
-                                <span class="post-author-name" style="font-weight:600; font-size:15px; color:#fff;">${name}</span>
-                                <span style="font-size: 12px; color: #666;">• ${timestamp}</span>
-                            </div>
+                            <span class="post-author-name" style="font-weight:600; font-size:15px; color:#fff;">${name}</span>
                             <span class="post-author-username" style="font-size:13px; color:#888;">${username}</span>
                         </div>
                     </div>
                     <div class="post-content" style="font-size:15px; line-height:1.6; color:#e0e0e0; margin-bottom:12px; white-space:pre-wrap; font-family: var(--font-sans);">${content}</div>
                     ${mediaHtml}
                     <div class="post-footer" style="display:flex; align-items:center; gap:20px; padding-top:14px; border-top:1px solid #2a2a2a; margin-top:14px;">
-                        <div class="post-action" style="display:flex; align-items:center; gap:6px; color:#aaa; font-size:13px; cursor: pointer;">
+                        <div class="post-action" style="display:flex; align-items:center; gap:6px; color:#aaa; font-size:13px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px; height:18px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l8.78-8.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
                             <span style="font-weight: 500;">${likes}</span>
                         </div>
-                        <div class="post-action" style="display:flex; align-items:center; gap:6px; color:#aaa; font-size:13px; cursor: pointer;">
+                        <div class="post-action" style="display:flex; align-items:center; gap:6px; color:#aaa; font-size:13px;">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px; height:18px;"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
                             <span style="font-weight: 500;">${comments}</span>
                         </div>
-                        <div class="post-action" style="margin-left: auto; cursor: pointer; color: #aaa;">
+                        <div class="post-action" style="margin-left: auto; color: #aaa;">
                             <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
                         </div>
                     </div>
@@ -1011,7 +874,7 @@
             // Handle multiple types of JSON formatting the AI might use
             let processedText = text.replace(/\[POST:(\{[\s\S]*?\})\]/g, function(match, jsonStr) {
                 try {
-                    // 1. Try unescaping common HTML entities first if the AI escaped them in its raw output
+                    // Try unescaping common HTML entities first
                     const unescaped = jsonStr
                         .replace(/&quot;/g, '"')
                         .replace(/&lt;/g, '<')
@@ -1020,37 +883,30 @@
                         .replace(/\\n/g, '\n')
                         .replace(/\\"/g, '"');
                     const postData = JSON.parse(unescaped);
+
+                    // IF IT ONLY HAS AN ID, WE NEED TO FETCH THE FULL DATA
+                    // Since this is a synchronous replace, we can't 'await'.
+                    // So we use a placeholder and handle it in replaceLoadingWithMessage
+                    if (postData.id && !postData.content) {
+                        return `__FETCH_POST_${postData.id}__`;
+                    }
+
                     return renderPostCardHTML(postData);
                 } catch (e) {
                     try {
-                        // 2. Try parsing as raw JSON if unescaping didn't help
                         const postData = JSON.parse(jsonStr);
+                        if (postData.id && !postData.content) {
+                            return `__FETCH_POST_${postData.id}__`;
+                        }
                         return renderPostCardHTML(postData);
                     } catch (e2) {
                         console.error("Failed to parse post JSON", e2, jsonStr);
-                        // 3. Final fallback: regex extraction
-                        const authorName = jsonStr.match(/"authorName"\s*:\s*"([^"]*)"/)?.[1];
-                        const content = jsonStr.match(/"content"\s*:\s*"([\s\S]*?)"(?=\s*,\s*"|})/)?.[1];
-                        if (authorName && content) {
-                            return renderPostCardHTML({
-                                authorName,
-                                content: content.replace(/\\n/g, '\n'),
-                                authorUsername: jsonStr.match(/"authorUsername"\s*:\s*"([^"]*)"/)?.[1],
-                                authorAvatar: jsonStr.match(/"authorAvatar"\s*:\s*"([^"]*)"/)?.[1],
-                                media: jsonStr.match(/"media"\s*:\s*\["([^"]*)"\]/)?.[1],
-                                likes: [],
-                                comments: []
-                            });
-                        }
                         return match;
                     }
                 }
             });
 
-            // IMPORTANT: Now we have HTML from renderPostCardHTML. 
-            // If we run the usual escape and regex replacements, we will break the design.
-            // We need to protect the rendered cards.
-            
+            // PROTECT THE RENDERED CARDS FROM ESCAPING
             const postCards = [];
             processedText = processedText.replace(/<div class="newton-post-card"[\s\S]*?<\/div>\s*<\/div>\s*<\/div>/g, (m) => {
                 postCards.push(m);
@@ -1230,42 +1086,42 @@
                     
                     // Fetch latest activity for AI context to find "related" things
                     const latestBatch = await getLatestPosts(20);
-                    const contextFeed = latestBatch.map(p => `[${p.authorName}: ${p.content.substring(0,100)}]`).join('\n');
+                    const contextFeed = latestBatch.map(p => {
+                        const cleanC = (p.content || "").replace(/\n/g, ' ').substring(0, 80);
+                        return `[Author: ${p.authorName} | Content: ${cleanC} | ID: ${p.id}]`;
+                    }).join('\n');
 
                     messagesToSend.unshift({ 
                         role: "system", 
-                        content: `You are Newton in EduLink Mode. The user tried to search for a post with: "${lastUserMsg}", but no direct match was found in the database.
+                        content: `You are Newton in EduLink Mode. The user tried to search for a post with: "${lastUserMsg}", but no direct match was found.
                         
                         ### YOUR MISSION:
-                        1. **Spelling Correction**: If the search looks like it has typos (e.g., "frank ocian"), politely suggest the correct spelling and ask if they meant that.
-                        2. **Related Posts**: Based on the context of recent activity provided below, suggest topics or authors that are *actually* in the database that might be related to what they want.
-                        3. **Friendly Guidance**: Don't just say "no results". Help them find something interesting on EduLink.
+                        1. **Spelling Correction**: If the search has typos (e.g., "frank ocian"), suggest the correct spelling and show the post using [POST:{"id": "..."}] if you see it in the context below.
+                        2. **Deep Analysis**: Analyze the CURRENT FEED CONTEXT below to find posts that are conceptually related to what the user wants. 
+                        3. **Show Posts**: You MUST display related posts using this exact format: [POST:{"id": "..."}]. The system will automatically fetch the full data for that ID.
                         
-                        ### CURRENT FEED CONTEXT (For Related Suggestions):
-                        ${contextFeed || "The feed is currently quiet."}` 
+                        ### CURRENT FEED CONTEXT:
+                        ${contextFeed || "The feed is currently empty."}` 
                     });
                 } else if (isEduLink) {
                     const lastUserMsg = messagesToSend.findLast(m => m.role === 'user')?.content.toLowerCase() || "";
                     let additionalContext = "";
                     
-                    // Smart System: AI only summarizes or analyzes if no direct keyword match was handled
-                    if (lastUserMsg.length > 3) {
-                        // Fetch a very small sample just for AI context if needed
-                        const posts = await getLatestPosts(3); 
-
-                        additionalContext = "\n\n### RECENT ACTIVITY (CONTEXT ONLY):\n" + posts.map(p => {
-                            const content = (p.content || "").replace(/\n/g, ' ').substring(0, 200);
-                            return `[Post by ${p.authorName}: ${content}]`;
-                        }).join('\n');
-                    }
+                    // Fetch latest activity for AI to analyze and discuss
+                    const posts = await getLatestPosts(10); 
+                    additionalContext = "\n\n### RECENT ACTIVITY FOR ANALYSIS:\n" + posts.map(p => {
+                        const content = (p.content || "").replace(/\n/g, ' ').substring(0, 300);
+                        return `[ID: ${p.id} | Author: ${p.authorName} | Content: ${content}]`;
+                    }).join('\n');
 
                     messagesToSend.unshift({ 
                         role: "system", 
-                        content: `You are Newton in EduLink Mode. 
+                        content: `You are Newton in EduLink Mode. You are an expert at analyzing the EduLink database.
                         
-                        ### SMART SEARCH:
-                        If the user is asking to find a specific post, the system has already tried to fetch it. 
-                        If you see no posts in your context, politely inform the user or answer general questions.
+                        ### CAPABILITIES:
+                        1. **Analyze**: You can discuss platform activity and summarize trends.
+                        2. **Show Posts**: To display a post, use: [POST:{"id": "ID_HERE"}].
+                        3. **Links**: If the user mentions a topic, you can provide a direct link to a post if it exists in the context below.
                         
                         ### DATABASE CONTEXT:
                         ${additionalContext || "No posts provided."}` 
@@ -1480,10 +1336,45 @@
             scrollToBottom();
         }
 
-        function replaceLoadingWithMessage(id, htmlContent, rawText) {
+        async function replaceLoadingWithMessage(id, htmlContent, rawText) {
             const el = document.getElementById(id);
             if (el) {
-                el.innerHTML = htmlContent;
+                // Clear any existing "Analyzing" or "Searching" content
+                el.innerHTML = '';
+                
+                // Handle __FETCH_POST_ID__ placeholders
+                const fetchMatches = htmlContent.match(/__FETCH_POST_(.*?)__/g);
+                if (fetchMatches) {
+                    const { doc, getDoc } = await import("https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js");
+                    for (const match of fetchMatches) {
+                        const postId = match.replace(/__FETCH_POST_|_/g, '');
+                        try {
+                            const postSnap = await getDoc(doc(window.db, "posts", postId));
+                            if (postSnap.exists()) {
+                                const p = { id: postSnap.id, ...postSnap.data() };
+                                // Fetch author if needed
+                                if (!p.authorName && p.authorId) {
+                                    const uSnap = await getDoc(doc(window.db, "users", p.authorId));
+                                    if (uSnap.exists()) {
+                                        p.authorName = uSnap.data().name;
+                                        p.authorAvatar = uSnap.data().avatar || uSnap.data().photoURL;
+                                        p.authorUsername = uSnap.data().username;
+                                    }
+                                }
+                                htmlContent = htmlContent.replace(match, renderPostCardHTML(p));
+                            } else {
+                                htmlContent = htmlContent.replace(match, `<p style="color:red">Post ${postId} not found.</p>`);
+                            }
+                        } catch (err) {
+                            htmlContent = htmlContent.replace(match, `<p style="color:red">Error loading post.</p>`);
+                        }
+                    }
+                }
+
+                // Set the final message content
+                const contentDiv = document.createElement('div');
+                contentDiv.innerHTML = htmlContent;
+                el.appendChild(contentDiv);
                 
                 // Add Claude Style Action Bar underneath
                 const actionBar = document.createElement('div');
