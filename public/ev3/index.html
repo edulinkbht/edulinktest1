@@ -1634,6 +1634,14 @@
                     const lastUserMsg = messagesToSend.findLast(m => m.role === 'user')?.content.toLowerCase() || "";
                     let additionalContext = "";
                     
+                    // MEMORY INJECTION: Check if the user is asking about a post that was already shown
+                    const previousPosts = conversationHistory.filter(m => m.role === 'assistant' && m.content.includes('[POST:'));
+                    let rememberedPostsContext = "";
+                    if (previousPosts.length > 0) {
+                        rememberedPostsContext = "\n### POSTS PREVIOUSLY SHOWN IN THIS CHAT:\n" + 
+                            previousPosts.map((m, i) => `[Post ${i+1}]: ${m.content}`).join('\n');
+                    }
+
                     // Smart System: AI only summarizes or analyzes if no direct keyword match was handled
                     if (lastUserMsg.length > 3) {
                         // Fetch a very small sample just for AI context if needed
@@ -1642,7 +1650,7 @@
                             p.postIndex = await getPostIndexForUser(p.authorId, p.id);
                         }
 
-                        additionalContext = "\n\n### RECENT ACTIVITY (CONTEXT ONLY):\n" + posts.map(p => {
+                        additionalContext = "\n\n### RECENT ACTIVITY (GLOBAL CONTEXT):\n" + posts.map(p => {
                             const content = (p.content || "").replace(/\n/g, ' ').substring(0, 200);
                             return `[Post by ${p.authorName} (@${p.authorUsername}) - Index: ${p.postIndex}: ${content}]`;
                         }).join('\n');
@@ -1659,8 +1667,9 @@
                         4. If you mention a post, you can use the [POST:{"authorName":"...","content":"...","postIndex":X}] format to render a card. The "postIndex" is the numeric count of the post for that user.
                         
                         ### MEMORY & CONTEXT:
-                        - You have memory of all posts previously shared in this conversation. If the user asks about "that post" or "who wrote the first one", refer back to the [POST:...] data in the conversation history.
-                        - If no posts are provided in the current turn, you can still answer general questions about EduLink or help the user find what they need.
+                        - CRITICAL: You have memory of all posts previously shared in this conversation. 
+                        - If the user asks for a summary, analysis, or details about "the post", "that post", or "the one by [Name]", use the context provided below.
+                        ${rememberedPostsContext}
 
                         ### DATABASE CONTEXT:
                         ${additionalContext || "No posts provided."}` 
@@ -1921,9 +1930,14 @@
         }
 
         function appendLoading(id, status = 'Thinking') {
-            const div = document.createElement('div');
-            div.className = 'ai-message';
-            div.id = id;
+            let div = document.getElementById(id);
+            const isNew = !div;
+            
+            if (isNew) {
+                div = document.createElement('div');
+                div.className = 'ai-message thinking-msg';
+                div.id = id;
+            }
             
             let iconType = 'lightbulb';
             if (status === 'Coding') iconType = 'code';
@@ -1938,7 +1952,11 @@
                     <span class="thinking-status">${status}...</span>
                 </div>
             `;
-            messageWrapper.appendChild(div);
+            
+            if (isNew) {
+                messageWrapper.appendChild(div);
+            }
+            
             scrollToBottom();
             lucide.createIcons();
         }
