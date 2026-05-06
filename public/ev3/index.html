@@ -399,6 +399,12 @@
             overflow: hidden;
             transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .post-collapsible {
+            max-height: 120px;
+        }
+        .newton-post-card .fade-overlay {
+            background: linear-gradient(to bottom, transparent, #1a1a1a);
+        }
         .collapsible-wrapper.expanded {
             max-height: 5000px;
         }
@@ -792,7 +798,7 @@
         <div class="top-right-nav">
             <span style="color: var(--text-tertiary); font-size: 11px; align-self: center; font-weight: 500; letter-spacing: 0.3px;">Free plan · <span style="text-decoration: underline; cursor: pointer;">Upgrade</span></span>
             <button class="icon-btn" style="width: auto; padding: 4px; color: var(--text-tertiary);" title="User">
-                <i data-lucide="ghost" style="width: 18px; height: 18px;"></i>
+                <i data-lucide="rainbow" style="width: 18px; height: 18px;"></i>
             </button>
         </div>
 
@@ -1072,7 +1078,16 @@
                             </button>
                         </div>
                     </div>
-                    <div class="post-content" style="font-size:15px; line-height:1.6; color:#e0e0e0; margin-bottom:12px; white-space:pre-wrap; font-family: var(--font-sans);">${content}</div>
+                    ${(p.content && p.content.length > 300) ? `
+                        <div class="collapsible-wrapper post-collapsible">
+                            <div class="post-content" style="font-size:15px; line-height:1.6; color:#e0e0e0; margin-bottom:12px; white-space:pre-wrap; font-family: var(--font-sans);">${content}</div>
+                            <div class="fade-overlay">
+                                <button class="show-more-btn" onclick="toggleCollapse(this)">See more <i data-lucide="chevron-down" style="width: 12px; height: 12px;"></i></button>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="post-content" style="font-size:15px; line-height:1.6; color:#e0e0e0; margin-bottom:12px; white-space:pre-wrap; font-family: var(--font-sans);">${content}</div>
+                    `}
                     ${mediaHtml}
                     <div class="post-footer" style="display:flex; align-items:center; gap:20px; padding-top:14px; border-top:1px solid #2a2a2a; margin-top:14px;">
                         <div class="post-action" style="display:flex; align-items:center; gap:6px; color:#aaa; font-size:13px;">
@@ -1643,6 +1658,10 @@
                         3. NEVER use the raw Firebase Document ID (like R6x8IQneErx3r0oFqGKX) in any link or text. IF YOU SEE AN ID, CONVERT IT TO THE NUMERIC INDEX.
                         4. If you mention a post, you can use the [POST:{"authorName":"...","content":"...","postIndex":X}] format to render a card. The "postIndex" is the numeric count of the post for that user.
                         
+                        ### MEMORY & CONTEXT:
+                        - You have memory of all posts previously shared in this conversation. If the user asks about "that post" or "who wrote the first one", refer back to the [POST:...] data in the conversation history.
+                        - If no posts are provided in the current turn, you can still answer general questions about EduLink or help the user find what they need.
+
                         ### DATABASE CONTEXT:
                         ${additionalContext || "No posts provided."}` 
                     });
@@ -1775,6 +1794,9 @@
             
                 // EduLink Mode Logic
                 if (window.selectedModel === 'EduLink') {
+                    const lowerText = text.toLowerCase();
+                    const isPostSearch = /\b(find|search|show|get|latest|any|posts?|feed|activity)\b/i.test(lowerText);
+                    
                     // Check for direct post link: https://edulinkbht.vercel.app/:username/post/:index_or_id
                     const postLinkMatch = text.match(/https?:\/\/edulinkbht\.vercel\.app\/([^/]+)\/post\/([^/?#\s]+)/);
                     
@@ -1788,14 +1810,10 @@
                                 // Add post context to conversation for AI to "see" it
                                 const postContext = `[USER PROVIDED LINK TO POST]\nAuthor: ${post.authorName} (@${post.authorUsername})\nContent: ${post.content}\nPost Index: ${post.postIndex}`;
                                 
-                                // We'll add this as a hidden system message or just part of the conversation
                                 conversationHistory.push({ role: "system", content: `Context for the post the user just linked: ${postContext}` });
-
-                                // Now call AI to actually respond to the user's query about this post
                                 appendLoading(loadingId, 'Analyzing');
-                                fetchAIResponse(loadingId, false, post); // Pass post object to fetchAIResponse
+                                fetchAIResponse(loadingId, false, post);
                             } else {
-                                 // Fallback to normal AI response if post not found
                                  appendLoading(loadingId, 'Analyzing');
                                  fetchAIResponse(loadingId, true);
                              }
@@ -1803,46 +1821,46 @@
                          return;
                      }
 
-                    const searchKeywords = text.replace(/\b(find|search|the|post|of|from|saying|about|give|me|show|latest|any|on|by)\b/gi, '').trim();
-                    const quoteMatch = text.match(/\((.*?)\)/);
-                    const finalKeywords = quoteMatch ? quoteMatch[1].trim() : searchKeywords;
+                    if (isPostSearch) {
+                        const searchKeywords = text.replace(/\b(find|search|the|post|of|from|saying|about|give|me|show|latest|any|on|by)\b/gi, '').trim();
+                        const quoteMatch = text.match(/\((.*?)\)/);
+                        const finalKeywords = quoteMatch ? quoteMatch[1].trim() : searchKeywords;
 
-                    appendLoading(loadingId, 'Searching');
-                    searchPosts(finalKeywords || "latest").then(async posts => {
-                        if (posts.length > 0) {
-                            const topPosts = posts.slice(0, 5);
-                            let responseText = finalKeywords ? `I found ${posts.length} posts matching your search:\n\n` : "Here are the latest posts from EduLink:\n\n";
-                            
-                            // Calculate indices for topPosts to support index-based links
-                            for (const p of topPosts) {
-                                p.postIndex = await getPostIndexForUser(p.authorId, p.id);
+                        appendLoading(loadingId, 'Searching');
+                        searchPosts(finalKeywords || "latest").then(async posts => {
+                            if (posts.length > 0) {
+                                const topPosts = posts.slice(0, 5);
+                                let responseText = finalKeywords ? `I found ${posts.length} posts matching your search:\n\n` : "Here are the latest posts from EduLink:\n\n";
+                                
+                                for (const p of topPosts) {
+                                    p.postIndex = await getPostIndexForUser(p.authorId, p.id);
+                                }
+
+                                topPosts.forEach(p => {
+                                    const cleanContent = (p.content || "").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                                    const cleanMedia = Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []);
+                                    const postJson = JSON.stringify({
+                                        id: p.id,
+                                        authorName: p.authorName || "User",
+                                        authorUsername: p.authorUsername || "user",
+                                        authorAvatar: p.authorAvatar || "",
+                                        content: cleanContent,
+                                        media: cleanMedia,
+                                        postIndex: p.postIndex,
+                                        likesCount: Array.isArray(p.likes) ? p.likes.length : 0,
+                                        commentsCount: Array.isArray(p.comments) ? p.comments.length : 0
+                                    });
+                                    responseText += `[POST:${postJson}]\n\n`;
+                                });
+                                conversationHistory.push({ role: "assistant", content: responseText });
+                                replaceLoadingWithMessage(loadingId, parseMarkdown(responseText), responseText);
+                            } else {
+                                appendLoading(loadingId, 'Analyzing');
+                                fetchAIResponse(loadingId, true);
                             }
-
-                            topPosts.forEach(p => {
-                                const cleanContent = (p.content || "").replace(/"/g, '\\"').replace(/\n/g, '\\n');
-                                const cleanMedia = Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []);
-                                const postJson = JSON.stringify({
-                                id: p.id,
-                                authorName: p.authorName || "User",
-                                authorUsername: p.authorUsername || "user",
-                                authorAvatar: p.authorAvatar || "",
-                                content: cleanContent,
-                                media: cleanMedia,
-                                postIndex: p.postIndex,
-                                likesCount: Array.isArray(p.likes) ? p.likes.length : 0,
-                                commentsCount: Array.isArray(p.comments) ? p.comments.length : 0
-                            });
-                                responseText += `[POST:${postJson}]\n\n`;
-                            });
-                            conversationHistory.push({ role: "assistant", content: responseText });
-                            replaceLoadingWithMessage(loadingId, parseMarkdown(responseText), responseText);
-                        } else {
-                            // No posts found: Use AI for spelling correction or finding related posts
-                            appendLoading(loadingId, 'Analyzing');
-                            fetchAIResponse(loadingId, true); // True flag for "EduLink Help"
-                        }
-                    });
-                    return;
+                        });
+                        return;
+                    }
                 }
 
             appendLoading(loadingId, status);
