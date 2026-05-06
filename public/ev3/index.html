@@ -130,7 +130,7 @@
         }
         .sidebar.collapsed .sidebar-title { display: none; }
         .sidebar.collapsed .sidebar-logo { display: block !important; }
-        .sidebar.collapsed .sidebar-header { flex-direction: column; gap: 12px; justify-content: center; padding: 16px 0; margin-bottom: 12px; }
+        .sidebar.collapsed .sidebar-header { flex-direction: column; gap: 8px; justify-content: center; padding: 16px 0; margin-bottom: 4px; }
         .sidebar.collapsed .sidebar-logo-container { justify-content: center; width: 100%; }
         
         .sidebar-title {
@@ -1695,6 +1695,15 @@
             }
         }
 
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
         async function fetchAIResponse(loadingId, isEduLinkHelp = false, linkedPost = null) {
             const apiKey = getApiKey();
             if (!apiKey) return;
@@ -1705,7 +1714,31 @@
             try {
                 let messagesToSend = [...conversationHistory];
                 const isEduLink = window.selectedModel === 'EduLink';
-                
+                let currentModel = "llama-3.3-70b-versatile";
+
+                // Handle Image/File uploads
+                if (uploadedFiles.length > 0) {
+                    const lastMsg = messagesToSend[messagesToSend.length - 1];
+                    if (lastMsg && lastMsg.role === 'user') {
+                        const contentParts = [{ type: "text", text: lastMsg.content }];
+                        
+                        for (const file of uploadedFiles) {
+                            if (file.type.startsWith('image/')) {
+                                currentModel = "llama-3.2-11b-vision-preview"; // Switch to vision model
+                                const base64 = await fileToBase64(file);
+                                contentParts.push({
+                                    type: "image_url",
+                                    image_url: { url: `data:${file.type};base64,${base64}` }
+                                });
+                            } else {
+                                // For non-image files, just inform the AI
+                                contentParts[0].text += `\n\n[System Note: User attached a file: ${file.name}]`;
+                            }
+                        }
+                        lastMsg.content = contentParts;
+                    }
+                }
+
                 // Remove existing system prompt if any to avoid duplicates
                 if (messagesToSend.length > 0 && messagesToSend[0].role === "system") {
                     messagesToSend.shift();
@@ -1787,7 +1820,7 @@
                     headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
                     signal: currentAbortController.signal,
                     body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
+                        model: currentModel,
                         messages: messagesToSend,
                         temperature: 0.6,
                         max_tokens: 4096
@@ -1904,6 +1937,14 @@
 
             const loadingId = 'ai-msg-' + Date.now();
             const status = determineThinkingStatus(text);
+            
+            // Clear uploaded files after submission
+            const filesToUpload = [...uploadedFiles];
+            uploadedFiles = [];
+            if (filePreviewContainer) {
+                filePreviewContainer.innerHTML = '';
+                filePreviewContainer.style.display = 'none';
+            }
             
                 // EduLink Mode Logic
                 if (window.selectedModel === 'EduLink') {
