@@ -810,7 +810,7 @@
         <div class="landing-content" id="landingView">
             <h1 class="greeting">
                 <i data-lucide="sparkles" class="greeting-icon"></i>
-                <span><span id="userNameDisplay" style="color: #fff;">User</span> <span style="color: #fff;">returns!</span></span>
+                <span id="greetingText"><span style="color: #fff;">Are you feeling curious?</span></span>
             </h1>
             
             <div class="input-wrapper" id="mainInputWrapper">
@@ -955,8 +955,21 @@
 
         function updateUI(user) {
             const userName = user.displayName || user.email.split('@')[0];
-            document.getElementById('userNameDisplay').textContent = userName || "User";
+            const firstName = userName.split(' ')[0];
             
+            // Dynamic Greetings
+            const greetings = [
+                `Are you curious, ${firstName}?`,
+                `What will you learn today, ${firstName}?`,
+                `${userName} returns!`,
+                `Ready for something new, ${firstName}?`
+            ];
+            const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+            const greetingEl = document.getElementById('greetingText');
+            if (greetingEl) {
+                greetingEl.innerHTML = `<span style="color: #fff;">${randomGreeting}</span>`;
+            }
+
             // Update sidebar info
             const sidebarUserName = document.getElementById('sidebarUserName');
             if (sidebarUserName) sidebarUserName.textContent = userName;
@@ -1816,6 +1829,24 @@
                 appBody.classList.add('chat-active');
                 const bottomContainer = document.getElementById('chatBottomContainer');
                 bottomContainer.insertBefore(document.getElementById('mainInputWrapper'), bottomContainer.firstChild);
+            }
+
+            // AUTO-MODEL SWITCH: Switch to EduLink if keywords match
+            const lowerText = text.toLowerCase();
+            const eduLinkKeywords = /\b(find|search|show|get|posts?|feed|activity|edulink)\b/i;
+            if (eduLinkKeywords.test(lowerText) && window.selectedModel !== 'EduLink') {
+                selectedModel = 'EduLink';
+                window.selectedModel = 'EduLink';
+                // Update UI button
+                const modelBtn = document.getElementById('modelSelectorBtn');
+                if (modelBtn) {
+                    modelBtn.innerHTML = `EduLink <i data-lucide="chevron-down" style="width: 18px; height: 18px;"></i>`;
+                    lucide.createIcons();
+                }
+                // Update dropdown active state
+                document.querySelectorAll('.dropdown-item').forEach(i => {
+                    i.classList.toggle('active', i.getAttribute('data-model') === 'EduLink');
+                });
             }
 
             chatInput.value = '';
