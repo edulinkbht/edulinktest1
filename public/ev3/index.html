@@ -129,7 +129,9 @@
             padding: 0 8px;
         }
         .sidebar.collapsed .sidebar-title { display: none; }
-        .sidebar.collapsed .sidebar-header { justify-content: center; padding: 0; }
+        .sidebar.collapsed .sidebar-logo { display: block !important; }
+        .sidebar.collapsed .sidebar-header { justify-content: center; padding: 16px 0; }
+        .sidebar.collapsed .sidebar-logo-container { justify-content: center; width: 100%; }
         
         .sidebar-title {
             font-size: 20px;
@@ -736,7 +738,10 @@
 
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <span class="sidebar-title">Newton</span>
+            <div class="sidebar-logo-container" style="display: flex; align-items: center; gap: 10px;">
+                <img src="https://i.imghippo.com/files/YVls8804tw.png" class="sidebar-logo" style="width: 18px; height: 18px; border-radius: 4px; display: none;">
+                <span class="sidebar-title">Newton</span>
+            </div>
             <button class="icon-btn" id="toggleSidebar" title="Toggle Sidebar" style="width: auto; padding: 4px;">
                 <i data-lucide="sidebar"></i>
             </button>
@@ -1236,16 +1241,13 @@
         async function searchPosts(keyword) {
             if (!window.db) return [];
             try {
-                // Fetch up to 200 posts for a very broad search
                 const all = await getLatestPosts(200);
                 const kw = keyword.toLowerCase().trim();
                 
-                // If it's just "any" or general browsing, return the latest posts
                 if (kw === "" || kw === "any" || kw === "latest" || kw === "feed") {
                     return all.slice(0, 5);
                 }
 
-                // Check for date search (e.g., "post on 3/5/2026")
                 const dateMatch = kw.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
                 if (dateMatch) {
                     const searchDate = dateMatch[1];
@@ -1255,31 +1257,41 @@
                     });
                 }
 
-                // Smart filtering: Check content, author, and username
-                const kwParts = kw.split(/\s+/).filter(p => p.length > 1);
+                // Multi-keyword relevance ranking
+                const kwParts = kw.split(/\s+and\s+|\s+/).filter(p => p.length > 1 && !['the', 'and', 'for', 'with'].includes(p));
 
-                return all.filter(p => {
+                const results = all.map(p => {
                     const content = (p.content || "").toLowerCase();
                     const name = (p.authorName || "").toLowerCase();
                     const username = (p.authorUsername || "").toLowerCase();
                     
-                    // Direct match on author name or content
-                    if (content.includes(kw) || name.includes(kw) || username.includes(kw)) return true;
+                    let score = 0;
                     
-                    // Author specific match (e.g. "posts by ngawang")
-                    if (kw.includes('by ') || kw.includes('from ')) {
-                        const authorPart = kw.split(/by |from /)[1];
-                        if (name.includes(authorPart) || username.includes(authorPart)) return true;
-                    }
+                    // Exact full phrase match gets highest boost
+                    if (content.includes(kw) || name.includes(kw) || username.includes(kw)) score += 10;
+                    
+                    // Count how many individual keywords match
+                    kwParts.forEach(part => {
+                        if (content.includes(part)) score += 3;
+                        if (name.includes(part)) score += 5;
+                        if (username.includes(part)) score += 5;
+                        
+                        // Author specific match
+                        if (kw.includes('by ') || kw.includes('from ')) {
+                            const authorPart = kw.split(/by |from /)[1];
+                            if (name.includes(authorPart) || username.includes(authorPart)) score += 10;
+                        }
+                    });
 
-                    // Partial match (if all parts of the search are found somewhere)
-                    if (kwParts.length > 0) {
-                        return kwParts.every(part => 
-                            content.includes(part) || name.includes(part) || username.includes(part)
-                        );
-                    }
-                    return false;
+                    return { post: p, score };
                 });
+
+                // Filter out zero scores and sort by relevance
+                return results
+                    .filter(r => r.score > 0)
+                    .sort((a, b) => b.score - a.score)
+                    .map(r => r.post);
+                    
             } catch (e) {
                 console.error("Error searching posts:", e);
                 return [];
@@ -1838,32 +1850,40 @@
                         appendLoading(loadingId, 'Searching');
                         searchPosts(finalKeywords || "latest").then(async posts => {
                             if (posts.length > 0) {
-                                const topPosts = posts.slice(0, 5);
-                                let responseText = finalKeywords ? `I found ${posts.length} posts matching your search:\n\n` : "Here are the latest posts from EduLink:\n\n";
-                                
-                                for (const p of topPosts) {
-                                    p.postIndex = await getPostIndexForUser(p.authorId, p.id);
+                                displayEduLinkPosts(posts, loadingId, finalKeywords);
+                            } else {
+                                // AUTO-CORRECT TYPOS: If no results, ask AI for intended keywords
+                                appendLoading(loadingId, 'Fixing Typos');
+                                const apiKey = getApiKey();
+                                if (!apiKey) {
+                                    fetchAIResponse(loadingId, true);
+                                    return;
                                 }
 
-                                topPosts.forEach(p => {
-                                    const cleanContent = (p.content || "").replace(/"/g, '\\"').replace(/\n/g, '\\n');
-                                    const cleanMedia = Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []);
-                                    const postJson = JSON.stringify({
-                                        id: p.id,
-                                        authorName: p.authorName || "User",
-                                        authorUsername: p.authorUsername || "user",
-                                        authorAvatar: p.authorAvatar || "",
-                                        content: cleanContent,
-                                        media: cleanMedia,
-                                        postIndex: p.postIndex,
-                                        likesCount: Array.isArray(p.likes) ? p.likes.length : 0,
-                                        commentsCount: Array.isArray(p.comments) ? p.comments.length : 0
+                                try {
+                                    const correctionResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                                        method: "POST",
+                                        headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" },
+                                        body: JSON.stringify({
+                                            model: "llama-3.3-70b-versatile",
+                                            messages: [{ role: "system", content: "You are a spelling correction assistant. The user is searching for posts on EduLink but likely made a typo. Extract and correct the search keywords. ONLY return the corrected keywords, nothing else." }, { role: "user", content: text }],
+                                            temperature: 0,
+                                            max_tokens: 50
+                                        })
                                     });
-                                    responseText += `[POST:${postJson}]\n\n`;
-                                });
-                                conversationHistory.push({ role: "assistant", content: responseText });
-                                replaceLoadingWithMessage(loadingId, parseMarkdown(responseText), responseText);
-                            } else {
+                                    const correctionData = await correctionResponse.json();
+                                    const correctedKeywords = correctionData.choices[0].message.content.trim();
+                                    
+                                    if (correctedKeywords && correctedKeywords !== finalKeywords) {
+                                        appendLoading(loadingId, 'Searching (Corrected)');
+                                        const correctedPosts = await searchPosts(correctedKeywords);
+                                        if (correctedPosts.length > 0) {
+                                            displayEduLinkPosts(correctedPosts, loadingId, correctedKeywords);
+                                            return;
+                                        }
+                                    }
+                                } catch (err) { console.warn("Correction failed", err); }
+
                                 appendLoading(loadingId, 'Analyzing');
                                 fetchAIResponse(loadingId, true);
                             }
@@ -1874,6 +1894,34 @@
 
             appendLoading(loadingId, status);
             fetchAIResponse(loadingId);
+        }
+
+        async function displayEduLinkPosts(posts, loadingId, keywords) {
+            const topPosts = posts.slice(0, 5);
+            let responseText = keywords ? `I found ${posts.length} posts matching your search:\n\n` : "Here are the latest posts from EduLink:\n\n";
+            
+            for (const p of topPosts) {
+                p.postIndex = await getPostIndexForUser(p.authorId, p.id);
+            }
+
+            topPosts.forEach(p => {
+                const cleanContent = (p.content || "").replace(/"/g, '\\"').replace(/\n/g, '\\n');
+                const cleanMedia = Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []);
+                const postJson = JSON.stringify({
+                    id: p.id,
+                    authorName: p.authorName || "User",
+                    authorUsername: p.authorUsername || "user",
+                    authorAvatar: p.authorAvatar || "",
+                    content: cleanContent,
+                    media: cleanMedia,
+                    postIndex: p.postIndex,
+                    likesCount: Array.isArray(p.likes) ? p.likes.length : 0,
+                    commentsCount: Array.isArray(p.comments) ? p.comments.length : 0
+                });
+                responseText += `[POST:${postJson}]\n\n`;
+            });
+            conversationHistory.push({ role: "assistant", content: responseText });
+            replaceLoadingWithMessage(loadingId, parseMarkdown(responseText), responseText);
         }
 
         function determineThinkingStatus(text) {
