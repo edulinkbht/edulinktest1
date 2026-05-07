@@ -582,6 +582,14 @@
             display: flex;
             flex-direction: column;
             background: #1a1a1a;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s ease;
+        }
+
+        .workspace-sidebar.collapsed {
+            width: 0;
+            margin-right: -350px;
+            border-left: none;
+            overflow: hidden;
         }
 
         .workspace-chat-container {
@@ -589,6 +597,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
+            min-width: 350px;
         }
 
         .workspace-chat-messages {
@@ -597,7 +606,40 @@
             padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 24px;
+        }
+
+        .workspace-user-msg-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            width: 100%;
+            gap: 4px;
+        }
+
+        .workspace-user-msg-container {
+            background: var(--bg-user-msg);
+            border: 1px solid var(--border-color);
+            border-radius: 100px;
+            padding: 8px 16px;
+            max-width: 85%;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1.4;
+            word-break: break-word;
+            font-family: var(--font-serif);
+        }
+
+        .workspace-user-action-bar {
+            display: flex;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            margin-right: 8px;
+        }
+
+        .workspace-user-msg-wrapper:hover .workspace-user-action-bar {
+            opacity: 1;
         }
 
         .workspace-chat-input-area {
@@ -1271,8 +1313,11 @@
                     <span class="workspace-docs-title">Docs</span>
                 </div>
                 <div class="workspace-header-right">
+                    <button class="icon-btn" id="toggleWorkspaceAI" title="Toggle AI Sidebar" style="width: auto; padding: 4px; color: var(--text-tertiary); margin-right: 8px;">
+                        <i data-lucide="panel-right-close"></i>
+                    </button>
                     <button class="share-btn">
-                        <i data-lucide="share-2"></i> Share
+                        <i data-lucide="users"></i> Share
                     </button>
                 </div>
             </header>
@@ -1280,17 +1325,22 @@
                 <div class="workspace-main-content">
                     <div style="width: 100%; max-width: 800px;">
                         <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 24px;">Workspace Content</h1>
-                        <p style="color: var(--text-secondary); line-height: 1.6;">Welcome to your workspace. Use the AI sidebar to interact with your documents.</p>
+                        <p style="color: var(--text-secondary); line-height: 1.6; font-family: var(--font-serif);">Welcome to your workspace. Use the AI sidebar to interact with your documents.</p>
                         
                         <div id="workspaceDocsList" style="margin-top: 40px; width: 100%;">
-                            <h3 style="font-size: 14px; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 1px; margin-bottom: 16px;">Documents in this workspace</h3>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                                <h3 style="font-size: 14px; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 1px;">Documents in this workspace</h3>
+                                <button class="icon-btn" style="width: auto; height: auto; padding: 4px 8px; font-size: 12px; color: var(--accent-color); border: 1px solid rgba(217, 119, 87, 0.2); border-radius: 6px;" onclick="loadWorkspaceDocs()">
+                                    <i data-lucide="refresh-cw" style="width: 12px; height: 12px; margin-right: 4px;"></i> Refresh
+                                </button>
+                            </div>
                             <div id="docsItemsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
                                 <!-- Docs will be loaded here -->
                             </div>
                         </div>
                     </div>
                 </div>
-                <aside class="workspace-sidebar">
+                <aside class="workspace-sidebar" id="workspaceSidebar">
                     <div class="workspace-chat-container">
                         <div class="workspace-chat-messages" id="workspaceChatMessages">
                             <div class="ai-message" style="font-size: 15px; font-family: var(--font-serif); line-height: 1.65; color: var(--text-primary);">
@@ -1299,14 +1349,16 @@
                         </div>
                         <div class="workspace-chat-input-area">
                             <div class="input-container" style="padding: 12px; border-radius: 16px;">
-                                <textarea class="message-input" id="workspaceChatInput" placeholder="Ask AI about your docs..." rows="1" style="font-size: 14px; min-height: 40px;"></textarea>
+                                <textarea class="message-input" id="workspaceChatInput" placeholder="Ask AI about your docs..." rows="1" style="font-size: 14px; min-height: 40px; font-family: var(--font-sans);"></textarea>
                                 <div class="input-controls" style="margin-top: 8px;">
                                     <div class="control-group">
-                                        <button class="icon-btn" id="workspaceVoiceBtn" style="width: 32px; height: 32px; border: 1px solid var(--border-color); border-radius: 50%;" title="Voice Input"><i data-lucide="audio-lines" style="width: 18px; height: 18px;"></i></button>
+                                        <button class="icon-btn" id="workspaceVoiceBtn" style="width: auto; height: auto; background: none; border: none; color: var(--text-secondary); padding: 4px;" title="Voice Input">
+                                            <i data-lucide="audio-lines" style="width: 24px; height: 24px;"></i>
+                                        </button>
                                     </div>
                                     <div class="control-group">
-                                        <button class="workspace-chat-send-btn" id="workspaceSendBtn" style="width: 32px; height: 32px; background: var(--accent-color); border-radius: 8px;">
-                                            <i data-lucide="arrow-up" style="width: 18px; height: 18px;"></i>
+                                        <button class="workspace-chat-send-btn" id="workspaceSendBtn" style="width: 40px; height: 40px; background: var(--accent-color); border-radius: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(217, 119, 87, 0.2);">
+                                            <i data-lucide="arrow-up" style="width: 20px; height: 20px; color: #fff;"></i>
                                         </button>
                                     </div>
                                 </div>
@@ -1577,18 +1629,40 @@
                     workspaceDocsContent += `--- Document: ${doc.name} ---\n${content}\n\n`;
                     
                     const docEl = document.createElement('div');
-                    docEl.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s; cursor: pointer;';
+                    docEl.style.cssText = 'background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; transition: all 0.2s; cursor: pointer; position: relative;';
                     docEl.innerHTML = `
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <i data-lucide="file-text" style="width: 20px; height: 20px; color: var(--accent-color);"></i>
-                            <span style="font-weight: 600; font-size: 14px; color: #fff;">${doc.name}</span>
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <i data-lucide="file-text" style="width: 20px; height: 20px; color: var(--accent-color);"></i>
+                                <span class="doc-name" style="font-weight: 600; font-size: 14px; color: #fff;">${doc.name}</span>
+                            </div>
+                            <button class="icon-btn rename-doc-btn" style="width: auto; height: auto; padding: 4px; opacity: 0; transition: opacity 0.2s;" title="Rename">
+                                <i data-lucide="edit-2" style="width: 14px; height: 14px;"></i>
+                            </button>
                         </div>
-                        <div style="font-size: 12px; color: var(--text-tertiary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                        <div style="font-size: 12px; color: var(--text-tertiary); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; font-family: var(--font-serif);">
                             ${content.substring(0, 100)}...
                         </div>
                     `;
-                    docEl.addEventListener('mouseenter', () => docEl.style.borderColor = 'rgba(255,255,255,0.2)');
-                    docEl.addEventListener('mouseleave', () => docEl.style.borderColor = 'var(--border-color)');
+                    
+                    docEl.addEventListener('mouseenter', () => {
+                        docEl.style.borderColor = 'rgba(255,255,255,0.2)';
+                        docEl.querySelector('.rename-doc-btn').style.opacity = '1';
+                    });
+                    docEl.addEventListener('mouseleave', () => {
+                        docEl.style.borderColor = 'var(--border-color)';
+                        docEl.querySelector('.rename-doc-btn').style.opacity = '0';
+                    });
+
+                    docEl.querySelector('.rename-doc-btn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const newName = prompt('Enter new name for ' + doc.name, doc.name);
+                        if (newName && newName !== doc.name) {
+                            doc.name = newName;
+                            loadWorkspaceDocs();
+                        }
+                    });
+
                     docsItemsContainer.appendChild(docEl);
                 } catch (err) {
                     console.error(`Failed to load doc ${doc.name}:`, err);
@@ -1611,6 +1685,17 @@
         document.querySelectorAll('.new-workspace-btn, .new-workspace-btn-outline').forEach(btn => {
             btn.addEventListener('click', switchToActiveWorkspace);
         });
+
+        // Toggle Sidebar Logic
+        const toggleWorkspaceAI = document.getElementById('toggleWorkspaceAI');
+        const workspaceSidebar = document.getElementById('workspaceSidebar');
+        if (toggleWorkspaceAI && workspaceSidebar) {
+            toggleWorkspaceAI.addEventListener('click', () => {
+                const isCollapsed = workspaceSidebar.classList.toggle('collapsed');
+                toggleWorkspaceAI.innerHTML = isCollapsed ? '<i data-lucide="panel-right-open"></i>' : '<i data-lucide="panel-right-close"></i>';
+                lucide.createIcons();
+            });
+        }
 
         // Share Workspace Logic
         document.querySelector('.share-btn').addEventListener('click', () => {
@@ -1638,13 +1723,42 @@
             workspaceChatInput.value = '';
             workspaceChatInput.style.height = 'auto';
 
-            // Append User Message
-            const userMsg = document.createElement('div');
-            userMsg.className = 'user-message-container';
-            userMsg.style.cssText = 'align-self: flex-end; max-width: 90%; background: var(--bg-user-msg); border-radius: 12px; padding: 10px 14px; border: 1px solid var(--border-color); font-size: 14px; margin-bottom: 12px;';
-            userMsg.textContent = text;
-            workspaceChatMessages.appendChild(userMsg);
+            // Memory Management: Keep last 10 messages
+            if (workspaceConversationHistory.length > 10) {
+                workspaceConversationHistory = workspaceConversationHistory.slice(-10);
+            }
+
+            // Append User Message with Design
+            const wrapper = document.createElement('div');
+            wrapper.className = 'workspace-user-msg-wrapper';
             
+            const container = document.createElement('div');
+            container.className = 'workspace-user-msg-container';
+            container.textContent = text;
+            
+            const actionBar = document.createElement('div');
+            actionBar.className = 'workspace-user-action-bar';
+            actionBar.innerHTML = `
+                <button class="action-icon-btn" title="Edit" style="padding: 2px;"><i data-lucide="edit-3" style="width: 12px; height: 12px;"></i></button>
+                <button class="action-icon-btn" title="Copy" style="padding: 2px;"><i data-lucide="copy" style="width: 12px; height: 12px;"></i></button>
+            `;
+            
+            wrapper.appendChild(container);
+            wrapper.appendChild(actionBar);
+            workspaceChatMessages.appendChild(wrapper);
+            
+            // Edit Functionality
+            actionBar.querySelector('button[title="Edit"]').addEventListener('click', () => {
+                workspaceChatInput.value = text;
+                workspaceChatInput.focus();
+                workspaceChatInput.dispatchEvent(new Event('input'));
+            });
+
+            // Copy Functionality
+            actionBar.querySelector('button[title="Copy"]').addEventListener('click', () => {
+                copyToClipboard(text, actionBar.querySelector('button[title="Copy"]'));
+            });
+
             workspaceConversationHistory.push({ role: "user", content: text });
             
             // Append Loading
@@ -1666,10 +1780,21 @@
             }
 
             try {
-                const systemPrompt = `You are Newton, a helpful workspace assistant. You have access to the documents in the workspace. Use the following document content to answer the user's questions. If the answer is not in the documents, you can use your general knowledge but mention that it's not in the docs. Use clear formatting, bullet points, and bold text for readability.
+                // Memory Management: Truncate document context if too large
+                let truncatedDocs = workspaceDocsContent;
+                if (truncatedDocs.length > 4000) {
+                    truncatedDocs = truncatedDocs.substring(0, 4000) + "... [Document content truncated for performance]";
+                }
+
+                const systemPrompt = `You are Newton, a helpful workspace assistant. Use the following document content to answer the user's questions. 
 
 ### WORKSPACE DOCUMENTS:
-${workspaceDocsContent}`;
+${truncatedDocs}
+
+### RESPONSE GUIDELINES:
+- Use clear formatting, bullet points, and bold text.
+- If the answer isn't in the docs, say so but use your general knowledge.
+- Keep answers helpful and concise.`;
 
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
@@ -1681,12 +1806,15 @@ ${workspaceDocsContent}`;
                         model: "llama-3.3-70b-versatile",
                         messages: [{ role: "system", content: systemPrompt }, ...workspaceConversationHistory],
                         temperature: 0.5,
-                        max_tokens: 2048
+                        max_tokens: 1500
                     })
                 });
 
                 if (!response.ok) {
                     const errorData = await response.json();
+                    if (errorData.error?.code === "rate_limit_exceeded") {
+                        throw new Error("Rate limit reached. Try shortening your conversation or waiting a moment.");
+                    }
                     throw new Error(errorData.error?.message || `API Error: ${response.status}`);
                 }
 
@@ -1702,28 +1830,28 @@ ${workspaceDocsContent}`;
                 workspaceChatMessages.appendChild(aiMsg);
 
                 // Add Action Bar (Copy, etc.)
-                const actionBar = document.createElement('div');
-                actionBar.className = 'ai-action-bar';
-                actionBar.style.cssText = 'display: flex; gap: 6px; margin-bottom: 24px; margin-top: 4px;';
-                actionBar.innerHTML = `
+                const aiActionBar = document.createElement('div');
+                aiActionBar.className = 'ai-action-bar';
+                aiActionBar.style.cssText = 'display: flex; gap: 6px; margin-bottom: 24px; margin-top: 4px;';
+                aiActionBar.innerHTML = `
                     <button class="action-icon-btn" title="Copy"><i data-lucide="copy" style="width: 16px; height: 16px;"></i></button>
                     <button class="action-icon-btn" title="Good"><i data-lucide="thumbs-up" style="width: 16px; height: 16px;"></i></button>
                     <button class="action-icon-btn" title="Bad"><i data-lucide="thumbs-down" style="width: 16px; height: 16px;"></i></button>
                     <button class="action-icon-btn" title="Retry"><i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i></button>
                 `;
-                workspaceChatMessages.appendChild(actionBar);
+                workspaceChatMessages.appendChild(aiActionBar);
                 
                 workspaceConversationHistory.push({ role: "assistant", content: aiText });
                 
                 // Copy Functionality
-                const copyBtn = actionBar.querySelector('button[title="Copy"]');
+                const copyBtn = aiActionBar.querySelector('button[title="Copy"]');
                 copyBtn.addEventListener('click', () => {
                     copyToClipboard(aiText, copyBtn);
                 });
 
-                const retryBtn = actionBar.querySelector('button[title="Retry"]');
+                const retryBtn = aiActionBar.querySelector('button[title="Retry"]');
                 retryBtn.addEventListener('click', () => {
-                    actionBar.remove();
+                    aiActionBar.remove();
                     aiMsg.remove();
                     workspaceConversationHistory.pop();
                     handleWorkspaceChat();
@@ -1738,10 +1866,14 @@ ${workspaceDocsContent}`;
 
             } catch (err) {
                 console.error("Workspace Chat Error:", err);
-                loadingMsg.innerHTML = `<div style="color: #ff8b8b; background: rgba(255,139,139,0.1); padding: 10px; border-radius: 8px; font-size: 13px;">
-                    <strong>API Error:</strong> ${err.message}<br>
-                    <span style="font-size: 11px; opacity: 0.8;">Make sure your Groq API key is valid and you have internet connection.</span>
+                loadingMsg.innerHTML = `<div style="color: #ff8b8b; background: rgba(255,139,139,0.1); padding: 12px; border-radius: 12px; font-size: 13px; font-family: var(--font-sans); border: 1px solid rgba(255,139,139,0.2);">
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                        <i data-lucide="alert-circle" style="width: 16px; height: 16px;"></i>
+                        <strong>API Error</strong>
+                    </div>
+                    ${err.message}
                 </div>`;
+                lucide.createIcons();
             }
         }
 
@@ -1770,7 +1902,6 @@ ${workspaceDocsContent}`;
                 if (isRecording) {
                     recognition.stop();
                     wsVoiceBtn.classList.remove('recording');
-                    wsVoiceBtn.style.background = 'none';
                     wsVoiceBtn.style.color = 'var(--text-secondary)';
                 } else {
                     // Temporarily swap recognition result handler
@@ -1784,13 +1915,11 @@ ${workspaceDocsContent}`;
                     recognition.start();
                     isRecording = true;
                     wsVoiceBtn.classList.add('recording');
-                    wsVoiceBtn.style.background = 'rgba(255, 107, 107, 0.1)';
                     wsVoiceBtn.style.color = '#ff6b6b';
 
                     recognition.onend = () => {
                         isRecording = false;
                         wsVoiceBtn.classList.remove('recording');
-                        wsVoiceBtn.style.background = 'none';
                         wsVoiceBtn.style.color = 'var(--text-secondary)';
                         recognition.onresult = oldOnResult; // Restore original handler
                     };
