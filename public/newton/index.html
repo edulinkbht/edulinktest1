@@ -574,6 +574,26 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: flex-start;
+            position: relative;
+        }
+
+        .workspace-main-content-inner {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+
+        .workspace-description {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-family: var(--font-serif);
+            max-width: 650px;
+            text-align: justify;
+            margin-bottom: 32px;
         }
 
         .workspace-sidebar {
@@ -1344,12 +1364,12 @@
             </header>
             <div class="workspace-body">
                 <div class="workspace-main-content">
-                    <div style="width: 100%; max-width: 800px; display: flex; flex-direction: column; align-items: center; text-align: center;">
-                        <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 24px;">Workspace Content</h1>
-                        <p style="color: var(--text-secondary); line-height: 1.6; font-family: var(--font-serif); max-width: 600px;">Welcome to your workspace. Use the AI sidebar to interact with your documents.</p>
+                    <div class="workspace-main-content-inner">
+                        <h1 style="font-family: var(--font-serif); font-size: 36px; margin-bottom: 24px; color: #fff;">Workspace Content</h1>
+                        <p class="workspace-description">Welcome to your workspace. This environment is designed for deep work with your documents. Use the AI sidebar on the right to analyze, summarize, or query any of the files listed below. Your AI assistant has full access to the document context to provide precise and helpful answers.</p>
                         
-                        <div class="workspace-docs-container">
-                            <h3 style="font-size: 14px; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 1px; margin-bottom: 24px;">Documents in this workspace</h3>
+                        <div class="workspace-docs-container" style="width: 100%;">
+                            <h3 style="font-size: 13px; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 2px; margin-bottom: 24px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 12px; display: inline-block;">Documents</h3>
                             <div id="docsItemsContainer">
                                 <!-- Docs will be loaded here -->
                             </div>
@@ -1740,9 +1760,15 @@
             workspaceChatInput.value = '';
             workspaceChatInput.style.height = 'auto';
 
-            // Memory Management: Keep last 10 messages
-            if (workspaceConversationHistory.length > 10) {
-                workspaceConversationHistory = workspaceConversationHistory.slice(-10);
+            // Check if this is a repeat message to avoid looping
+            if (workspaceConversationHistory.length > 0 && 
+                workspaceConversationHistory[workspaceConversationHistory.length - 1].content === text) {
+                return;
+            }
+
+            // Memory Management: Keep last 6 messages for leaner context
+            if (workspaceConversationHistory.length > 6) {
+                workspaceConversationHistory = workspaceConversationHistory.slice(-6);
             }
 
             // Append User Message with Design
@@ -1802,19 +1828,20 @@
             try {
                 // Memory Management: Truncate document context if too large
                 let truncatedDocs = workspaceDocsContent;
-                if (truncatedDocs.length > 4000) {
-                    truncatedDocs = truncatedDocs.substring(0, 4000) + "... [Document content truncated for performance]";
+                if (truncatedDocs.length > 3000) {
+                    truncatedDocs = truncatedDocs.substring(0, 3000) + "... [Document context truncated]";
                 }
 
-                const systemPrompt = `You are Newton, a helpful workspace assistant. Use the following document content to answer the user's questions. 
+                const systemPrompt = `You are a professional workspace assistant. Answer questions based on the provided documents. 
 
 ### WORKSPACE DOCUMENTS:
 ${truncatedDocs}
 
-### RESPONSE GUIDELINES:
-- Use clear formatting, bullet points, and bold text.
-- If the answer isn't in the docs, say so but use your general knowledge.
-- Keep answers helpful and concise.`;
+### RULES:
+1. Do NOT repeat greetings.
+2. If the answer isn't in the docs, say "Based on my general knowledge..."
+3. Use bullet points and bold text for clarity.
+4. Keep answers concise.`;
 
                 const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
                     method: "POST",
@@ -1823,17 +1850,17 @@ ${truncatedDocs}
                         "Content-Type": "application/json" 
                     },
                     body: JSON.stringify({
-                        model: "llama-3.3-70b-versatile",
+                        model: "llama-3.1-8b-instant", // Using a faster model for workspace to avoid rate limits
                         messages: [{ role: "system", content: systemPrompt }, ...workspaceConversationHistory],
-                        temperature: 0.5,
-                        max_tokens: 1500
+                        temperature: 0.3, // Lower temperature for more focused answers
+                        max_tokens: 1024
                     })
                 });
 
                 if (!response.ok) {
                     const errorData = await response.json();
                     if (errorData.error?.code === "rate_limit_exceeded") {
-                        throw new Error("Rate limit reached. Try shortening your conversation or waiting a moment.");
+                        throw new Error("Rate limit reached. Please wait a few seconds.");
                     }
                     throw new Error(errorData.error?.message || `API Error: ${response.status}`);
                 }
@@ -1845,7 +1872,7 @@ ${truncatedDocs}
                 
                 const aiMsg = document.createElement('div');
                 aiMsg.className = 'ai-message';
-                aiMsg.style.cssText = 'font-size: 15px; font-family: var(--font-serif); line-height: 1.65; margin-bottom: 8px; color: var(--text-primary);';
+                aiMsg.style.cssText = 'font-size: 15px; font-family: var(--font-serif); line-height: 1.65; margin-bottom: 8px; color: var(--text-primary); text-align: justify;';
                 aiMsg.innerHTML = parseMarkdown(aiText);
                 workspaceChatMessages.appendChild(aiMsg);
 
