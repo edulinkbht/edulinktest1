@@ -404,21 +404,81 @@
             display: flex;
             justify-content: flex-end;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
             font-size: 14px;
             color: var(--text-tertiary);
             margin-bottom: 40px;
+            position: relative;
         }
 
-        .sort-select {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+        .sort-label {
+            color: var(--text-tertiary);
+            font-size: 15px;
+        }
+
+        .sort-dropdown-btn {
+            background: #212121;
+            border: 1px solid var(--border-color);
             color: #fff;
-            padding: 4px 8px;
-            border-radius: 6px;
+            padding: 8px 16px;
+            border-radius: 12px;
             cursor: pointer;
-            outline: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            transition: all 0.2s;
+            min-width: 120px;
+            justify-content: space-between;
+        }
+
+        .sort-dropdown-btn:hover {
+            background: #2a2a2a;
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .sort-dropdown-menu {
+            position: absolute;
+            top: calc(100% + 8px);
+            right: 0;
+            background: #2a2a2a;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 200px;
+            display: none;
+            flex-direction: column;
+            padding: 8px;
+            z-index: 100;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            animation: dropdownFade 0.2s ease;
+        }
+
+        .sort-dropdown-item {
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .sort-dropdown-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+
+        .sort-dropdown-item i[data-lucide="check"] {
+            width: 16px;
+            height: 16px;
+            color: #2e7d32; /* Changed to a nice blue later if needed, but image shows blue */
+            color: #3b82f6;
+            display: none;
+        }
+
+        .sort-dropdown-item.active i[data-lucide="check"] {
+            display: block;
         }
 
         .workspaces-empty-state {
@@ -1011,11 +1071,25 @@
             </div>
 
             <div class="workspaces-sort">
-                <span>Sort by</span>
-                <select class="sort-select">
-                    <option value="activity">Activity</option>
-                    <option value="name">Name</option>
-                </select>
+                <span class="sort-label">Sort by</span>
+                <button class="sort-dropdown-btn" id="sortDropdownBtn">
+                    <span id="currentSort">Activity</span>
+                    <i data-lucide="chevron-down"></i>
+                </button>
+                <div class="sort-dropdown-menu" id="sortDropdownMenu">
+                    <div class="sort-dropdown-item active" data-sort="activity">
+                        <span>Recent activity</span>
+                        <i data-lucide="check"></i>
+                    </div>
+                    <div class="sort-dropdown-item" data-sort="edited">
+                        <span>Last edited</span>
+                        <i data-lucide="check"></i>
+                    </div>
+                    <div class="sort-dropdown-item" data-sort="created">
+                        <span>Date created</span>
+                        <i data-lucide="check"></i>
+                    </div>
+                </div>
             </div>
 
             <div class="workspaces-empty-state">
@@ -1221,6 +1295,40 @@
                 }
             });
         }
+
+        // Sort Dropdown Logic
+        const sortBtn = document.getElementById('sortDropdownBtn');
+        const sortMenu = document.getElementById('sortDropdownMenu');
+        const sortItems = document.querySelectorAll('.sort-dropdown-item');
+        const currentSortLabel = document.getElementById('currentSort');
+
+        if (sortBtn) {
+            sortBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                sortMenu.style.display = sortMenu.style.display === 'flex' ? 'none' : 'flex';
+            });
+        }
+
+        sortItems.forEach(item => {
+            item.addEventListener('click', () => {
+                sortItems.forEach(i => i.classList.remove('active'));
+                item.classList.add('active');
+                
+                // Update the button label to the short version
+                const sortType = item.getAttribute('data-sort');
+                if (sortType === 'activity') currentSortLabel.textContent = 'Activity';
+                else if (sortType === 'edited') currentSortLabel.textContent = 'Edited';
+                else if (sortType === 'created') currentSortLabel.textContent = 'Created';
+                
+                sortMenu.style.display = 'none';
+            });
+        });
+
+        // Close all dropdowns when clicking outside
+        document.addEventListener('click', () => {
+            if (modelDropdown) modelDropdown.style.display = 'none';
+            if (sortMenu) sortMenu.style.display = 'none';
+        });
 
         if (toggleSidebar && sidebar) {
             toggleSidebar.addEventListener('click', () => {
