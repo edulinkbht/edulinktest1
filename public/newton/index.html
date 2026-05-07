@@ -574,11 +574,6 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            scrollbar-width: none; /* Hide for Firefox */
-            -ms-overflow-style: none; /* Hide for IE/Edge */
-        }
-        .workspace-main-content::-webkit-scrollbar {
-            display: none; /* Hide for Chrome/Safari */
         }
 
         .workspace-sidebar {
@@ -587,18 +582,14 @@
             display: flex;
             flex-direction: column;
             background: #1a1a1a;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s ease;
         }
 
         .workspace-sidebar.collapsed {
             width: 0;
+            margin-right: -350px;
             border-left: none;
-            flex: 0;
-        }
-
-        .workspace-sidebar.collapsed .workspace-chat-container {
-            display: none;
+            overflow: hidden;
         }
 
         .workspace-chat-container {
@@ -606,7 +597,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            width: 350px;
+            min-width: 350px;
         }
 
         .workspace-chat-messages {
@@ -616,11 +607,27 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;  /* IE and Edge */
         }
         .workspace-chat-messages::-webkit-scrollbar {
-            display: none;
+            display: none; /* Chrome, Safari and Opera */
+        }
+
+        .workspace-docs-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 40px;
+        }
+
+        #docsItemsContainer {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px;
+            width: 100%;
+            justify-content: center;
         }
 
         .workspace-user-msg-wrapper {
@@ -1328,7 +1335,7 @@
                 </div>
                 <div class="workspace-header-right">
                     <button class="icon-btn" id="toggleWorkspaceAI" title="Toggle AI Sidebar" style="width: auto; padding: 4px; color: var(--text-tertiary); margin-right: 8px;">
-                        <i data-lucide="sidebar"></i>
+                        <i data-lucide="panel-right-close"></i>
                     </button>
                     <button class="share-btn">
                         <i data-lucide="users"></i> Share
@@ -1337,15 +1344,13 @@
             </header>
             <div class="workspace-body">
                 <div class="workspace-main-content">
-                    <div style="width: 100%; max-width: 800px; flex: 1; display: flex; flex-direction: column; justify-content: center;">
+                    <div style="width: 100%; max-width: 800px; display: flex; flex-direction: column; align-items: center; text-align: center;">
                         <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 24px;">Workspace Content</h1>
-                        <p style="color: var(--text-secondary); line-height: 1.6; font-family: var(--font-serif);">Welcome to your workspace. Use the AI sidebar to interact with your documents.</p>
+                        <p style="color: var(--text-secondary); line-height: 1.6; font-family: var(--font-serif); max-width: 600px;">Welcome to your workspace. Use the AI sidebar to interact with your documents.</p>
                         
-                        <div id="workspaceDocsList" style="margin-top: 40px; width: 100%;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-                                <h3 style="font-size: 14px; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 1px;">Documents in this workspace</h3>
-                            </div>
-                            <div id="docsItemsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
+                        <div class="workspace-docs-container">
+                            <h3 style="font-size: 14px; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 1px; margin-bottom: 24px;">Documents in this workspace</h3>
+                            <div id="docsItemsContainer">
                                 <!-- Docs will be loaded here -->
                             </div>
                         </div>
@@ -1703,6 +1708,7 @@
         if (toggleWorkspaceAI && workspaceSidebar) {
             toggleWorkspaceAI.addEventListener('click', () => {
                 const isCollapsed = workspaceSidebar.classList.toggle('collapsed');
+                toggleWorkspaceAI.innerHTML = isCollapsed ? '<i data-lucide="panel-right-open"></i>' : '<i data-lucide="panel-right-close"></i>';
                 lucide.createIcons();
             });
         }
@@ -1839,8 +1845,8 @@ ${truncatedDocs}
                 aiMsg.innerHTML = parseMarkdown(aiText);
                 workspaceChatMessages.appendChild(aiMsg);
 
-                // Apply show more/less logic to workspace messages
-                setTimeout(() => applyShowMoreLogic(aiMsg, 250), 50);
+                // Apply See More logic to the AI message
+                setTimeout(() => applyShowMoreLogic(aiMsg, 300), 50);
 
                 // Add Action Bar (Copy, etc.)
                 const aiActionBar = document.createElement('div');
