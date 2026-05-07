@@ -584,17 +584,6 @@
             background: #1a1a1a;
         }
 
-        .workspace-sidebar-header {
-            padding: 16px;
-            border-bottom: 1px solid var(--border-color);
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-secondary);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
         .workspace-chat-container {
             flex: 1;
             display: flex;
@@ -613,7 +602,6 @@
 
         .workspace-chat-input-area {
             padding: 16px;
-            border-top: 1px solid var(--border-color);
         }
 
         .workspace-chat-input-wrapper {
@@ -1303,13 +1291,9 @@
                     </div>
                 </div>
                 <aside class="workspace-sidebar">
-                    <div class="workspace-sidebar-header">
-                        <i data-lucide="sparkles" style="width: 16px; height: 16px; color: var(--accent-color);"></i>
-                        AI Assistant
-                    </div>
                     <div class="workspace-chat-container">
                         <div class="workspace-chat-messages" id="workspaceChatMessages">
-                            <div class="ai-message" style="font-size: 14px; font-family: var(--font-sans);">
+                            <div class="ai-message" style="font-size: 15px; font-family: var(--font-serif); line-height: 1.65; color: var(--text-primary);">
                                 <p>Hello! I'm your workspace assistant. I have access to all the documents in your <strong>docs</strong> folder. How can I help you with them today?</p>
                             </div>
                         </div>
@@ -1318,7 +1302,7 @@
                                 <textarea class="message-input" id="workspaceChatInput" placeholder="Ask AI about your docs..." rows="1" style="font-size: 14px; min-height: 40px;"></textarea>
                                 <div class="input-controls" style="margin-top: 8px;">
                                     <div class="control-group">
-                                        <button class="icon-btn" style="width: 32px; height: 32px; border: 1px solid var(--border-color); border-radius: 50%;"><i data-lucide="plus" style="width: 18px; height: 18px;"></i></button>
+                                        <button class="icon-btn" id="workspaceVoiceBtn" style="width: 32px; height: 32px; border: 1px solid var(--border-color); border-radius: 50%;" title="Voice Input"><i data-lucide="audio-lines" style="width: 18px; height: 18px;"></i></button>
                                     </div>
                                     <div class="control-group">
                                         <button class="workspace-chat-send-btn" id="workspaceSendBtn" style="width: 32px; height: 32px; background: var(--accent-color); border-radius: 8px;">
@@ -1713,11 +1697,38 @@ ${workspaceDocsContent}`;
                 
                 const aiMsg = document.createElement('div');
                 aiMsg.className = 'ai-message';
-                aiMsg.style.cssText = 'font-size: 14px; font-family: var(--font-sans); margin-bottom: 20px; color: var(--text-primary);';
+                aiMsg.style.cssText = 'font-size: 15px; font-family: var(--font-serif); line-height: 1.65; margin-bottom: 8px; color: var(--text-primary);';
                 aiMsg.innerHTML = parseMarkdown(aiText);
                 workspaceChatMessages.appendChild(aiMsg);
+
+                // Add Action Bar (Copy, etc.)
+                const actionBar = document.createElement('div');
+                actionBar.className = 'ai-action-bar';
+                actionBar.style.cssText = 'display: flex; gap: 6px; margin-bottom: 24px; margin-top: 4px;';
+                actionBar.innerHTML = `
+                    <button class="action-icon-btn" title="Copy"><i data-lucide="copy" style="width: 16px; height: 16px;"></i></button>
+                    <button class="action-icon-btn" title="Good"><i data-lucide="thumbs-up" style="width: 16px; height: 16px;"></i></button>
+                    <button class="action-icon-btn" title="Bad"><i data-lucide="thumbs-down" style="width: 16px; height: 16px;"></i></button>
+                    <button class="action-icon-btn" title="Retry"><i data-lucide="rotate-ccw" style="width: 16px; height: 16px;"></i></button>
+                `;
+                workspaceChatMessages.appendChild(actionBar);
                 
                 workspaceConversationHistory.push({ role: "assistant", content: aiText });
+                
+                // Copy Functionality
+                const copyBtn = actionBar.querySelector('button[title="Copy"]');
+                copyBtn.addEventListener('click', () => {
+                    copyToClipboard(aiText, copyBtn);
+                });
+
+                const retryBtn = actionBar.querySelector('button[title="Retry"]');
+                retryBtn.addEventListener('click', () => {
+                    actionBar.remove();
+                    aiMsg.remove();
+                    workspaceConversationHistory.pop();
+                    handleWorkspaceChat();
+                });
+
                 workspaceChatMessages.scrollTop = workspaceChatMessages.scrollHeight;
                 
                 // Handle math and links
@@ -1746,6 +1757,46 @@ ${workspaceDocsContent}`;
             this.style.height = 'auto';
             this.style.height = (this.scrollHeight) + 'px';
         });
+
+        // Workspace Voice Input Logic
+        const wsVoiceBtn = document.getElementById('workspaceVoiceBtn');
+        if (wsVoiceBtn) {
+            wsVoiceBtn.addEventListener('click', () => {
+                if (!recognition) {
+                    alert('Speech recognition is not supported in your browser.');
+                    return;
+                }
+
+                if (isRecording) {
+                    recognition.stop();
+                    wsVoiceBtn.classList.remove('recording');
+                    wsVoiceBtn.style.background = 'none';
+                    wsVoiceBtn.style.color = 'var(--text-secondary)';
+                } else {
+                    // Temporarily swap recognition result handler
+                    const oldOnResult = recognition.onresult;
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        workspaceChatInput.value += (workspaceChatInput.value ? ' ' : '') + transcript;
+                        workspaceChatInput.dispatchEvent(new Event('input'));
+                    };
+                    
+                    recognition.start();
+                    isRecording = true;
+                    wsVoiceBtn.classList.add('recording');
+                    wsVoiceBtn.style.background = 'rgba(255, 107, 107, 0.1)';
+                    wsVoiceBtn.style.color = '#ff6b6b';
+
+                    recognition.onend = () => {
+                        isRecording = false;
+                        wsVoiceBtn.classList.remove('recording');
+                        wsVoiceBtn.style.background = 'none';
+                        wsVoiceBtn.style.color = 'var(--text-secondary)';
+                        recognition.onresult = oldOnResult; // Restore original handler
+                    };
+                }
+            });
+        }
     </script>
 
     <script>
