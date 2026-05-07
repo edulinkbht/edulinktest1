@@ -574,6 +574,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
+            scrollbar-width: none; /* Hide for Firefox */
+            -ms-overflow-style: none; /* Hide for IE/Edge */
+        }
+        .workspace-main-content::-webkit-scrollbar {
+            display: none; /* Hide for Chrome/Safari */
         }
 
         .workspace-sidebar {
@@ -582,14 +587,18 @@
             display: flex;
             flex-direction: column;
             background: #1a1a1a;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), margin-right 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
         }
 
         .workspace-sidebar.collapsed {
             width: 0;
-            margin-right: -350px;
             border-left: none;
-            overflow: hidden;
+            flex: 0;
+        }
+
+        .workspace-sidebar.collapsed .workspace-chat-container {
+            display: none;
         }
 
         .workspace-chat-container {
@@ -597,7 +606,7 @@
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            min-width: 350px;
+            width: 350px;
         }
 
         .workspace-chat-messages {
@@ -607,6 +616,11 @@
             display: flex;
             flex-direction: column;
             gap: 24px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        .workspace-chat-messages::-webkit-scrollbar {
+            display: none;
         }
 
         .workspace-user-msg-wrapper {
@@ -1314,7 +1328,7 @@
                 </div>
                 <div class="workspace-header-right">
                     <button class="icon-btn" id="toggleWorkspaceAI" title="Toggle AI Sidebar" style="width: auto; padding: 4px; color: var(--text-tertiary); margin-right: 8px;">
-                        <i data-lucide="panel-right-close"></i>
+                        <i data-lucide="sidebar"></i>
                     </button>
                     <button class="share-btn">
                         <i data-lucide="users"></i> Share
@@ -1323,16 +1337,13 @@
             </header>
             <div class="workspace-body">
                 <div class="workspace-main-content">
-                    <div style="width: 100%; max-width: 800px;">
+                    <div style="width: 100%; max-width: 800px; flex: 1; display: flex; flex-direction: column; justify-content: center;">
                         <h1 style="font-family: var(--font-serif); font-size: 32px; margin-bottom: 24px;">Workspace Content</h1>
                         <p style="color: var(--text-secondary); line-height: 1.6; font-family: var(--font-serif);">Welcome to your workspace. Use the AI sidebar to interact with your documents.</p>
                         
                         <div id="workspaceDocsList" style="margin-top: 40px; width: 100%;">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                                 <h3 style="font-size: 14px; text-transform: uppercase; color: var(--text-tertiary); letter-spacing: 1px;">Documents in this workspace</h3>
-                                <button class="icon-btn" style="width: auto; height: auto; padding: 4px 8px; font-size: 12px; color: var(--accent-color); border: 1px solid rgba(217, 119, 87, 0.2); border-radius: 6px;" onclick="loadWorkspaceDocs()">
-                                    <i data-lucide="refresh-cw" style="width: 12px; height: 12px; margin-right: 4px;"></i> Refresh
-                                </button>
                             </div>
                             <div id="docsItemsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px;">
                                 <!-- Docs will be loaded here -->
@@ -1692,7 +1703,6 @@
         if (toggleWorkspaceAI && workspaceSidebar) {
             toggleWorkspaceAI.addEventListener('click', () => {
                 const isCollapsed = workspaceSidebar.classList.toggle('collapsed');
-                toggleWorkspaceAI.innerHTML = isCollapsed ? '<i data-lucide="panel-right-open"></i>' : '<i data-lucide="panel-right-close"></i>';
                 lucide.createIcons();
             });
         }
@@ -1828,6 +1838,9 @@ ${truncatedDocs}
                 aiMsg.style.cssText = 'font-size: 15px; font-family: var(--font-serif); line-height: 1.65; margin-bottom: 8px; color: var(--text-primary);';
                 aiMsg.innerHTML = parseMarkdown(aiText);
                 workspaceChatMessages.appendChild(aiMsg);
+
+                // Apply show more/less logic to workspace messages
+                setTimeout(() => applyShowMoreLogic(aiMsg, 250), 50);
 
                 // Add Action Bar (Copy, etc.)
                 const aiActionBar = document.createElement('div');
