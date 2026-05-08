@@ -4526,7 +4526,7 @@
         };
         window.openPromoModal = e => { if (e) { e.stopPropagation(); e.preventDefault() } document.getElementById('promo-modal').classList.remove('hidden'); const i = document.getElementById('promo-image'), l = document.getElementById('promo-link'); if (i.src) document.getElementById('promo-img-url').value = i.src; if (l.href) document.getElementById('promo-target-url').value = l.href };
         window.handlePromoFile = e => { const f = e.target.files[0]; if (f) { window.currentPromoBlob = f; showToast("Image selected") } };
-        window.savePromo = async () => { const b = event.target, ot = b.innerText; b.innerText = "Saving..."; b.disabled = true; let i = document.getElementById('promo-img-url').value.trim(); const l = document.getElementById('promo-target-url').value.trim(); if (window.currentPromoBlob) try { i = await uploadToImgHippo(window.currentPromoBlob) } catch (e) { console.error(e); } try { await setDoc(doc(db, "global", "promo"), { imageUrl: i || "", linkUrl: l }); showToast("Upload done"); document.getElementById('promo-modal').classList.add('hidden'); window.currentPromoBlob = null } catch (e) { console.error(e); showToast("Upload done", false) } b.innerText = ot; b.disabled = false };
+        window.savePromo = async () => { const b = event.target, ot = b.innerText; b.innerText = "Saving..."; b.disabled = true; let i = document.getElementById('promo-img-url').value.trim(); const l = document.getElementById('promo-target-url').value.trim(); if (window.currentPromoBlob) try { i = await uploadToCloudinary(window.currentPromoBlob) } catch (e) { console.error(e); } try { await setDoc(doc(db, "global", "promo"), { imageUrl: i || "", linkUrl: l }); showToast("Upload done"); document.getElementById('promo-modal').classList.add('hidden'); window.currentPromoBlob = null } catch (e) { console.error(e); showToast("Upload done", false) } b.innerText = ot; b.disabled = false };
         window.updatePostViewStats = pid => { const p = posts.find(x => x.id === pid); if (!p) return; const dl = document.getElementById('post-view-likes-count'); if (dl) dl.innerText = `${p.likes ? p.likes.length : 0} likes`; const mlc = document.getElementById(`mobile-overlay-like-count-${pid}`); if (mlc) mlc.innerText = `${p.likes ? p.likes.length : 0} likes` };
         function updateUserInterface() { if (!currentUser) return; const u = currentUser; document.getElementById('nav-profile-avatar').src = u.avatar; document.getElementById('mobile-avatar').src = u.avatar; document.getElementById('header-avatar').src = u.avatar; const _nha = document.getElementById('notif-header-avatar'); if (_nha) _nha.src = u.avatar; document.getElementById('compose-name').innerText = u.name; document.getElementById('compose-avatar').src = u.avatar; document.getElementById('edit-name').value = u.name; document.getElementById('edit-username').value = u.username || ""; document.getElementById('edit-bio').value = u.bio || ""; document.getElementById('edit-avatar-preview').src = u.avatar; document.getElementById('edit-banner-preview').src = u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'; document.getElementById('edit-banner-preview').style.objectPosition = `center ${currentBannerPos}%`; document.getElementById('banner-pos-hint').innerText = `${currentBannerPos}%`; const tp = document.getElementById('toggle-privacy'); if (tp) u.settings?.privateNetwork ? tp.classList.add('active') : tp.classList.remove('active'); if (u.email === 'edulinkbht@gmail.com') { document.getElementById('edit-promo-btn').classList.remove('hidden'); document.getElementById('promo-section').classList.remove('hidden'); document.getElementById('create-option-ad').classList.remove('hidden') } else document.getElementById('create-option-ad').classList.add('hidden'); refreshIcons() }
         let alertCallback = null; window.showAlert = (m, cb) => { document.getElementById('alert-msg').innerText = m; const a = document.getElementById('custom-alert'); a.classList.remove('hidden'); setTimeout(() => { a.classList.remove('opacity-0'); document.getElementById('custom-alert-box').classList.remove('scale-95') }, 10); alertCallback = cb; const b = document.getElementById('alert-confirm-btn'), nb = b.cloneNode(!0); b.parentNode.replaceChild(nb, b); nb.onclick = () => { if (alertCallback) alertCallback(); closeAlert(!0) } };
@@ -4802,7 +4802,15 @@
                     const s = ma[0],
                         iv = s.includes('video') || s.includes('.mp4') || s.startsWith('data:video');
                     const isCached = window.imageLoadCache.has(s);
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'}" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${iv ? `<video src="${s}" class="w-full h-full object-cover" controls playsinline onclick="event.stopPropagation()"></video>` : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
+                    let videoHtml = "";
+                    if (iv) {
+                        let poster = "";
+                        if (s.includes('cloudinary.com')) {
+                            poster = s.replace(/\.[^.]+$/, '.jpg');
+                        }
+                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
+                    }
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'}" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
                 } else {
                     const cid = `carousel-${ctx}-${p.id}`,
                         iid = `inner-${ctx}-${p.id}`,
@@ -4812,7 +4820,15 @@
                     ma.forEach((s, i) => {
                         const isCached = window.imageLoadCache.has(s);
                         const iv = s.includes('video') || s.includes('.mp4') || s.startsWith('data:video');
-                        sl += `<div class="post-carousel-item bg-gray-50 flex items-center justify-center">${iv ? `<video src="${s}" class="w-full h-full object-cover" controls playsinline></video>` : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
+                        let videoHtml = "";
+                        if (iv) {
+                            let poster = "";
+                            if (s.includes('cloudinary.com')) {
+                                poster = s.replace(/\.[^.]+$/, '.jpg');
+                            }
+                            videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata"></video>`;
+                        }
+                        sl += `<div class="post-carousel-item bg-gray-50 flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
                         dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="dot-${ctx}-${p.id}-${i}"></div>`
                     });
                     mh = `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel touch-pan-y max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
@@ -5191,7 +5207,15 @@
             ma.forEach((s, i) => {
                 const isCached = window.imageLoadCache.has(s);
                 const iv = s.includes('video') || s.includes('.mp4') || s.startsWith('data:video');
-                sl += `<div class="post-carousel-item img-placeholder bg-gray-50 flex items-center justify-center">${iv ? `<video src="${s}" class="w-full h-full object-cover" controls playsinline></video>` : `<img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')">`}</div>`;
+                let videoHtml = "";
+                if (iv) {
+                    let poster = "";
+                    if (s.includes('cloudinary.com')) {
+                        poster = s.replace(/\.[^.]+$/, '.jpg');
+                    }
+                    videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata"></video>`;
+                }
+                sl += `<div class="post-carousel-item img-placeholder bg-gray-50 flex items-center justify-center">${iv ? videoHtml : `<img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')">`}</div>`;
                 dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="${prefix}-dot-${pid}-${i}"></div>`
             });
             const cid = `${prefix}-carousel-${pid}`,
@@ -5631,8 +5655,16 @@
                   isV = m && (m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video')), 
                   likeText = (p.likes?.length > 0) ? p.likes.length : '0', 
                   commentText = (p.comments?.length > 0) ? p.comments.length : '0';
+            let videoHtml = "";
+            if (isV) {
+                let poster = "";
+                if (m && m.includes('cloudinary.com')) {
+                    poster = m.replace(/\.[^.]+$/, '.jpg');
+                }
+                videoHtml = `<video src="${m}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover pointer-events-none" preload="metadata"></video>`;
+            }
             return `<div class="grid-post-item group ${!m && !p.embedVideo ? 'border border-gray-100' : ''}" onclick="openPostView('${p.id}')">
-                ${m ? (isV ? `<video src="${m}" class="w-full h-full object-cover pointer-events-none"></video>` : `<div class="img-placeholder w-full h-full"><img src="${m}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>` + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2"><i data-lucide="gallery-horizontal" class="w-4 h-4 text-white drop-shadow-md fill-white"></i></div>` : '')) : (p.embedVideo ? `<div class="w-full h-full flex items-center justify-center bg-gray-900 border border-gray-800"><i data-lucide="video" class="w-8 h-8 text-gray-500"></i></div>` : `<div class="grid-post-text-preview !bg-transparent">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`)}
+                ${m ? (isV ? videoHtml : `<div class="img-placeholder w-full h-full"><img src="${m}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>` + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2"><i data-lucide="gallery-horizontal" class="w-4 h-4 text-white drop-shadow-md fill-white"></i></div>` : '')) : (p.embedVideo ? `<div class="w-full h-full flex items-center justify-center bg-gray-900 border border-gray-800"><i data-lucide="video" class="w-8 h-8 text-gray-500"></i></div>` : `<div class="grid-post-text-preview !bg-transparent">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`)}
                 <div class="grid-post-overlay">
                     <div class="flex items-center gap-1"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> <span class="js-like-count-${p.id}">${likeText}</span></div>
                     <div class="flex items-center gap-1"><i data-lucide="message-circle" class="w-5 h-5 fill-white"></i> <span class="js-comment-count-${p.id}">${commentText}</span></div>
@@ -5711,12 +5743,12 @@
                 const totalSteps = (currentAvatarBlob ? 1 : 0) + (currentBannerBlob ? 1 : 0) + 1; // uploads + db update
 
                 if (currentAvatarBlob) {
-                    av = await uploadToImgHippo(currentAvatarBlob);
+                    av = await uploadToCloudinary(currentAvatarBlob);
                     steps++;
                     window.updateGlobalLoaderProgress(10 + (steps / totalSteps) * 80);
                 }
                 if (currentBannerBlob) {
-                    bu = await uploadToImgHippo(currentBannerBlob);
+                    bu = await uploadToCloudinary(currentBannerBlob);
                     steps++;
                     window.updateGlobalLoaderProgress(10 + (steps / totalSteps) * 80);
                 }
@@ -5900,7 +5932,28 @@
                 const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
                 mhDesktop = ehtml;
                 mhMobile = ehtml;
-            } else if (p.media) { const ma = Array.isArray(p.media) ? p.media : [p.media]; if (ma.length === 1) { const s = ma[0], iv = s.includes('video') || s.endsWith('.mp4') || s.startsWith('data:video'); const isCached = window.imageLoadCache.has(s); const mhtml = iv ? `<video src="${s}" class="stage-content rounded-none" controls playsinline></video>` : `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`; mhDesktop = mhtml; mhMobile = mhtml } else { mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id); mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id) } } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), postBodyHtml = window.renderTextWithReadMore(p.content, `post-${p.id}`), allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all" onkeydown="handleMentionKeydown(event,'comment-input-desktop','mention-suggestions-desktop');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCommentDesktop();}" onkeyup="handleMentionInput('comment-input-desktop','mention-suggestions-desktop')"><button onclick="submitCommentDesktop()" class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all" onkeydown="handleMentionKeydown(event,'mobile-comment-input','mention-suggestions-mobile')" onkeyup="handleMentionInput('mobile-comment-input','mention-suggestions-mobile')"><button onclick="submitCommentMobile()" class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const filterLabel = window.currentCommentFilter.charAt(0).toUpperCase() + window.currentCommentFilter.slice(1); const filterBtn = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="icon-btn hover:bg-gray-100"><i data-lucide="list-filter" class="w-5 h-5 text-gray-600"></i></button>`; const mobileCommentFilterCtrl = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-gray-200 transition-colors"><span id="current-filter-label">${filterLabel}</span> <i data-lucide="list-filter" class="w-4 h-4"></i></button>`; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button>${mobileCommentFilterCtrl}</div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
+            } else if (p.media) {
+                const ma = Array.isArray(p.media) ? p.media : [p.media];
+                if (ma.length === 1) {
+                    const s = ma[0],
+                        iv = s.includes('video') || s.endsWith('.mp4') || s.startsWith('data:video');
+                    const isCached = window.imageLoadCache.has(s);
+                    let videoHtml = "";
+                    if (iv) {
+                        let poster = "";
+                        if (s.includes('cloudinary.com')) {
+                            poster = s.replace(/\.[^.]+$/, '.jpg');
+                        }
+                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="stage-content rounded-none" controls playsinline preload="metadata"></video>`;
+                    }
+                    const mhtml = iv ? videoHtml : `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`;
+                    mhDesktop = mhtml;
+                    mhMobile = mhtml
+                } else {
+                    mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id);
+                    mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id)
+                }
+            } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), postBodyHtml = window.renderTextWithReadMore(p.content, `post-${p.id}`), allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all" onkeydown="handleMentionKeydown(event,'comment-input-desktop','mention-suggestions-desktop');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCommentDesktop();}" onkeyup="handleMentionInput('comment-input-desktop','mention-suggestions-desktop')"><button onclick="submitCommentDesktop()" class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all" onkeydown="handleMentionKeydown(event,'mobile-comment-input','mention-suggestions-mobile')" onkeyup="handleMentionInput('mobile-comment-input','mention-suggestions-mobile')"><button onclick="submitCommentMobile()" class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const filterLabel = window.currentCommentFilter.charAt(0).toUpperCase() + window.currentCommentFilter.slice(1); const filterBtn = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="icon-btn hover:bg-gray-100"><i data-lucide="list-filter" class="w-5 h-5 text-gray-600"></i></button>`; const mobileCommentFilterCtrl = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-gray-200 transition-colors"><span id="current-filter-label">${filterLabel}</span> <i data-lucide="list-filter" class="w-4 h-4"></i></button>`; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button>${mobileCommentFilterCtrl}</div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
             let desktopAction = '', mobileAction = ''; if (p.claimLink) { const cb = `<button class="action-btn text-black border-gray-100 bg-gray-50 hover:bg-gray-100 !px-4 !py-2.5 !rounded-full border border-gray-100" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`; desktopAction = cb; mobileAction = cb } else { desktopAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''} !p-2.5 !rounded-full border border-gray-100 hover:bg-gray-50" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>`; mobileAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>` }
             
             let lh = '';
@@ -7315,8 +7368,45 @@
         };
         window.closeCompose = () => { document.getElementById('compose-overlay').classList.add('opacity-0', 'pointer-events-none'); const modal = document.getElementById('compose-modal'); modal.classList.add('scale-95'); modal.classList.add('translate-y-full'); setTimeout(() => { window.editingPostId = null; document.getElementById('compose-text').value = ""; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null] }, 200) };
         window.toggleComposeSettings = () => { const a = document.getElementById('compose-settings-area'), ar = document.getElementById('compose-settings-arrow'); a.classList.toggle('hidden'); ar.style.transform = a.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)' };
-        window.openUploadOptions = () => document.getElementById('upload-options-modal').classList.remove('hidden'); window.triggerUpload = m => { window.uploadMode = m; document.getElementById('upload-options-modal').classList.add('hidden'); const i = document.getElementById('media-input'); if (m === 'multiple') i.setAttribute('multiple', ''); else i.removeAttribute('multiple'); i.click() }; window.handleFileSelect = e => { const f = e.target.files; if (f.length > 0) { window.currentMediaBlob = []; window.currentMedia = []; const c = document.getElementById('media-preview-container'), inr = document.getElementById('preview-inner'); c.classList.remove('hidden'); inr.innerHTML = ''; const ps = Array.from(f).map(file => { window.currentMediaBlob.push(file); return new Promise(r => { const d = new FileReader(); d.onload = ev => { window.currentMedia.push(ev.target.result); const iv = file.type.startsWith('video'), el = document.createElement(iv ? 'video' : 'img'); el.src = ev.target.result; el.className = "h-20 w-20 object-cover rounded-md border border-gray-200 shrink-0"; if(iv){el.muted=true;el.preload="metadata";el.onloadedmetadata=()=>el.currentTime=0.1;} inr.appendChild(el); r() }; d.readAsDataURL(file) }) }); Promise.all(ps).then(() => showToast(`${f.length} file(s) ready`)) } }; window.removeMedia = () => { window.currentMedia = []; window.currentMediaBlob = []; document.getElementById('media-preview-container').classList.add('hidden'); document.getElementById('media-input').value = "" };
-        window.renderMediaGrid = () => { const grid = document.getElementById('media-grid-container'), btn = document.getElementById('compose-action-btn'); grid.innerHTML = ''; let hasImage = false; for (let i = 0; i < 4; i++) { const url = window.composeImages[i], div = document.createElement('div'); div.className = "aspect-square border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center relative overflow-hidden bg-gray-50 transition-colors"; if (url) { hasImage = true; div.className = "aspect-square rounded-xl overflow-hidden relative shadow-sm border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity"; div.onclick = () => openImageAdjust(i); if (url.includes('video') || url.endsWith('.mp4') || (window.composeImageBlobs[i] && window.composeImageBlobs[i].type.startsWith('video'))) div.innerHTML = `<video src="${url}" class="w-full h-full object-cover pointer-events-none" muted preload="metadata" onloadedmetadata="this.currentTime=0.1"></video><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`; else div.innerHTML = `<img src="${url}" class="w-full h-full object-cover" id="compose-img-${i}"><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>` } else { const isNext = (i === 0) || (window.composeImages[i - 1] !== null); if (isNext) { div.innerHTML = `<i data-lucide="plus" class="w-8 h-8 text-gray-400"></i>`; div.classList.add('cursor-pointer', 'hover:bg-gray-100'); div.onclick = () => window.handleGridUpload(i) } else { div.innerHTML = ''; div.className = "aspect-square border-2 border-dashed border-gray-200 rounded-xl bg-transparent" } } grid.appendChild(div) } if (window.composeStep === 1) { btn.innerText = hasImage ? "Next" : "Skip"; btn.onclick = window.handleComposeAction } refreshIcons() };
+        window.openUploadOptions = () => document.getElementById('upload-options-modal').classList.remove('hidden'); window.triggerUpload = m => { window.uploadMode = m; document.getElementById('upload-options-modal').classList.add('hidden'); const i = document.getElementById('media-input'); if (m === 'multiple') i.setAttribute('multiple', ''); else i.removeAttribute('multiple'); i.click() }; window.handleFileSelect = e => { const f = e.target.files; if (f.length > 0) { window.currentMediaBlob = []; window.currentMedia = []; const c = document.getElementById('media-preview-container'), inr = document.getElementById('preview-inner'); c.classList.remove('hidden'); inr.innerHTML = ''; const ps = Array.from(f).map(file => { window.currentMediaBlob.push(file); return new Promise(r => { const d = new FileReader(); d.onload = ev => { window.currentMedia.push(ev.target.result); const iv = file.type.startsWith('video'), el = document.createElement(iv ? 'video' : 'img'); el.src = ev.target.result; el.className = "h-20 w-20 object-cover rounded-md border border-gray-200 shrink-0"; if(iv){el.muted=true;el.preload="metadata";el.onloadeddata=()=>el.currentTime=0.1;el.onseeked=()=>{el.play();setTimeout(()=>el.pause(),10);}} inr.appendChild(el); r() }; d.readAsDataURL(file) }) }); Promise.all(ps).then(() => showToast(`${f.length} file(s) ready`)) } }; window.removeMedia = () => { window.currentMedia = []; window.currentMediaBlob = []; document.getElementById('media-preview-container').classList.add('hidden'); document.getElementById('media-input').value = "" };
+        window.renderMediaGrid = () => {
+            const grid = document.getElementById('media-grid-container'),
+                btn = document.getElementById('compose-action-btn');
+            grid.innerHTML = '';
+            let hasImage = false;
+            for (let i = 0; i < 4; i++) {
+                const url = window.composeImages[i],
+                    div = document.createElement('div');
+                div.className = "aspect-square border-2 border-dashed border-gray-300 rounded-xl flex items-center justify-center relative overflow-hidden bg-gray-50 transition-colors";
+                if (url) {
+                    hasImage = true;
+                    div.className = "aspect-square rounded-xl overflow-hidden relative shadow-sm border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity";
+                    div.onclick = () => openImageAdjust(i);
+                    const isVid = url.includes('video') || url.endsWith('.mp4') || (window.composeImageBlobs[i] && window.composeImageBlobs[i].type.startsWith('video'));
+                    if (isVid) {
+                        div.innerHTML = `<video src="${url}" class="w-full h-full object-cover pointer-events-none" muted preload="metadata" onloadeddata="this.currentTime=0.1" onseeked="this.play();setTimeout(()=>this.pause(),10)"></video><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`;
+                    } else {
+                        div.innerHTML = `<img src="${url}" class="w-full h-full object-cover" id="compose-img-${i}"><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`;
+                    }
+                } else {
+                    const isNext = (i === 0) || (window.composeImages[i - 1] !== null);
+                    if (isNext) {
+                        div.innerHTML = `<i data-lucide="plus" class="w-8 h-8 text-gray-400"></i>`;
+                        div.classList.add('cursor-pointer', 'hover:bg-gray-100');
+                        div.onclick = () => window.handleGridUpload(i)
+                    } else {
+                        div.innerHTML = '';
+                        div.className = "aspect-square border-2 border-dashed border-gray-200 rounded-xl bg-transparent"
+                    }
+                }
+                grid.appendChild(div)
+            }
+            if (window.composeStep === 1) {
+                btn.innerText = hasImage ? "Next" : "Skip";
+                btn.onclick = window.handleComposeAction
+            }
+            refreshIcons()
+        };
         window.openImageAdjust = i => {
             const url = window.composeImages[i]; if (!url || url.includes('video') || url.endsWith('.mp4')) return; window.adjustingImageIndex = i; window.adjustZoom = 1; window.adjustX = 0; window.adjustY = 0; manageHistory('adjust-image-overlay'); const o = document.getElementById('adjust-image-overlay'), img = document.getElementById('adjust-image-target'); img.src = url; img.style.transform = `translate(0px, 0px) scale(1)`; document.getElementById('adjust-zoom-range').value = 1; o.classList.remove('hidden'); setTimeout(() => o.classList.remove('opacity-0'), 20);
             const wrap = document.getElementById('adjust-image-wrapper');
@@ -7344,45 +7434,46 @@
         window.handleGridUpload = i => { window.currentUploadIndex = i; document.getElementById('grid-upload-input').click() }; window.onGridFileSelect = e => { const f = e.target.files[0]; if (!f) return; const hasVideo = window.composeImageBlobs.some(b => b && b.type && b.type.startsWith('video/')) || window.composeImages.some(u => u && (u.includes('video') || u.endsWith('.mp4'))); if (f.type.startsWith('video/') && hasVideo) { showToast("Only one video allowed", !0); document.getElementById('grid-upload-input').value = ""; return } const r = new FileReader(); r.onload = ev => { window.composeImages[window.currentUploadIndex] = ev.target.result; window.composeImageBlobs[window.currentUploadIndex] = f; renderMediaGrid() }; r.readAsDataURL(f); document.getElementById('grid-upload-input').value = "" }; window.removeGridImage = i => { window.composeImages[i] = null; window.composeImageBlobs[i] = null; const v = window.composeImages.filter(x => x !== null), vb = window.composeImageBlobs.filter(x => x !== null); window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; v.forEach((val, idx) => window.composeImages[idx] = val); vb.forEach((val, idx) => window.composeImageBlobs[idx] = val); renderMediaGrid() };
         window.handleComposeAction = () => { if (window.composeStep === 1) goToStep2(); else window.publishPost() }; window.goToStep2 = () => { window.composeStep = 2; document.getElementById('compose-step-1').classList.add('hidden'); document.getElementById('compose-step-2').classList.remove('hidden'); document.getElementById('compose-tools-bar').classList.remove('hidden'); document.getElementById('compose-footer-settings').classList.remove('hidden'); document.getElementById('compose-action-btn').innerText = "Post"; document.getElementById('compose-action-btn').onclick = window.publishPost };
         window.handleComposeBack = () => { if (window.composeStep === 2) { window.composeStep = 1; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); document.getElementById('compose-header-title').innerText = "Create Post"; const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); btn.innerText = hasImage ? "Next" : "Skip"; btn.onclick = window.handleComposeAction } else attemptCloseCompose() };
-        async function uploadToImgHippo(f) {
+        async function uploadToCloudinary(f) {
             try {
-                const config = window.APP_CONFIG;
                 const isVideo = f.type && f.type.startsWith('video/');
-                if (!isVideo) {
-                    const d = new FormData(); 
-                    d.append('api_key', config.imgHippoApiKey); 
-                    d.append('file', f);
-                    const r = await fetch('https://api.imghippo.com/v1/upload', { method: 'POST', body: d });
-                    const j = await r.json();
-                    if (j.success) return j.data.url;
-                } else {
-                    const cloudName = config.cloudinary.cloudName; 
-                    const apiKey = config.cloudinary.apiKey;
-                    const apiSecret = config.cloudinary.apiSecret;
-                    const timestamp = Math.floor(Date.now() / 1000);
-                    const signature = await (async (params, secret) => {
-                        const s = Object.keys(params).sort().map(k => `${k}=${params[k]}`).join('&') + secret;
-                        const b = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(s));
-                        return Array.from(new Uint8Array(b)).map(x => x.toString(16).padStart(2, '0')).join('');
-                    })({ timestamp }, apiSecret);
-                    const d = new FormData();
-                    d.append('file', f);
-                    d.append('api_key', apiKey);
-                    d.append('timestamp', timestamp);
-                    d.append('signature', signature);
-                    const r = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, { method: 'POST', body: d });
-                    const j = await r.json();
-                    if (j.secure_url) return j.secure_url;
-                }
-            } catch (e) { console.warn('Upload fallback', e); }
+                const reader = new FileReader();
+                const base64Data = await new Promise((resolve, reject) => {
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(f);
+                });
+                
+                const r = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        file: base64Data, 
+                        resource_type: isVideo ? 'video' : 'image' 
+                    })
+                });
+                const j = await r.json();
+                if (j.success) return j.url;
+                else throw new Error(j.error || 'Upload failed');
+            } catch (e) { 
+                console.warn('Cloudinary upload failed, falling back to Firebase', e); 
+            }
+            
             try {
                 if (typeof storage !== 'undefined' && typeof ref !== 'undefined') {
                     const mr = ref(storage, `uploads/${currentUser.id}/${Date.now()}_${f.name || 'file'}`);
                     await uploadBytes(mr, f);
                     return await getDownloadURL(mr);
                 }
-            } catch (e) { console.warn('Firebase fallback', e); }
-            return new Promise((resolve) => { const reader = new FileReader(); reader.onload = () => resolve(reader.result); reader.readAsDataURL(f); });
+            } catch (e) { 
+                console.warn('Firebase fallback failed', e); 
+            }
+            
+            return new Promise((resolve) => { 
+                const reader = new FileReader(); 
+                reader.onload = () => resolve(reader.result); 
+                reader.readAsDataURL(f); 
+            });
         }
         window.publishPost = async () => {
             const tr = document.getElementById('compose-text').value.trim(), hasImages = window.composeImages.some(x => x !== null);
@@ -7402,7 +7493,7 @@
                     const url = window.composeImages[i], blob = window.composeImageBlobs[i];
                     if (url) {
                         if (blob) {
-                            try { mu.push(await uploadToImgHippo(blob)) }
+                            try { mu.push(await uploadToCloudinary(blob)) }
                             catch (e) {
                                 const mr = ref(storage, `posts/${currentUser.id}/${Date.now()}_${i}_${blob.name}`);
                                 await uploadBytes(mr, blob);
