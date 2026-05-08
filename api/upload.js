@@ -18,14 +18,18 @@ module.exports = async (req, res) => {
             return res.status(400).json({ error: 'No file provided' });
         }
 
+        console.log('Uploading to Cloudinary...', { resource_type });
+
         const uploadResponse = await cloudinary.uploader.upload(file, {
-            resource_type: resource_type, // 'image' or 'video' or 'auto'
+            resource_type: resource_type,
             folder: 'edulink_uploads'
         });
 
         return res.status(200).json({
             success: true,
-            url: uploadResponse.secure_url
+            url: uploadResponse.secure_url,
+            resource_type: uploadResponse.resource_type,
+            format: uploadResponse.format
         });
     } catch (error) {
         console.error('Cloudinary upload error:', error);
