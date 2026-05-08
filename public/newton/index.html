@@ -1300,25 +1300,7 @@
             height: 18px;
         }
 
-        /* --- Stop Button --- */
-        #stopResponseBtn {
-            display: none; background: #222; border: 1px solid #333; color: #eee;
-            width: 32px; height: 32px; border-radius: 50%; align-items: center; justify-content: center;
-            cursor: pointer; transition: all 0.2s;
-        }
-        #stopResponseBtn:hover { background: #333; border-color: #444; }
-        #stopResponseBtn svg { width: 14px; height: 14px; fill: currentColor; }
 
-        #voiceInputBtn.recording {
-            color: #ff6b6b;
-            background: rgba(255, 107, 107, 0.1);
-            animation: pulse-mic 1.5s infinite;
-        }
-        @keyframes pulse-mic {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-            100% { transform: scale(1); }
-        }
 
         body.chat-active .landing-content { display: none; }
         body.chat-active .chat-history { display: flex; }
@@ -2506,7 +2488,6 @@ ${truncatedDocs}
         const appBody = document.body;
         const messageWrapper = document.getElementById('messageWrapper');
         const chatHistoryContainer = document.getElementById('chatHistory');
-        const stopResponseBtn = document.getElementById('stopResponseBtn');
         const voiceInputBtn = document.getElementById('voiceInputBtn');
         let conversationHistory = []; 
         let currentAbortController = null;
@@ -2846,13 +2827,12 @@ ${truncatedDocs}
 
             currentAbortController = new AbortController();
             
-            // Toggle Voice button to Interrupt state
+            // Toggle Voice button to Stop state
             const voiceBtnText = document.getElementById('voiceBtnText');
             const voiceBtnIcon = document.getElementById('voiceBtnIcon');
             if (voiceBtnText && voiceBtnIcon) {
-                voiceBtnText.style.display = 'none'; // Hide text for interrupt
-                voiceBtnIcon.innerHTML = '<i data-lucide="circle-stop"></i>'; // Better interrupt icon
-                voiceBtnIcon.style.marginRight = '-4px'; // Adjust spacing for icon-only
+                voiceBtnText.textContent = 'Stop';
+                voiceBtnIcon.innerHTML = '<i data-lucide="square"></i>';
                 lucide.createIcons();
             }
 
@@ -2991,10 +2971,8 @@ ${truncatedDocs}
                 const voiceBtnText = document.getElementById('voiceBtnText');
                 const voiceBtnIcon = document.getElementById('voiceBtnIcon');
                 if (voiceBtnText && voiceBtnIcon) {
-                    voiceBtnText.style.display = 'inline'; // Restore text
                     voiceBtnText.textContent = 'Talk';
                     voiceBtnIcon.innerHTML = '<i data-lucide="audio-lines"></i>';
-                    voiceBtnIcon.style.marginRight = '0'; // Restore spacing
                     lucide.createIcons();
                 }
             }
@@ -3046,12 +3024,6 @@ ${truncatedDocs}
                 }
             }
         }
-
-        stopResponseBtn.addEventListener('click', () => {
-            if (currentAbortController) {
-                currentAbortController.abort();
-            }
-        });
 
         function handleUserSubmit(text) {
             if (!appBody.classList.contains('chat-active')) {
