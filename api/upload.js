@@ -2,9 +2,14 @@ const cloudinary = require('cloudinary').v2;
 const axios = require('axios');
 const FormData = require('form-data');
 
-// Cloudinary will automatically use CLOUDINARY_URL if it's in process.env
-// Otherwise, we use individual keys
-if (!process.env.CLOUDINARY_URL) {
+// Configure Cloudinary
+if (process.env.CLOUDINARY_URL) {
+    // If CLOUDINARY_URL is present, it's used automatically by some SDK methods,
+    // but we can also set it explicitly to be sure.
+    cloudinary.config({
+        cloudinary_url: process.env.CLOUDINARY_URL
+    });
+} else {
     cloudinary.config({
         cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
         api_key: process.env.CLOUDINARY_API_KEY,
@@ -13,39 +18,46 @@ if (!process.env.CLOUDINARY_URL) {
 }
 
 module.exports = async (req, res) => {
+    // Increase timeout for the response
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+    if (req.method === 'OPTIONS') {
+        return res.status(200).end();
+    }
+
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
     try {
-        const { file, resource_type = 'auto' } = req.body;
+        const { file, resource_type } = req.body;
 
         if (!file) {
             return res.status(400).json({ error: 'No file provided' });
         }
 
-        // Determine if it's a video or image based on resource_type or data URI
+        // Check file size (Vercel limit is 4.5MB for the entire request)
+        // Base64 string length is a good approximation
+        const approxSizeInBytes = (file.length * 3) / 4;
+        if (approxSizeInBytes > 4 * 1024 * 1024) {
+            return res.status(413).json({ 
+                success: false, 
+                error: 'File too large for server upload. Try a smaller file or use fallback.' 
+            });
+        }
+
+        // Determine if it's a video or image
         const isVideo = resource_type === 'video' || file.startsWith('data:video/');
         const isImage = resource_type === 'image' || file.startsWith('data:image/');
 
         if (isVideo) {
-            // Check if Cloudinary is configured
-            const isCloudinaryConfigured = process.env.CLOUDINARY_URL || 
-                                          (process.env.CLOUDINARY_CLOUD_NAME && 
-                                           process.env.CLOUDINARY_API_KEY && 
-                                           process.env.CLOUDINARY_API_SECRET);
-
-            if (!isCloudinaryConfigured) {
-                return res.status(500).json({ 
-                    success: false, 
-                    error: 'Cloudinary is not configured for video uploads.' 
-                });
-            }
-
-            console.log('Uploading video to Cloudinary...');
+            console.log('Video upload requested');
             const uploadResponse = await cloudinary.uploader.upload(file, {
                 resource_type: 'video',
-                folder: 'edulink_videos'
+                folder: 'edulink_videos',
+                timeout: 60000 // 60 seconds
             });
 
             return res.status(200).json({
@@ -55,17 +67,11 @@ module.exports = async (req, res) => {
             });
 
         } else if (isImage) {
-            // Check if ImgHippo is configured
+            console.log('Image upload requested');
             if (!process.env.IMGHIPPO_API_KEY) {
-                return res.status(500).json({ 
-                    success: false, 
-                    error: 'ImgHippo API key is missing for image uploads.' 
-                });
+                throw new Error('IMGHIPPO_API_KEY is not configured');
             }
 
-            console.log('Uploading image to ImgHippo...');
-            
-            // Extract base64 content without data URI prefix if present
             const base64Content = file.includes(',') ? file.split(',')[1] : file;
             const buffer = Buffer.from(base64Content, 'base64');
 
@@ -74,7 +80,8 @@ module.exports = async (req, res) => {
             form.append('file', buffer, { filename: 'upload.jpg' });
 
             const response = await axios.post('https://api.imghippo.com/v1/upload', form, {
-                headers: form.getHeaders()
+                headers: form.getHeaders(),
+                timeout: 30000 // 30 seconds
             });
 
             if (response.data && response.data.success) {
@@ -95,10 +102,10 @@ module.exports = async (req, res) => {
         }
 
     } catch (error) {
-        console.error('Upload error:', error);
-        return res.status(500).json({
+        console.error('Upload API Error:', error.message);
+        return res.status(error.response?.status || 500).json({
             success: false,
-            error: error.message || 'Upload failed'
+            error: error.message || 'Internal Server Error'
         });
     }
 };
