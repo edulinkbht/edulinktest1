@@ -593,6 +593,66 @@
             height: 24px
         }
 
+        #more-menu {
+            display: none;
+            position: absolute;
+            bottom: 80px;
+            left: 12px;
+            width: 260px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
+            padding: 8px;
+            flex-direction: column;
+            gap: 2px;
+            transform: translateY(10px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+
+        @media (min-width: 768px) {
+            #more-menu {
+                display: flex;
+            }
+        }
+
+        #more-menu.active {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .more-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: #1f1f1f;
+            font-weight: 500;
+            font-size: 15px;
+        }
+
+        .more-menu-item:hover {
+            background: #f5f5f5;
+        }
+
+        .more-menu-item i, .more-menu-item svg {
+            width: 20px;
+            height: 20px;
+            color: #1f1f1f;
+        }
+
+        .more-menu-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 8px;
+        }
+
         #compose-modal,
         #create-menu-modal,
         #edit-profile-modal,
@@ -3514,8 +3574,39 @@
                     <i data-lucide="menu" class="w-7 h-7"></i>
                 </div>
                 <div class="sidebar-label hidden lg:block">
-                    <div class="text-sm font-medium">Settings</div>
+                    <div class="text-sm font-medium">More</div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- Desktop More Menu -->
+        <div id="more-menu">
+            <div class="more-menu-item" onclick="window.location.href='/settings'; closeMoreMenu()">
+                <i data-lucide="settings"></i>
+                <span>Settings</span>
+            </div>
+            <div class="more-menu-item" onclick="switchView('notifications'); closeMoreMenu()">
+                <i data-lucide="activity"></i>
+                <span>Your activity</span>
+            </div>
+            <div class="more-menu-item" onclick="switchView('saved'); closeMoreMenu()">
+                <i data-lucide="bookmark"></i>
+                <span>Saved</span>
+            </div>
+            <div class="more-menu-item" onclick="toggleAppearance(); closeMoreMenu()">
+                <i data-lucide="sun"></i>
+                <span>Switch appearance</span>
+            </div>
+            <div class="more-menu-item" onclick="window.location.href='/report'; closeMoreMenu()">
+                <i data-lucide="message-square"></i>
+                <span>Report a problem</span>
+            </div>
+            <div class="more-menu-divider"></div>
+            <div class="more-menu-item" onclick="showAlert('Switching accounts is not available yet')">
+                <span>Switch accounts</span>
+            </div>
+            <div class="more-menu-item" onclick="window.logoutWithConfirm(); closeMoreMenu()">
+                <span class="text-red-600">Log out</span>
             </div>
         </div>
     </aside>
@@ -4529,6 +4620,11 @@
         function dg(e) { if (!isDraggingBanner) return; if (e.cancelable) e.preventDefault(); const y = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY, d = startY - y, p = initialBannerPos + (d / 2); currentBannerPos = Math.round(Math.max(0, Math.min(100, p))); document.getElementById('edit-banner-preview').style.objectPosition = `center ${currentBannerPos}%`; document.getElementById('banner-pos-hint').innerText = `${currentBannerPos}%` }
         function ed() { isDraggingBanner = !1 }
         window.openSettings = () => {
+            if (window.innerWidth >= 768) {
+                const menu = document.getElementById('more-menu');
+                menu.classList.toggle('active');
+                return;
+            }
             manageHistory('settings-overlay');
             const c = document.getElementById('settings-content');
             let admBtn = '';
@@ -4584,6 +4680,20 @@
             toggleModalAnim('settings-overlay', 'settings-modal', !0);
             refreshIcons();
         };
+        window.closeMoreMenu = () => {
+            document.getElementById('more-menu').classList.remove('active');
+        };
+        window.toggleAppearance = () => {
+            showToast("Appearance settings coming soon!");
+        };
+        // Close more menu when clicking outside
+        window.addEventListener('click', (e) => {
+            const menu = document.getElementById('more-menu');
+            const settingsBtn = document.querySelector('[onclick="openSettings()"]');
+            if (menu && menu.classList.contains('active') && !menu.contains(e.target) && !settingsBtn.contains(e.target)) {
+                window.closeMoreMenu();
+            }
+        });
         window.logoutWithConfirm = () => {
             showAlert("Are you sure you want to quit?", () => {
                 window.doLogout();
