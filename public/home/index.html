@@ -3582,32 +3582,8 @@
         
         <!-- Desktop More Menu -->
         <div id="more-menu">
-            <div class="more-menu-item" onclick="window.location.href='/settings'; closeMoreMenu()">
-                <i data-lucide="settings"></i>
-                <span>Settings</span>
-            </div>
-            <div class="more-menu-item" onclick="switchView('notifications'); closeMoreMenu()">
-                <i data-lucide="activity"></i>
-                <span>Your activity</span>
-            </div>
-            <div class="more-menu-item" onclick="switchView('saved'); closeMoreMenu()">
-                <i data-lucide="bookmark"></i>
-                <span>Saved</span>
-            </div>
-            <div class="more-menu-item" onclick="toggleAppearance(); closeMoreMenu()">
-                <i data-lucide="sun"></i>
-                <span>Switch appearance</span>
-            </div>
-            <div class="more-menu-item" onclick="window.location.href='/report'; closeMoreMenu()">
-                <i data-lucide="message-square"></i>
-                <span>Report a problem</span>
-            </div>
-            <div class="more-menu-divider"></div>
-            <div class="more-menu-item" onclick="showAlert('Switching accounts is not available yet')">
-                <span>Switch accounts</span>
-            </div>
-            <div class="more-menu-item" onclick="window.logoutWithConfirm(); closeMoreMenu()">
-                <span class="text-red-600">Log out</span>
+            <div id="more-menu-content" class="flex flex-col gap-1">
+                <!-- Content injected via JS -->
             </div>
         </div>
     </aside>
@@ -4623,7 +4599,57 @@
         window.openSettings = () => {
             if (window.innerWidth >= 768) {
                 const menu = document.getElementById('more-menu');
+                const content = document.getElementById('more-menu-content');
+                let admBtn = '';
+                if (currentUser.email === 'edulinkbht@gmail.com') {
+                    admBtn = `
+                        <div class="more-menu-item" onclick="openAnnouncement(); closeMoreMenu()">
+                            <i data-lucide="megaphone"></i>
+                            <span>Broadcast</span>
+                        </div>`;
+                }
+                content.innerHTML = `
+                    <div class="more-menu-item" onclick="window.location.href='/settings'; closeMoreMenu()">
+                        <i data-lucide="settings"></i>
+                        <span>Settings</span>
+                    </div>
+                    <div class="more-menu-item" onclick="switchView('notifications'); closeMoreMenu()">
+                        <i data-lucide="activity"></i>
+                        <span>Your activity</span>
+                    </div>
+                    <div class="more-menu-item" onclick="switchView('saved'); closeMoreMenu()">
+                        <i data-lucide="bookmark"></i>
+                        <span>Saved</span>
+                    </div>
+                    <div class="more-menu-item" onclick="openPrivacySettings(); closeMoreMenu()">
+                        <i data-lucide="lock"></i>
+                        <span>Account Privacy</span>
+                    </div>
+                    <div class="more-menu-item" onclick="toggleAppearance(); closeMoreMenu()">
+                        <i data-lucide="sun"></i>
+                        <span>Switch appearance</span>
+                    </div>
+                    <div class="more-menu-item" onclick="window.location.href='/report'; closeMoreMenu()">
+                        <i data-lucide="message-square"></i>
+                        <span>Report a problem</span>
+                    </div>
+                    ${admBtn}
+                    <div class="more-menu-divider"></div>
+                    <div class="more-menu-item" onclick="showAlert('Switching accounts is not available yet')">
+                        <span>Switch accounts</span>
+                    </div>
+                    <div class="more-menu-item" onclick="window.logoutWithConfirm(); closeMoreMenu()">
+                        <div class="flex items-center gap-3 w-full">
+                            <img src="${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover border border-gray-200">
+                            <div class="flex-1 text-left">
+                                <div class="text-red-600 font-bold">Log out</div>
+                                <div class="text-[11px] text-gray-400">@${currentUser.username || 'user'}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 menu.classList.toggle('active');
+                refreshIcons();
                 return;
             }
             manageHistory('settings-overlay');
