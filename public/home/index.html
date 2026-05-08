@@ -2321,6 +2321,53 @@
             font-weight: 700;
             color: #111827;
         }
+
+        /* Switch Account Modal Styles */
+        .switch-account-input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+            background-color: #f9fafb;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .switch-account-input:focus {
+            border-color: #000;
+            background-color: #fff;
+            box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
+        }
+
+        .switch-account-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 12px;
+            background-color: #000;
+            color: #fff;
+            font-weight: 600;
+            font-size: 15px;
+            transition: all 0.2s;
+            cursor: pointer;
+            border: none;
+        }
+
+        .switch-account-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .switch-account-btn:active {
+            transform: translateY(0);
+        }
+
+        .switch-account-btn:disabled {
+            background-color: #e5e7eb;
+            color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
     </style>
 </head>
 
@@ -2913,6 +2960,44 @@
                 <div class="p-4">
                     <p class="text-xs text-gray-400 text-center leading-relaxed">Changes are saved automatically and
                         applied immediately.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Switch Account Overlay -->
+    <div id="switch-account-overlay"
+        class="fixed inset-0 z-[80] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
+        onclick="closeSwitchAccount()">
+        <div id="switch-account-modal"
+            class="bg-white w-full h-auto md:w-[400px] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden"
+            onclick="event.stopPropagation()">
+            <div class="h-16 border-b border-gray-100 flex items-center justify-between px-4 shrink-0">
+                <button onclick="closeSwitchAccount()"
+                    class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors">
+                    <i data-lucide="x" class="w-6 h-6 text-gray-700"></i>
+                </button>
+                <span class="font-bold text-gray-900 text-lg">Switch account</span>
+                <div class="w-10"></div>
+            </div>
+            <div class="p-6 space-y-4">
+                <div class="flex flex-col items-center mb-4">
+                    <img src="https://i.imghippo.com/files/vgr8207c.png" class="w-16 h-16 rounded-2xl mb-2">
+                    <h3 class="font-bold text-xl text-gray-900">Log into Edulink</h3>
+                </div>
+                <div class="space-y-3">
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-500 uppercase px-1">Email or Username</label>
+                        <input type="text" id="switch-email-input" class="switch-account-input" placeholder="Enter email or username">
+                    </div>
+                    <div class="space-y-1">
+                        <label class="text-xs font-bold text-gray-500 uppercase px-1">Password</label>
+                        <input type="password" id="switch-password-input" class="switch-account-input" placeholder="Enter password">
+                    </div>
+                </div>
+                <button id="switch-login-btn" class="switch-account-btn mt-4">Log In</button>
+                <div class="text-center mt-4">
+                    <a href="/login" class="text-sm font-medium text-blue-600 hover:underline">Forgot password?</a>
                 </div>
             </div>
         </div>
@@ -3818,7 +3903,7 @@
     <input type="file" id="grid-upload-input" class="hidden" accept="image/*,video/*"
         onchange="onGridFileSelect(event)">
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"; import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, addDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; import { getStorage, ref, uploadString, getDownloadURL, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"; import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, addDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; import { getStorage, ref, uploadString, getDownloadURL, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
         const configResponse = await fetch('/api/api');
         const config = await configResponse.json();
         const firebaseConfig = config.firebaseConfig;
@@ -4635,7 +4720,8 @@
                     </div>
                     ${admBtn}
                     <div class="more-menu-divider"></div>
-                    <div class="more-menu-item" onclick="showAlert('Switching accounts is not available yet')">
+                    <div class="more-menu-item" onclick="openSwitchAccount()">
+                        <i data-lucide="repeat"></i>
                         <span>Switch accounts</span>
                     </div>
                     <div class="more-menu-item" onclick="window.logoutWithConfirm(); closeMoreMenu()">
@@ -4694,6 +4780,13 @@
                         <div class="text-sm font-medium text-gray-700">Your saved posts</div>
                     </div>
                 </button>
+                <button onclick="openSwitchAccount()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="repeat" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Switch accounts</div>
+                        <div class="text-xs text-gray-500">Log into another account</div>
+                    </div>
+                </button>
                 <div class="h-px bg-gray-100 my-2 mx-2"></div>
                 <div onclick="window.logoutWithConfirm()" class="logout-btn-custom group">
                     <img src="${currentUser.avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
@@ -4735,6 +4828,57 @@
         };
         window.closeSettings = () => toggleModalAnim('settings-overlay', 'settings-modal', !1);
         window.openPrivacySettings = () => { manageHistory('privacy-overlay'); closeSettings(); document.getElementById('privacy-overlay').classList.remove('hidden'); toggleModalAnim('privacy-overlay', 'privacy-modal', !0); document.getElementById('privacy-user-avatar').src = currentUser.avatar; document.getElementById('privacy-user-name').innerText = currentUser.name; const s = currentUser.settings || {}, pt = document.getElementById('toggle-privacy-main'), ht = document.getElementById('toggle-hide-connections'); if (s.privateNetwork) pt.classList.add('active'); else pt.classList.remove('active'); if (s.hideConnections) ht.classList.add('active'); else ht.classList.remove('active') }; window.closePrivacySettings = () => toggleModalAnim('privacy-overlay', 'privacy-modal', !1);
+
+        window.openSwitchAccount = () => {
+            manageHistory('switch-account-overlay');
+            closeSettings();
+            closeMoreMenu();
+            document.getElementById('switch-account-overlay').classList.remove('hidden');
+            toggleModalAnim('switch-account-overlay', 'switch-account-modal', true);
+            document.getElementById('switch-email-input').value = '';
+            document.getElementById('switch-password-input').value = '';
+        };
+
+        window.closeSwitchAccount = () => toggleModalAnim('switch-account-overlay', 'switch-account-modal', false);
+
+        document.getElementById('switch-login-btn').addEventListener('click', async () => {
+            const emailInput = document.getElementById('switch-email-input').value.trim();
+            const passwordInput = document.getElementById('switch-password-input').value;
+            const btn = document.getElementById('switch-login-btn');
+
+            if (!emailInput || !passwordInput) {
+                showToast('Please fill in all fields');
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.innerText = 'Logging in...';
+
+                let email = emailInput;
+                // If it's not an email, try to resolve as username
+                if (!emailInput.includes('@')) {
+                    const q = query(collection(db, "users"), where("username", "==", emailInput.toLowerCase()));
+                    const snap = await getDocs(q);
+                    if (snap.empty) {
+                        showToast('User not found');
+                        btn.disabled = false;
+                        btn.innerText = 'Log In';
+                        return;
+                    }
+                    email = snap.docs[0].data().email;
+                }
+
+                await signInWithEmailAndPassword(auth, email, passwordInput);
+                showToast('Successfully switched account!');
+                window.location.reload();
+            } catch (error) {
+                console.error('Switch account error:', error);
+                showToast(error.message || 'Login failed');
+                btn.disabled = false;
+                btn.innerText = 'Log In';
+            }
+        });
         window.updatePrivacySetting = async k => { const el = k === 'privateNetwork' ? document.getElementById('toggle-privacy-main') : document.getElementById('toggle-hide-connections'), ia = el.classList.contains('active'), nv = !ia; el.classList.toggle('active'); const s = currentUser.settings || {}, k2 = k; s[k2] = nv; await updateDoc(doc(db, "users", currentUser.id), { settings: s }); currentUser.settings = s; if (k === 'privateNetwork') showToast(`Account is now ${nv ? 'Private' : 'Public'}`); else showToast("Settings saved") };
         window.openProfileFilter = () => { manageHistory('profile-filter-overlay'); toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !0);['latest', 'oldest', 'popular'].forEach(s => { const el = document.getElementById(`sort-check-${s}`); if (window.profileSort === s) el.classList.remove('hidden'); else el.classList.add('hidden') }) }; window.closeProfileFilter = () => toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !1);
         window.setProfileSort = s => { window.profileSort = s; renderProfileContent(window.currentViewingProfileId, window.currentProfileTab); closeProfileFilter() };
