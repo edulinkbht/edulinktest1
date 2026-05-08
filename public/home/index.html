@@ -7435,12 +7435,18 @@
         window.handleComposeAction = () => { if (window.composeStep === 1) goToStep2(); else window.publishPost() }; window.goToStep2 = () => { window.composeStep = 2; document.getElementById('compose-step-1').classList.add('hidden'); document.getElementById('compose-step-2').classList.remove('hidden'); document.getElementById('compose-tools-bar').classList.remove('hidden'); document.getElementById('compose-footer-settings').classList.remove('hidden'); document.getElementById('compose-action-btn').innerText = "Post"; document.getElementById('compose-action-btn').onclick = window.publishPost };
         window.handleComposeBack = () => { if (window.composeStep === 2) { window.composeStep = 1; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); document.getElementById('compose-header-title').innerText = "Create Post"; const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); btn.innerText = hasImage ? "Next" : "Skip"; btn.onclick = window.handleComposeAction } else attemptCloseCompose() };
         async function uploadMedia(f) {
+            const isVideo = f.type && f.type.startsWith('video/');
+            const isImage = f.type && f.type.startsWith('image/');
+            
+            if (!isVideo && !isImage) {
+                showToast("this file is not supported", true);
+                throw new Error('this file is not supported');
+            }
+
             try {
-                const isVideo = f.type && f.type.startsWith('video/');
-                const isImage = f.type && f.type.startsWith('image/');
-                
-                if (!isVideo && !isImage) {
-                    throw new Error('this file is not supported');
+                // If file is > 4MB, don't even try the server API (Vercel limit)
+                if (f.size > 4 * 1024 * 1024) {
+                    throw new Error('File too large for server API');
                 }
 
                 const reader = new FileReader();
@@ -7450,35 +7456,55 @@
                     reader.readAsDataURL(f);
                 });
                 
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60s timeout
+
                 const r = await fetch('/api/upload', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         file: base64Data, 
                         resource_type: isVideo ? 'video' : 'image' 
-                    })
+                    }),
+                    signal: controller.signal
                 });
+                
+                clearTimeout(timeoutId);
+
+                if (!r.ok) {
+                    const errorText = await r.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        throw new Error(errorJson.error || 'Server error');
+                    } catch(e) {
+                        throw new Error(`Upload failed (${r.status})`);
+                    }
+                }
+
                 const j = await r.json();
                 if (j.success) return j.url;
                 else throw new Error(j.error || 'Upload failed');
             } catch (e) { 
-                console.warn('Upload failed, falling back to Firebase', e); 
+                console.warn('Upload API failed, falling back to Firebase', e.message); 
                 if (e.message === 'this file is not supported') throw e;
             }
             
             try {
                 if (typeof storage !== 'undefined' && typeof ref !== 'undefined') {
-                    const mr = ref(storage, `uploads/${currentUser.id}/${Date.now()}_${f.name || 'file'}`);
-                    await uploadBytes(mr, f);
-                    return await getDownloadURL(mr);
+                    const fileName = `${Date.now()}_${f.name || 'file'}`;
+                    const mr = ref(storage, `uploads/${currentUser.id}/${fileName}`);
+                    const snapshot = await uploadBytes(mr, f);
+                    return await getDownloadURL(snapshot.ref);
                 }
             } catch (e) { 
-                console.warn('Firebase fallback failed', e); 
+                console.error('Firebase fallback failed', e); 
             }
             
-            return new Promise((resolve) => { 
+            // Last resort: return base64 (might fail if too large for Firestore)
+            return new Promise((resolve, reject) => { 
                 const reader = new FileReader(); 
                 reader.onload = () => resolve(reader.result); 
+                reader.onerror = reject;
                 reader.readAsDataURL(f); 
             });
         }
@@ -7577,9 +7603,9 @@
                 window.hideGlobalLoader();
                 closeCompose()
             } catch (e) {
-                console.error(e);
+                console.error('Publish error:', e);
                 window.hideGlobalLoader();
-                showToast("Error", !0)
+                showToast("Post Failed", true, e.message || "There was an error publishing your post.");
             }
         };
         window.showToast = (m, e = false, subtitle = "") => {
