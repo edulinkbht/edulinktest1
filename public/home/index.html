@@ -609,7 +609,7 @@
             transform: translateY(10px);
             opacity: 0;
             pointer-events: none;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000;
         }
 
@@ -2953,10 +2953,10 @@
         </div>
     </div>
     <div id="settings-overlay"
-        class="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
+        class="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-transparent hidden opacity-0 transition-opacity duration-150"
         onclick="closeSettings()">
         <div id="settings-modal"
-            class="bg-white w-full h-auto md:w-[400px] md:max-h-[80vh] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden"
+            class="bg-white w-full h-auto md:w-[400px] md:max-h-[80vh] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-150 flex flex-col overflow-hidden"
             onclick="event.stopPropagation()">
             <div class="h-16 border-b border-gray-100 flex items-center justify-between px-4 shrink-0"><button
                     onclick="closeSettings()"
@@ -4728,57 +4728,51 @@
             if (window.innerWidth >= 768) {
                 const menu = document.getElementById('more-menu');
                 const content = document.getElementById('more-menu-content');
-                let admBtn = '';
-                if (currentUser.email === 'edulinkbht@gmail.com') {
-                    admBtn = `
-                        <div class="more-menu-item" onclick="openAnnouncement(); closeMoreMenu()">
-                            <i data-lucide="megaphone"></i>
-                            <span>Broadcast</span>
-                        </div>`;
-                }
-                content.innerHTML = `
-                    <div class="more-menu-item" onclick="window.location.href='/settings'; closeMoreMenu()">
-                        <i data-lucide="settings"></i>
-                        <span>Settings</span>
-                    </div>
-                    <div class="more-menu-item" onclick="switchView('notifications'); closeMoreMenu()">
-                        <i data-lucide="activity"></i>
-                        <span>Your activity</span>
-                    </div>
-                    <div class="more-menu-item" onclick="switchView('saved'); closeMoreMenu()">
-                        <i data-lucide="bookmark"></i>
-                        <span>Saved</span>
-                    </div>
-                    <div class="more-menu-item" onclick="openPrivacySettings(); closeMoreMenu()">
-                        <i data-lucide="lock"></i>
-                        <span>Account Privacy</span>
-                    </div>
-                    <div class="more-menu-item" onclick="toggleAppearance(); closeMoreMenu()">
-                        <i data-lucide="sun"></i>
-                        <span>Switch appearance</span>
-                    </div>
-                    <div class="more-menu-item" onclick="window.location.href='/report'; closeMoreMenu()">
-                        <i data-lucide="message-square"></i>
-                        <span>Report a problem</span>
-                    </div>
-                    ${admBtn}
-                    <div class="more-menu-divider"></div>
-                    <div class="more-menu-item" onclick="openSwitchAccount()">
-                        <i data-lucide="repeat"></i>
-                        <span>Switch accounts</span>
-                    </div>
-                    <div class="more-menu-item" onclick="window.logoutWithConfirm(); closeMoreMenu()">
-                        <div class="flex items-center gap-3 w-full">
-                            <img src="${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover border border-gray-200">
-                            <div class="flex-1 text-left">
-                                <div class="text-red-600 font-bold">Log out</div>
-                                <div class="text-[11px] text-gray-400">@${currentUser.username || 'user'}</div>
+                if (!menu.classList.contains('active')) {
+                    let admBtn = '';
+                    if (currentUser.email === 'edulinkbht@gmail.com') {
+                        admBtn = `
+                            <div class="more-menu-item" onclick="openAnnouncement(); closeMoreMenu()">
+                                <i data-lucide="megaphone"></i>
+                                <span>Broadcast</span>
+                            </div>`;
+                    }
+                    content.innerHTML = `
+                        <div class="more-menu-item" onclick="window.location.href='/settings'; closeMoreMenu()">
+                            <i data-lucide="settings"></i>
+                            <span>Settings</span>
+                        </div>
+                        <div class="more-menu-item" onclick="switchView('saved'); closeMoreMenu()">
+                            <i data-lucide="bookmark"></i>
+                            <span>Saved</span>
+                        </div>
+                        <div class="more-menu-item" onclick="window.location.href='/blog'; closeMoreMenu()">
+                            <i data-lucide="layout-grid"></i>
+                            <span>Blog</span>
+                        </div>
+                        <div class="more-menu-item" onclick="openPrivacySettings(); closeMoreMenu()">
+                            <i data-lucide="lock"></i>
+                            <span>Account Privacy</span>
+                        </div>
+                        ${admBtn}
+                        <div class="more-menu-divider"></div>
+                        <div class="more-menu-item" onclick="openSwitchAccount()">
+                            <i data-lucide="repeat"></i>
+                            <span>Switch accounts</span>
+                        </div>
+                        <div class="more-menu-item" onclick="window.logoutWithConfirm(); closeMoreMenu()">
+                            <div class="flex items-center gap-3 w-full">
+                                <img src="${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover border border-gray-200">
+                                <div class="flex-1 text-left">
+                                    <div class="text-red-600 font-bold">Log out</div>
+                                    <div class="text-[11px] text-gray-400">@${currentUser.username || 'user'}</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                    refreshIcons();
+                }
                 menu.classList.toggle('active');
-                refreshIcons();
                 return;
             }
             manageHistory('settings-overlay');
@@ -4806,6 +4800,13 @@
                     <div class="flex-1 text-left">
                         <div class="font-bold text-gray-900 text-[15px]">Account Privacy</div>
                         <div class="text-xs text-gray-500">Manage visibility and data</div>
+                    </div>
+                </button>
+                <button onclick="window.location.href='/blog'" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Blog</div>
+                        <div class="text-xs text-gray-500">Explore official posts</div>
                     </div>
                 </button>
                 ${admBtn}
@@ -5496,7 +5497,7 @@
                 }
             });
         } if (isLiking) trackInteraction(pid, 'like', 2); };
-        const toggleModalAnim = (oid, mid, s) => { const o = document.getElementById(oid), m = document.getElementById(mid); if (s) { o.classList.remove('hidden'); m.style.transition = 'none'; o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); void m.offsetWidth; m.style.transition = ''; setTimeout(() => { o.classList.remove('opacity-0'); m.classList.remove('translate-y-full', 'md:scale-95'); m.classList.add('translate-y-0', 'md:scale-100') }, 20) } else { o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => o.classList.add('hidden'), 200) } };
+        const toggleModalAnim = (oid, mid, s) => { const o = document.getElementById(oid), m = document.getElementById(mid); if (s) { o.classList.remove('hidden'); m.style.transition = 'none'; o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); void m.offsetWidth; m.style.transition = ''; setTimeout(() => { o.classList.remove('opacity-0'); m.classList.remove('translate-y-full', 'md:scale-95'); m.classList.add('translate-y-0', 'md:scale-100') }, 20) } else { o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => o.classList.add('hidden'), 150) } };
         window.openLikes = pid => { manageHistory('likes-overlay'); const p = posts.find(x => x.id === pid), c = document.getElementById('likes-list-content'); const searchInput = document.getElementById('likes-search-input'); if (searchInput) searchInput.value = ''; if (p.settings?.allowLikeView === false && p.authorId !== currentUser.id) { c.innerHTML = '<div class="text-center text-gray-400 py-8">Creator hid likes.</div>'; toggleModalAnim('likes-overlay', 'likes-modal', true); return } renderLikesList(p.likes || []); searchInput.oninput = (e) => { const term = e.target.value.toLowerCase(); const allLikes = p.likes || []; if (!term) { renderLikesList(allLikes) } else { const filtered = allLikes.filter(uid => { const u = users.find(x => x.id === uid); return u && (u.name.toLowerCase().includes(term) || (u.username && u.username.toLowerCase().includes(term))) }); renderLikesList(filtered) } }; toggleModalAnim('likes-overlay', 'likes-modal', true) };
         window.renderLikesList = (idList) => {
             const c = document.getElementById('likes-list-content');
