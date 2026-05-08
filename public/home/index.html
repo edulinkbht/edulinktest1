@@ -4526,7 +4526,7 @@
         };
         window.openPromoModal = e => { if (e) { e.stopPropagation(); e.preventDefault() } document.getElementById('promo-modal').classList.remove('hidden'); const i = document.getElementById('promo-image'), l = document.getElementById('promo-link'); if (i.src) document.getElementById('promo-img-url').value = i.src; if (l.href) document.getElementById('promo-target-url').value = l.href };
         window.handlePromoFile = e => { const f = e.target.files[0]; if (f) { window.currentPromoBlob = f; showToast("Image selected") } };
-        window.savePromo = async () => { const b = event.target, ot = b.innerText; b.innerText = "Saving..."; b.disabled = true; let i = document.getElementById('promo-img-url').value.trim(); const l = document.getElementById('promo-target-url').value.trim(); if (window.currentPromoBlob) try { i = await uploadToCloudinary(window.currentPromoBlob) } catch (e) { console.error(e); } try { await setDoc(doc(db, "global", "promo"), { imageUrl: i || "", linkUrl: l }); showToast("Upload done"); document.getElementById('promo-modal').classList.add('hidden'); window.currentPromoBlob = null } catch (e) { console.error(e); showToast("Upload done", false) } b.innerText = ot; b.disabled = false };
+        window.savePromo = async () => { const b = event.target, ot = b.innerText; b.innerText = "Saving..."; b.disabled = true; let i = document.getElementById('promo-img-url').value.trim(); const l = document.getElementById('promo-target-url').value.trim(); if (window.currentPromoBlob) try { i = await uploadMedia(window.currentPromoBlob) } catch (e) { console.error(e); } try { await setDoc(doc(db, "global", "promo"), { imageUrl: i || "", linkUrl: l }); showToast("Upload done"); document.getElementById('promo-modal').classList.add('hidden'); window.currentPromoBlob = null } catch (e) { console.error(e); showToast("Upload done", false) } b.innerText = ot; b.disabled = false };
         window.updatePostViewStats = pid => { const p = posts.find(x => x.id === pid); if (!p) return; const dl = document.getElementById('post-view-likes-count'); if (dl) dl.innerText = `${p.likes ? p.likes.length : 0} likes`; const mlc = document.getElementById(`mobile-overlay-like-count-${pid}`); if (mlc) mlc.innerText = `${p.likes ? p.likes.length : 0} likes` };
         function updateUserInterface() { if (!currentUser) return; const u = currentUser; document.getElementById('nav-profile-avatar').src = u.avatar; document.getElementById('mobile-avatar').src = u.avatar; document.getElementById('header-avatar').src = u.avatar; const _nha = document.getElementById('notif-header-avatar'); if (_nha) _nha.src = u.avatar; document.getElementById('compose-name').innerText = u.name; document.getElementById('compose-avatar').src = u.avatar; document.getElementById('edit-name').value = u.name; document.getElementById('edit-username').value = u.username || ""; document.getElementById('edit-bio').value = u.bio || ""; document.getElementById('edit-avatar-preview').src = u.avatar; document.getElementById('edit-banner-preview').src = u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'; document.getElementById('edit-banner-preview').style.objectPosition = `center ${currentBannerPos}%`; document.getElementById('banner-pos-hint').innerText = `${currentBannerPos}%`; const tp = document.getElementById('toggle-privacy'); if (tp) u.settings?.privateNetwork ? tp.classList.add('active') : tp.classList.remove('active'); if (u.email === 'edulinkbht@gmail.com') { document.getElementById('edit-promo-btn').classList.remove('hidden'); document.getElementById('promo-section').classList.remove('hidden'); document.getElementById('create-option-ad').classList.remove('hidden') } else document.getElementById('create-option-ad').classList.add('hidden'); refreshIcons() }
         let alertCallback = null; window.showAlert = (m, cb) => { document.getElementById('alert-msg').innerText = m; const a = document.getElementById('custom-alert'); a.classList.remove('hidden'); setTimeout(() => { a.classList.remove('opacity-0'); document.getElementById('custom-alert-box').classList.remove('scale-95') }, 10); alertCallback = cb; const b = document.getElementById('alert-confirm-btn'), nb = b.cloneNode(!0); b.parentNode.replaceChild(nb, b); nb.onclick = () => { if (alertCallback) alertCallback(); closeAlert(!0) } };
@@ -5743,12 +5743,12 @@
                 const totalSteps = (currentAvatarBlob ? 1 : 0) + (currentBannerBlob ? 1 : 0) + 1; // uploads + db update
 
                 if (currentAvatarBlob) {
-                    av = await uploadToCloudinary(currentAvatarBlob);
+                    av = await uploadMedia(currentAvatarBlob);
                     steps++;
                     window.updateGlobalLoaderProgress(10 + (steps / totalSteps) * 80);
                 }
                 if (currentBannerBlob) {
-                    bu = await uploadToCloudinary(currentBannerBlob);
+                    bu = await uploadMedia(currentBannerBlob);
                     steps++;
                     window.updateGlobalLoaderProgress(10 + (steps / totalSteps) * 80);
                 }
@@ -7434,9 +7434,15 @@
         window.handleGridUpload = i => { window.currentUploadIndex = i; document.getElementById('grid-upload-input').click() }; window.onGridFileSelect = e => { const f = e.target.files[0]; if (!f) return; const hasVideo = window.composeImageBlobs.some(b => b && b.type && b.type.startsWith('video/')) || window.composeImages.some(u => u && (u.includes('video') || u.endsWith('.mp4'))); if (f.type.startsWith('video/') && hasVideo) { showToast("Only one video allowed", !0); document.getElementById('grid-upload-input').value = ""; return } const r = new FileReader(); r.onload = ev => { window.composeImages[window.currentUploadIndex] = ev.target.result; window.composeImageBlobs[window.currentUploadIndex] = f; renderMediaGrid() }; r.readAsDataURL(f); document.getElementById('grid-upload-input').value = "" }; window.removeGridImage = i => { window.composeImages[i] = null; window.composeImageBlobs[i] = null; const v = window.composeImages.filter(x => x !== null), vb = window.composeImageBlobs.filter(x => x !== null); window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; v.forEach((val, idx) => window.composeImages[idx] = val); vb.forEach((val, idx) => window.composeImageBlobs[idx] = val); renderMediaGrid() };
         window.handleComposeAction = () => { if (window.composeStep === 1) goToStep2(); else window.publishPost() }; window.goToStep2 = () => { window.composeStep = 2; document.getElementById('compose-step-1').classList.add('hidden'); document.getElementById('compose-step-2').classList.remove('hidden'); document.getElementById('compose-tools-bar').classList.remove('hidden'); document.getElementById('compose-footer-settings').classList.remove('hidden'); document.getElementById('compose-action-btn').innerText = "Post"; document.getElementById('compose-action-btn').onclick = window.publishPost };
         window.handleComposeBack = () => { if (window.composeStep === 2) { window.composeStep = 1; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); document.getElementById('compose-header-title').innerText = "Create Post"; const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); btn.innerText = hasImage ? "Next" : "Skip"; btn.onclick = window.handleComposeAction } else attemptCloseCompose() };
-        async function uploadToCloudinary(f) {
+        async function uploadMedia(f) {
             try {
                 const isVideo = f.type && f.type.startsWith('video/');
+                const isImage = f.type && f.type.startsWith('image/');
+                
+                if (!isVideo && !isImage) {
+                    throw new Error('this file is not supported');
+                }
+
                 const reader = new FileReader();
                 const base64Data = await new Promise((resolve, reject) => {
                     reader.onload = () => resolve(reader.result);
@@ -7456,7 +7462,8 @@
                 if (j.success) return j.url;
                 else throw new Error(j.error || 'Upload failed');
             } catch (e) { 
-                console.warn('Cloudinary upload failed, falling back to Firebase', e); 
+                console.warn('Upload failed, falling back to Firebase', e); 
+                if (e.message === 'this file is not supported') throw e;
             }
             
             try {
@@ -7493,8 +7500,12 @@
                     const url = window.composeImages[i], blob = window.composeImageBlobs[i];
                     if (url) {
                         if (blob) {
-                            try { mu.push(await uploadToCloudinary(blob)) }
+                            try { mu.push(await uploadMedia(blob)) }
                             catch (e) {
+                                if (e.message === 'this file is not supported') {
+                                    showToast(e.message, true);
+                                    throw e;
+                                }
                                 const mr = ref(storage, `posts/${currentUser.id}/${Date.now()}_${i}_${blob.name}`);
                                 await uploadBytes(mr, blob);
                                 mu.push(await getDownloadURL(mr))
