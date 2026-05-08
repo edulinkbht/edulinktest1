@@ -4747,8 +4747,12 @@
                             <span>Saved</span>
                         </div>
                         <div class="more-menu-item" onclick="window.location.href='/blog'; closeMoreMenu()">
-                            <i data-lucide="layout-grid"></i>
+                            <i data-lucide="grid-2x2"></i>
                             <span>Blog</span>
+                        </div>
+                        <div class="more-menu-item" onclick="window.location.href='/termsandservices'; closeMoreMenu()">
+                            <i data-lucide="file-text"></i>
+                            <span>Terms</span>
                         </div>
                         <div class="more-menu-item" onclick="openPrivacySettings(); closeMoreMenu()">
                             <i data-lucide="lock"></i>
@@ -4803,10 +4807,17 @@
                     </div>
                 </button>
                 <button onclick="window.location.href='/blog'" class="post-option-item group w-full">
-                    <div class="icon-circle"><i data-lucide="layout-grid" class="w-5 h-5"></i></div>
+                    <div class="icon-circle"><i data-lucide="grid-2x2" class="w-5 h-5"></i></div>
                     <div class="flex-1 text-left">
                         <div class="font-bold text-gray-900 text-[15px]">Blog</div>
                         <div class="text-xs text-gray-500">Explore official posts</div>
+                    </div>
+                </button>
+                <button onclick="window.location.href='/termsandservices'; closeSettings()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Terms</div>
+                        <div class="text-xs text-gray-500">Policies and agreements</div>
                     </div>
                 </button>
                 ${admBtn}
@@ -5497,7 +5508,27 @@
                 }
             });
         } if (isLiking) trackInteraction(pid, 'like', 2); };
-        const toggleModalAnim = (oid, mid, s) => { const o = document.getElementById(oid), m = document.getElementById(mid); if (s) { o.classList.remove('hidden'); m.style.transition = 'none'; o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); void m.offsetWidth; m.style.transition = ''; setTimeout(() => { o.classList.remove('opacity-0'); m.classList.remove('translate-y-full', 'md:scale-95'); m.classList.add('translate-y-0', 'md:scale-100') }, 20) } else { o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => o.classList.add('hidden'), 150) } };
+        const toggleModalAnim = (oid, mid, s) => {
+            const o = document.getElementById(oid), m = document.getElementById(mid);
+            if (!o || !m) return;
+            if (s) {
+                o.classList.remove('hidden');
+                m.style.transition = 'none';
+                o.classList.add('opacity-0');
+                m.classList.add('translate-y-full', 'md:scale-95');
+                m.classList.remove('translate-y-0', 'md:scale-100');
+                void m.offsetWidth;
+                m.style.transition = '';
+                o.classList.remove('opacity-0');
+                m.classList.remove('translate-y-full', 'md:scale-95');
+                m.classList.add('translate-y-0', 'md:scale-100');
+            } else {
+                o.classList.add('opacity-0');
+                m.classList.add('translate-y-full', 'md:scale-95');
+                m.classList.remove('translate-y-0', 'md:scale-100');
+                setTimeout(() => o.classList.add('hidden'), 150);
+            }
+        };
         window.openLikes = pid => { manageHistory('likes-overlay'); const p = posts.find(x => x.id === pid), c = document.getElementById('likes-list-content'); const searchInput = document.getElementById('likes-search-input'); if (searchInput) searchInput.value = ''; if (p.settings?.allowLikeView === false && p.authorId !== currentUser.id) { c.innerHTML = '<div class="text-center text-gray-400 py-8">Creator hid likes.</div>'; toggleModalAnim('likes-overlay', 'likes-modal', true); return } renderLikesList(p.likes || []); searchInput.oninput = (e) => { const term = e.target.value.toLowerCase(); const allLikes = p.likes || []; if (!term) { renderLikesList(allLikes) } else { const filtered = allLikes.filter(uid => { const u = users.find(x => x.id === uid); return u && (u.name.toLowerCase().includes(term) || (u.username && u.username.toLowerCase().includes(term))) }); renderLikesList(filtered) } }; toggleModalAnim('likes-overlay', 'likes-modal', true) };
         window.renderLikesList = (idList) => {
             const c = document.getElementById('likes-list-content');
