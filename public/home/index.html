@@ -606,23 +606,13 @@
             padding: 8px;
             flex-direction: column;
             gap: 2px;
-            transform: translateY(10px);
-            opacity: 0;
-            pointer-events: none;
-            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
             z-index: 1000;
         }
 
         @media (min-width: 768px) {
-            #more-menu {
+            #more-menu.active {
                 display: flex;
             }
-        }
-
-        #more-menu.active {
-            transform: translateY(0);
-            opacity: 1;
-            pointer-events: auto;
         }
 
         .more-menu-item {
@@ -632,7 +622,7 @@
             padding: 12px 16px;
             border-radius: 12px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.1s;
             color: #1f1f1f;
             font-weight: 500;
             font-size: 15px;
@@ -3711,7 +3701,44 @@
         <!-- Desktop More Menu -->
         <div id="more-menu">
             <div id="more-menu-content" class="flex flex-col gap-1">
-                <!-- Content injected via JS -->
+                <div class="more-menu-item" onclick="window.location.href='/settings'; closeMoreMenu()">
+                    <i data-lucide="settings"></i>
+                    <span>Settings</span>
+                </div>
+                <div class="more-menu-item" onclick="switchView('saved'); closeMoreMenu()">
+                    <i data-lucide="bookmark"></i>
+                    <span>Saved</span>
+                </div>
+                <div class="more-menu-item" onclick="window.location.href='/blog'; closeMoreMenu()">
+                    <i data-lucide="grid-2x2"></i>
+                    <span>Blog</span>
+                </div>
+                <div class="more-menu-item" onclick="window.location.href='/termsandservices'; closeMoreMenu()">
+                    <i data-lucide="file-text"></i>
+                    <span>Terms</span>
+                </div>
+                <div class="more-menu-item" onclick="openPrivacySettings(); closeMoreMenu()">
+                    <i data-lucide="lock"></i>
+                    <span>Account Privacy</span>
+                </div>
+                <div id="more-menu-broadcast" class="more-menu-item hidden" onclick="openAnnouncement(); closeMoreMenu()">
+                    <i data-lucide="megaphone"></i>
+                    <span>Broadcast</span>
+                </div>
+                <div class="more-menu-divider"></div>
+                <div class="more-menu-item" onclick="openSwitchAccount()">
+                    <i data-lucide="repeat"></i>
+                    <span>Switch accounts</span>
+                </div>
+                <div class="more-menu-item" onclick="window.logoutWithConfirm(); closeMoreMenu()">
+                    <div class="flex items-center gap-3 w-full">
+                        <img id="more-menu-avatar" src="" class="w-8 h-8 rounded-full object-cover border border-gray-200">
+                        <div class="flex-1 text-left">
+                            <div class="text-red-600 font-bold">Log out</div>
+                            <div id="more-menu-username" class="text-[11px] text-gray-400">@user</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </aside>
@@ -4715,7 +4742,44 @@
         window.handlePromoFile = e => { const f = e.target.files[0]; if (f) { window.currentPromoBlob = f; showToast("Image selected") } };
         window.savePromo = async () => { const b = event.target, ot = b.innerText; b.innerText = "Saving..."; b.disabled = true; let i = document.getElementById('promo-img-url').value.trim(); const l = document.getElementById('promo-target-url').value.trim(); if (window.currentPromoBlob) try { i = await uploadMedia(window.currentPromoBlob) } catch (e) { console.error(e); } try { await setDoc(doc(db, "global", "promo"), { imageUrl: i || "", linkUrl: l }); showToast("Upload done"); document.getElementById('promo-modal').classList.add('hidden'); window.currentPromoBlob = null } catch (e) { console.error(e); showToast("Upload done", false) } b.innerText = ot; b.disabled = false };
         window.updatePostViewStats = pid => { const p = posts.find(x => x.id === pid); if (!p) return; const dl = document.getElementById('post-view-likes-count'); if (dl) dl.innerText = `${p.likes ? p.likes.length : 0} likes`; const mlc = document.getElementById(`mobile-overlay-like-count-${pid}`); if (mlc) mlc.innerText = `${p.likes ? p.likes.length : 0} likes` };
-        function updateUserInterface() { if (!currentUser) return; const u = currentUser; document.getElementById('nav-profile-avatar').src = u.avatar; document.getElementById('mobile-avatar').src = u.avatar; document.getElementById('header-avatar').src = u.avatar; const _nha = document.getElementById('notif-header-avatar'); if (_nha) _nha.src = u.avatar; document.getElementById('compose-name').innerText = u.name; document.getElementById('compose-avatar').src = u.avatar; document.getElementById('edit-name').value = u.name; document.getElementById('edit-username').value = u.username || ""; document.getElementById('edit-bio').value = u.bio || ""; document.getElementById('edit-avatar-preview').src = u.avatar; document.getElementById('edit-banner-preview').src = u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'; document.getElementById('edit-banner-preview').style.objectPosition = `center ${currentBannerPos}%`; document.getElementById('banner-pos-hint').innerText = `${currentBannerPos}%`; const tp = document.getElementById('toggle-privacy'); if (tp) u.settings?.privateNetwork ? tp.classList.add('active') : tp.classList.remove('active'); if (u.email === 'edulinkbht@gmail.com') { document.getElementById('edit-promo-btn').classList.remove('hidden'); document.getElementById('promo-section').classList.remove('hidden'); document.getElementById('create-option-ad').classList.remove('hidden') } else document.getElementById('create-option-ad').classList.add('hidden'); refreshIcons() }
+        function updateUserInterface() {
+            if (!currentUser) return;
+            const u = currentUser;
+            document.getElementById('nav-profile-avatar').src = u.avatar;
+            document.getElementById('mobile-avatar').src = u.avatar;
+            document.getElementById('header-avatar').src = u.avatar;
+            const _nha = document.getElementById('notif-header-avatar');
+            if (_nha) _nha.src = u.avatar;
+            document.getElementById('compose-name').innerText = u.name;
+            document.getElementById('compose-avatar').src = u.avatar;
+            document.getElementById('edit-name').value = u.name;
+            document.getElementById('edit-username').value = u.username || "";
+            document.getElementById('edit-bio').value = u.bio || "";
+            document.getElementById('edit-avatar-preview').src = u.avatar;
+            document.getElementById('edit-banner-preview').src = u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png';
+            document.getElementById('edit-banner-preview').style.objectPosition = `center ${currentBannerPos}%`;
+            document.getElementById('banner-pos-hint').innerText = `${currentBannerPos}%`;
+            const tp = document.getElementById('toggle-privacy');
+            if (tp) u.settings?.privateNetwork ? tp.classList.add('active') : tp.classList.remove('active');
+
+            // More Menu population
+            const mmAvatar = document.getElementById('more-menu-avatar');
+            if (mmAvatar) mmAvatar.src = u.avatar;
+            const mmUser = document.getElementById('more-menu-username');
+            if (mmUser) mmUser.innerText = `@${u.username || 'user'}`;
+            const mmBroadcast = document.getElementById('more-menu-broadcast');
+
+            if (u.email === 'edulinkbht@gmail.com') {
+                document.getElementById('edit-promo-btn').classList.remove('hidden');
+                document.getElementById('promo-section').classList.remove('hidden');
+                document.getElementById('create-option-ad').classList.remove('hidden');
+                if (mmBroadcast) mmBroadcast.classList.remove('hidden');
+            } else {
+                document.getElementById('create-option-ad').classList.add('hidden');
+                if (mmBroadcast) mmBroadcast.classList.add('hidden');
+            }
+            refreshIcons();
+        }
         let alertCallback = null; window.showAlert = (m, cb) => { document.getElementById('alert-msg').innerText = m; const a = document.getElementById('custom-alert'); a.classList.remove('hidden'); setTimeout(() => { a.classList.remove('opacity-0'); document.getElementById('custom-alert-box').classList.remove('scale-95') }, 10); alertCallback = cb; const b = document.getElementById('alert-confirm-btn'), nb = b.cloneNode(!0); b.parentNode.replaceChild(nb, b); nb.onclick = () => { if (alertCallback) alertCallback(); closeAlert(!0) } };
         window.closeAlert = () => { const a = document.getElementById('custom-alert'); a.classList.add('opacity-0'); document.getElementById('custom-alert-box').classList.add('scale-95'); setTimeout(() => a.classList.add('hidden'), 200) };
         window.confirmAndOpenLink = url => showAlert("Are you sure you would like to proceed? We don't take responsibility for your actions after you leave this site.", () => window.open(url, '_blank'));
@@ -4726,127 +4790,79 @@
         function ed() { isDraggingBanner = !1 }
         window.openSettings = () => {
             if (window.innerWidth >= 768) {
-                const menu = document.getElementById('more-menu');
-                const content = document.getElementById('more-menu-content');
-                if (!menu.classList.contains('active')) {
-                    let admBtn = '';
-                    if (currentUser.email === 'edulinkbht@gmail.com') {
-                        admBtn = `
-                            <div class="more-menu-item" onclick="openAnnouncement(); closeMoreMenu()">
-                                <i data-lucide="megaphone"></i>
-                                <span>Broadcast</span>
-                            </div>`;
-                    }
-                    content.innerHTML = `
-                        <div class="more-menu-item" onclick="window.location.href='/settings'; closeMoreMenu()">
-                            <i data-lucide="settings"></i>
-                            <span>Settings</span>
-                        </div>
-                        <div class="more-menu-item" onclick="switchView('saved'); closeMoreMenu()">
-                            <i data-lucide="bookmark"></i>
-                            <span>Saved</span>
-                        </div>
-                        <div class="more-menu-item" onclick="window.location.href='/blog'; closeMoreMenu()">
-                            <i data-lucide="grid-2x2"></i>
-                            <span>Blog</span>
-                        </div>
-                        <div class="more-menu-item" onclick="window.location.href='/termsandservices'; closeMoreMenu()">
-                            <i data-lucide="file-text"></i>
-                            <span>Terms</span>
-                        </div>
-                        <div class="more-menu-item" onclick="openPrivacySettings(); closeMoreMenu()">
-                            <i data-lucide="lock"></i>
-                            <span>Account Privacy</span>
-                        </div>
-                        ${admBtn}
-                        <div class="more-menu-divider"></div>
-                        <div class="more-menu-item" onclick="openSwitchAccount()">
-                            <i data-lucide="repeat"></i>
-                            <span>Switch accounts</span>
-                        </div>
-                        <div class="more-menu-item" onclick="window.logoutWithConfirm(); closeMoreMenu()">
-                            <div class="flex items-center gap-3 w-full">
-                                <img src="${currentUser.avatar}" class="w-8 h-8 rounded-full object-cover border border-gray-200">
-                                <div class="flex-1 text-left">
-                                    <div class="text-red-600 font-bold">Log out</div>
-                                    <div class="text-[11px] text-gray-400">@${currentUser.username || 'user'}</div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    refreshIcons();
-                }
-                menu.classList.toggle('active');
+                document.getElementById('more-menu').classList.toggle('active');
                 return;
             }
             manageHistory('settings-overlay');
             const c = document.getElementById('settings-content');
-            let admBtn = '';
-            if (currentUser.email === 'edulinkbht@gmail.com') {
-                admBtn = `<button onclick="openAnnouncement()" class="post-option-item group w-full">
-                    <div class="icon-circle"><i data-lucide="megaphone" class="w-5 h-5"></i></div>
-                    <div class="flex-1">
-                        <div class="font-bold text-gray-900 text-[15px]">Broadcast Announcement</div>
-                        <div class="text-xs text-gray-500">Send to all users</div>
+            if (c.innerHTML.trim() === "") {
+                let admBtn = '';
+                if (currentUser.email === 'edulinkbht@gmail.com') {
+                    admBtn = `<button onclick="openAnnouncement()" class="post-option-item group w-full">
+                        <div class="icon-circle"><i data-lucide="megaphone" class="w-5 h-5"></i></div>
+                        <div class="flex-1">
+                            <div class="font-bold text-gray-900 text-[15px]">Broadcast Announcement</div>
+                            <div class="text-xs text-gray-500">Send to all users</div>
+                        </div>
+                    </button>`;
+                }
+                c.innerHTML = `
+                    <button onclick="window.location.href='/settings'" class="post-option-item group w-full">
+                        <div class="icon-circle"><i data-lucide="settings" class="w-5 h-5"></i></div>
+                        <div class="flex-1 text-left">
+                            <div class="font-bold text-gray-900 text-[15px]">Settings</div>
+                            <div class="text-xs text-gray-500">General account settings</div>
+                        </div>
+                    </button>
+                    <button onclick="switchView('saved'); closeSettings()" class="post-option-item group w-full">
+                        <div class="icon-circle"><i data-lucide="bookmark" class="w-5 h-5"></i></div>
+                        <div class="flex-1 text-left">
+                            <div class="font-bold text-gray-900 text-[15px]">Saved</div>
+                            <div class="text-xs text-gray-500">Your saved posts</div>
+                        </div>
+                    </button>
+                    <button onclick="window.location.href='/blog'" class="post-option-item group w-full">
+                        <div class="icon-circle"><i data-lucide="grid-2x2" class="w-5 h-5"></i></div>
+                        <div class="flex-1 text-left">
+                            <div class="font-bold text-gray-900 text-[15px]">Blog</div>
+                            <div class="text-xs text-gray-500">Explore official posts</div>
+                        </div>
+                    </button>
+                    <button onclick="window.location.href='/termsandservices'; closeSettings()" class="post-option-item group w-full">
+                        <div class="icon-circle"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+                        <div class="flex-1 text-left">
+                            <div class="font-bold text-gray-900 text-[15px]">Terms</div>
+                            <div class="text-xs text-gray-500">Policies and agreements</div>
+                        </div>
+                    </button>
+                    <button onclick="openPrivacySettings()" class="post-option-item group w-full">
+                        <div class="icon-circle"><i data-lucide="lock" class="w-5 h-5"></i></div>
+                        <div class="flex-1 text-left">
+                            <div class="font-bold text-gray-900 text-[15px]">Account Privacy</div>
+                            <div class="text-xs text-gray-500">Manage visibility and data</div>
+                        </div>
+                    </button>
+                    ${admBtn}
+                    <button onclick="openSwitchAccount()" class="post-option-item group w-full">
+                        <div class="icon-circle"><i data-lucide="repeat" class="w-5 h-5"></i></div>
+                        <div class="flex-1 text-left">
+                            <div class="font-bold text-gray-900 text-[15px]">Switch accounts</div>
+                            <div class="text-xs text-gray-500">Log into another account</div>
+                        </div>
+                    </button>
+                    <div class="h-px bg-gray-100 my-2 mx-2"></div>
+                    <div onclick="window.logoutWithConfirm()" class="logout-btn-custom group">
+                        <img src="${currentUser.avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
+                        <div class="flex-1">
+                            <div class="font-bold text-red-600 text-[15px]">Log Out</div>
+                            <div class="text-xs text-gray-400 truncate">@${currentUser.username || 'user'}</div>
+                        </div>
+                        <i data-lucide="log-out" class="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors"></i>
                     </div>
-                </button>`;
+                `;
+                refreshIcons();
             }
-            c.innerHTML = `
-                <button onclick="window.location.href='/settings'" class="post-option-item group w-full">
-                    <div class="icon-circle"><i data-lucide="settings" class="w-5 h-5"></i></div>
-                    <div class="flex-1 text-left">
-                        <div class="font-bold text-gray-900 text-[15px]">Settings</div>
-                        <div class="text-xs text-gray-500">General account settings</div>
-                    </div>
-                </button>
-                <button onclick="switchView('saved'); closeSettings()" class="post-option-item group w-full">
-                    <div class="icon-circle"><i data-lucide="bookmark" class="w-5 h-5"></i></div>
-                    <div class="flex-1 text-left">
-                        <div class="font-bold text-gray-900 text-[15px]">Saved</div>
-                        <div class="text-xs text-gray-500">Your saved posts</div>
-                    </div>
-                </button>
-                <button onclick="window.location.href='/blog'" class="post-option-item group w-full">
-                    <div class="icon-circle"><i data-lucide="grid-2x2" class="w-5 h-5"></i></div>
-                    <div class="flex-1 text-left">
-                        <div class="font-bold text-gray-900 text-[15px]">Blog</div>
-                        <div class="text-xs text-gray-500">Explore official posts</div>
-                    </div>
-                </button>
-                <button onclick="window.location.href='/termsandservices'; closeSettings()" class="post-option-item group w-full">
-                    <div class="icon-circle"><i data-lucide="file-text" class="w-5 h-5"></i></div>
-                    <div class="flex-1 text-left">
-                        <div class="font-bold text-gray-900 text-[15px]">Terms</div>
-                        <div class="text-xs text-gray-500">Policies and agreements</div>
-                    </div>
-                </button>
-                <button onclick="openPrivacySettings()" class="post-option-item group w-full">
-                    <div class="icon-circle"><i data-lucide="lock" class="w-5 h-5"></i></div>
-                    <div class="flex-1 text-left">
-                        <div class="font-bold text-gray-900 text-[15px]">Account Privacy</div>
-                        <div class="text-xs text-gray-500">Manage visibility and data</div>
-                    </div>
-                </button>
-                ${admBtn}
-                <button onclick="openSwitchAccount()" class="post-option-item group w-full">
-                    <div class="icon-circle"><i data-lucide="repeat" class="w-5 h-5"></i></div>
-                    <div class="flex-1 text-left">
-                        <div class="font-bold text-gray-900 text-[15px]">Switch accounts</div>
-                        <div class="text-xs text-gray-500">Log into another account</div>
-                    </div>
-                </button>
-                <div class="h-px bg-gray-100 my-2 mx-2"></div>
-                <div onclick="window.logoutWithConfirm()" class="logout-btn-custom group">
-                    <img src="${currentUser.avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
-                    <div class="flex-1">
-                        <div class="font-bold text-red-600 text-[15px]">Log Out</div>
-                        <div class="text-xs text-gray-400 truncate">@${currentUser.username || 'user'}</div>
-                    </div>
-                    <i data-lucide="log-out" class="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors"></i>
-                </div>
-            `;
             toggleModalAnim('settings-overlay', 'settings-modal', !0);
-            refreshIcons();
         };
         window.closeMoreMenu = () => {
             document.getElementById('more-menu').classList.remove('active');
@@ -5506,12 +5522,6 @@
             if (!o || !m) return;
             if (s) {
                 o.classList.remove('hidden');
-                m.style.transition = 'none';
-                o.classList.add('opacity-0');
-                m.classList.add('translate-y-full', 'md:scale-95');
-                m.classList.remove('translate-y-0', 'md:scale-100');
-                void m.offsetWidth;
-                m.style.transition = '';
                 o.classList.remove('opacity-0');
                 m.classList.remove('translate-y-full', 'md:scale-95');
                 m.classList.add('translate-y-0', 'md:scale-100');
@@ -5519,7 +5529,7 @@
                 o.classList.add('opacity-0');
                 m.classList.add('translate-y-full', 'md:scale-95');
                 m.classList.remove('translate-y-0', 'md:scale-100');
-                setTimeout(() => o.classList.add('hidden'), 150);
+                o.classList.add('hidden');
             }
         };
         window.openLikes = pid => { manageHistory('likes-overlay'); const p = posts.find(x => x.id === pid), c = document.getElementById('likes-list-content'); const searchInput = document.getElementById('likes-search-input'); if (searchInput) searchInput.value = ''; if (p.settings?.allowLikeView === false && p.authorId !== currentUser.id) { c.innerHTML = '<div class="text-center text-gray-400 py-8">Creator hid likes.</div>'; toggleModalAnim('likes-overlay', 'likes-modal', true); return } renderLikesList(p.likes || []); searchInput.oninput = (e) => { const term = e.target.value.toLowerCase(); const allLikes = p.likes || []; if (!term) { renderLikesList(allLikes) } else { const filtered = allLikes.filter(uid => { const u = users.find(x => x.id === uid); return u && (u.name.toLowerCase().includes(term) || (u.username && u.username.toLowerCase().includes(term))) }); renderLikesList(filtered) } }; toggleModalAnim('likes-overlay', 'likes-modal', true) };
