@@ -351,33 +351,33 @@
         .control-pill {
             display: flex;
             align-items: center;
-            gap: 14px;
+            gap: 12px;
             background: rgba(255, 255, 255, 0.04);
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 100px;
-            padding: 4px 6px 4px 18px;
+            padding: 4px 6px 4px 16px;
             cursor: pointer;
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            height: 44px;
+            height: 38px;
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 13px;
             font-weight: 500;
             outline: none;
-            letter-spacing: -0.2px;
+            letter-spacing: -0.1px;
         }
         .control-pill:hover {
             background: rgba(255, 255, 255, 0.08);
             border-color: rgba(255, 255, 255, 0.15);
         }
         .control-pill i {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
             color: var(--text-primary);
             stroke-width: 2;
         }
         .control-pill-icon-circle {
-            width: 32px;
-            height: 32px;
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.08);
             display: flex;
@@ -389,8 +389,8 @@
             background: rgba(255, 255, 255, 0.12);
         }
         .control-pill-icon-circle i {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
         }
         
         .upgrade-pill {
@@ -1426,12 +1426,11 @@
                                 </div>
                             </div>
                             <button class="control-pill" id="voiceInputBtn" title="Voice Input">
-                                <span>Talk</span>
-                                <div class="control-pill-icon-circle">
+                                <span id="voiceBtnText">Talk</span>
+                                <div class="control-pill-icon-circle" id="voiceBtnIcon">
                                     <i data-lucide="audio-lines"></i>
                                 </div>
                             </button>
-                            <button class="icon-btn" id="stopResponseBtn" title="Stop Response" style="display:none; width: 40px; height: 40px;"><i data-lucide="square" style="width: 22px; height: 22px;"></i></button>
                         </div>
                     </div>
                 </div>
@@ -2491,6 +2490,12 @@ ${truncatedDocs}
         }
 
         voiceInputBtn.addEventListener('click', () => {
+            // INTERRUPT LOGIC: If AI is responding, this button acts as Stop
+            if (currentAbortController) {
+                currentAbortController.abort();
+                return;
+            }
+
             if (!recognition) {
                 alert('Speech recognition is not supported in your browser.');
                 return;
@@ -2765,7 +2770,15 @@ ${truncatedDocs}
             if (!apiKey) return;
 
             currentAbortController = new AbortController();
-            stopResponseBtn.style.display = 'flex';
+            
+            // Toggle Voice button to Interrupt state
+            const voiceBtnText = document.getElementById('voiceBtnText');
+            const voiceBtnIcon = document.getElementById('voiceBtnIcon');
+            if (voiceBtnText && voiceBtnIcon) {
+                voiceBtnText.textContent = 'Interrupt';
+                voiceBtnIcon.innerHTML = '<i data-lucide="square"></i>';
+                lucide.createIcons();
+            }
 
             try {
                 let messagesToSend = [...conversationHistory];
@@ -2897,7 +2910,15 @@ ${truncatedDocs}
                 }
             } finally {
                 currentAbortController = null;
-                stopResponseBtn.style.display = 'none';
+                
+                // Toggle Voice button back to Talk state
+                const voiceBtnText = document.getElementById('voiceBtnText');
+                const voiceBtnIcon = document.getElementById('voiceBtnIcon');
+                if (voiceBtnText && voiceBtnIcon) {
+                    voiceBtnText.textContent = 'Talk';
+                    voiceBtnIcon.innerHTML = '<i data-lucide="audio-lines"></i>';
+                    lucide.createIcons();
+                }
             }
         }
 
