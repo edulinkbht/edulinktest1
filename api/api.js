@@ -1,4 +1,4 @@
-// api/login.js
+// api/api.js
 export default function handler(req, res) {
   // This pulls from the vercel environment or .env file
   const config = {
@@ -16,7 +16,8 @@ export default function handler(req, res) {
       cloudName: process.env.CLOUDINARY_CLOUD_NAME,
       apiKey: process.env.CLOUDINARY_API_KEY,
       apiSecret: process.env.CLOUDINARY_API_SECRET,
-    }
+    },
+    newtonApiKey: process.env.NEWTON_API_KEY
   };
 
   // Check for critical missing variables
