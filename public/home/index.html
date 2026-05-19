@@ -2469,15 +2469,22 @@
         }
 
         /* Standardized modal corners */
-        [id$="-modal"] {
+        [id$="-modal"]:not(#compose-modal) {
             border-top-left-radius: 24px !important;
             border-top-right-radius: 24px !important;
+        }
+
+        #compose-modal {
+            border-radius: 0 !important;
         }
 
         @media (min-width: 768px) {
             [id$="-modal"] {
                 border-bottom-left-radius: 24px !important;
                 border-bottom-right-radius: 24px !important;
+            }
+            #compose-modal {
+                border-radius: 24px !important;
             }
         }
     </style>
@@ -2561,7 +2568,7 @@
         <div id="post-options-modal"
             class="bg-white w-full md:w-[400px] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden"
             onclick="event.stopPropagation()">
-            <div class="modal-drag-handle"></div>
+            <div class="modal-drag-handle md:block hidden"></div>
             <div class="modal-standard-header">
                 <div class="flex items-center">
                     <button onclick="hidePostMenu()" class="modal-chevron-btn">
@@ -2579,7 +2586,7 @@
         <div id="engagement-modal"
             class="bg-white w-full md:w-[450px] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden"
             onclick="event.stopPropagation()">
-            <div class="modal-drag-handle"></div>
+            <div class="modal-drag-handle hidden md:block"></div>
             <div class="modal-standard-header">
                 <div class="flex items-center">
                     <button onclick="closeEngagement()" class="modal-chevron-btn">
@@ -3531,7 +3538,7 @@
                 </div>
                 <p class="font-bold text-gray-900 animate-pulse">Posting...</p>
             </div>
-            <div class="modal-drag-handle"></div>
+            <div class="modal-drag-handle hidden md:block"></div>
             <div class="modal-standard-header">
                 <div class="flex items-center justify-between w-full">
                     <div class="flex items-center">
@@ -3544,7 +3551,7 @@
             </div>
             <div id="compose-body" class="flex-1 overflow-y-auto relative">
                 <div id="compose-step-1" class="p-0 md:p-4 h-full flex flex-col">
-                    <div class="grid grid-cols-2 gap-[1px] md:gap-4 bg-gray-100 md:bg-transparent" id="media-grid-container"></div>
+                    <div class="grid grid-cols-2 gap-[1px] md:gap-4 bg-gray-200 md:bg-transparent" id="media-grid-container"></div>
                     <div class="flex-1 bg-white"></div>
                 </div>
                 <div id="compose-step-2" class="p-4 hidden flex flex-1 flex-col">
@@ -7917,14 +7924,14 @@
             for (let i = 0; i < 4; i++) {
                 const url = window.composeImages[i],
                     div = document.createElement('div');
-                div.className = "aspect-square border border-gray-200 flex items-center justify-center relative overflow-hidden bg-gray-50 transition-colors md:rounded-xl";
+                div.className = "aspect-square flex items-center justify-center relative overflow-hidden bg-white transition-colors md:rounded-xl md:border md:border-gray-200";
                 if (url) {
                     hasImage = true;
-                    div.className = "aspect-square relative shadow-sm border border-gray-200 cursor-pointer hover:opacity-90 transition-opacity md:rounded-xl overflow-hidden";
+                    div.className = "aspect-square relative shadow-sm cursor-pointer hover:opacity-90 transition-opacity md:rounded-xl overflow-hidden md:border md:border-gray-200";
                     div.onclick = () => openImageAdjust(i);
                     const isVid = url.includes('video') || url.endsWith('.mp4') || (window.composeImageBlobs[i] && window.composeImageBlobs[i].type.startsWith('video'));
                     if (isVid) {
-                        div.innerHTML = `<video src="${url}" class="w-full h-full object-cover pointer-events-none" muted preload="metadata" onloadeddata="this.currentTime=0.1" onseeked="this.play();setTimeout(()=>this.pause(),10)"></video><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`;
+                        div.innerHTML = `<video src="${url}" class="w-full h-full object-cover pointer-events-none" muted preload="metadata" onloadeddata="this.currentTime=0.1" onseeked="this.play();setTimeout(()=>this.play(),10)"></video><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`;
                     } else {
                         div.innerHTML = `<img src="${url}" class="w-full h-full object-cover" id="compose-img-${i}"><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`;
                     }
@@ -7932,11 +7939,10 @@
                     const isNext = (i === 0) || (window.composeImages[i - 1] !== null);
                     if (isNext) {
                         div.innerHTML = `<i data-lucide="plus" class="w-8 h-8 text-gray-400"></i>`;
-                        div.classList.add('cursor-pointer', 'hover:bg-gray-100');
+                        div.classList.add('cursor-pointer', 'hover:bg-gray-50');
                         div.onclick = () => window.handleGridUpload(i)
                     } else {
                         div.innerHTML = '';
-                        div.className = "aspect-square border border-gray-100 bg-transparent md:rounded-xl"
                     }
                 }
                 grid.appendChild(div)
