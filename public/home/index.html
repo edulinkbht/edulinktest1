@@ -5622,26 +5622,29 @@
                     m.addEventListener('touchstart', (e) => {
                         startY = e.touches[0].clientY;
                         m.style.transition = 'none';
+                        m.style.willChange = 'transform';
                     }, { passive: true });
 
                     m.addEventListener('touchmove', (e) => {
                         currentY = e.touches[0].clientY;
                         const diff = currentY - startY;
                         if (diff > 0) {
-                            m.style.transform = `translateY(${diff}px)`;
-                            o.style.opacity = Math.max(0, 1 - diff / 500);
+                            // Use translate3d for hardware acceleration (smoother)
+                            m.style.transform = `translate3d(0, ${diff}px, 0)`;
+                            // Keep overlay solid white as requested by user
+                            o.style.backgroundColor = 'rgba(255, 255, 255, 0.95)';
+                            o.style.backdropFilter = 'none';
                         }
                     }, { passive: true });
 
                     m.addEventListener('touchend', (e) => {
-                        m.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s';
+                        m.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+                        m.style.willChange = 'auto';
                         const diff = currentY - startY;
                         if (diff > 150) {
-                            // Close modal if dragged down enough
                             if (oid === 'thread-overlay' || oid === 'comments-overlay') {
                                 history.back();
                             } else {
-                                // Find the close function for this modal
                                 const closeFuncs = {
                                     'settings-overlay': closeSettings,
                                     'share-overlay': closeShareMenu,
@@ -5662,9 +5665,10 @@
                                 else toggleModalAnim(oid, mid, false);
                             }
                         } else {
-                            // Reset position
-                            m.style.transform = 'translateY(0)';
-                            o.style.opacity = '1';
+                            m.style.transform = 'translate3d(0, 0, 0)';
+                            // Restore original overlay style
+                            o.style.backgroundColor = '';
+                            o.style.backdropFilter = '';
                         }
                         startY = 0; currentY = 0;
                     }, { passive: true });
@@ -5674,7 +5678,10 @@
                 o.classList.add('opacity-0');
                 m.classList.add('translate-y-full', 'md:scale-95');
                 m.classList.remove('translate-y-0', 'md:scale-100');
-                m.style.transform = ''; // Reset any swipe transform
+                m.style.transform = '';
+                m.style.willChange = 'auto';
+                o.style.backgroundColor = '';
+                o.style.backdropFilter = '';
                 setTimeout(() => o.classList.add('hidden'), 150);
             }
         };
@@ -7162,21 +7169,21 @@
                 const authorReply = p && p.comments ? p.comments.find(r => r.parentId === c.id && r.authorId === p.authorId) : null;
                 if (authorReply) {
                     const pa = users.find(u => u.id === p.authorId) || { avatar: '' };
-                    viewPillHtml = `<div class="action-pill-view !py-0.5 !px-2.5 !h-[32px]" onclick="openThread('${pid}','${c.id}')"><img src="${pa.avatar}" class="!w-4 !h-4" alt="Author"><span>View ${replyCount}</span></div>`;
+                    viewPillHtml = `<div class="action-btn !py-2 !px-3.5 !h-auto" onclick="openThread('${pid}','${c.id}')"><img src="${pa.avatar}" class="!w-5 !h-5 rounded-full" alt="Author"><span>View ${replyCount}</span></div>`;
                 } else {
-                    viewPillHtml = `<div class="action-pill-view !py-0.5 !px-2.5 !h-[32px]" onclick="openThread('${pid}','${c.id}')"><i data-lucide="message-circle" class="!w-4 !h-4"></i><span>View ${replyCount}</span></div>`;
+                    viewPillHtml = `<div class="action-btn !py-2 !px-3.5 !h-auto" onclick="openThread('${pid}','${c.id}')"><i data-lucide="message-circle" class="!w-5 !h-5"></i><span>View ${replyCount}</span></div>`;
                 }
             }
             
             const actionsHtml = `
-                <div class="post-actions mt-2 !gap-2 !py-0 !px-0">
+                <div class="post-actions mt-2 !gap-2.5 !py-0 !px-0">
                     ${viewPillHtml}
-                    <button class="action-pill like !py-0.5 !px-3 !h-[32px] js-comment-like-btn-${c.id} ${isLiked ? 'active' : ''}" onclick="toggleCommentLike('${pid}','${c.id}')">
-                        <i data-lucide="heart" class="${isLiked ? 'fill-red-500 text-red-500' : ''} !w-4 !h-4"></i> 
-                        <span class="js-comment-like-count-${c.id} text-xs font-bold text-gray-900">${likeCount}</span>
+                    <button class="action-btn like js-comment-like-btn-${c.id} ${isLiked ? 'active' : ''} !py-2 !px-3.5 !h-auto" onclick="toggleCommentLike('${pid}','${c.id}')">
+                        <i data-lucide="heart" class="${isLiked ? 'fill-red-500 text-red-500' : ''} !w-5 !h-5"></i> 
+                        <span class="js-comment-like-count-${c.id}">${likeCount}</span>
                     </button>
-                    <button class="action-circle !w-[32px] !h-[32px]" onclick="replyToComment('${c.id}','${replyHandle}')">
-                        <i data-lucide="message-circle" class="!w-4 !h-4"></i>
+                    <button class="action-btn !py-2 !px-3.5 !h-auto" onclick="replyToComment('${c.id}','${replyHandle}')">
+                        <i data-lucide="message-circle" class="!w-5 !h-5"></i>
                     </button>
                     <div class="flex-1"></div>
                     ${likedByAuthorBadge}
