@@ -2479,85 +2479,6 @@
                 border-bottom-right-radius: 24px !important;
             }
         }
-        .action-icon-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 8px;
-            color: #262626;
-            background: transparent;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-
-        .action-icon-btn:hover {
-            opacity: 0.6;
-        }
-
-        .action-icon-btn i, .action-icon-btn svg {
-            width: 28px;
-            height: 28px;
-            stroke-width: 1.5;
-        }
-
-        .action-icon-btn.active svg {
-            fill: #ef4444;
-            stroke: #ef4444;
-        }
-
-        .interaction-bar {
-            padding: 8px 16px;
-            border-top: 1px solid #efefef;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 14px;
-        }
-
-        .interaction-count-item {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-weight: 400;
-            color: #8e8e8e;
-        }
-
-        .interaction-count-item strong {
-            color: #262626;
-            font-weight: 700;
-        }
-
-        .post-options-date {
-            padding: 12px 24px;
-            font-size: 12px;
-            color: #8e8e8e;
-            text-transform: uppercase;
-            border-bottom: 1px solid #f3f4f6;
-        }
-
-        .post-options-item {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            width: 100%;
-            padding: 16px 24px;
-            font-weight: 600;
-            color: #262626;
-            transition: background 0.2s;
-        }
-
-        .post-options-item:hover {
-            background-color: #fafafa;
-        }
-
-        .post-options-item.text-red-600 {
-            color: #ed4956;
-        }
-
-        .post-options-item i {
-            width: 24px;
-            height: 24px;
-        }
     </style>
 </head>
 
@@ -5397,9 +5318,9 @@
             const commentText = p.comments?.length || 0; 
             let rightActionBtn = '';
             if (p.claimLink) {
-                rightActionBtn = `<button class="flex items-center gap-2 px-4 py-1.5 rounded-full bg-gray-100 text-gray-900 font-bold text-[13px] hover:bg-gray-200 transition-colors" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`;
+                rightActionBtn = `<button class="action-btn text-black border-gray-100 bg-gray-50 hover:bg-gray-100" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`;
             } else {
-                rightActionBtn = `<button class="flex items-center justify-center w-8 h-8 js-save-btn-${p.id} ${isSaved ? 'text-blue-600' : 'text-gray-700'} hover:scale-110 transition-transform" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark" class="w-7 h-7 ${isSaved ? 'fill-current' : ''}"></i></button>`;
+                rightActionBtn = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>`;
             }
             const urlMatch = p.content.match(/(https?:\/\/[^\s]+)/), previewId = `preview-${ctx}-${p.id}`, previewHtml = urlMatch ? `<div id="${previewId}"></div>` : '';
             if (urlMatch) setTimeout(() => window.renderLinkPreview(urlMatch[0], previewId), 100);
@@ -5415,51 +5336,10 @@
                           </div>`;
                 }
             }
-            const followBtn = '';
-            d.innerHTML = `${rh}<div class="p-4 md:p-5">
-                <div class="post-header mb-3">
-                    <div class="flex gap-3">
-                        <div class="post-avatar-container w-10 h-10 rounded-full">
-                            <img src="${a.avatar}" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')">
-                        </div>
-                        <div class="flex flex-col justify-center">
-                            <div class="flex items-center">
-                                <span class="post-author-name font-bold text-gray-900" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>
-                                ${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}
-                                ${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}
-                                ${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')">
-                            <i data-lucide="more-vertical" class="w-[26px] h-[26px]"></i>
-                        </button>
-                    </div>
-                </div>
-                <div class="post-content">
-                    <div class="post-body js-post-body-${p.id} mb-3 text-[15px] text-gray-800 leading-relaxed">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>
-                    ${previewHtml}${mh}
-                </div>
-                <div class="post-actions !border-none !bg-transparent !p-0 !mt-3 flex items-center gap-5">
-                    <button class="flex items-center justify-center js-like-btn-${p.id} ${isLiked ? 'active text-red-500' : 'text-gray-700'} hover:scale-110 transition-transform" onclick="event.stopPropagation(); toggleLike('${p.id}')">
-                        <i data-lucide="heart" class="w-7 h-7 ${isLiked ? 'fill-current' : ''}"></i>
-                    </button>
-                    <button class="flex items-center justify-center text-gray-700 hover:scale-110 transition-transform" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }">
-                        <i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}" class="w-7 h-7"></i>
-                    </button>
-                    <button class="flex items-center justify-center text-gray-700 hover:scale-110 transition-transform" onclick="event.stopPropagation(); sharePost('${p.id}')">
-                        <i data-lucide="redo-2" class="w-7 h-7"></i>
-                    </button>
-                    <div class="flex-1"></div>
-                    ${rightActionBtn}
-                </div>
-                <div class="mt-3 px-1 text-[15px]">
-                    <span class="font-bold text-gray-900 js-like-count-${p.id}">${likeText}</span> <span class="text-gray-700 font-medium">Likes</span>
-                    <span class="ml-4 font-bold text-gray-900 js-comment-count-${p.id}">${commentText}</span> <span class="text-gray-700 font-medium">Comments</span>
-                </div>
-            </div>${lh}`; 
-            return d;
+            const isF = currentUser.following.includes(a.id);
+            const isFriend = window.isFriend(a.id);
+            const followBtn = (a.id !== currentUser.id) ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#4477ce] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90">${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : '';
+            d.innerHTML = `${rh}<div class="p-4 md:p-5"><div class="post-header"><div class="flex gap-3"><div class="post-avatar-container w-10 h-10 rounded-full"><img src="${a.avatar}" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')"></div><div><div class="flex items-center"><span class="post-author-name" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}</div><div class="post-meta flex items-center">${formatDate(p.timestamp)}</div></div></div><div class="flex items-center gap-1">${followBtn}<button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')"><i data-lucide="more-vertical" class="w-[26px] h-[26px]"></i></button></div></div><div class="post-content"><div class="post-body js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>${previewHtml}${mh}</div><div class="post-actions"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id}">${likeText}</span></button><button class="action-btn comment" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }"><i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}"></i> <span class="js-comment-count-${p.id}">${commentText}</span></button><button class="action-btn share-btn" onclick="event.stopPropagation(); sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${rightActionBtn}</div></div>${lh}`; return d
         }
         window.moveCarousel = (cid, dir) => { const s = window.carouselStates[cid]; if (!s) return; let n = s.index + dir; if (n < 0) n = 0; if (n >= s.total) n = s.total - 1; s.index = n; const outer = document.getElementById(cid), inner = outer ? outer.querySelector('.post-carousel-inner') : null; if (inner) inner.style.transform = `translateX(-${n * 100}%)`; const dc = document.getElementById(cid).nextElementSibling; if (dc) dc.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === n)); const ctid = cid.replace('carousel-', 'counter-'), cnt = document.getElementById(ctid); if (cnt) cnt.innerText = n + 1 };
         window.switchExploreMainTab = t => {
@@ -5735,31 +5615,7 @@
             toggleModalAnim('user-list-overlay', 'user-list-modal', !0);
             refreshIcons()
         }; window.closeUserList = () => toggleModalAnim('user-list-overlay', 'user-list-modal', !1);
-        window.toggleLike = async (pid) => { 
-            const btn = document.querySelector(`.js-like-btn-${pid}`);
-            if (!btn) return;
-            const isLiking = !btn.classList.contains('active'); 
-            document.querySelectorAll(`.js-like-btn-${pid}`).forEach(b => {
-                b.classList.toggle('active', isLiking);
-                if (isLiking) {
-                    b.classList.add('text-red-500');
-                    b.classList.remove('text-gray-700');
-                    const icon = b.querySelector('i');
-                    if (icon) icon.classList.add('fill-current');
-                } else {
-                    b.classList.remove('text-red-500');
-                    b.classList.add('text-gray-700');
-                    const icon = b.querySelector('i');
-                    if (icon) icon.classList.remove('fill-current');
-                }
-            }); 
-            document.querySelectorAll(`.js-like-count-${pid}`).forEach(el => { 
-                let t = el.innerText; 
-                let c = parseInt(t); 
-                if (isNaN(c)) c = 0; 
-                let nc = Math.max(0, c + (isLiking ? 1 : -1)); 
-                el.innerText = nc; 
-            }); const ovBtn = document.getElementById('post-view-like-btn'); if (ovBtn) { if (isLiking) { ovBtn.classList.add('fill-red-500', 'text-red-500'); ovBtn.classList.remove('text-gray-700') } else { ovBtn.classList.remove('fill-red-500', 'text-red-500'); ovBtn.classList.add('text-gray-700') } } const movBtn = document.getElementById(`mobile-overlay-like-btn-${pid}`); if (movBtn) { if (isLiking) { movBtn.classList.add('fill-red-500', 'text-red-500'); movBtn.classList.remove('text-900') } else { movBtn.classList.remove('fill-red-500', 'text-red-500'); movBtn.classList.add('text-900') } } const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid); if (p.likes && p.likes.includes(currentUser.id)) await updateDoc(r, { likes: arrayRemove(currentUser.id) }); else { await updateDoc(r, { likes: arrayUnion(currentUser.id) }); if (p.authorId !== currentUser.id) sendNotification(p.authorId, 'like', 'liked your post', pid); 
+        window.toggleLike = async (pid) => { const isLiking = !document.querySelector(`.js-like-btn-${pid}`)?.classList.contains('active'); document.querySelectorAll(`.js-like-btn-${pid}`).forEach(b => b.classList.toggle('active', isLiking)); document.querySelectorAll(`.js-like-count-${pid}`).forEach(el => { let t = el.innerText; let c = parseInt(t); if (isNaN(c)) c = 0; let nc = Math.max(0, c + (isLiking ? 1 : -1)); el.innerText = nc === 0 ? 'Like' : nc }); const ovBtn = document.getElementById('post-view-like-btn'); if (ovBtn) { if (isLiking) { ovBtn.classList.add('fill-red-500', 'text-red-500'); ovBtn.classList.remove('text-gray-700') } else { ovBtn.classList.remove('fill-red-500', 'text-red-500'); ovBtn.classList.add('text-gray-700') } } const movBtn = document.getElementById(`mobile-overlay-like-btn-${pid}`); if (movBtn) { if (isLiking) { movBtn.classList.add('fill-red-500', 'text-red-500'); movBtn.classList.remove('text-900') } else { movBtn.classList.remove('fill-red-500', 'text-red-500'); movBtn.classList.add('text-900') } } const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid); if (p.likes && p.likes.includes(currentUser.id)) await updateDoc(r, { likes: arrayRemove(currentUser.id) }); else { await updateDoc(r, { likes: arrayUnion(currentUser.id) }); if (p.authorId !== currentUser.id) sendNotification(p.authorId, 'like', 'liked your post', pid); 
             // Notify reposters
             users.filter(u => u.reposts?.includes(pid)).forEach(rep => {
                 if (rep.id !== currentUser.id && rep.id !== p.authorId) {
@@ -5858,49 +5714,7 @@
             }).join('')
         };
         window.closeLikes = () => toggleModalAnim('likes-overlay', 'likes-modal', !1);
-        window.toggleSave = async (pid) => { 
-            const btn = document.querySelector(`.js-save-btn-${pid}`);
-            if (!btn) return;
-            const isSaving = !btn.classList.contains('active'); 
-            document.querySelectorAll(`.js-save-btn-${pid}`).forEach(b => {
-                b.classList.toggle('active', isSaving);
-                if (isSaving) {
-                    b.classList.add('text-blue-600');
-                    b.classList.remove('text-gray-700');
-                    const icon = b.querySelector('i');
-                    if (icon) icon.classList.add('fill-current');
-                } else {
-                    b.classList.remove('text-blue-600');
-                    b.classList.add('text-gray-700');
-                    const icon = b.querySelector('i');
-                    if (icon) icon.classList.remove('fill-current');
-                }
-            });
-            showToast(isSaving ? "Saved" : "Removed"); 
-            const ovBtn = document.getElementById('post-view-save-btn'); 
-            if (ovBtn) { 
-                if (isSaving) { 
-                    ovBtn.classList.add('text-blue-600'); 
-                    ovBtn.classList.remove('fill-yellow-500', 'text-yellow-500', 'text-gray-700') 
-                } else { 
-                    ovBtn.classList.remove('text-blue-600', 'fill-yellow-500', 'text-yellow-500'); 
-                    ovBtn.classList.add('text-gray-700') 
-                } 
-            } 
-            const movBtn = document.getElementById(`mobile-overlay-save-btn-${pid}`); 
-            if (movBtn) { 
-                if (isSaving) { 
-                    movBtn.classList.add('text-blue-600'); 
-                    movBtn.classList.remove('fill-yellow-500', 'text-yellow-500', 'text-900') 
-                } else { 
-                    movBtn.classList.remove('text-blue-600', 'fill-yellow-500', 'text-yellow-500'); 
-                    movBtn.classList.add('text-900') 
-                } 
-            } 
-            if (isSaving) savedPosts.push(pid); 
-            else savedPosts = savedPosts.filter(x => x !== pid); 
-            await updateDoc(doc(db, "users", currentUser.id), { saved: isSaving ? arrayUnion(pid) : arrayRemove(pid) }) 
-        };
+        window.toggleSave = async (pid) => { const isSaving = !document.querySelector(`.js-save-btn-${pid}`)?.classList.contains('active'); document.querySelectorAll(`.js-save-btn-${pid}`).forEach(b => b.classList.toggle('active', isSaving)); showToast(isSaving ? "Saved" : "Removed"); const ovBtn = document.getElementById('post-view-save-btn'); if (ovBtn) { if (isSaving) { ovBtn.classList.add('text-blue-600'); ovBtn.classList.remove('fill-yellow-500', 'text-yellow-500', 'text-gray-700') } else { ovBtn.classList.remove('text-blue-600', 'fill-yellow-500', 'text-yellow-500'); ovBtn.classList.add('text-gray-700') } } const movBtn = document.getElementById(`mobile-overlay-save-btn-${pid}`); if (movBtn) { if (isSaving) { movBtn.classList.add('text-blue-600'); movBtn.classList.remove('fill-yellow-500', 'text-yellow-500', 'text-900') } else { movBtn.classList.remove('text-blue-600', 'fill-yellow-500', 'text-yellow-500'); movBtn.classList.add('text-900') } } if (isSaving) savedPosts.push(pid); else savedPosts = savedPosts.filter(x => x !== pid); await updateDoc(doc(db, "users", currentUser.id), { saved: isSaving ? arrayUnion(pid) : arrayRemove(pid) }) };
         window.toggleRepost = async (pid) => {
             if (!currentUser) return;
             const isReposting = !(currentUser.reposts || []).includes(pid);
@@ -6673,7 +6487,7 @@
                     mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id)
                 }
             } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), postBodyHtml = window.renderTextWithReadMore(p.content, `post-${p.id}`), allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all" onkeydown="handleMentionKeydown(event,'comment-input-desktop','mention-suggestions-desktop');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCommentDesktop();}" onkeyup="handleMentionInput('comment-input-desktop','mention-suggestions-desktop')"><button onclick="submitCommentDesktop()" class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all" onkeydown="handleMentionKeydown(event,'mobile-comment-input','mention-suggestions-mobile')" onkeyup="handleMentionInput('mobile-comment-input','mention-suggestions-mobile')"><button onclick="submitCommentMobile()" class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const filterLabel = window.currentCommentFilter.charAt(0).toUpperCase() + window.currentCommentFilter.slice(1); const filterBtn = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="icon-btn hover:bg-gray-100"><i data-lucide="list-filter" class="w-5 h-5 text-gray-600"></i></button>`; const mobileCommentFilterCtrl = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-gray-200 transition-colors"><span id="current-filter-label">${filterLabel}</span> <i data-lucide="list-filter" class="w-4 h-4"></i></button>`; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button>${mobileCommentFilterCtrl}</div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
-            let desktopAction = '', mobileAction = ''; if (p.claimLink) { const cb = `<button class="flex items-center gap-2 px-5 py-2 rounded-full bg-gray-900 text-white font-bold text-[14px] hover:bg-black transition-colors" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`; desktopAction = cb; mobileAction = cb } else { const sb = `<button class="flex items-center justify-center w-10 h-10 js-save-btn-${p.id} ${isSaved ? 'text-blue-600' : 'text-gray-700'} hover:scale-110 transition-transform" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark" class="w-7 h-7 ${isSaved ? 'fill-current' : ''}"></i></button>`; desktopAction = sb; mobileAction = sb }
+            let desktopAction = '', mobileAction = ''; if (p.claimLink) { const cb = `<button class="action-btn text-black border-gray-100 bg-gray-50 hover:bg-gray-100 !px-4 !py-2.5 !rounded-full border border-gray-100" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`; desktopAction = cb; mobileAction = cb } else { desktopAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''} !p-2.5 !rounded-full border border-gray-100 hover:bg-gray-50" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>`; mobileAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>` }
             
             let lh = '';
             if (p.likes?.length && currentUser.following) {
@@ -6704,10 +6518,12 @@
                                     <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
                                 </div>
                                 <div>
-                                    <div class="font-bold text-gray-900 text-[15px] flex items-center">${a.username || 'user'}${badge}</div>
+                                    <div class="font-bold text-gray-900 text-sm flex items-center">${a.name}${badge}</div>
+                                    <div class="text-[11px] text-gray-500">${formatDate(p.timestamp)}</div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-1">
+                                ${!isMe ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} ${isFollowing ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#4477ce] text-white'} text-[13px] px-4 py-1.5 rounded-lg font-bold hover:opacity-90 transition-all">${isFollowing ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : ''}
                                 <button onclick="showPostOptions(event, '${p.id}', '${p.authorId}')" class="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors">
                                     <i data-lucide="more-vertical" class="w-5 h-5 text-gray-600"></i>
                                 </button>
@@ -6720,33 +6536,26 @@
                                 ${mhDesktop}
                             </div>
                             <div class="px-6 py-5">
-                                <div class="text-[16px] leading-relaxed text-gray-800 break-words js-post-body-${p.id}">${postBodyHtml}</div>
+                                <div class="text-[15px] leading-relaxed text-gray-800 break-words js-post-body-${p.id}">${postBodyHtml}</div>
                                 ${previewHtmlD}
-                                <div class="mt-4 flex items-center gap-6">
-                                    <div class="flex flex-col">
-                                        <span class="text-[15px] font-bold text-gray-900 js-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
-                                        <span class="text-[12px] text-gray-500 font-medium">Likes</span>
-                                    </div>
-                                    <div class="flex flex-col">
-                                        <span class="text-[15px] font-bold text-gray-900 js-comment-count-${p.id}">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
-                                        <span class="text-[12px] text-gray-500 font-medium">Comments</span>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
                         <!-- Post Actions (Footer) -->
                         <div class="px-6 h-[72px] flex items-center border-t border-gray-100 bg-white shrink-0">
                             <div class="flex items-center justify-between w-full">
-                                <div class="flex items-center gap-6">
-                                    <button class="flex items-center justify-center js-like-btn-${p.id} ${isLiked ? 'active text-red-500' : 'text-gray-700'} hover:scale-110 transition-transform" onclick="toggleLike('${p.id}')">
-                                        <i data-lucide="heart" class="w-7 h-7 ${isLiked ? 'fill-current' : ''}"></i>
+                                <div class="flex items-center gap-2">
+                                    <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''} hover:bg-red-50 !px-4 !py-2 !rounded-full border border-gray-100" onclick="toggleLike('${p.id}')">
+                                        <i data-lucide="heart" class="w-5 h-5"></i>
+                                        <span class="js-like-count-${p.id} font-bold text-sm">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
                                     </button>
-                                    <button class="flex items-center justify-center text-gray-700 hover:scale-110 transition-transform" onclick="${allowComments ? 'document.getElementById(\'comment-input-desktop\').focus()' : ''}">
-                                        <i data-lucide="message-circle" class="w-7 h-7"></i>
+                                    <button class="action-btn comment hover:bg-blue-50 !px-4 !py-2 !rounded-full border border-gray-100" onclick="${allowComments ? 'document.getElementById(\'comment-input-desktop\').focus()' : ''}">
+                                        <i data-lucide="message-circle" class="w-5 h-5"></i>
+                                        <span class="js-comment-count-${p.id} font-bold text-sm">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
                                     </button>
-                                    <button class="flex items-center justify-center text-gray-700 hover:scale-110 transition-transform" onclick="sharePost('${p.id}')">
-                                        <i data-lucide="redo-2" class="w-7 h-7"></i>
+                                    <button class="action-btn share-btn hover:bg-gray-100 !px-4 !py-2 !rounded-full border border-gray-100" onclick="sharePost('${p.id}')">
+                                        <i data-lucide="redo-2" class="w-5 h-5"></i>
+                                        <span class="font-bold text-sm">Share</span>
                                     </button>
                                 </div>
                                 ${desktopAction}
@@ -6906,12 +6715,14 @@
                                 <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
                             </div>
                             <div onclick="closePostView();showProfile('${a.id}')">
-                                <div class="font-bold text-gray-900 text-[15px] flex items-center gap-1.5">
+                                <div class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
                                     ${a.username || 'user'}${badge}
                                 </div>
+                                <div class="text-xs text-gray-500">${formatDate(p.timestamp)}</div>
                             </div>
                         </div>
                         <div class="flex items-center gap-1">
+                            ${!isMe ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} ${isFollowing ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#4477ce] text-white'} text-[13px] px-4 py-1.5 rounded-lg font-bold hover:opacity-90 transition-all">${isFollowing ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : ''}
                             <button onclick="showPostOptions(event, '${p.id}', '${p.authorId}')" class="w-9 h-9 flex items-center justify-center text-black hover:bg-gray-50 rounded-full transition-colors">
                                 <i data-lucide="more-vertical" class="w-6 h-6"></i>
                             </button>
@@ -6921,22 +6732,23 @@
                     <div class="px-4">${previewHtmlM}</div>
                     <div class="w-full mt-3">${mhMobile}</div>
                     <div class="px-4">
-                        <div class="post-actions !border-none !bg-transparent !p-0 !mt-3 flex items-center gap-5 py-4">
-                            <button class="flex items-center justify-center js-like-btn-${p.id} ${isLiked ? 'active text-red-500' : 'text-gray-700'} hover:scale-110 transition-transform" onclick="toggleLike('${p.id}')">
-                                <i data-lucide="heart" class="w-7 h-7 ${isLiked ? 'fill-current' : ''}"></i>
+                        <div class="post-actions py-4">
+                            <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="toggleLike('${p.id}')">
+                                <i data-lucide="heart" id="mobile-overlay-like-btn-${p.id}" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}"></i>
+                                <span class="js-like-count-${p.id} font-bold text-sm text-gray-700">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
                             </button>
-                            <button class="flex items-center justify-center text-gray-700 hover:scale-110 transition-transform" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
-                                <i data-lucide="${allowComments ? 'message-circle' : 'message-circle-off'}" class="w-7 h-7"></i>
+                            <button class="action-btn comment" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
+                                <i data-lucide="message-circle" class="w-5 h-5 text-gray-600"></i>
+                                <span class="js-comment-count-${p.id} font-bold text-sm text-gray-700">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
                             </button>
-                            <button class="flex items-center justify-center text-gray-700 hover:scale-110 transition-transform" onclick="sharePost('${p.id}')">
-                                <i data-lucide="redo-2" class="w-7 h-7"></i>
+                            <button class="action-btn share-btn" onclick="sharePost('${p.id}')">
+                                <i data-lucide="redo-2" class="w-5 h-5 text-gray-600"></i>
+                                <span class="font-bold text-sm text-gray-700">Share</span>
                             </button>
                             <div class="flex-1"></div>
-                            ${mobileAction}
-                        </div>
-                        <div class="mt-2 px-1 text-[15px]">
-                            <span class="font-bold text-gray-900 js-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length : '0'}</span> <span class="text-gray-700 font-medium">Likes</span>
-                            <span class="ml-4 font-bold text-gray-900 js-comment-count-${p.id}">${(p.comments?.length > 0) ? p.comments.length : '0'}</span> <span class="text-gray-700 font-medium">Comments</span>
+                            <button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')">
+                                <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}"></i>
+                            </button>
                         </div>
                     </div>
                     <div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
@@ -7823,39 +7635,18 @@
                   c = document.getElementById('post-options-content'),
                   me = aid === currentUser.id,
                   adm = currentUser.email === 'edulinkbht@gmail.com',
-                  p = posts.find(x => x.id === pid),
-                  a = users.find(u => u.id === aid);
+                  p = posts.find(x => x.id === pid);
             
             if (!p) return;
             
             const postTime = p.timestamp?.toDate ? p.timestamp.toDate() : new Date(p.timestamp);
             const canEdit = me && (Date.now() - postTime.getTime() < 604800000);
             const isReposted = currentUser.reposts?.includes(pid);
-            const isF = currentUser.following.includes(aid);
-            const isFriend = window.isFriend(aid);
             
             let h = '';
             
             const btnClass = "flex items-center gap-4 w-full p-4 hover:bg-gray-50 rounded-2xl transition-all duration-200 text-gray-700 text-left group";
             const iconClass = "w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all duration-200";
-
-            // Add Date and Follow info
-            h += `<div class="px-4 py-3 bg-gray-50/50 rounded-2xl mb-2 flex items-center justify-between border border-gray-100">
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">Posted on</span>
-                        <span class="text-[14px] font-bold text-gray-900">${formatDate(p.timestamp)}</span>
-                    </div>
-                    <div class="w-10 h-10 rounded-full bg-white shadow-sm flex items-center justify-center">
-                        <i data-lucide="calendar" class="w-5 h-5 text-gray-400"></i>
-                    </div>
-                  </div>`;
-
-            if (!me && a) {
-                h += `<button onclick="toggleFollow('${aid}'); hidePostMenu()" class="${btnClass} ${isF ? '' : 'bg-blue-50/50 border border-blue-100'}">
-                        <div class="${iconClass} ${isF ? '' : '!bg-blue-100'}"><i data-lucide="${isF ? 'user-minus' : 'user-plus'}" class="w-5 h-5 ${isF ? 'text-gray-500' : 'text-blue-600'}"></i></div>
-                        <span class="font-bold text-[15px] ${isF ? 'text-gray-700' : 'text-blue-700'}">${isF ? (isFriend ? 'Unfriend' : 'Unfollow') : 'Follow'} @${a.username || 'user'}</span>
-                      </button>`;
-            }
 
             if (isReposted) {
                 h += `<button onclick="toggleRepost('${pid}'); hidePostMenu()" class="${btnClass}">
