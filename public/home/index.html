@@ -5786,8 +5786,8 @@
                     ids = users.filter(user => 
                         user.id !== currentUser.id && 
                         user.id !== uid && 
-                        currentUser.following?.includes(user.id) && 
-                        (u.followers?.includes(user.id) || u.following?.includes(user.id))
+                        window.areFriends(currentUser.id, user.id) && 
+                        window.areFriends(uid, user.id)
                     ).map(user => user.id);
                 }
 
@@ -6217,10 +6217,16 @@
                 renderNotifications();
             }
         };
+        window.areFriends = (uid1, uid2) => {
+            const u1 = users.find(x => x.id === uid1);
+            const u2 = users.find(x => x.id === uid2);
+            if (!u1 || !u2) return false;
+            return u1.following?.includes(uid2) && u2.following?.includes(uid1);
+        };
+
         window.isFriend = (uid) => {
             if (!currentUser || !uid) return false;
-            const u = users.find(x => x.id === uid);
-            return currentUser.following?.includes(uid) && u?.following?.includes(currentUser.id);
+            return window.areFriends(currentUser.id, uid);
         };
 
         window.toggleFollow = async (uid) => { 
@@ -6302,13 +6308,13 @@
              }
             closePostView(); closeThread(); window.currentViewingProfileId = uid; window.currentProfileTab = tab; const u = users.find(x => x.id === uid); if (!u) return; const c = document.getElementById('view-profile'), me = uid === currentUser.id, fol = currentUser.following?.includes(uid), isFriend = window.isFriend(uid);
             
-            // Calculate mutual friends
-            const mutuals = !me ? users.filter(user => 
-                user.id !== currentUser.id && 
-                user.id !== uid && 
-                currentUser.following?.includes(user.id) && 
-                (u.followers?.includes(user.id) || u.following?.includes(user.id))
-            ) : [];
+            // Calculate mutual friends (people who are friends with both)
+             const mutuals = !me ? users.filter(user => 
+                 user.id !== currentUser.id && 
+                 user.id !== uid && 
+                 window.areFriends(currentUser.id, user.id) && 
+                 window.areFriends(uid, user.id)
+             ) : [];
 
             let mutualFriendsHtml = '';
             if (!me && mutuals.length > 0) {
