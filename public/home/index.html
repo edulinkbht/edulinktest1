@@ -5768,16 +5768,30 @@
             manageHistory('user-list-overlay');
             const m = document.getElementById('user-list-overlay'),
                 c = document.getElementById('user-list-content');
-            document.getElementById('user-list-title').innerText = type === 'following' ? 'Following' : 'Followers';
+            
+            const title = type === 'following' ? 'Following' : (type === 'mutual' ? 'Mutual Friends' : 'Followers');
+            document.getElementById('user-list-title').innerText = title;
+
             const me = uid === currentUser.id,
                 fol = currentUser.following.includes(uid),
                 priv = u.settings?.privateNetwork,
                 hide = u.settings?.hideConnections;
-            if (!me && (hide || (priv && !fol))) {
+            if (!me && type !== 'mutual' && (hide || (priv && !fol))) {
                 c.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-gray-400 opacity-60"><i data-lucide="${hide ? 'eye-off' : 'lock'}" class="w-16 h-16 mb-2"></i><p>${hide ? 'Connections hidden' : 'Account is private'}</p></div>`
             } else {
-                const ids = type === 'following' ? (u.following || []) : (u.followers || []);
-                if (!ids.length) c.innerHTML = '<div class="text-center text-gray-400 py-8">No users found.</div>';
+                let ids = [];
+                if (type === 'following') ids = (u.following || []);
+                else if (type === 'followers') ids = (u.followers || []);
+                else if (type === 'mutual') {
+                    ids = users.filter(user => 
+                        user.id !== currentUser.id && 
+                        user.id !== uid && 
+                        currentUser.following?.includes(user.id) && 
+                        (u.followers?.includes(user.id) || u.following?.includes(user.id))
+                    ).map(user => user.id);
+                }
+
+                if (!ids.length) c.innerHTML = `<div class="text-center text-gray-400 py-8">No ${type === 'mutual' ? 'mutual friends' : 'users'} found.</div>`;
                 else {
                     c.innerHTML = '';
                     ids.forEach(id => {
@@ -6286,11 +6300,37 @@
                  window.currentProfileVisibleCount = 9; // Reset count for new profile
                  window.isProfileLoadingMore = false; // Reset loading state
              }
-            closePostView(); closeThread(); window.currentViewingProfileId = uid; window.currentProfileTab = tab; const u = users.find(x => x.id === uid); if (!u) return; const c = document.getElementById('view-profile'), me = uid === currentUser.id, fol = currentUser.following?.includes(uid), isFriend = window.isFriend(uid);             let ab = me ? `<div class="flex gap-2"><button onclick="openEditProfile()" class="bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-2 rounded-full font-bold hover:bg-gray-50 transition-all min-w-[95px]">Edit Profile</button><button onclick="openQR()" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>` : `<div class="flex gap-2"><button id="profile-follow-btn" onclick="toggleFollow('${uid}')" class="js-follow-btn-${uid} ${fol ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#2b59c3] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]">${fol ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? 'Request' : 'Follow')}</button><button onclick="openQR('${uid}')" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>`; const canViewConnections = me || (!u.settings?.hideConnections && !u.settings?.privateNetwork); const clickFollowing = canViewConnections ? `onclick="openUserList('following','${uid}')"` : `onclick="showToast('Connections are private')"`; const clickFollowers = canViewConnections ? `onclick="openUserList('followers','${uid}')"` : `onclick="showToast('Connections are private')"`; const cursorClass = canViewConnections ? 'cursor-pointer hover:underline' : 'cursor-default opacity-80'; let stats = `<div class="flex gap-4 mt-3 text-sm text-gray-500"><span class="${cursorClass}" ${clickFollowing}><strong class="text-gray-900">${u.following?.length || 0}</strong> Following</span><span class="${cursorClass}" ${clickFollowers}><strong class="text-gray-900">${u.followers?.length || 0}</strong> Followers</span></div>`; const tabs = ['posts', 'video', 'reposts', 'liked', 'tagged'].map(t => ((!me && t === 'liked')) ? '' : `<button onclick="switchProfileTab('${t}')" class="tab-btn ${tab === t ? 'active' : ''}"><i data-lucide="${{ posts: 'grid-2x2-check', video: 'play', reposts: 'repeat', liked: 'heart', tagged: 'contact' }[t]}" class="w-[22px] h-[22px]"></i></button>`).join('');
+            closePostView(); closeThread(); window.currentViewingProfileId = uid; window.currentProfileTab = tab; const u = users.find(x => x.id === uid); if (!u) return; const c = document.getElementById('view-profile'), me = uid === currentUser.id, fol = currentUser.following?.includes(uid), isFriend = window.isFriend(uid);
+            
+            // Calculate mutual friends
+            const mutuals = !me ? users.filter(user => 
+                user.id !== currentUser.id && 
+                user.id !== uid && 
+                currentUser.following?.includes(user.id) && 
+                (u.followers?.includes(user.id) || u.following?.includes(user.id))
+            ) : [];
+
+            let mutualFriendsHtml = '';
+            if (!me && mutuals.length > 0) {
+                const displayMutuals = mutuals.slice(0, 3);
+                const avatars = displayMutuals.map((m, i) => 
+                    `<img src="${m.avatar}" class="w-7 h-7 rounded-full border-2 border-white -ml-3 first:ml-0 object-cover relative" style="z-index: ${5-i}">`
+                ).join('');
+                mutualFriendsHtml = `
+                    <div class="flex items-center gap-2 mb-1 cursor-pointer hover:opacity-80 transition-opacity" onclick="openUserList('mutual', '${uid}')">
+                        <div class="flex items-center pl-1">
+                            ${avatars}
+                        </div>
+                        <span class="text-[13px] font-bold text-gray-900">${mutuals.length} mutual friends</span>
+                    </div>
+                `;
+            }
+
+            let ab = me ? `<div class="flex gap-2"><button onclick="openEditProfile()" class="bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-2 rounded-full font-bold hover:bg-gray-50 transition-all min-w-[95px]">Edit Profile</button><button onclick="openQR()" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>` : `<div class="flex gap-2"><button id="profile-follow-btn" onclick="toggleFollow('${uid}')" class="js-follow-btn-${uid} ${fol ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#2b59c3] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]">${fol ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? 'Request' : 'Follow')}</button><button onclick="openQR('${uid}')" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>`; const canViewConnections = me || (!u.settings?.hideConnections && !u.settings?.privateNetwork); const clickFollowing = canViewConnections ? `onclick="openUserList('following','${uid}')"` : `onclick="showToast('Connections are private')"`; const clickFollowers = canViewConnections ? `onclick="openUserList('followers','${uid}')"` : `onclick="showToast('Connections are private')"`; const cursorClass = canViewConnections ? 'cursor-pointer hover:underline' : 'cursor-default opacity-80'; let stats = `<div class="flex gap-4 mt-3 text-sm text-gray-500"><span class="${cursorClass}" ${clickFollowing}><strong class="text-gray-900">${u.following?.length || 0}</strong> Following</span><span class="${cursorClass}" ${clickFollowers}><strong class="text-gray-900">${u.followers?.length || 0}</strong> Followers</span></div>`; const tabs = ['posts', 'video', 'reposts', 'liked', 'tagged'].map(t => ((!me && t === 'liked')) ? '' : `<button onclick="switchProfileTab('${t}')" class="tab-btn ${tab === t ? 'active' : ''}"><i data-lucide="${{ posts: 'grid-2x2-check', video: 'play', reposts: 'repeat', liked: 'heart', tagged: 'contact' }[t]}" class="w-[22px] h-[22px]"></i></button>`).join('');
             const urlMatch = u.bio?.match(/(https?:\/\/[^\s]+)/), previewId = `preview-bio-${u.id}`, previewHtml = urlMatch ? `<div id="${previewId}"></div>` : '';
             if (urlMatch) setTimeout(() => window.renderLinkPreview(urlMatch[0], previewId), 100);
             const bioHtml = u.bio ? `<div class="text-[14px] leading-relaxed text-gray-800 break-words mt-2 mb-1">${formatContent(u.bio)}</div>${previewHtml}` : `<div class="text-[14px] leading-relaxed text-gray-400 italic mt-2 mb-1">No bio yet</div>`;
-            c.innerHTML = `<div class="profile-banner-container"><img src="${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'}" class="profile-banner-img" style="object-position:center ${u.bannerPos || 50}%" onload="this.classList.add('loaded')"></div><div class="bg-white rounded-t-[30px] -mt-6 relative z-10 pt-2 px-4 md:px-6 min-h-[calc(100%-140px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"><div class="flex justify-between items-end -mt-14 mb-4 px-2"><div class="rounded-full border-4 border-white bg-gray-100 w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden" id="profile-avatar-wrap"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover cursor-pointer" onclick="openLightbox('${u.avatar}')" onload="this.classList.add('loaded')" onerror="this.style.display='none';this.parentElement.innerHTML='<i data-lucide=\'user-round\' class=\'w-12 h-12 text-gray-400\'></i>';refreshIcons()"></div>${ab}</div><div class="mb-3"><h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}${u.banned ? '<i data-lucide="ban" class="text-red-600 w-6 h-6"></i>' : ''}</h1>
+            c.innerHTML = `<div class="profile-banner-container"><img src="${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'}" class="profile-banner-img" style="object-position:center ${u.bannerPos || 50}%" onload="this.classList.add('loaded')"></div><div class="bg-white rounded-t-[30px] -mt-6 relative z-10 pt-2 px-4 md:px-6 min-h-[calc(100%-140px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"><div class="flex justify-between items-end -mt-14 mb-4 px-2"><div class="flex items-end gap-3"><div class="rounded-full border-4 border-white bg-gray-100 w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden" id="profile-avatar-wrap"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover cursor-pointer" onclick="openLightbox('${u.avatar}')" onload="this.classList.add('loaded')" onerror="this.style.display='none';this.parentElement.innerHTML='<i data-lucide=\'user-round\' class=\'w-12 h-12 text-gray-400\'></i>';refreshIcons()"></div>${mutualFriendsHtml}</div>${ab}</div><div class="mb-3"><h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}${u.banned ? '<i data-lucide="ban" class="text-red-600 w-6 h-6"></i>' : ''}</h1>
                     <div class="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
                         ${u.dob ? `<span>${window.calculateAge(u.dob)} years old</span>` : ''}
                         ${u.location ? `<span>• ${u.location}</span>` : ''}
