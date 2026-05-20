@@ -4400,7 +4400,7 @@
             if (!container) return;
             const preview = await window.fetchLinkPreview(url);
             if (preview) {
-                container.innerHTML = `<a href="${preview.url}" target="_blank" class="link-preview-card" onclick="event.stopPropagation(); event.preventDefault(); confirmAndOpenLink('${preview.url}')">${preview.image ? `<img src="${preview.image}" class="link-preview-image" alt="${preview.title || 'Preview'}">` : ''}<div class="link-preview-content">${preview.title ? `<div class="link-preview-title">${preview.title}</div>` : ''}${preview.description ? `<div class="link-preview-desc">${preview.description}</div>` : ''}<div class="link-preview-domain"><img src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-3 h-3 object-contain inline-block mr-1"> ${preview.domain}</div></div></a>`;
+                container.innerHTML = `<a href="${preview.url}" target="_blank" class="link-preview-card" onclick="event.stopPropagation(); event.preventDefault(); confirmAndOpenLink('${preview.url}')">${preview.image ? `<img src="${preview.image}" class="link-preview-image" alt="${preview.title || 'Preview'}">` : ''}<div class="link-preview-content">${preview.title ? `<div class="link-preview-title">${preview.title}</div>` : ''}${preview.description ? `<div class="link-preview-desc">${preview.description}</div>` : ''}<div class="link-preview-domain"><img src="https://www.google.com/s2/favicons?domain=${preview.domain}&sz=64" class="w-4 h-4 object-contain inline-block mr-1"> ${preview.domain}</div></div></a>`;
                 refreshIcons();
             } else {
                 container.remove();
@@ -5500,10 +5500,12 @@
                     html += `<div class="px-6 pt-2 pb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.1em]">Relevant Posts</div>`;
                     html += `<div class="px-2 pb-2">` + relatedPosts.map(({p, author}) => {
                         const snippet = p.content.length > 60 ? p.content.substring(0, 60) + '...' : p.content;
+                        let mediaUrl = p.media ? (Array.isArray(p.media) ? p.media[0] : p.media) : null;
+                        const isVideo = mediaUrl && (mediaUrl.includes('.mp4') || mediaUrl.includes('video'));
                         return `
                         <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-colors group" onclick="openPostView('${p.id}'); document.getElementById('search-suggestions').classList.add('hidden')">
                             <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0 overflow-hidden">
-                                ${p.media && p.media[0] ? `<img src="${p.media[0]}" class="w-full h-full object-cover">` : '<i data-lucide="file-text" class="w-5 h-5"></i>'}
+                                ${mediaUrl ? (isVideo ? `<video src="${mediaUrl}" class="w-full h-full object-cover"></video>` : `<img src="${mediaUrl}" class="w-full h-full object-cover">`) : '<i data-lucide="file-text" class="w-5 h-5"></i>'}
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="text-[14px] font-bold text-gray-900 truncate">${author.name}</div>
@@ -5529,10 +5531,10 @@
                 }
 
                 // Global search footer
-                html += `<div class="p-2 border-t border-gray-50 bg-gray-50/30">
-                    <div class="flex items-center justify-center gap-2 px-4 py-2.5 hover:bg-white hover:shadow-sm cursor-pointer rounded-xl transition-all group" onclick="document.getElementById('global-search').value='${q}'; handleSearch('${q}'); document.getElementById('search-suggestions').classList.add('hidden')">
-                        <span class="text-[13px] font-bold text-gray-900">Search all results for "${q}"</span>
-                        <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400 group-hover:text-black group-hover:translate-x-0.5 transition-all"></i>
+                html += `<div class="px-2 py-2 border-t border-gray-100 bg-white">
+                    <div class="flex items-center justify-center gap-2 px-4 py-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-all group" onclick="document.getElementById('global-search').value='${q}'; handleSearch('${q}'); document.getElementById('search-suggestions').classList.add('hidden')">
+                        <span class="text-[14px] font-bold text-black">Search all results for "${q}"</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-black group-hover:translate-x-1 transition-transform"></i>
                     </div>
                 </div>`;
 
