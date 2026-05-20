@@ -4681,7 +4681,51 @@
             }
         };
         const canSeePost = (p) => { if (!p || !currentUser) return false; if (p.authorId === currentUser.id) return true; const author = users.find(u => u.id === p.authorId); if (!author) return false; const isFollowing = currentUser.following.includes(p.authorId); const isAccountPrivate = author.settings?.privateNetwork; const isPostPrivate = p.settings?.privacy === 'private'; if (isPostPrivate) return false; if (isAccountPrivate && !isFollowing) return false; return true };
-        onAuthStateChanged(auth, async u => { const l = document.getElementById('app-loader'); if (!u) return window.location.href = '/login'; const r = doc(db, "users", u.uid), s = await getDoc(r), off = u.email === 'edulinkbht@gmail.com'; if (s.exists()) { const data = s.data(); if (data.banned) { document.getElementById('banned-overlay').classList.remove('hidden'); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } return } currentUser = { id: u.uid, ...data }; if (off && !currentUser.isOfficial) await updateDoc(r, { isOfficial: true }) } else { const newUser = { name: u.displayName || 'User', email: u.email, username: 'user' + u.uid.substring(0, 6).toLowerCase(), avatar: u.photoURL || `https://ui-avatars.com/api/?name=${u.displayName || 'User'}&background=random`, banner: '', bio: 'Hello EduLink!', isOfficial: u.email === 'edulinkbht@gmail.com', following: [], followers: [], saved: [], timestamp: serverTimestamp() }; await setDoc(r, newUser); currentUser = { id: u.uid, ...newUser } } currentUser.following ||= []; currentUser.followers ||= []; currentUser.friends ||= []; currentUser.saved ||= []; currentUser.links ||= []; currentUser.settings ||= { privateNetwork: false }; window.currentUser = currentUser; savedPosts = currentUser.saved; if (!currentUser.username) document.getElementById('username-modal').classList.remove('hidden'); updateUserInterface(); initRealtimeListeners(); refreshIcons(); initBannerDrag(); window.checkProfileCompletion(); window.checkUserBirthday(); window.history.replaceState({ root: true }, ""); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } initializeStateFromURL(); });
+        onAuthStateChanged(auth, async u => {
+            const l = document.getElementById('app-loader');
+            if (!u) return window.location.href = '/login';
+            const r = doc(db, "users", u.uid),
+                s = await getDoc(r),
+                adminEmails = ['edulinkbht@gmail.com', 'ngawang.tphuentshok2024@academy.bt'],
+                isAdmin = adminEmails.includes(u.email);
+
+            if (s.exists()) {
+                const data = s.data();
+                if (data.banned) {
+                    document.getElementById('banned-overlay').classList.remove('hidden');
+                    if (l) {
+                        l.style.opacity = '0';
+                        setTimeout(() => l.remove(), 500)
+                    }
+                    return
+                }
+                currentUser = {
+                    id: u.uid,
+                    ...data
+                };
+                if (isAdmin && !currentUser.isOfficial) await updateDoc(r, {
+                    isOfficial: true
+                })
+            } else {
+                const newUser = {
+                    name: u.displayName || 'User',
+                    email: u.email,
+                    username: 'user' + u.uid.substring(0, 6).toLowerCase(),
+                    avatar: u.photoURL || `https://ui-avatars.com/api/?name=${u.displayName || 'User'}&background=random`,
+                    banner: '',
+                    bio: 'Hello EduLink!',
+                    isOfficial: isAdmin,
+                    following: [],
+                    followers: [],
+                    saved: [],
+                    timestamp: serverTimestamp()
+                };
+                await setDoc(r, newUser);
+                currentUser = {
+                    id: u.uid,
+                    ...newUser
+                }
+            } currentUser.following ||= []; currentUser.followers ||= []; currentUser.friends ||= []; currentUser.saved ||= []; currentUser.links ||= []; currentUser.settings ||= { privateNetwork: false }; window.currentUser = currentUser; savedPosts = currentUser.saved; if (!currentUser.username) document.getElementById('username-modal').classList.remove('hidden'); updateUserInterface(); initRealtimeListeners(); refreshIcons(); initBannerDrag(); window.checkProfileCompletion(); window.checkUserBirthday(); window.history.replaceState({ root: true }, ""); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } initializeStateFromURL(); });
         window.onpopstate = e => { const modals = [{ id: 'thread-overlay', close: window.closeThread }, { id: 'comments-overlay', close: window.closeComments }, { id: 'post-view-overlay', close: window.closePostView }, { id: 'edit-profile-overlay', close: window.closeEditProfile }, { id: 'likes-overlay', close: window.closeLikes }, { id: 'user-list-overlay', close: window.closeUserList }, { id: 'feed-filter-overlay', close: window.closeFeedFilter }, { id: 'compose-overlay', close: window.attemptCloseCompose }, { id: 'share-overlay', close: window.closeShareMenu }, { id: 'post-options-overlay', close: window.hidePostMenu }, { id: 'settings-overlay', close: window.closeSettings }, { id: 'notif-options-overlay', close: window.closeNotifOptions }, { id: 'qr-overlay', close: window.closeQR }, { id: 'privacy-overlay', close: window.closePrivacySettings }, { id: 'profile-filter-overlay', close: window.closeProfileFilter }, { id: 'download-select-overlay', close: window.closeDownloadSelect }, { id: 'comment-options-overlay', close: window.closeCommentOptions }, { id: 'create-menu-overlay', close: window.closeCreateMenu }, { id: 'announcement-overlay', close: window.closeAnnouncement }, { id: 'profile-preview-overlay', close: window.closeProfilePreview }, { id: 'comment-filter-overlay', close: window.closeCommentFilter }, { id: 'claim-link-overlay', close: window.closeClaimOverlay }, { id: 'view-profile', close: () => window.switchView('feed') }]; let closedAny = false; if (e.state && e.state.modal) { } else { for (let m of modals) { const el = document.getElementById(m.id); if (el && !el.classList.contains('hidden') && !el.classList.contains('opacity-0')) { if (m.id === 'view-profile') { if (window.currentViewingProfileId) { window.switchView('feed'); window.currentViewingProfileId = null; closedAny = true } } else if (m.id === 'compose-overlay') { window.closeCompose(); closedAny = true } else if (m.id === 'create-menu-overlay') { window.closeCreateMenu(); closedAny = true } else { m.close(); closedAny = true } if (closedAny) break } } } if (!closedAny) { if (history.length > 1) { history.back(); } else { if (exitAttempt) { } else { window.history.pushState({ root: true }, ""); exitAttempt = true; showToast("Press back again to exit"); setTimeout(() => { exitAttempt = false }, 2000) } } } };
         window.checkUsername = e => { const v = e.value.trim().toLowerCase(), l = v.length; document.getElementById('username-counter').innerText = `${l}/20`; if (l < 3) { document.getElementById('username-error').classList.add('hidden'); return } const t = users.some(u => u.username === v && u.id !== currentUser.id); const err = document.getElementById('username-error'); if (t) { err.innerText = "Username taken"; err.classList.remove('hidden') } else err.classList.add('hidden') };
         window.saveUsername = async () => { const v = document.getElementById('new-username-input').value.trim().toLowerCase(); if (v.length < 3 || v.length > 20 || /\s/.test(v) || !/^[a-z0-9_.]+$/.test(v)) return showToast("Invalid username", true); if (!(await getDocs(query(collection(db, "users"), where("username", "==", v)))).empty) return showToast("Taken", true); await updateDoc(doc(db, "users", currentUser.id), { username: v }); currentUser.username = v; document.getElementById('username-modal').classList.add('hidden'); showToast("Username set!") };
@@ -7498,7 +7542,25 @@
                     </div>
                 </div>`;
         }
-        window.openCommentMoreMenu = (cid, pid, ts, isMe) => { manageHistory('comment-options-overlay'); const o = document.getElementById('comment-options-overlay'), m = document.getElementById('comment-options-modal'), c = document.getElementById('comment-options-content'); c.innerHTML = `<div class="p-2">${isMe ? `<button onclick="deleteComment('${pid}','${cid}'); closeCommentOptions()" class="flex items-center gap-4 w-full p-4 hover:bg-red-50 rounded-xl transition-colors font-bold text-red-600 text-left group"><div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></div><span>Delete Comment</span></button>` : `<button onclick="showToast('Reported'); closeCommentOptions()" class="flex items-center gap-4 w-full p-4 hover:bg-gray-50 rounded-xl transition-colors font-bold text-gray-700 text-left group"><div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="flag" class="w-5 h-5"></i></div><span>Report Comment</span></button>`}</div>`; refreshIcons(); toggleModalAnim('comment-options-overlay', 'comment-options-modal', !0) };
+        window.openCommentMoreMenu = (cid, pid, ts, isMe) => {
+            manageHistory('comment-options-overlay');
+            const o = document.getElementById('comment-options-overlay'),
+                  m = document.getElementById('comment-options-modal'),
+                  c = document.getElementById('comment-options-content'),
+                  isAdmin = ['edulinkbht@gmail.com', 'ngawang.tphuentshok2024@academy.bt'].includes(currentUser.email);
+            
+            c.innerHTML = `<div class="p-2">
+                ${(isMe || isAdmin) ? `<button onclick="deleteComment('${pid}','${cid}'); closeCommentOptions()" class="flex items-center gap-4 w-full p-4 hover:bg-red-50 rounded-xl transition-colors font-bold text-red-600 text-left group">
+                    <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center transition-colors"><i data-lucide="trash-2" class="w-5 h-5"></i></div>
+                    <span>Delete Comment</span>
+                </button>` : `<button onclick="showToast('Reported'); closeCommentOptions()" class="flex items-center gap-4 w-full p-4 hover:bg-gray-50 rounded-xl transition-colors font-bold text-gray-700 text-left group">
+                    <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="flag" class="w-5 h-5"></i></div>
+                    <span>Report Comment</span>
+                </button>`}
+            </div>`;
+            refreshIcons();
+            toggleModalAnim('comment-options-overlay', 'comment-options-modal', !0);
+        };
         window.closeCommentOptions = () => toggleModalAnim('comment-options-overlay', 'comment-options-modal', !1);
         window.openThread = (pid, cid) => {
             if (window.innerWidth < 768) {
@@ -8030,7 +8092,7 @@
                   m = document.getElementById('post-options-modal'),
                   c = document.getElementById('post-options-content'),
                   me = aid === currentUser.id,
-                  adm = currentUser.email === 'edulinkbht@gmail.com',
+                  adm = ['edulinkbht@gmail.com', 'ngawang.tphuentshok2024@academy.bt'].includes(currentUser.email),
                   p = posts.find(x => x.id === pid);
             
             if (!p) return;
