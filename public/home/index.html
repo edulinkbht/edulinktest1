@@ -3865,10 +3865,19 @@
                         src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
                     <h1 class="text-lg font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
                 </div>
-                <div class="flex-1 relative group hidden md:block"><i data-lucide="search"
-                        class="absolute left-5 top-3.5 w-5 h-5 text-[#667085] group-focus-within:text-black transition-colors"></i><input
+                <div class="flex-1 relative group hidden md:block" id="global-search-container">
+                    <i data-lucide="search"
+                        class="absolute left-5 top-3.5 w-5 h-5 text-[#667085] group-focus-within:text-black transition-colors"></i>
+                    <input
                         type="text" placeholder="Search EduLink" id="global-search" oninput="handleGlobalSearchInput(this.value)"
+                        onfocus="handleGlobalSearchFocus()"
+                        onkeydown="if(event.key==='Enter'){ handleSearch(this.value); document.getElementById('search-suggestions').classList.add('hidden'); }"
                         class="w-full bg-[#f3f4f6] rounded-full py-3.5 pl-14 pr-6 outline-none focus:bg-[#ffffff] focus:shadow-sm focus:ring-1 focus:ring-gray-200 transition-all text-[#1f1f1f] text-[15px]">
+                    
+                    <!-- Search Suggestions Dropdown -->
+                    <div id="search-suggestions" class="absolute top-full left-0 right-0 mt-3 bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-100 overflow-hidden hidden z-[100] max-h-[520px] flex flex-col transition-all duration-200 origin-top">
+                        <div id="search-suggestions-content" class="overflow-y-auto py-3 no-scrollbar"></div>
+                    </div>
                 </div>
                 <div class="flex items-center gap-3 pl-4">
                     <button
@@ -5368,13 +5377,146 @@
             setTimeout(() => refreshIcons(), 50);
         };
         window.toggleExploreSearch = () => { const b = document.getElementById('explore-search-bar'); if (b) { b.classList.toggle('hidden'); if (!b.classList.contains('hidden')) document.getElementById('mobile-explore-search').focus() } };
+        window.handleGlobalSearchFocus = () => {
+            const val = document.getElementById('global-search').value;
+            if (val.trim() && window.currentViewName !== 'explore') {
+                window.renderSearchSuggestions(val);
+            }
+        };
+
         window.handleGlobalSearchInput = (val) => {
             if (window.currentViewName === 'notifications') {
                 window.handleNotifSearch(val || '');
+                // Also show suggestions if not in explore
+                window.renderSearchSuggestions(val);
                 return;
             }
-            window.handleSearch(val || '');
+            
+            if (window.currentViewName === 'explore') {
+                window.handleSearch(val || '');
+                document.getElementById('search-suggestions').classList.add('hidden');
+            } else {
+                window.renderSearchSuggestions(val);
+            }
         };
+
+        window.renderSearchSuggestions = (q) => {
+            const suggestions = document.getElementById('search-suggestions');
+            const content = document.getElementById('search-suggestions-content');
+            if (!q.trim()) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+
+            const t = q.toLowerCase().trim();
+            
+            // Score function (reusing logic from handleSearch)
+            const scoreText = (text, term) => {
+                if (!term) return 0;
+                if (!text) return 0;
+                const s = String(text).toLowerCase();
+                if (s === term) return 100;
+                if (s.startsWith(term)) return 80;
+                const idx = s.indexOf(term);
+                if (idx >= 0) return 50 - Math.min(idx, 30);
+                return 0;
+            };
+
+            // People suggestions
+            const people = users
+                .map(u => ({ u, s: Math.max(scoreText(u.name, t), scoreText(u.username, t)) }))
+                .filter(x => x.s > 0)
+                .sort((a, b) => b.s - a.s)
+                .slice(0, 5);
+
+            // Tag suggestions
+            const normalizeTag = (x) => (x || '').replace(/^#/, '').trim().toLowerCase();
+            const tagTerm = normalizeTag(t);
+            const tagCounts = new Map();
+            posts.forEach(p => {
+                if (!p || !p.content) return;
+                const matches = String(p.content).match(/#[\p{L}\p{N}_]+/gu);
+                if (!matches) return;
+                matches.forEach(ht => {
+                    const tag = normalizeTag(ht);
+                    if (!tag) return;
+                    if (tagTerm && !tag.includes(tagTerm)) return;
+                    tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+                });
+            });
+            const tags = Array.from(tagCounts.entries())
+                .map(([tag, count]) => ({ tag, count, s: scoreText(tag, tagTerm) + Math.min(count, 50) }))
+                .sort((a, b) => b.s - a.s)
+                .slice(0, 3);
+
+            if (people.length === 0 && tags.length === 0) {
+                content.innerHTML = `<div class="px-6 py-12 text-center">
+                    <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="search-x" class="w-8 h-8 text-gray-300"></i>
+                    </div>
+                    <p class="text-gray-900 font-bold">No results for "${q}"</p>
+                    <p class="text-gray-500 text-sm mt-1">Try searching for something else</p>
+                </div>`;
+            } else {
+                let html = '';
+                
+                // Query suggestions
+                html += `<div class="px-2 pb-2">
+                    <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-colors group" onclick="document.getElementById('global-search').value='${q}'; handleSearch('${q}'); document.getElementById('search-suggestions').classList.add('hidden')">
+                        <div class="w-9 h-9 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all">
+                            <i data-lucide="search" class="w-4 h-4"></i>
+                        </div>
+                        <span class="text-[15px] font-bold text-gray-900">${q}</span>
+                    </div>
+                </div>`;
+
+                if (people.length > 0) {
+                    html += `<div class="px-6 pt-2 pb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.1em]">People</div>`;
+                    html += `<div class="px-2 pb-2">` + people.map(({u}) => `
+                        <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-colors group" onclick="showProfile('${u.id}'); document.getElementById('search-suggestions').classList.add('hidden')">
+                            <div class="relative">
+                                <img src="${u.avatar}" class="w-10 h-10 rounded-full object-cover bg-gray-100 border border-gray-100">
+                                ${u.isOfficial ? '<div class="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-blue-500 rounded-full border-2 border-white flex items-center justify-center"><i data-lucide="check" class="w-2 h-2 text-white"></i></div>' : ''}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[15px] font-bold text-gray-900 truncate flex items-center gap-1">${u.name}</div>
+                                <div class="text-[12px] text-gray-500 truncate font-medium">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div>
+                            </div>
+                        </div>
+                    `).join('') + `</div>`;
+                }
+
+                if (tags.length > 0) {
+                    html += `<div class="px-6 pt-2 pb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.1em]">Trending Tags</div>`;
+                    html += `<div class="px-2 pb-2">` + tags.map(({tag, count}) => `
+                        <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-colors group" onclick="searchTag('${tag}'); document.getElementById('search-suggestions').classList.add('hidden')">
+                            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all">
+                                <i data-lucide="hash" class="w-5 h-5"></i>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[15px] font-bold text-gray-900 truncate">#${tag}</div>
+                                <div class="text-[12px] text-gray-500 font-medium">${count} posts using this tag</div>
+                            </div>
+                        </div>
+                    `).join('') + `</div>`;
+                }
+
+                content.innerHTML = html;
+                refreshIcons();
+            }
+
+            suggestions.classList.remove('hidden');
+        };
+
+        // Close search suggestions on click outside
+        document.addEventListener('click', (e) => {
+            const container = document.getElementById('global-search-container');
+            const suggestions = document.getElementById('search-suggestions');
+            if (container && !container.contains(e.target)) {
+                suggestions.classList.add('hidden');
+            }
+        });
+
         window.handleSearch = q => {
             window.currentSearchQuery = q;
             if (document.getElementById('view-explore').classList.contains('hidden')) switchView('explore');
