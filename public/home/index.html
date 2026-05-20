@@ -3573,6 +3573,7 @@
                         <div id="compose-mention-suggestions"
                             class="mention-suggestions hidden !top-auto !bottom-full !mb-2"></div>
                         <div id="shared-post-preview-container" class="hidden"></div>
+                        <div id="compose-link-preview" class="hidden mt-2"></div>
                     </div>
                     <div id="collab-chips-container" class="flex flex-wrap mb-2"></div>
                 </div>
@@ -7907,6 +7908,62 @@
         window.handleComposeInput = (el) => {
             window.checkWordCount(el);
             window.handleSharedLinkDetection(el.value);
+            window.handleComposeLinkPreview(el.value);
+        };
+        window.lastComposePreviewUrl = null;
+        window.handleComposeLinkPreview = async (text) => {
+            const container = document.getElementById('compose-link-preview');
+            if (!container) return;
+
+            const urlMatch = text.match(/(https?:\/\/[^\s]+)/);
+            const url = urlMatch ? urlMatch[0] : null;
+
+            if (!url) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                window.lastComposePreviewUrl = null;
+                return;
+            }
+
+            // Don't re-fetch if it's the same URL
+            if (url === window.lastComposePreviewUrl) return;
+            
+            // Skip EduLink internal post links as they are handled by handleSharedLinkDetection
+            if (url.includes('edulinkbht.vercel.app') && url.includes('/post/')) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+                window.lastComposePreviewUrl = url;
+                return;
+            }
+
+            window.lastComposePreviewUrl = url;
+            container.classList.remove('hidden');
+            container.innerHTML = `<div class="p-4 flex items-center justify-center"><div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div></div>`;
+            
+            const preview = await window.fetchLinkPreview(url);
+            if (preview && url === window.lastComposePreviewUrl) {
+                container.innerHTML = `
+                    <div class="relative group">
+                        <button onclick="window.lastComposePreviewUrl=null; document.getElementById('compose-link-preview').classList.add('hidden'); document.getElementById('compose-link-preview').innerHTML=''" class="absolute -top-2 -right-2 bg-gray-900 text-white p-1 rounded-full shadow-lg z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                        <div class="link-preview-card pointer-events-none border border-gray-100 rounded-xl overflow-hidden bg-gray-50">
+                            ${preview.image ? `<img src="${preview.image}" class="link-preview-image max-h-48 object-cover" alt="Preview">` : ''}
+                            <div class="link-preview-content p-3">
+                                <div class="link-preview-title font-bold text-sm text-gray-900 mb-1">${preview.title || 'Link Preview'}</div>
+                                <div class="link-preview-desc text-xs text-gray-500 line-clamp-2 mb-2">${preview.description || ''}</div>
+                                <div class="link-preview-domain flex items-center gap-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                                    <img src="https://www.google.com/s2/favicons?domain=${preview.domain}&sz=64" class="w-3 h-3 object-contain">
+                                    ${preview.domain}
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                refreshIcons();
+            } else if (url === window.lastComposePreviewUrl) {
+                container.classList.add('hidden');
+                container.innerHTML = '';
+            }
         };
         window.handleSharedLinkDetection = (text) => {
             const container = document.getElementById('shared-post-preview-container');
@@ -7931,7 +7988,7 @@
             container.classList.add('hidden');
             container.innerHTML = '';
         };
-        window.editPost = pid => { const p = posts.find(x => x.id === pid); if (!p) return; closePostView(); document.getElementById('compose-text').value = p.content; window.editingPostId = pid; document.getElementById('compose-header-title').innerText = "Edit Post"; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; if (p.media) { const m = Array.isArray(p.media) ? p.media : [p.media]; m.forEach((url, i) => { if (i < 4) window.composeImages[i] = url }) } renderMediaGrid(); window.composeStep = 1; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); btn.innerText = hasImage ? "Next" : "Skip"; btn.onclick = window.handleComposeAction; if (p.embedVideo) { document.getElementById('compose-embed-link').value = p.embedVideo.replace('/preview', '/view'); } else { document.getElementById('compose-embed-link').value = ''; } openCompose(!0) }; window.deletePost = async pid => { showAlert("Delete post?", async () => { document.querySelectorAll(`[id*='post-card-'][id$='-${pid}']`).forEach(el => el.remove()); await deleteDoc(doc(db, "posts", pid)); showToast("Deleted") }) };
+        window.editPost = pid => { const p = posts.find(x => x.id === pid); if (!p) return; closePostView(); document.getElementById('compose-text').value = p.content; window.editingPostId = pid; document.getElementById('compose-header-title').innerText = "Edit Post"; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; if (p.media) { const m = Array.isArray(p.media) ? p.media : [p.media]; m.forEach((url, i) => { if (i < 4) window.composeImages[i] = url }) } renderMediaGrid(); window.composeStep = 1; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); btn.innerText = hasImage ? "Next" : "Skip"; btn.onclick = window.handleComposeAction; if (p.embedVideo) { document.getElementById('compose-embed-link').value = p.embedVideo.replace('/preview', '/view'); } else { document.getElementById('compose-embed-link').value = ''; } window.handleComposeLinkPreview(p.content); openCompose(!0) }; window.deletePost = async pid => { showAlert("Delete post?", async () => { document.querySelectorAll(`[id*='post-card-'][id$='-${pid}']`).forEach(el => el.remove()); await deleteDoc(doc(db, "posts", pid)); showToast("Deleted") }) };
         window.openCompose = (isEdit = false) => {
             manageHistory('compose-overlay'); closeCreateMenu(); document.getElementById('compose-overlay').classList.remove('opacity-0', 'pointer-events-none'); const modal = document.getElementById('compose-modal'); modal.classList.remove('scale-95'); modal.classList.remove('translate-y-full');
             if (modal) {
@@ -7939,7 +7996,31 @@
                 modal.ondragleave = () => modal.classList.remove('drag-over');
                 modal.ondrop = e => { e.preventDefault(); modal.classList.remove('drag-over'); const files = e.dataTransfer.files; if (files.length) handleDroppedFiles(files) };
             }
-            if (!isEdit) { window.composeStep = 1; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; window.selectedCollaborators = []; window.editingPostId = null; window.currentClaimLink = null; document.getElementById('claim-link-input').value = ''; document.getElementById('compose-embed-link').value = ''; const ci = document.getElementById('claim-status-indicator'); if (ci) { ci.innerText = 'Off'; ci.classList.remove('text-green-600'); ci.classList.add('text-gray-400') } document.getElementById('compose-text').value = ""; document.getElementById('word-count-display').innerText = "0/500 words"; document.getElementById('compose-header-title').innerText = "Create Post"; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); document.getElementById('compose-action-btn').innerText = "Skip"; renderMediaGrid(); renderCollabChips() }
+            if (!isEdit) { 
+                window.composeStep = 1; 
+                window.composeImages = [null, null, null, null]; 
+                window.composeImageBlobs = [null, null, null, null]; 
+                window.selectedCollaborators = []; 
+                window.editingPostId = null; 
+                window.currentClaimLink = null; 
+                window.lastComposePreviewUrl = null;
+                document.getElementById('compose-link-preview').innerHTML = '';
+                document.getElementById('compose-link-preview').classList.add('hidden');
+                document.getElementById('claim-link-input').value = ''; 
+                document.getElementById('compose-embed-link').value = ''; 
+                const ci = document.getElementById('claim-status-indicator'); 
+                if (ci) { ci.innerText = 'Off'; ci.classList.remove('text-green-600'); ci.classList.add('text-gray-400') } 
+                document.getElementById('compose-text').value = ""; 
+                document.getElementById('word-count-display').innerText = "0/500 words"; 
+                document.getElementById('compose-header-title').innerText = "Create Post"; 
+                document.getElementById('compose-step-1').classList.remove('hidden'); 
+                document.getElementById('compose-step-2').classList.add('hidden'); 
+                document.getElementById('compose-tools-bar').classList.add('hidden'); 
+                document.getElementById('compose-footer-settings').classList.add('hidden'); 
+                document.getElementById('compose-action-btn').innerText = "Skip"; 
+                renderMediaGrid(); 
+                renderCollabChips() 
+            }
         };
         window.handleDroppedFiles = files => {
             const count = Math.min(files.length, 4);
