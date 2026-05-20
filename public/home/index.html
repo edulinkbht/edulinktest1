@@ -5503,10 +5503,16 @@
                         const snippet = p.content.length > 60 ? p.content.substring(0, 60) + '...' : p.content;
                         return `
                         <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-colors group" onclick="openPostView('${p.id}'); document.getElementById('search-suggestions').classList.add('hidden')">
-                            <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0 overflow-hidden border border-gray-100">
+                            <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0 overflow-hidden border border-gray-100 relative">
                                 ${(() => {
                                     const m = Array.isArray(p.media) ? p.media[0] : p.media;
-                                    return m ? `<img src="${m}" class="w-full h-full object-cover" onerror="this.parentElement.innerHTML='<i data-lucide=\'file-text\' class=\'w-5 h-5\'></i>'; lucide.createIcons();">` : '<i data-lucide="file-text" class="w-5 h-5"></i>';
+                                    if (!m) return '<i data-lucide="file-text" class="w-5 h-5"></i>';
+                                    const isV = m.includes('video') || m.endsWith('.mp4');
+                                    if (isV) return '<i data-lucide="play" class="w-5 h-5"></i>';
+                                    return `<img src="${m}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.parentElement.querySelector('.fallback-icon').style.display='flex';">
+                                            <div class="fallback-icon absolute inset-0 hidden items-center justify-center bg-gray-50 text-gray-400">
+                                                <i data-lucide="file-text" class="w-5 h-5"></i>
+                                            </div>`;
                                 })()}
                             </div>
                             <div class="flex-1 min-w-0">
