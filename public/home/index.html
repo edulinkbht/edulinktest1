@@ -5429,6 +5429,16 @@
                 .sort((a, b) => b.s - a.s)
                 .slice(0, 5);
 
+            // Related Posts suggestions (New)
+            const relatedPosts = posts
+                .filter(p => p && p.content && p.content.toLowerCase().includes(t))
+                .map(p => {
+                    const author = users.find(u => u.id === p.authorId) || { name: 'User' };
+                    return { p, author, s: scoreText(p.content, t) + (p.likes?.length || 0) };
+                })
+                .sort((a, b) => b.s - a.s)
+                .slice(0, 3);
+
             // Tag suggestions
             const normalizeTag = (x) => (x || '').replace(/^#/, '').trim().toLowerCase();
             const tagTerm = normalizeTag(t);
@@ -5449,7 +5459,7 @@
                 .sort((a, b) => b.s - a.s)
                 .slice(0, 3);
 
-            if (people.length === 0 && tags.length === 0) {
+            if (people.length === 0 && tags.length === 0 && relatedPosts.length === 0) {
                 content.innerHTML = `<div class="px-6 py-12 text-center">
                     <div class="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                         <i data-lucide="search-x" class="w-8 h-8 text-gray-300"></i>
@@ -5486,6 +5496,23 @@
                     `).join('') + `</div>`;
                 }
 
+                if (relatedPosts.length > 0) {
+                    html += `<div class="px-6 pt-2 pb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.1em]">Relevant Posts</div>`;
+                    html += `<div class="px-2 pb-2">` + relatedPosts.map(({p, author}) => {
+                        const snippet = p.content.length > 60 ? p.content.substring(0, 60) + '...' : p.content;
+                        return `
+                        <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-colors group" onclick="openPostView('${p.id}'); document.getElementById('search-suggestions').classList.add('hidden')">
+                            <div class="w-10 h-10 rounded-lg bg-gray-50 flex items-center justify-center text-gray-400 shrink-0 overflow-hidden">
+                                ${p.media && p.media[0] ? `<img src="${p.media[0]}" class="w-full h-full object-cover">` : '<i data-lucide="file-text" class="w-5 h-5"></i>'}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="text-[14px] font-bold text-gray-900 truncate">${author.name}</div>
+                                <div class="text-[12px] text-gray-500 line-clamp-1 font-medium">${snippet}</div>
+                            </div>
+                        </div>
+                    `}).join('') + `</div>`;
+                }
+
                 if (tags.length > 0) {
                     html += `<div class="px-6 pt-2 pb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.1em]">Trending Tags</div>`;
                     html += `<div class="px-2 pb-2">` + tags.map(({tag, count}) => `
@@ -5500,6 +5527,14 @@
                         </div>
                     `).join('') + `</div>`;
                 }
+
+                // Global search footer
+                html += `<div class="p-2 border-t border-gray-50 bg-gray-50/30">
+                    <div class="flex items-center justify-center gap-2 px-4 py-2.5 hover:bg-white hover:shadow-sm cursor-pointer rounded-xl transition-all group" onclick="document.getElementById('global-search').value='${q}'; handleSearch('${q}'); document.getElementById('search-suggestions').classList.add('hidden')">
+                        <span class="text-[13px] font-bold text-gray-900">Search all results for "${q}"</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-gray-400 group-hover:text-black group-hover:translate-x-0.5 transition-all"></i>
+                    </div>
+                </div>`;
 
                 content.innerHTML = html;
                 refreshIcons();
@@ -5552,12 +5587,7 @@
 
                 // People
                 const people = users
-                    .map(u => {
-                        const nameScore = scoreText(u.name, t);
-                        const userScore = scoreText(u.username, t);
-                        const s = Math.max(nameScore, userScore);
-                        return { u, s };
-                    })
+                    .map(u => ({ u, s: Math.max(scoreText(u.name, t), scoreText(u.username, t)) }))
                     .filter(x => x.s > 0)
                     .sort((a, b) => b.s - a.s)
                     .slice(0, 5);
@@ -5587,10 +5617,10 @@
                     .filter(p => canSeePost(p))
                     .map(p => ({
                         p,
-                        s: scoreText(p.content, t) + Math.min((p.likes?.length || 0), 30)
+                        s: scoreText(p.content, t) + (p.likes?.length || 0)
                     }))
                     .sort((a, b) => b.s - a.s)
-                    .slice(0, 10)
+                    .slice(0, 15)
                     .map(x => x.p);
 
                 const section = (title, inner) => `
