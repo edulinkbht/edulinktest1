@@ -4743,11 +4743,35 @@
                 // Targeted in-place updates for existing posts
                 posts.forEach(p => {
                     const isLiked = p.likes && p.likes.includes(currentUser.id);
-                    document.querySelectorAll(`.js-like-btn-${p.id}`).forEach(b => b.classList.toggle('active', isLiked));
+                    document.querySelectorAll(`.js-like-btn-${p.id}`).forEach(b => {
+                        b.classList.toggle('active', isLiked);
+                        const icon = b.querySelector('i');
+                        if (icon) {
+                            icon.classList.toggle('fill-red-500', isLiked);
+                            icon.classList.toggle('text-red-500', isLiked);
+                        }
+                    });
                     document.querySelectorAll(`.js-like-count-${p.id}`).forEach(el => el.innerText = p.likes?.length || 0);
                     document.querySelectorAll(`.js-comment-count-${p.id}`).forEach(el => el.innerText = p.comments?.length || 0);
                     const isSaved = savedPosts.includes(p.id);
                     document.querySelectorAll(`.js-save-btn-${p.id}`).forEach(b => b.classList.toggle('active', isSaved));
+                    
+                    // Targeted in-place updates for comments of this post
+                    if (p.comments) {
+                        p.comments.forEach(c => {
+                            const isCLiked = c.likes && c.likes.includes(currentUser.id);
+                            document.querySelectorAll(`.js-comment-like-btn-${c.id}`).forEach(b => {
+                                b.classList.toggle('active', isCLiked);
+                                const icon = b.querySelector('i');
+                                if (icon) {
+                                    icon.classList.toggle('fill-red-500', isCLiked);
+                                    icon.classList.toggle('text-red-500', isCLiked);
+                                }
+                            });
+                            document.querySelectorAll(`.js-comment-like-count-${c.id}`).forEach(el => el.innerText = c.likes?.length || 0);
+                        });
+                    }
+
                     // Only update body if content changed (prevents flicker)
                     const oldP = oldPosts.find(x => x.id === p.id);
                     if (!oldP || oldP.content !== p.content) {
@@ -4760,8 +4784,12 @@
                     const cp = posts.find(p => p.id === window.currentViewingPostId);
                     const oldP = oldPosts.find(p => p.id === window.currentViewingPostId);
                     if (cp) {
-                        // Only re-render comments if comment count or content changed
-                        if (!oldP || JSON.stringify(oldP.comments) !== JSON.stringify(cp.comments)) {
+                        // Check if only likes changed (to avoid full re-render)
+                        const onlyLikesChanged = oldP && oldP.comments && cp.comments && 
+                                                oldP.comments.length === cp.comments.length &&
+                                                oldP.comments.every((c, i) => c.id === cp.comments[i].id && c.content === cp.comments[i].content);
+
+                        if (!oldP || (JSON.stringify(oldP.comments) !== JSON.stringify(cp.comments) && !onlyLikesChanged)) {
                             if (window.isDesktopThreadMode) renderDesktopThread(window.threadPostId, window.threadParentCommentId);
                             else renderCommentsInModal(window.currentViewingPostId);
                         }
@@ -4772,16 +4800,22 @@
                 if (window.threadPostId && !window.isDesktopThreadMode) {
                     const tp = posts.find(p => p.id === window.threadPostId);
                     const oldTp = oldPosts.find(p => p.id === window.threadPostId);
-                    if (tp && (!oldTp || JSON.stringify(oldTp.comments) !== JSON.stringify(tp.comments))) {
-                        renderThreadContent(window.threadPostId, window.threadParentCommentId);
+                    if (tp && (JSON.stringify(oldTp?.comments) !== JSON.stringify(tp.comments))) {
+                         const onlyLikesChanged = oldTp && oldTp.comments && tp.comments && 
+                                                oldTp.comments.length === tp.comments.length &&
+                                                oldTp.comments.every((c, i) => c.id === tp.comments[i].id && c.content === tp.comments[i].content);
+                        if (!onlyLikesChanged) renderThreadContent(window.threadPostId, window.threadParentCommentId);
                     }
                 }
 
                 if (window.currentPostIdForComments) {
                     const cp = posts.find(p => p.id === window.currentPostIdForComments);
                     const oldCp = oldPosts.find(p => p.id === window.currentPostIdForComments);
-                    if (cp && (!oldCp || JSON.stringify(oldCp.comments) !== JSON.stringify(cp.comments))) {
-                        renderOverlayComments(window.currentPostIdForComments);
+                    if (cp && (JSON.stringify(oldCp?.comments) !== JSON.stringify(cp.comments))) {
+                         const onlyLikesChanged = oldCp && oldCp.comments && cp.comments && 
+                                                oldCp.comments.length === cp.comments.length &&
+                                                oldCp.comments.every((c, i) => c.id === cp.comments[i].id && c.content === cp.comments[i].content);
+                        if (!onlyLikesChanged) renderOverlayComments(window.currentPostIdForComments);
                     }
                 }
 
@@ -7560,9 +7594,80 @@
             c.innerHTML = html;
             refreshIcons()
         };
-        window.submitThreadReply = async () => { const t = document.getElementById('thread-input').value.trim(); if (!t || !window.threadPostId || !window.threadParentCommentId) return; const r = doc(db, "posts", window.threadPostId), nc = { id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000), authorId: currentUser.id, content: t, timestamp: Date.now(), likes: [], parentId: window.replyingToCommentId || window.threadParentCommentId }; await updateDoc(r, { comments: arrayUnion(nc) }); const p = posts.find(x => x.id === window.threadPostId), pc = p.comments.find(x => x.id === (window.replyingToCommentId || window.threadParentCommentId)); if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.threadPostId); const mm = t.match(/@([a-zA-Z0-9._]+)/g); if (mm) { mm.forEach(m => { const uname = m.substring(1).toLowerCase(), found = users.find(u => (u.username || "").toLowerCase() === uname); if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a reply', window.threadPostId) }) } document.getElementById('thread-input').value = ""; window.replyingToCommentId = window.threadParentCommentId; };
+        window.submitThreadReply = async () => {
+            const input = document.getElementById('thread-input');
+            const t = input.value.trim();
+            if (!t || !window.threadPostId || !window.threadParentCommentId) return;
+            const r = doc(db, "posts", window.threadPostId),
+                nc = {
+                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                    authorId: currentUser.id,
+                    content: t,
+                    timestamp: Date.now(),
+                    likes: [],
+                    parentId: window.replyingToCommentId || window.threadParentCommentId
+                };
+
+            // Optimistic update
+            const p = posts.find(x => x.id === window.threadPostId);
+            if (p) {
+                if (!p.comments) p.comments = [];
+                p.comments.push(nc);
+                if (window.isDesktopThreadMode) renderDesktopThread(window.threadPostId, window.threadParentCommentId);
+                else renderThreadContent(window.threadPostId, window.threadParentCommentId);
+            }
+
+            input.value = "";
+            window.replyingToCommentId = window.threadParentCommentId;
+
+            await updateDoc(r, {
+                comments: arrayUnion(nc)
+            });
+
+            const pc = p.comments.find(x => x.id === (window.replyingToCommentId || window.threadParentCommentId));
+            if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.threadPostId);
+            const mm = t.match(/@([a-zA-Z0-9._]+)/g);
+            if (mm) {
+                mm.forEach(m => {
+                    const uname = m.substring(1).toLowerCase(),
+                        found = users.find(u => (u.username || "").toLowerCase() === uname);
+                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a reply', window.threadPostId)
+                })
+            }
+        };
         window.deleteComment = async (pid, cid) => { showAlert("Delete comment?", async () => { const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid), nc = p.comments.filter(x => x.id !== cid && x.parentId !== cid); await updateDoc(r, { comments: nc }); showToast("Deleted") }) };
-        window.toggleCommentLike = async (pid, cid) => { const p = posts.find(x => x.id === pid); if (!p) return; const c = p.comments || [], i = c.findIndex(x => x.id === cid); if (i === -1) return; const cm = c[i]; if (!cm.likes) cm.likes = []; if (cm.likes.includes(currentUser.id)) cm.likes = cm.likes.filter(x => x !== currentUser.id); else { cm.likes.push(currentUser.id); if (cm.authorId !== currentUser.id) sendNotification(cm.authorId, 'comment_like', 'liked your comment', pid) } c[i] = cm; await updateDoc(doc(db, "posts", pid), { comments: c }) };
+        window.toggleCommentLike = async (pid, cid) => {
+            const p = posts.find(x => x.id === pid);
+            if (!p) return;
+            const c = p.comments || [], i = c.findIndex(x => x.id === cid);
+            if (i === -1) return;
+            const cm = c[i];
+            if (!cm.likes) cm.likes = [];
+            
+            const wasLiked = cm.likes.includes(currentUser.id);
+            if (wasLiked) {
+                cm.likes = cm.likes.filter(x => x !== currentUser.id);
+            } else {
+                cm.likes.push(currentUser.id);
+                if (cm.authorId !== currentUser.id) sendNotification(cm.authorId, 'comment_like', 'liked your comment', pid);
+            }
+
+            // Optimistic UI update
+            const isLikedNow = !wasLiked;
+            const countNow = cm.likes.length;
+            document.querySelectorAll(`.js-comment-like-btn-${cid}`).forEach(b => {
+                b.classList.toggle('active', isLikedNow);
+                const icon = b.querySelector('i');
+                if (icon) {
+                    icon.classList.toggle('fill-red-500', isLikedNow);
+                    icon.classList.toggle('text-red-500', isLikedNow);
+                }
+            });
+            document.querySelectorAll(`.js-comment-like-count-${cid}`).forEach(el => el.innerText = countNow);
+
+            c[i] = cm;
+            await updateDoc(doc(db, "posts", pid), { comments: c });
+        };
         window.replyToComment = (cid, u) => {
             const p = posts.find(p => p.comments && p.comments.some(c => c.id === cid));
             if (!p) return;
@@ -7659,18 +7764,73 @@
         };
 
         window.submitOverlayComment = async () => {
-            const t = document.getElementById('comments-overlay-input').value.trim();
+            const input = document.getElementById('comments-overlay-input');
+            const t = input.value.trim();
             const pid = window.currentPostIdForComments;
             if (!t || !pid) return;
-            const r = doc(db, "posts", pid), nc = { id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000), authorId: currentUser.id, content: t, timestamp: Date.now(), likes: [], parentId: null };
-            await updateDoc(r, { comments: arrayUnion(nc) });
+            const r = doc(db, "posts", pid),
+                nc = {
+                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                    authorId: currentUser.id,
+                    content: t,
+                    timestamp: Date.now(),
+                    likes: [],
+                    parentId: null
+                };
+
+            // Optimistic update
             const p = posts.find(x => x.id === pid);
+            if (p) {
+                if (!p.comments) p.comments = [];
+                p.comments.push(nc);
+                renderOverlayComments(pid);
+            }
+
+            input.value = "";
+            await updateDoc(r, {
+                comments: arrayUnion(nc)
+            });
+
             if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', pid);
-            document.getElementById('comments-overlay-input').value = "";
-            renderOverlayComments(pid);
         };
         window.submitCommentDesktop = async () => { const t = document.getElementById('comment-input-desktop').value.trim(); if (!t || !window.currentViewingPostId) return; if (window.isDesktopThreadMode && window.threadParentCommentId) { window.replyingToCommentId = window.replyingToCommentId || window.threadParentCommentId; await postCommentCommon(t); window.replyingToCommentId = window.threadParentCommentId; } else await postCommentCommon(t); document.getElementById('comment-input-desktop').value = "" }; window.submitCommentMobile = async () => { const t = document.getElementById('mobile-comment-input').value.trim(); if (!t || !window.currentViewingPostId) return; await postCommentCommon(t); document.getElementById('mobile-comment-input').value = "" };
-        async function postCommentCommon(t) { const r = doc(db, "posts", window.currentViewingPostId), nc = { id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000), authorId: currentUser.id, content: t, timestamp: Date.now(), likes: [], parentId: window.replyingToCommentId }; await updateDoc(r, { comments: arrayUnion(nc) }); const p = posts.find(x => x.id === window.currentViewingPostId); if (window.replyingToCommentId) { const pc = p.comments.find(x => x.id === window.replyingToCommentId); if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.currentViewingPostId) } else if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', window.currentViewingPostId); const mm = t.match(/@([a-zA-Z0-9._]+)/g); if (mm) { mm.forEach(m => { const uname = m.substring(1).toLowerCase(), found = users.find(u => (u.username || "").toLowerCase() === uname); if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', window.currentViewingPostId) }) } window.replyingToCommentId = null }
+        async function postCommentCommon(t) {
+            const r = doc(db, "posts", window.currentViewingPostId),
+                nc = {
+                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                    authorId: currentUser.id,
+                    content: t,
+                    timestamp: Date.now(),
+                    likes: [],
+                    parentId: window.replyingToCommentId
+                };
+
+            // Optimistic update
+            const p = posts.find(x => x.id === window.currentViewingPostId);
+            if (p) {
+                if (!p.comments) p.comments = [];
+                p.comments.push(nc);
+                renderCommentsInModal(window.currentViewingPostId);
+            }
+
+            await updateDoc(r, {
+                comments: arrayUnion(nc)
+            });
+
+            if (window.replyingToCommentId) {
+                const pc = p.comments.find(x => x.id === window.replyingToCommentId);
+                if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.currentViewingPostId)
+            } else if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', window.currentViewingPostId);
+            const mm = t.match(/@([a-zA-Z0-9._]+)/g);
+            if (mm) {
+                mm.forEach(m => {
+                    const uname = m.substring(1).toLowerCase(),
+                        found = users.find(u => (u.username || "").toLowerCase() === uname);
+                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', window.currentViewingPostId)
+                })
+            }
+            window.replyingToCommentId = null
+        }
         window.promptForImageLink = () => { const u = prompt("Enter Image URL:"); if (u && (u.startsWith('http') || u.startsWith('data:'))) { window.currentMedia = [u]; window.currentMediaType = 'image'; document.getElementById('media-preview-container').classList.remove('hidden'); document.getElementById('preview-inner').innerHTML = `<img src="${u}" class="h-20 w-20 object-cover rounded-md">`; showToast("Added") } };
         window.openAnnouncement = () => { manageHistory('announcement-overlay'); const o = document.getElementById('announcement-overlay'); toggleModalAnim('announcement-overlay', 'announcement-overlay-modal', !0); closeSettings() }; window.closeAnnouncement = () => { toggleModalAnim('announcement-overlay', 'announcement-overlay-modal', !1) };
         window.sendAnnouncement = async () => { const t = document.getElementById('announcement-text').value.trim(); if (!t) return; showAlert("Broadcast?", async () => { for (const u of users) if (u.id !== currentUser.id) await addDoc(collection(db, "notifications"), { receiverId: u.id, senderId: currentUser.id, type: 'system', content: t, timestamp: serverTimestamp(), read: !1 }); showToast("Sent"); document.getElementById('announcement-text').value = ""; closeAnnouncement() }) };
