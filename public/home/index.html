@@ -6323,7 +6323,8 @@
             isPaused: false,
             voice: 'en-US|Google US English',
             speed: 1.0,
-            text: ''
+            text: '',
+            utterance: null
         };
 
         window.cleanTextForSpeech = (text) => {
@@ -6345,31 +6346,29 @@
                 
                 // If this is the active post being read
                 if (window.speechState.activePostId === pid) {
-                    // Force Voice UI mode - Don't mix with follow logic
                     b.className = `${b.id === 'profile-follow-btn' ? 'px-3 py-2' : 'px-3 py-1.5'} flex items-center bg-white text-gray-900 border border-gray-200 rounded-lg font-bold transition-all active:scale-95 shadow-sm min-w-0`;
                     
                     if (window.speechState.isPlaying) {
                         b.innerHTML = `
-                            <div class="flex items-center gap-2 border-r border-gray-200 pr-2 mr-1 h-5" onclick="event.stopPropagation(); window.pauseSpeech();">
+                            <div class="flex items-center gap-2 border-r border-gray-200 pr-2 mr-1 h-5 cursor-pointer" onclick="event.stopPropagation(); window.pauseSpeech();">
                                 <i data-lucide="pause" class="w-3.5 h-3.5 fill-current"></i>
                                 <span class="text-[13px]">Stop</span>
                             </div>
-                            <div class="p-1 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
+                            <div class="p-1 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center cursor-pointer" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
                                 <i data-lucide="settings-2" class="w-4 h-4 text-gray-600"></i>
                             </div>
                         `;
                     } else {
                         b.innerHTML = `
-                            <div class="flex items-center gap-2 border-r border-gray-200 pr-2 mr-1 h-5" onclick="event.stopPropagation(); window.resumeSpeech();">
+                            <div class="flex items-center gap-2 border-r border-gray-200 pr-2 mr-1 h-5 cursor-pointer" onclick="event.stopPropagation(); window.resumeSpeech();">
                                 <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
                                 <span class="text-[13px]">Play</span>
                             </div>
-                            <div class="p-1 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
+                            <div class="p-1 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center cursor-pointer" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
                                 <i data-lucide="settings-2" class="w-4 h-4 text-gray-600"></i>
                             </div>
                         `;
                     }
-                    // Override any previous onclick
                     b.onclick = (e) => e.stopPropagation();
                     refreshIcons();
                     return;
@@ -6400,24 +6399,32 @@
             window.speechState.activePostId = null;
             window.speechState.isPlaying = false;
             window.speechState.isPaused = false;
+            window.speechState.utterance = null;
+            
             if (pid) {
-                // We need to restore buttons for this specific post
-                window.updateFollowButton(pid);
-                // Also ensure any other buttons for this user are updated (if it was the profile button)
+                // Find the author ID to restore all buttons for this user
                 const p = posts.find(x => x.id === pid);
-                if (p) {
-                    const btns = document.querySelectorAll(`.js-follow-btn-${p.authorId}`);
-                    btns.forEach(b => {
-                        const pidOfBtn = b.className.match(/js-follow-btn-post-([a-zA-Z0-9]+)/)?.[1];
-                        if (pidOfBtn) window.updateFollowButton(pidOfBtn);
-                        else {
-                            // Fallback for profile button
-                            const isF = currentUser.following.includes(p.authorId);
-                            const isFriend = window.isFriend(p.authorId);
-                            const priv = users.find(u => u.id === p.authorId)?.settings?.privateNetwork;
-                            b.innerText = isF ? (isFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
-                            b.className = `js-follow-btn-${p.authorId} ${isF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#2b59c3] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
-                            b.onclick = (e) => { e.stopPropagation(); toggleFollow(p.authorId) };
+                const authorId = p ? p.authorId : null;
+                
+                // Restore the specific post's buttons
+                window.updateFollowButton(pid);
+                
+                // If we have an author ID, restore ALL follow buttons for that user
+                if (authorId) {
+                    document.querySelectorAll(`.js-follow-btn-${authorId}`).forEach(btn => {
+                        // Extract PID if it's a post button
+                        const match = btn.className.match(/js-follow-btn-post-([a-zA-Z0-9_-]+)/);
+                        if (match) window.updateFollowButton(match[1]);
+                        else if (btn.id === 'profile-follow-btn') {
+                            // Manual restore for profile button if it doesn't have the post-specific class
+                            const isF = currentUser.following.includes(authorId);
+                            const isFriend = window.isFriend(authorId);
+                            const u = users.find(x => x.id === authorId);
+                            const priv = u?.settings?.privateNetwork;
+                            
+                            btn.className = `js-follow-btn-${authorId} ${isF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#2b59c3] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
+                            btn.innerText = isF ? (isFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
+                            btn.onclick = (e) => { e.stopPropagation(); toggleFollow(authorId) };
                         }
                     });
                 }
@@ -6441,9 +6448,12 @@
                     window.speechState.isPaused = false;
                     window.speechState.isPlaying = true;
                     // Bug fix for Chrome: sometimes resume() doesn't fire immediately
-                    if (!window.speechSynthesis.speaking) {
-                        window.speechSynthesis.resume(); 
-                    }
+                    // We check if it's still paused after a small delay
+                    setTimeout(() => {
+                        if (window.speechSynthesis.paused) {
+                            window.speechSynthesis.resume();
+                        }
+                    }, 50);
                 } else if (window.speechState.activePostId) {
                     window.startReadAloud(window.speechState.activePostId);
                 }
@@ -6502,6 +6512,7 @@
 
             window.speechState.activePostId = pid;
             window.speechState.text = text;
+            window.speechState.utterance = utterance; // Keep reference to prevent GC
             window.speechSynthesis.speak(utterance);
         };
 
