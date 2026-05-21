@@ -5440,7 +5440,7 @@
             }
             const isF = currentUser.following.includes(a.id);
             const isFriend = window.isFriend(a.id);
-            const followBtn = (a.id !== currentUser.id) ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#2b59c3] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90">${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : '';
+            const followBtn = (a.id !== currentUser.id) ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} js-follow-btn-post-${p.id} text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#2b59c3] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90">${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : '';
             d.innerHTML = `${rh}<div class="p-4 md:p-5"><div class="post-header"><div class="flex gap-3"><div class="post-avatar-container w-10 h-10 rounded-full"><img src="${a.avatar}" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')"></div><div><div class="flex items-center"><span class="post-author-name" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}</div><div class="post-meta flex items-center">${formatDate(p.timestamp)}</div></div></div><div class="flex items-center gap-1">${followBtn}<button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')"><i data-lucide="more-vertical" class="w-[26px] h-[26px]"></i></button></div></div><div class="post-content"><div class="post-body js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>${previewHtml}${mh}</div><div class="post-actions"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id}">${likeText}</span></button><button class="action-btn comment" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }"><i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}"></i> <span class="js-comment-count-${p.id}">${commentText}</span></button><button class="action-btn share-btn" onclick="event.stopPropagation(); sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${rightActionBtn}</div></div>${lh}`; return d
         }
         window.moveCarousel = (cid, dir) => { const s = window.carouselStates[cid]; if (!s) return; let n = s.index + dir; if (n < 0) n = 0; if (n >= s.total) n = s.total - 1; s.index = n; const outer = document.getElementById(cid), inner = outer ? outer.querySelector('.post-carousel-inner') : null; if (inner) inner.style.transform = `translateX(-${n * 100}%)`; const dc = document.getElementById(cid).nextElementSibling; if (dc) dc.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === n)); const ctid = cid.replace('carousel-', 'counter-'), cnt = document.getElementById(ctid); if (cnt) cnt.innerText = n + 1 };
@@ -6311,6 +6311,142 @@
         window.isFriend = (uid) => {
             if (!currentUser || !uid) return false;
             return window.areFriends(currentUser.id, uid);
+        };
+
+        // --- Speech Controller ---
+        if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+        }
+        window.speechState = {
+            activePostId: null,
+            isPlaying: false,
+            utterance: null,
+            voice: 'en-US|Google US English',
+            speed: 1.0,
+            onFinish: null
+        };
+
+        window.stripEmojis = (text) => {
+            return text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+        };
+
+        window.stopSpeech = () => {
+            if (typeof speechSynthesis !== 'undefined') {
+                window.speechSynthesis.cancel();
+            }
+            if (window.speechState.activePostId) {
+                const pid = window.speechState.activePostId;
+                window.speechState.activePostId = null;
+                window.speechState.isPlaying = false;
+                window.updateFollowButton(pid);
+            }
+        };
+
+        window.updateFollowButton = (pid) => {
+            const btns = document.querySelectorAll(`.js-follow-btn-post-${pid}, #profile-follow-btn`);
+            btns.forEach(b => {
+                const p = posts.find(x => x.id === pid);
+                if (!p) return;
+                const a = users.find(u => u.id === p.authorId);
+                if (!a) return;
+                
+                // If this is the active post being read
+                if (window.speechState.activePostId === pid) {
+                    b.className = `${b.id === 'profile-follow-btn' ? 'px-3 py-2' : 'px-3 py-1.5'} flex items-center bg-black text-white rounded-full font-bold transition-all active:scale-95 shadow-sm min-w-0`;
+                    
+                    if (window.speechState.isPlaying) {
+                        b.innerHTML = `
+                            <div class="flex items-center gap-2 border-r border-white/20 pr-2 mr-1 h-5" onclick="event.stopPropagation(); window.stopSpeech();">
+                                <i data-lucide="square" class="w-3.5 h-3.5 fill-current"></i>
+                                <span class="text-[13px]">Stop</span>
+                            </div>
+                            <div class="p-1 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
+                                <i data-lucide="settings-2" class="w-4 h-4"></i>
+                            </div>
+                        `;
+                    } else {
+                        b.innerHTML = `
+                            <div class="flex items-center gap-2 border-r border-white/20 pr-2 mr-1 h-5" onclick="event.stopPropagation(); window.resumeSpeech();">
+                                <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
+                                <span class="text-[13px]">Play</span>
+                            </div>
+                            <div class="p-1 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
+                                <i data-lucide="settings-2" class="w-4 h-4"></i>
+                            </div>
+                        `;
+                    }
+                    refreshIcons();
+                    return;
+                }
+
+                // Default follow button logic
+                const isF = currentUser.following.includes(a.id);
+                const isFriend = window.isFriend(a.id);
+                const priv = a.settings?.privateNetwork;
+                
+                if (b.id === 'profile-follow-btn') {
+                    b.className = `js-follow-btn-${a.id} ${isF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#2b59c3] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
+                } else {
+                    b.className = `js-follow-btn-${a.id} js-follow-btn-post-${pid} text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#2b59c3] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90`;
+                }
+                
+                b.innerText = isF ? (isFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
+                b.onclick = (e) => { e.stopPropagation(); toggleFollow(a.id) };
+            });
+        };
+
+        window.resumeSpeech = () => {
+            if (window.speechState.utterance) {
+                window.speechSynthesis.speak(window.speechState.utterance);
+                window.speechState.isPlaying = true;
+                if (window.speechState.activePostId) window.updateFollowButton(window.speechState.activePostId);
+            }
+        };
+
+        window.startReadAloud = (pid) => {
+            const p = posts.find(x => x.id === pid);
+            if (!p) return;
+
+            window.stopSpeech(); // Clear current
+
+            const text = window.stripEmojis(p.content).trim();
+            if (!text) {
+                showToast("No readable text found");
+                return;
+            }
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            const [targetLang, targetName] = window.speechState.voice.split('|');
+            const availableVoices = window.speechSynthesis.getVoices();
+            let selectedVoice = availableVoices.find(v => v.name.includes(targetName) && v.lang === targetLang);
+            if (!selectedVoice) {
+                selectedVoice = availableVoices.find(v => v.lang === targetLang || v.lang.startsWith(targetLang.split('-')[0]));
+            }
+
+            if (selectedVoice) utterance.voice = selectedVoice;
+            utterance.lang = targetLang;
+            utterance.rate = window.speechState.speed;
+
+            utterance.onstart = () => {
+                window.speechState.isPlaying = true;
+                window.updateFollowButton(pid);
+            };
+
+            utterance.onend = () => {
+                window.speechState.isPlaying = false;
+                window.speechState.activePostId = null;
+                window.updateFollowButton(pid);
+            };
+
+            utterance.onerror = () => {
+                window.speechState.isPlaying = false;
+                window.speechState.activePostId = null;
+                window.updateFollowButton(pid);
+            };
+
+            window.speechState.activePostId = pid;
+            window.speechState.utterance = utterance;
+            window.speechSynthesis.speak(utterance);
         };
 
         window.toggleFollow = async (uid) => { 
@@ -8135,6 +8271,10 @@
 
             if (!me) {
                 const s = savedPosts.includes(pid);
+                h += `<button onclick="window.showVoiceSettings('${pid}')" class="${btnClass}">
+                        <div class="${iconClass}"><i data-lucide="volume-2" class="w-5 h-5 text-gray-600"></i></div>
+                        <span class="font-bold text-[15px]">Read Aloud</span>
+                      </button>`;
                 h += `<button onclick="toggleSave('${pid}'); hidePostMenu()" class="${btnClass}">
                         <div class="${iconClass}"><i data-lucide="bookmark" class="w-5 h-5 ${s ? 'fill-yellow-500 text-yellow-500' : 'text-gray-600'}"></i></div>
                         <span class="font-bold text-[15px]">${s ? 'Unsave' : 'Save'} Post</span>
@@ -8177,6 +8317,89 @@
                 m.classList.add('translate-y-0', 'md:scale-100') 
             }, 20);
         };
+
+        window.showVoiceSettings = (pid) => {
+            const c = document.getElementById('post-options-content');
+            const p = posts.find(x => x.id === pid);
+            if (!p) return;
+
+            const voices = [
+                { val: "de-DE|Google Deutsch", label: "German (Male) - Lukas" },
+                { val: "en-US|Google US English", label: "English (US, Female) - Emma" },
+                { val: "en-GB|Google UK English Female", label: "English (UK, Female) - Charlotte" },
+                { val: "en-GB|Google UK English Male", label: "English (UK, Male) - Oliver" },
+                { val: "es-ES|Google español", label: "Spanish (Spain, Male) - Mateo" },
+                { val: "es-US|Google español de Estados Unidos", label: "Spanish (US, Female) - Sofia" },
+                { val: "fr-FR|Google français", label: "French (Female) - Chloé" },
+                { val: "hi-IN|Google हिन्दी", label: "Hindi (Female) - Priya" },
+                { val: "id-ID|Google Bahasa Indonesia", label: "Indonesian (Male) - Budi" },
+                { val: "it-IT|Google italiano", label: "Italian (Female) - Isabella" },
+                { val: "ja-JP|Google 日本語", label: "Japanese (Female) - Sakura" },
+                { val: "ko-KR|Google 한국의", label: "Korean (Female) - Minji" },
+                { val: "nl-NL|Google Nederlands", label: "Dutch (Male) - Daan" },
+                { val: "pl-PL|Google polski", label: "Polish (Female) - Zofia" },
+                { val: "pt-BR|Google português do Brasil", label: "Portuguese (Brazil, Female) - Valentina" },
+                { val: "ru-RU|Google русский", label: "Russian (Female) - Anastasia" },
+                { val: "zh-CN|Google 普通话", label: "Mandarin Chinese (Female) - Meiling" },
+                { val: "zh-HK|Google 粤語", label: "Cantonese Chinese (Female) - Ka-Yee" },
+                { val: "zh-TW|Google 國語", label: "Taiwanese Mandarin (Female) - Ting-Ting" }
+            ];
+
+            let h = `
+                <div class="flex items-center gap-3 mb-6 p-2">
+                    <button onclick="showPostOptions(event, '${pid}', '${p.authorId}')" class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-all">
+                        <i data-lucide="arrow-left" class="w-6 h-6 text-gray-700"></i>
+                    </button>
+                    <div>
+                        <h3 class="font-bold text-[17px] text-gray-900">Voice Synthesis Matrix</h3>
+                        <p class="text-[12px] text-gray-500 font-medium">Custom Speed Control Edition</p>
+                    </div>
+                </div>
+                
+                <div class="space-y-5 px-2">
+                    <div class="space-y-2">
+                        <label class="block text-[13px] font-bold text-gray-500 uppercase tracking-wider">Select Voice Profile</label>
+                        <select id="voice-select-global" onchange="window.speechState.voice = this.value"
+                            class="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 text-gray-900 font-semibold focus:outline-none focus:ring-2 focus:ring-black/5 transition-all text-[15px] appearance-none cursor-pointer">
+                            ${voices.map(v => `<option value="${v.val}" ${window.speechState.voice === v.val ? 'selected' : ''}>${v.label}</option>`).join('')}
+                        </select>
+                    </div>
+
+                    <div class="space-y-3 bg-gray-50 p-5 rounded-[24px] border border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[13px] font-bold text-gray-500 uppercase tracking-wider">Speech Speed</label>
+                            <div class="flex items-center gap-1.5 bg-white px-3 py-1 rounded-full border border-gray-200 shadow-sm">
+                                <span id="speed-display" class="text-[14px] font-bold text-black">${window.speechState.speed.toFixed(1)}</span>
+                                <span class="text-[11px] font-bold text-gray-400">x</span>
+                            </div>
+                        </div>
+                        <input type="range" min="0.5" max="2" step="0.1" value="${window.speechState.speed}"
+                            oninput="window.speechState.speed = parseFloat(this.value); document.getElementById('speed-display').innerText = parseFloat(this.value).toFixed(1)"
+                            class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black">
+                        <div class="flex justify-between text-[10px] font-bold text-gray-400 px-1">
+                            <span>0.5x</span>
+                            <span>1.0x</span>
+                            <span>2.0x</span>
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 pt-2">
+                        <button onclick="startReadAloud('${pid}'); hidePostMenu()"
+                            class="flex-[2] bg-black text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-gray-800 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                            <span>Read Aloud</span>
+                            <i data-lucide="volume-2" class="w-5 h-5"></i>
+                        </button>
+                        <button onclick="stopSpeech(); hidePostMenu()"
+                            class="flex-1 bg-gray-100 text-gray-900 font-bold py-4 rounded-2xl hover:bg-gray-200 transition-all active:scale-[0.98]">
+                            Stop
+                        </button>
+                    </div>
+                </div>
+            `;
+            c.innerHTML = h;
+            refreshIcons();
+        };
+
         window.hidePostMenu = () => { const o = document.getElementById('post-options-overlay'), m = document.getElementById('post-options-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => o.classList.add('hidden'), 200) };
         window.handleComposeInput = (el) => {
             window.checkWordCount(el);
