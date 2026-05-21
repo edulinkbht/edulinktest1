@@ -6320,25 +6320,55 @@
         window.speechState = {
             activePostId: null,
             isPlaying: false,
+            isPaused: false,
             utterance: null,
             voice: 'en-US|Google US English',
             speed: 1.0,
-            onFinish: null
+            text: ''
         };
 
-        window.stripEmojis = (text) => {
-            return text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+        window.cleanTextForSpeech = (text) => {
+            if (!text) return "";
+            // Remove URLs
+            let cleaned = text.replace(/(https?:\/\/[^\s]+)/g, '');
+            // Remove Emojis
+            cleaned = cleaned.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '');
+            return cleaned.trim();
         };
 
-        window.stopSpeech = () => {
+        window.cancelReadAloud = () => {
             if (typeof speechSynthesis !== 'undefined') {
                 window.speechSynthesis.cancel();
             }
-            if (window.speechState.activePostId) {
-                const pid = window.speechState.activePostId;
-                window.speechState.activePostId = null;
+            const pid = window.speechState.activePostId;
+            window.speechState.activePostId = null;
+            window.speechState.isPlaying = false;
+            window.speechState.isPaused = false;
+            window.speechState.text = '';
+            if (pid) window.updateFollowButton(pid);
+        };
+
+        window.pauseSpeech = () => {
+            if (typeof speechSynthesis !== 'undefined') {
+                window.speechSynthesis.pause();
+                window.speechState.isPaused = true;
                 window.speechState.isPlaying = false;
-                window.updateFollowButton(pid);
+                if (window.speechState.activePostId) window.updateFollowButton(window.speechState.activePostId);
+            }
+        };
+
+        window.resumeSpeech = () => {
+            if (typeof speechSynthesis !== 'undefined') {
+                if (window.speechState.isPaused) {
+                    window.speechSynthesis.resume();
+                    window.speechState.isPaused = false;
+                    window.speechState.isPlaying = true;
+                } else if (window.speechState.activePostId) {
+                    // Fallback to restarting if lost state
+                    window.startReadAloud(window.speechState.activePostId);
+                    return;
+                }
+                if (window.speechState.activePostId) window.updateFollowButton(window.speechState.activePostId);
             }
         };
 
@@ -6352,26 +6382,27 @@
                 
                 // If this is the active post being read
                 if (window.speechState.activePostId === pid) {
-                    b.className = `${b.id === 'profile-follow-btn' ? 'px-3 py-2' : 'px-3 py-1.5'} flex items-center bg-black text-white rounded-full font-bold transition-all active:scale-95 shadow-sm min-w-0`;
+                    // White bordered, less curve (rounded-lg like the default follow button)
+                    b.className = `${b.id === 'profile-follow-btn' ? 'px-3 py-2' : 'px-3 py-1.5'} flex items-center bg-white text-gray-900 border border-gray-200 rounded-lg font-bold transition-all active:scale-95 shadow-sm min-w-0`;
                     
                     if (window.speechState.isPlaying) {
                         b.innerHTML = `
-                            <div class="flex items-center gap-2 border-r border-white/20 pr-2 mr-1 h-5" onclick="event.stopPropagation(); window.stopSpeech();">
-                                <i data-lucide="square" class="w-3.5 h-3.5 fill-current"></i>
+                            <div class="flex items-center gap-2 border-r border-gray-200 pr-2 mr-1 h-5" onclick="event.stopPropagation(); window.pauseSpeech();">
+                                <i data-lucide="pause" class="w-3.5 h-3.5 fill-current"></i>
                                 <span class="text-[13px]">Stop</span>
                             </div>
-                            <div class="p-1 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
-                                <i data-lucide="settings-2" class="w-4 h-4"></i>
+                            <div class="p-1 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
+                                <i data-lucide="settings-2" class="w-4 h-4 text-gray-600"></i>
                             </div>
                         `;
                     } else {
                         b.innerHTML = `
-                            <div class="flex items-center gap-2 border-r border-white/20 pr-2 mr-1 h-5" onclick="event.stopPropagation(); window.resumeSpeech();">
+                            <div class="flex items-center gap-2 border-r border-gray-200 pr-2 mr-1 h-5" onclick="event.stopPropagation(); window.resumeSpeech();">
                                 <i data-lucide="play" class="w-3.5 h-3.5 fill-current"></i>
                                 <span class="text-[13px]">Play</span>
                             </div>
-                            <div class="p-1 hover:bg-white/10 rounded-full transition-colors flex items-center justify-center" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
-                                <i data-lucide="settings-2" class="w-4 h-4"></i>
+                            <div class="p-1 hover:bg-gray-100 rounded-full transition-colors flex items-center justify-center" onclick="event.stopPropagation(); window.showPostOptions(event, '${pid}', '${p.authorId}'); setTimeout(() => window.showVoiceSettings('${pid}'), 10); ">
+                                <i data-lucide="settings-2" class="w-4 h-4 text-gray-600"></i>
                             </div>
                         `;
                     }
@@ -6395,21 +6426,15 @@
             });
         };
 
-        window.resumeSpeech = () => {
-            if (window.speechState.utterance) {
-                window.speechSynthesis.speak(window.speechState.utterance);
-                window.speechState.isPlaying = true;
-                if (window.speechState.activePostId) window.updateFollowButton(window.speechState.activePostId);
-            }
-        };
-
         window.startReadAloud = (pid) => {
             const p = posts.find(x => x.id === pid);
             if (!p) return;
 
-            window.stopSpeech(); // Clear current
+            if (typeof speechSynthesis !== 'undefined') {
+                window.speechSynthesis.cancel();
+            }
 
-            const text = window.stripEmojis(p.content).trim();
+            const text = window.cleanTextForSpeech(p.content);
             if (!text) {
                 showToast("No readable text found");
                 return;
@@ -6429,23 +6454,28 @@
 
             utterance.onstart = () => {
                 window.speechState.isPlaying = true;
+                window.speechState.isPaused = false;
                 window.updateFollowButton(pid);
             };
 
             utterance.onend = () => {
                 window.speechState.isPlaying = false;
+                window.speechState.isPaused = false;
                 window.speechState.activePostId = null;
                 window.updateFollowButton(pid);
             };
 
-            utterance.onerror = () => {
+            utterance.onerror = (e) => {
+                console.error('Speech error:', e);
                 window.speechState.isPlaying = false;
+                window.speechState.isPaused = false;
                 window.speechState.activePostId = null;
                 window.updateFollowButton(pid);
             };
 
             window.speechState.activePostId = pid;
             window.speechState.utterance = utterance;
+            window.speechState.text = text;
             window.speechSynthesis.speak(utterance);
         };
 
@@ -8271,9 +8301,15 @@
 
             if (!me) {
                 const s = savedPosts.includes(pid);
+                if (window.speechState.activePostId === pid) {
+                    h += `<button onclick="cancelReadAloud(); hidePostMenu()" class="${btnClass} bg-red-50">
+                            <div class="${iconClass} bg-red-100"><i data-lucide="x-circle" class="w-5 h-5 text-red-600"></i></div>
+                            <span class="font-bold text-[15px] text-red-600">Cancel Read Aloud</span>
+                          </button>`;
+                }
                 h += `<button onclick="window.showVoiceSettings('${pid}')" class="${btnClass}">
                         <div class="${iconClass}"><i data-lucide="volume-2" class="w-5 h-5 text-gray-600"></i></div>
-                        <span class="font-bold text-[15px]">Read Aloud</span>
+                        <span class="font-bold text-[15px]">${window.speechState.activePostId === pid ? 'Voice Settings' : 'Read Aloud'}</span>
                       </button>`;
                 h += `<button onclick="toggleSave('${pid}'); hidePostMenu()" class="${btnClass}">
                         <div class="${iconClass}"><i data-lucide="bookmark" class="w-5 h-5 ${s ? 'fill-yellow-500 text-yellow-500' : 'text-gray-600'}"></i></div>
@@ -8374,7 +8410,7 @@
                             </div>
                         </div>
                         <input type="range" min="0.5" max="2" step="0.1" value="${window.speechState.speed}"
-                            oninput="window.speechState.speed = parseFloat(this.value); document.getElementById('speed-display').innerText = parseFloat(this.value).toFixed(1)"
+                            oninput="window.speechState.speed = parseFloat(this.value); document.getElementById('speed-display').innerText = parseFloat(this.value).toFixed(1); if(window.speechState.activePostId === '${pid}') { window.startReadAloud('${pid}'); }"
                             class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black">
                         <div class="flex justify-between text-[10px] font-bold text-gray-400 px-1">
                             <span>0.5x</span>
@@ -8383,15 +8419,21 @@
                         </div>
                     </div>
 
-                    <div class="flex gap-3 pt-2">
-                        <button onclick="startReadAloud('${pid}'); hidePostMenu()"
-                            class="flex-[2] bg-black text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-gray-800 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                            <span>Read Aloud</span>
-                            <i data-lucide="volume-2" class="w-5 h-5"></i>
-                        </button>
-                        <button onclick="stopSpeech(); hidePostMenu()"
-                            class="flex-1 bg-gray-100 text-gray-900 font-bold py-4 rounded-2xl hover:bg-gray-200 transition-all active:scale-[0.98]">
-                            Stop
+                    <div class="flex flex-col gap-2 pt-2">
+                        <div class="flex gap-3">
+                            <button onclick="startReadAloud('${pid}'); hidePostMenu()"
+                                class="flex-[2] bg-black text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-gray-800 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                                <span>${window.speechState.activePostId === pid ? (window.speechState.isPlaying ? 'Restart' : 'Resume') : 'Read Aloud'}</span>
+                                <i data-lucide="${window.speechState.isPlaying ? 'rotate-ccw' : 'volume-2'}" class="w-5 h-5"></i>
+                            </button>
+                            <button onclick="window.speechState.isPlaying ? pauseSpeech() : resumeSpeech(); hidePostMenu()"
+                                class="flex-1 bg-gray-100 text-gray-900 font-bold py-4 rounded-2xl hover:bg-gray-200 transition-all active:scale-[0.98]">
+                                ${window.speechState.isPlaying ? 'Stop' : 'Play'}
+                            </button>
+                        </div>
+                        <button onclick="cancelReadAloud(); hidePostMenu()"
+                            class="w-full bg-white text-red-600 border border-red-100 font-bold py-3 rounded-2xl hover:bg-red-50 transition-all active:scale-[0.98] text-[14px]">
+                            Cancel & Restore Button
                         </button>
                     </div>
                 </div>
