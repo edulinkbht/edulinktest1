@@ -159,6 +159,75 @@
                 border: 1px solid var(--outline);
                 box-shadow: 0 1px 2px rgba(0, 0, 0, .03)
             }
+            body.home-view-desktop #main-panel {
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+            }
+        }
+
+        /* Framed Post Style for Home Feed */
+        body.home-view-desktop .post-card-framed {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 24px;
+            margin-bottom: 16px;
+            padding: 0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+        /* Action Pills for Framed Style */
+        .action-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 14px;
+            border-radius: 100px;
+            border: 1px solid #f3f4f6;
+            background: #ffffff;
+            color: #667085;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .action-pill:hover {
+            background: #f9fafb;
+            border-color: #e5e7eb;
+            color: #1a1a1a;
+        }
+
+        .action-pill.active {
+            color: #ef4444;
+            background: #fef2f2;
+            border-color: #fee2e2;
+        }
+
+        .action-pill i {
+            width: 16px;
+            height: 16px;
+        }
+
+        .post-card-framed .post-header {
+            padding: 16px 20px 12px 20px;
+        }
+
+        .post-card-framed .post-content {
+            padding: 0 20px;
+        }
+
+        .post-card-framed .post-actions {
+            padding: 12px 20px 16px 20px;
+            border-top: 1px solid #f3f4f6;
+            margin-top: 16px;
+        }
+        
+        .post-card-framed .media-container-framed {
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid #f0f0f0;
         }
 
         @media (max-width:768px) {
@@ -5344,10 +5413,18 @@
         window.openFeedFilter = () => { manageHistory('feed-filter-overlay'); toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !0) }; window.closeFeedFilter = () => toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !1); window.switchFeedFilter = f => { window.activeFeedFilter = f; closeFeedFilter(); renderFeed(); const m = { all: 'All Posts', following: 'Following', friends: 'Friends Only' }; showToast(`Filter: ${m[f]}`, false, "Your feed has been updated based on your selection.") };
         let touchStartX = 0, touchEndX = 0; window.handleTouchStart = e => touchStartX = e.changedTouches[0].screenX; window.handleTouchEnd = (e, pid, ov) => { touchEndX = e.changedTouches[0].screenX; const w = e.currentTarget.closest('.post-carousel'); if (w && Math.abs(touchStartX - touchEndX) > 50) moveCarousel(w.id, touchStartX > touchEndX ? 1 : -1) };
         function createPostElement(p, ctx = 'feed') {
-            const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); d.id = `post-card-${ctx}-${p.id}`; d.className = "post-card group overflow-hidden"; d.onclick = () => { openPostView(p.id); trackInteraction(p.id, 'view', 1) };
+            const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); 
+            d.id = `post-card-${ctx}-${p.id}`; 
+            
+            // Apply framed style for Home tab on desktop
+            const isHomeDesktop = ctx === 'feed' && window.innerWidth >= 768;
+            d.className = `post-card group overflow-hidden ${isHomeDesktop ? 'post-card-framed' : ''}`; 
+            d.onclick = () => { openPostView(p.id); trackInteraction(p.id, 'view', 1) };
+            
             let mh = "", lh = "";
+            const mediaClass = isHomeDesktop ? 'media-container-framed' : 'rounded-none md:rounded-xl -mx-4 md:mx-0';
             if (p.embedVideo) {
-                mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
+                mh = `<div class="mt-3 ${mediaClass} overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
             } else if (p.media) {
                 const ma = Array.isArray(p.media) ? p.media : [p.media];
                 if (ma.length === 1) {
@@ -5362,7 +5439,7 @@
                         }
                         videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
                     }
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'}" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
+                    mh = `<div class="mt-3 ${mediaClass} overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'}" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
                 } else {
                     const cid = `carousel-${ctx}-${p.id}`,
                         iid = `inner-${ctx}-${p.id}`,
@@ -5383,7 +5460,7 @@
                         sl += `<div class="post-carousel-item bg-gray-50 flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
                         dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="dot-${ctx}-${p.id}-${i}"></div>`
                     });
-                    mh = `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel touch-pan-y max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
+                    mh = `<div class="carousel-wrapper mt-3 ${isHomeDesktop ? '' : '-mx-4 md:mx-0'}"><div class="${mediaClass} overflow-hidden post-carousel touch-pan-y max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
                     (window.carouselStates = window.carouselStates || {})[cid] = {
                         index: 0,
                         total: ma.length
@@ -5436,7 +5513,49 @@
             const isF = currentUser.following.includes(a.id);
             const isFriend = window.isFriend(a.id);
             const followBtn = (a.id !== currentUser.id) ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#2b59c3] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90">${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : '';
-            d.innerHTML = `${rh}<div class="p-4 md:p-5"><div class="post-header"><div class="flex gap-3"><div class="post-avatar-container w-10 h-10 rounded-full"><img src="${a.avatar}" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')"></div><div><div class="flex items-center"><span class="post-author-name" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}</div><div class="post-meta flex items-center">${formatDate(p.timestamp)}</div></div></div><div class="flex items-center gap-1">${followBtn}<button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')"><i data-lucide="more-vertical" class="w-[26px] h-[26px]"></i></button></div></div><div class="post-content"><div class="post-body js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>${previewHtml}${mh}</div><div class="post-actions"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id}">${likeText}</span></button><button class="action-btn comment" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }"><i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}"></i> <span class="js-comment-count-${p.id}">${commentText}</span></button><button class="action-btn share-btn" onclick="event.stopPropagation(); sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${rightActionBtn}</div></div>${lh}`; return d
+            
+            if (isHomeDesktop) {
+                d.innerHTML = `
+                    <div class="post-header flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <img src="${a.avatar}" class="w-10 h-10 rounded-full object-cover cursor-pointer" onclick="event.stopPropagation(); showProfile('${a.id}')">
+                            <div>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="font-bold text-[15px] hover:underline cursor-pointer" onclick="event.stopPropagation(); showProfile('${a.id}')">@${a.username || 'user'}</span>
+                                    ${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 text-blue-500 fill-blue-500 text-white"></i>' : ''}
+                                    ${isFriend ? '<span class="text-blue-600 text-[13px] font-bold">Friends</span>' : ''}
+                                </div>
+                                <div class="text-[12px] text-gray-400">${formatDate(p.timestamp)}</div>
+                            </div>
+                        </div>
+                        <button class="icon-btn" onclick="event.stopPropagation(); showPostOptions(event,'${p.id}','${p.authorId}')">
+                            <i data-lucide="more-horizontal" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                    <div class="post-content">
+                        <div class="post-body text-[15px] text-gray-900 mb-3 js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>
+                        ${previewHtml}
+                        ${mh}
+                    </div>
+                    <div class="post-actions flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <button class="action-pill like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')">
+                                <i data-lucide="heart"></i> <span>${likeText}</span>
+                            </button>
+                            <button class="action-pill" onclick="event.stopPropagation(); openPostView('${p.id}')">
+                                <i data-lucide="message-circle"></i> <span>${commentText}</span>
+                            </button>
+                            <button class="action-pill" onclick="event.stopPropagation(); sharePost('${p.id}')">
+                                <i data-lucide="share"></i> <span>Share</span>
+                            </button>
+                        </div>
+                        ${rightActionBtn}
+                    </div>
+                `;
+            } else {
+                d.innerHTML = `${rh}<div class="p-4 md:p-5"><div class="post-header"><div class="flex gap-3"><div class="post-avatar-container w-10 h-10 rounded-full"><img src="${a.avatar}" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')"></div><div><div class="flex items-center"><span class="post-author-name" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}</div><div class="post-meta flex items-center">${formatDate(p.timestamp)}</div></div></div><div class="flex items-center gap-1">${followBtn}<button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')"><i data-lucide="more-vertical" class="w-[26px] h-[26px]"></i></button></div></div><div class="post-content"><div class="post-body js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>${previewHtml}${mh}</div><div class="post-actions"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id}">${likeText}</span></button><button class="action-btn comment" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }"><i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}"></i> <span class="js-comment-count-${p.id}">${commentText}</span></button><button class="action-btn share-btn" onclick="event.stopPropagation(); sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${rightActionBtn}</div></div>${lh}`;
+            }
+            return d;
         }
         window.moveCarousel = (cid, dir) => { const s = window.carouselStates[cid]; if (!s) return; let n = s.index + dir; if (n < 0) n = 0; if (n >= s.total) n = s.total - 1; s.index = n; const outer = document.getElementById(cid), inner = outer ? outer.querySelector('.post-carousel-inner') : null; if (inner) inner.style.transform = `translateX(-${n * 100}%)`; const dc = document.getElementById(cid).nextElementSibling; if (dc) dc.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === n)); const ctid = cid.replace('carousel-', 'counter-'), cnt = document.getElementById(ctid); if (cnt) cnt.innerText = n + 1 };
         window.switchExploreMainTab = t => {
@@ -8903,6 +9022,13 @@
         window.switchView = function (view) {
             if (originalSwitchView) originalSwitchView(view);
             updateNavIcons(view);
+            
+            // Toggle borderless main panel for Home tab on desktop
+            if (view === 'feed' && window.innerWidth >= 768) {
+                document.body.classList.add('home-view-desktop');
+            } else {
+                document.body.classList.remove('home-view-desktop');
+            }
         };
 
         // Handle legacy ?uid= param and new /profile/username path for pending profile
