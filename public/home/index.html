@@ -6321,7 +6321,6 @@
             activePostId: null,
             isPlaying: false,
             isPaused: false,
-            utterance: null,
             voice: 'en-US|Google US English',
             speed: 1.0,
             text: ''
@@ -6336,42 +6335,6 @@
             return cleaned.trim();
         };
 
-        window.cancelReadAloud = () => {
-            if (typeof speechSynthesis !== 'undefined') {
-                window.speechSynthesis.cancel();
-            }
-            const pid = window.speechState.activePostId;
-            window.speechState.activePostId = null;
-            window.speechState.isPlaying = false;
-            window.speechState.isPaused = false;
-            window.speechState.text = '';
-            if (pid) window.updateFollowButton(pid);
-        };
-
-        window.pauseSpeech = () => {
-            if (typeof speechSynthesis !== 'undefined') {
-                window.speechSynthesis.pause();
-                window.speechState.isPaused = true;
-                window.speechState.isPlaying = false;
-                if (window.speechState.activePostId) window.updateFollowButton(window.speechState.activePostId);
-            }
-        };
-
-        window.resumeSpeech = () => {
-            if (typeof speechSynthesis !== 'undefined') {
-                if (window.speechState.isPaused) {
-                    window.speechSynthesis.resume();
-                    window.speechState.isPaused = false;
-                    window.speechState.isPlaying = true;
-                } else if (window.speechState.activePostId) {
-                    // Fallback to restarting if lost state
-                    window.startReadAloud(window.speechState.activePostId);
-                    return;
-                }
-                if (window.speechState.activePostId) window.updateFollowButton(window.speechState.activePostId);
-            }
-        };
-
         window.updateFollowButton = (pid) => {
             const btns = document.querySelectorAll(`.js-follow-btn-post-${pid}, #profile-follow-btn`);
             btns.forEach(b => {
@@ -6382,7 +6345,7 @@
                 
                 // If this is the active post being read
                 if (window.speechState.activePostId === pid) {
-                    // White bordered, less curve (rounded-lg like the default follow button)
+                    // Force Voice UI mode - Don't mix with follow logic
                     b.className = `${b.id === 'profile-follow-btn' ? 'px-3 py-2' : 'px-3 py-1.5'} flex items-center bg-white text-gray-900 border border-gray-200 rounded-lg font-bold transition-all active:scale-95 shadow-sm min-w-0`;
                     
                     if (window.speechState.isPlaying) {
@@ -6406,24 +6369,86 @@
                             </div>
                         `;
                     }
+                    // Override any previous onclick
+                    b.onclick = (e) => e.stopPropagation();
                     refreshIcons();
                     return;
                 }
 
-                // Default follow button logic
+                // Default follow button logic - restore original state
                 const isF = currentUser.following.includes(a.id);
                 const isFriend = window.isFriend(a.id);
                 const priv = a.settings?.privateNetwork;
                 
                 if (b.id === 'profile-follow-btn') {
                     b.className = `js-follow-btn-${a.id} ${isF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#2b59c3] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
+                    b.innerText = isF ? (isFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
                 } else {
                     b.className = `js-follow-btn-${a.id} js-follow-btn-post-${pid} text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#2b59c3] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90`;
+                    b.innerText = isF ? (isFriend ? 'Friends' : 'Following') : 'Follow';
                 }
                 
-                b.innerText = isF ? (isFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
                 b.onclick = (e) => { e.stopPropagation(); toggleFollow(a.id) };
             });
+        };
+
+        window.cancelReadAloud = () => {
+            if (typeof speechSynthesis !== 'undefined') {
+                window.speechSynthesis.cancel();
+            }
+            const pid = window.speechState.activePostId;
+            window.speechState.activePostId = null;
+            window.speechState.isPlaying = false;
+            window.speechState.isPaused = false;
+            if (pid) {
+                // We need to restore buttons for this specific post
+                window.updateFollowButton(pid);
+                // Also ensure any other buttons for this user are updated (if it was the profile button)
+                const p = posts.find(x => x.id === pid);
+                if (p) {
+                    const btns = document.querySelectorAll(`.js-follow-btn-${p.authorId}`);
+                    btns.forEach(b => {
+                        const pidOfBtn = b.className.match(/js-follow-btn-post-([a-zA-Z0-9]+)/)?.[1];
+                        if (pidOfBtn) window.updateFollowButton(pidOfBtn);
+                        else {
+                            // Fallback for profile button
+                            const isF = currentUser.following.includes(p.authorId);
+                            const isFriend = window.isFriend(p.authorId);
+                            const priv = users.find(u => u.id === p.authorId)?.settings?.privateNetwork;
+                            b.innerText = isF ? (isFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
+                            b.className = `js-follow-btn-${p.authorId} ${isF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#2b59c3] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
+                            b.onclick = (e) => { e.stopPropagation(); toggleFollow(p.authorId) };
+                        }
+                    });
+                }
+            }
+            refreshIcons();
+        };
+
+        window.pauseSpeech = () => {
+            if (typeof speechSynthesis !== 'undefined') {
+                window.speechSynthesis.pause();
+                window.speechState.isPaused = true;
+                window.speechState.isPlaying = false;
+                if (window.speechState.activePostId) window.updateFollowButton(window.speechState.activePostId);
+            }
+        };
+
+        window.resumeSpeech = () => {
+            if (typeof speechSynthesis !== 'undefined') {
+                if (window.speechState.isPaused) {
+                    window.speechSynthesis.resume();
+                    window.speechState.isPaused = false;
+                    window.speechState.isPlaying = true;
+                    // Bug fix for Chrome: sometimes resume() doesn't fire immediately
+                    if (!window.speechSynthesis.speaking) {
+                        window.speechSynthesis.resume(); 
+                    }
+                } else if (window.speechState.activePostId) {
+                    window.startReadAloud(window.speechState.activePostId);
+                }
+                if (window.speechState.activePostId) window.updateFollowButton(window.speechState.activePostId);
+            }
         };
 
         window.startReadAloud = (pid) => {
@@ -6459,10 +6484,12 @@
             };
 
             utterance.onend = () => {
-                window.speechState.isPlaying = false;
-                window.speechState.isPaused = false;
-                window.speechState.activePostId = null;
-                window.updateFollowButton(pid);
+                if (!window.speechState.isPaused) {
+                    window.speechState.isPlaying = false;
+                    window.speechState.isPaused = false;
+                    window.speechState.activePostId = null;
+                    window.updateFollowButton(pid);
+                }
             };
 
             utterance.onerror = (e) => {
@@ -6474,7 +6501,6 @@
             };
 
             window.speechState.activePostId = pid;
-            window.speechState.utterance = utterance;
             window.speechState.text = text;
             window.speechSynthesis.speak(utterance);
         };
@@ -6527,6 +6553,13 @@
 
             // Update button label
             const updateButton = (b, isNowF) => {
+                // Skip if this button is currently in Voice Mode
+                const pidMatch = b.className.match(/js-follow-btn-post-([a-zA-Z0-9_-]+)/);
+                const pidOfBtn = pidMatch ? pidMatch[1] : null;
+                if (window.speechState.activePostId && (window.speechState.activePostId === pidOfBtn || b.id === 'profile-follow-btn')) {
+                    return;
+                }
+
                 const isNowFriend = window.isFriend(uid);
                 if (b.id === 'profile-follow-btn') {
                     b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
