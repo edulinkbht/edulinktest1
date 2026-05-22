@@ -774,30 +774,32 @@
         /* Background Upload Widget */
         .upload-widget {
             background: white;
-            border-radius: 24px;
-            border: 1px solid var(--outline);
-            padding: 16px;
+            border-radius: 20px;
+            border: 1px solid #f0f0f0;
+            padding: 14px;
             display: flex;
             align-items: center;
-            gap: 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-            transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
-            margin-bottom: 20px;
-            animation: slideInUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            gap: 14px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+            margin-bottom: 24px;
+            animation: slideInUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
         }
 
         @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; transform: translateY(30px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
         }
 
         .upload-widget-thumb {
-            width: 56px;
-            height: 56px;
-            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
             object-fit: cover;
-            background: #f3f4f6;
+            background: #f8f9fa;
             flex-shrink: 0;
+            border: 1px solid #f1f3f5;
         }
 
         .upload-widget-info {
@@ -806,34 +808,36 @@
         }
 
         .upload-widget-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
             color: #1a1a1a;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
+            letter-spacing: -0.01em;
         }
 
         .upload-widget-progress-container {
             width: 100%;
-            height: 6px;
-            background: #f3f4f6;
+            height: 4px;
+            background: #f1f3f5;
             border-radius: 10px;
             overflow: hidden;
+            margin: 6px 0;
         }
 
         .upload-widget-progress-fill {
             height: 100%;
             background: #000;
             width: 0%;
-            transition: width 0.3s ease;
+            transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
             border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
 
         .upload-widget-status {
-            font-size: 12px;
-            color: #666;
-            margin-top: 4px;
-            font-weight: 500;
+            font-size: 11px;
+            color: #888;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
         }
 
         .promo-card {
@@ -8500,7 +8504,7 @@
                 throw e;
             }
         }
-        window.activeUploads = {};
+        window.isUploading = false;
 
         window.updateUploadWidget = (id, progress, status, thumbUrl) => {
             const container = document.getElementById('background-upload-container');
@@ -8508,13 +8512,15 @@
 
             let widget = document.getElementById(`upload-widget-${id}`);
             if (!widget) {
+                // Ensure only one widget exists
+                container.innerHTML = '';
                 widget = document.createElement('div');
                 widget.id = `upload-widget-${id}`;
                 widget.className = 'upload-widget';
                 widget.innerHTML = `
                     <img src="${thumbUrl || ''}" class="upload-widget-thumb" id="upload-thumb-${id}">
                     <div class="upload-widget-info">
-                        <div class="upload-widget-title">Uploading</div>
+                        <div class="upload-widget-title">Publishing</div>
                         <div class="upload-widget-progress-container">
                             <div class="upload-widget-progress-fill" id="upload-progress-${id}"></div>
                         </div>
@@ -8529,16 +8535,18 @@
             const statusEl = document.getElementById(`upload-status-${id}`);
             const thumbEl = document.getElementById(`upload-thumb-${id}`);
 
-            if (fill) fill.style.width = `${progress}%`;
+            if (fill) fill.style.width = `${Math.min(100, Math.max(0, progress))}%`;
             if (statusEl) statusEl.innerText = status;
             if (thumbEl && thumbUrl && !thumbEl.src.startsWith('http')) thumbEl.src = thumbUrl;
 
             if (progress >= 100) {
+                window.isUploading = false;
                 setTimeout(() => {
-                    if (widget) {
-                        widget.style.opacity = '0';
-                        widget.style.transform = 'translateY(-10px)';
-                        setTimeout(() => widget.remove(), 500);
+                    const w = document.getElementById(`upload-widget-${id}`);
+                    if (w) {
+                        w.style.opacity = '0';
+                        w.style.transform = 'translateY(-10px) scale(0.95)';
+                        setTimeout(() => w.remove(), 500);
                     }
                 }, 3000);
             }
@@ -8593,6 +8601,8 @@
         };
 
         window.publishPost = async () => {
+            if (window.isUploading) return showToast("An upload is already in progress", !0);
+
             const tr = document.getElementById('compose-text').value.trim();
             const hasImages = window.composeImages.some(x => x !== null);
             if (!tr.trim() && !hasImages) return showToast("Empty!", !0);
@@ -8617,16 +8627,17 @@
             
             // Close modal immediately
             closeCompose();
+            window.isUploading = true;
             showToast("Posting in background...");
 
             // Start background process
             (async () => {
                 try {
-                    window.updateUploadWidget(uploadId, 10, "Compressing...", thumbUrl);
+                    window.updateUploadWidget(uploadId, 5, "Initializing...", thumbUrl);
                     
                     let mu = [];
                     const activeIndices = images.map((url, i) => url ? i : -1).filter(i => i !== -1);
-                    const totalSteps = activeIndices.length + 1;
+                    const totalSteps = activeIndices.length;
                     let completedSteps = 0;
 
                     for (const i of activeIndices) {
@@ -8634,9 +8645,11 @@
                         let blob = blobs[i];
                         
                         if (blob) {
+                            const baseProgress = 10 + (completedSteps / totalSteps) * 80;
+                            
                             // Compression for images
                             if (blob.type.startsWith('image/')) {
-                                window.updateUploadWidget(uploadId, 10 + (completedSteps / totalSteps) * 80, `Optimizing...`, thumbUrl);
+                                window.updateUploadWidget(uploadId, baseProgress, `Optimizing...`, thumbUrl);
                                 try {
                                     blob = await window.compressImage(blob, 1080, 1080, 0.75);
                                 } catch (ce) {
@@ -8647,14 +8660,12 @@
                             try { 
                                 mu.push(await uploadMedia(blob, (p) => {
                                     const stepProgress = (p / 100) * (80 / totalSteps);
-                                    const totalProgress = 10 + (completedSteps / totalSteps) * 80 + stepProgress;
-                                    window.updateUploadWidget(uploadId, totalProgress, `Uploading ${completedSteps + 1}/${activeIndices.length}...`, thumbUrl);
+                                    window.updateUploadWidget(uploadId, baseProgress + stepProgress, `Uploading ${completedSteps + 1}/${activeIndices.length}...`, thumbUrl);
                                 }));
                             } catch (e) {
                                 console.error('Upload error for file', i, e);
-                                window.updateUploadWidget(uploadId, completedSteps / totalSteps * 100, "Retrying...", thumbUrl);
+                                window.updateUploadWidget(uploadId, baseProgress, "Retrying...", thumbUrl);
                                 
-                                // Last-ditch fallback
                                 try {
                                     const fileName = `${Date.now()}_${i}_${blob.name || 'file'}`;
                                     const mr = ref(storage, `posts/${currentUser.id}/${fileName}`);
@@ -8671,6 +8682,7 @@
                         completedSteps++;
                     }
 
+                    window.updateUploadWidget(uploadId, 90, "Finalizing...", thumbUrl);
                     const mp = mu.length === 1 ? mu[0] : (mu.length > 0 ? mu : null);
 
                     // Notifications & Mentions logic (same as before)
@@ -8729,6 +8741,7 @@
                     window.updateUploadWidget(uploadId, 100, "Posted successfully!", thumbUrl);
                 } catch (e) {
                     console.error('Background publish error:', e);
+                    window.isUploading = false;
                     window.updateUploadWidget(uploadId, 0, "Upload failed", thumbUrl);
                     showToast("Post Failed", true, e.message);
                 }
