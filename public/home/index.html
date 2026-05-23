@@ -2208,13 +2208,16 @@
         }
 
         .img-placeholder {
-            background: #f6f7f8;
-            background-image: linear-gradient(to right, #f6f7f8 0%, #edeef1 20%, #f6f7f8 40%, #f6f7f8 100%);
+            background: #f3f4f6;
+            background-image: linear-gradient(to right, #f3f4f6 0%, #e5e7eb 20%, #f3f4f6 40%, #f3f4f6 100%);
             background-repeat: no-repeat;
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite linear;
             position: relative;
-            overflow: hidden
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         @keyframes shimmer {
@@ -2225,6 +2228,23 @@
             100% {
                 background-position: 150% 0
             }
+        }
+
+        .img-placeholder img {
+            opacity: 0;
+            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            background-color: white; /* Maintains white bg for transparent images */
+        }
+
+        .img-placeholder img.loaded {
+            opacity: 1;
+        }
+
+        /* Stop shimmer when loaded */
+        .img-placeholder.loaded {
+            animation: none;
+            background-image: none;
+            background-color: transparent;
         }
 
 
@@ -8552,7 +8572,7 @@
             }
         };
 
-        window.compressImage = async (file, maxWidth = 1080, maxHeight = 1080, quality = 0.75) => {
+        window.compressImage = async (file, maxWidth = 900, maxHeight = 900, quality = 0.6) => {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 const url = URL.createObjectURL(file);
@@ -8578,8 +8598,13 @@
                     canvas.width = width;
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
+                    
+                    // Fill white background for all images (handles transparency + user request)
+                    ctx.fillStyle = "#FFFFFF";
+                    ctx.fillRect(0, 0, width, height);
+                    
                     ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'high';
+                    ctx.imageSmoothingQuality = 'medium'; // Faster than 'high'
                     ctx.drawImage(img, 0, 0, width, height);
 
                     canvas.toBlob((blob) => {
@@ -8923,6 +8948,16 @@
         const pathProfileMatch = window.location.pathname.match(/^\/profile\/([^/?]+)/);
         if (pathProfileMatch) { window.pendingProfileUsername = decodeURIComponent(pathProfileMatch[1]); }
         // Global handler: replace broken avatar images with user-round icon
+        document.addEventListener('load', function (e) {
+            const el = e.target;
+            if (el.tagName === 'IMG') {
+                el.classList.add('loaded');
+                const placeholder = el.closest('.img-placeholder');
+                if (placeholder) {
+                    placeholder.classList.add('loaded');
+                }
+            }
+        }, true);
         document.addEventListener('error', function (e) {
             const el = e.target;
             if (el.tagName === 'IMG' && el.classList.contains('rounded-full')) {
