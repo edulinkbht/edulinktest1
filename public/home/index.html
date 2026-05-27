@@ -6395,9 +6395,9 @@
         window.handleNotifSearch = v => { window.notifSearchTerm = v.toLowerCase(); renderNotifications() };
         window.toggleNotifSelect = id => { window.selectedNotifs.has(id) ? window.selectedNotifs.delete(id) : window.selectedNotifs.add(id); renderNotifications() };
         window.deleteSelectedNotifs = async () => { if (!window.selectedNotifs.size) return showToast("None selected"); showAlert(`Delete ${window.selectedNotifs.size} items?`, async () => { const b = writeBatch(db); window.selectedNotifs.forEach(id => b.delete(doc(db, "notifications", id))); await b.commit(); window.notifSelectionMode = false; window.selectedNotifs.clear(); toggleNotifMenu(); showToast("Deleted") }) };
-        window.notifsLimit = 3;
-        window.toggleNotifsLimit = () => {
-            window.notifsLimit = window.notifsLimit === 3 ? 999 : 3;
+        window.sectionExpanded = { 'Today': false, 'Last week': false, 'Earlier': false };
+        window.toggleSection = (section) => {
+            window.sectionExpanded[section] = !window.sectionExpanded[section];
             renderNotifications();
         };
 
@@ -6543,40 +6543,34 @@
                 }
             };
 
-            const learnMoreBox = `
-                <div class="p-5 bg-white rounded-2xl border border-gray-100 mb-6 mt-2">
-                    <div class="flex items-start gap-4">
-                        <i data-lucide="bell" class="w-6 h-6 text-gray-900 shrink-0 mt-1"></i>
-                        <div class="flex-1">
-                            <div class="font-bold text-gray-900 text-[16px]">Notifications</div>
-                            <div class="text-[14px] text-gray-500 mt-1 leading-snug">Disable notifications from certain people. Reduce distractions. <a href="https://idembt.vercel.app/account" target="_blank" class="text-blue-600 font-medium hover:underline">Learn more</a></div>
-                        </div>
-                    </div>
-                </div>`;
+            const sectionSubtexts = {
+                'Today': 'See what your friends are up to today, join the movement with them.',
+                'Last week': 'Catch up on what you missed last week. Stay connected with your network.',
+                'Earlier': 'Review your past activities and interactions from earlier.'
+            };
 
-            let visibleCount = 0;
             ['Today', 'Last week', 'Earlier'].forEach(groupName => {
-                if (groups[groupName].length > 0) {
-                    html += `<div class="px-1 py-3"><h3 class="text-[16px] font-bold text-gray-900">${groupName}</h3></div>`;
-                    html += learnMoreBox;
+                const sectionItems = groups[groupName];
+                if (sectionItems.length > 0) {
+                    const isExpanded = window.sectionExpanded[groupName];
+                    const hasMore = sectionItems.length > 3;
+                    const toggleText = isExpanded ? 'See less' : 'See more';
                     
-                    groups[groupName].forEach(item => {
-                        if (visibleCount < window.notifsLimit) {
-                            html += renderItem(item);
-                            visibleCount++;
-                        }
+                    html += `
+                        <div class="px-1 py-4">
+                            <h3 class="text-[17px] font-bold text-gray-900 mb-1">${groupName}</h3>
+                            <div class="text-[14px] text-gray-500 leading-snug">
+                                ${sectionSubtexts[groupName]} 
+                                ${hasMore ? `<button onclick="toggleSection('${groupName}')" class="text-blue-600 font-bold hover:underline ml-1">${toggleText}</button>` : ''}
+                            </div>
+                        </div>`;
+                    
+                    const visibleItems = isExpanded ? sectionItems : sectionItems.slice(0, 3);
+                    visibleItems.forEach(item => {
+                        html += renderItem(item);
                     });
                 }
             });
-
-            if (finalItems.length > 3) {
-                const isExpanded = window.notifsLimit > 3;
-                html += `<div class="flex justify-center mt-4">
-                    <button onclick="toggleNotifsLimit()" class="text-[13px] font-bold text-blue-600 hover:bg-blue-50 px-4 py-2 rounded-full transition-colors">
-                        ${isExpanded ? 'See less' : 'See more'}
-                    </button>
-                </div>`;
-            }
 
             if (!term) {
                 html += `<div class="py-16 flex flex-col items-center justify-center text-gray-400 select-none">
