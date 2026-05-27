@@ -22,22 +22,6 @@
             --primary: #000000
         }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: var(--background);
-            color: var(--on-surface);
-            overflow: hidden;
-            overscroll-behavior-y: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-
-        h1,
-        h2,
-        h3,
-        .google-font {
-            font-family: 'Google Sans', 'Inter', sans-serif
-        }
-
         * {
             scrollbar-width: none;
             -ms-overflow-style: none
@@ -49,29 +33,24 @@
             display: none
         }
 
-        .app-panel {
-            background: var(--surface);
-            border-radius: 0;
-            border: none;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: all .3s cubic-bezier(.2, 0, 0, 1)
-        }
-
-        @media (min-width:768px) {
-            .app-panel {
-                border-radius: 20px;
-                border: 1px solid var(--outline);
-                box-shadow: 0 1px 2px rgba(0, 0, 0, .03)
-            }
-        }
-
-        .main-content {
-            flex: 1;
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--background);
+            color: var(--on-surface);
+            -webkit-tap-highlight-color: transparent;
             overflow-y: auto;
-            overscroll-behavior-y: none;
+        }
+
+        h1,
+        h2,
+        h3,
+        .google-font {
+            font-family: 'Google Sans', 'Inter', sans-serif
+        }
+
+        .section-container {
+            max-width: 600px;
+            margin: 0 auto;
             padding: 40px 20px;
         }
 
@@ -109,9 +88,6 @@
         .banner-wrapper {
             position: relative;
             margin-bottom: 60px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
         }
 
         .banner-container {
@@ -122,6 +98,11 @@
             overflow: hidden;
             cursor: pointer;
             border: 1px solid var(--outline);
+            transition: transform 0.2s ease;
+        }
+
+        .banner-container:hover {
+            transform: scale(0.995);
         }
 
         .banner-image {
@@ -142,6 +123,11 @@
             overflow: hidden;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .pfp-container:hover {
+            transform: scale(1.05);
         }
 
         .pfp-image {
@@ -152,9 +138,6 @@
 
         .form-group {
             margin-bottom: 24px;
-            max-width: 600px;
-            margin-left: auto;
-            margin-right: auto;
         }
 
         .label {
@@ -174,12 +157,17 @@
             font-size: 15px;
             outline: none;
             transition: all 0.2s ease;
+            color: var(--on-surface);
         }
 
         .input-field:focus {
-            border-color: #000;
+            border-color: var(--primary);
             background-color: #fff;
             box-shadow: 0 0 0 4px rgba(0,0,0,0.05);
+        }
+
+        .input-field::placeholder {
+            color: #9ca3af;
         }
 
         .hint-text {
@@ -191,8 +179,7 @@
 
         .save-btn {
             width: 100%;
-            max-width: 600px;
-            background-color: #000000;
+            background-color: var(--primary);
             color: #ffffff;
             font-weight: 700;
             font-size: 16px;
@@ -200,14 +187,23 @@
             border-radius: 14px;
             transition: all 0.2s ease;
             margin-top: 20px;
-            margin-left: auto;
-            margin-right: auto;
-            display: block;
+            cursor: pointer;
+            border: none;
         }
 
         .save-btn:hover {
             opacity: 0.9;
             transform: translateY(-1px);
+        }
+
+        .save-btn:active {
+            transform: translateY(0);
+        }
+
+        .save-btn:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .loading-overlay {
@@ -216,18 +212,17 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(255, 255, 255, 0.95);
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
         }
 
-        .back-btn {
+        .back-home {
             position: fixed;
             top: 24px;
             left: 24px;
-            z-index: 50;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -237,12 +232,13 @@
             text-decoration: none;
             padding: 8px 16px;
             border-radius: 99px;
+            transition: all 0.2s;
             background: white;
             border: 1px solid var(--outline);
-            transition: all 0.2s;
+            z-index: 50;
         }
 
-        .back-btn:hover {
+        .back-home:hover {
             background-color: var(--hover-bg);
             color: var(--on-surface);
         }
@@ -255,131 +251,141 @@
             background-size: 18px;
             padding-right: 48px;
         }
+
+        /* App-panel style for the form container on larger screens */
+        @media (min-width: 768px) {
+            .section-container {
+                background: var(--surface);
+                border-radius: 24px;
+                border: 1px solid var(--outline);
+                box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
+                margin-top: 80px;
+                margin-bottom: 80px;
+                padding: 60px 40px;
+            }
+        }
     </style>
 </head>
 
-<body class="h-screen flex overflow-hidden p-0 md:p-3 gap-2 bg-white">
+<body>
     <div id="loading" class="loading-overlay">
         <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-black"></div>
     </div>
 
-    <a href="index.html" class="back-btn">
+    <a href="index.html" class="back-home">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>
         Back
     </a>
 
-    <main class="app-panel flex-1 relative w-full overflow-hidden">
-        <div class="main-content no-scrollbar h-full">
-            <div class="logo-container">
-                <img src="https://i.imghippo.com/files/vgr8207c.png" class="logo-img" alt="EduLink Logo">
-            </div>
-
-            <h1 class="page-title google-font">Idem Account System</h1>
-            <p class="page-desc">Making Learning Interactive Through Fun Interaction, Share a fact join the Knowledge.</p>
-
-            <div class="banner-wrapper">
-                <div class="banner-container" onclick="document.getElementById('banner-input').click()">
-                    <img id="banner-preview" src="https://i.imghippo.com/files/vgr8207c.png" class="banner-image">
-                    <div class="pfp-container" onclick="event.stopPropagation(); document.getElementById('pfp-input').click()">
-                        <img id="pfp-preview" src="https://i.imghippo.com/files/vgr8207c.png" class="pfp-image">
-                    </div>
-                </div>
-                <input type="file" id="banner-input" class="hidden" accept="image/*">
-                <input type="file" id="pfp-input" class="hidden" accept="image/*">
-            </div>
-
-            <form id="account-form">
-                <div class="form-group">
-                    <label class="label">Display name</label>
-                    <input type="text" id="name" placeholder="Full name" class="input-field">
-                </div>
-
-                <div class="form-group">
-                    <label class="label">Username</label>
-                    <input type="text" id="username" placeholder="username" class="input-field">
-                    <p class="hint-text">Usernames can only contain lowercase letters, numbers, underscores, and periods (max 20 characters).</p>
-                </div>
-
-                <div class="form-group">
-                    <label class="label">Birthday</label>
-                    <div class="flex gap-3">
-                        <select id="dob-month" class="input-field flex-1">
-                            <option value="">Month</option>
-                            <option value="1">January</option><option value="2">February</option><option value="3">March</option>
-                            <option value="4">April</option><option value="5">May</option><option value="6">June</option>
-                            <option value="7">July</option><option value="8">August</option><option value="9">September</option>
-                            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
-                        </select>
-                        <select id="dob-day" class="input-field flex-1">
-                            <option value="">Day</option>
-                        </select>
-                        <select id="dob-year" class="input-field flex-1">
-                            <option value="">Year</option>
-                        </select>
-                    </div>
-                    <p class="hint-text"><b>Privacy Note:</b> If set to private, it will only show your birth date and month on your profile, hiding your birth year and age entirely.</p>
-                </div>
-
-                <div class="form-group">
-                    <label class="label">Location</label>
-                    <input type="text" id="location" placeholder="Location" class="input-field">
-                </div>
-
-                <div class="form-group">
-                    <label class="label">Email address</label>
-                    <input type="email" id="email" placeholder="Email" class="input-field" disabled>
-                    <p id="login-method" class="hint-text">Logged in with ...</p>
-                </div>
-
-                <div class="form-group">
-                    <label class="label">Bio</label>
-                    <textarea id="bio" placeholder="Tell us about yourself" class="input-field h-32 resize-none"></textarea>
-                </div>
-
-                <div class="form-group">
-                    <label class="label">Biological Gender</label>
-                    <select id="gender" class="input-field">
-                        <option value="">Select your gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="label">Sexual Orientation</label>
-                    <select id="orientation" class="input-field">
-                        <option value="">Select orientation</option>
-                        <option value="Straight">Straight</option>
-                        <option value="Gay">Gay</option>
-                        <option value="Lesbian">Lesbian</option>
-                        <option value="Bisexual">Bisexual</option>
-                        <option value="Other">Other</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                    </select>
-                    <p class="hint-text">Private Data: Your sexual orientation is kept strictly private and is safely used only.</p>
-                </div>
-
-                <div class="form-group">
-                    <label class="label">Account Privacy</label>
-                    <div class="flex gap-6 mt-2">
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="radio" name="privacy" value="public" checked class="w-5 h-5 accent-black">
-                            <span class="text-[15px] font-medium text-gray-700 group-hover:text-black">Public</span>
-                        </label>
-                        <label class="flex items-center gap-3 cursor-pointer group">
-                            <input type="radio" name="privacy" value="private" class="w-5 h-5 accent-black">
-                            <span class="text-[15px] font-medium text-gray-700 group-hover:text-black">Private</span>
-                        </label>
-                    </div>
-                </div>
-
-                <button type="submit" id="save-btn" class="save-btn">Save Changes</button>
-            </form>
-            <div class="h-20"></div> <!-- Padding for bottom -->
+    <div class="section-container">
+        <div class="logo-container">
+            <img src="https://i.imghippo.com/files/vgr8207c.png" class="logo-img" alt="EduLink Logo">
         </div>
-    </main>
+
+        <h1 class="page-title google-font">Create your account</h1>
+        <p class="page-desc">Making Learning Interactive Through Fun Interaction, Share a fact join the Knowledge.</p>
+
+        <div class="banner-wrapper">
+            <div class="banner-container" onclick="document.getElementById('banner-input').click()">
+                <img id="banner-preview" src="https://i.imghippo.com/files/vgr8207c.png" class="banner-image">
+                <div class="pfp-container" onclick="event.stopPropagation(); document.getElementById('pfp-input').click()">
+                    <img id="pfp-preview" src="https://i.imghippo.com/files/vgr8207c.png" class="pfp-image">
+                </div>
+            </div>
+            <input type="file" id="banner-input" class="hidden" accept="image/*">
+            <input type="file" id="pfp-input" class="hidden" accept="image/*">
+        </div>
+
+        <form id="account-form">
+            <div class="form-group">
+                <label class="label">Display name</label>
+                <input type="text" id="name" placeholder="Full name" class="input-field">
+            </div>
+
+            <div class="form-group">
+                <label class="label">Username</label>
+                <input type="text" id="username" placeholder="username" class="input-field">
+                <p class="hint-text">Usernames can only contain lowercase letters, numbers, underscores, and periods (max 20 characters).</p>
+            </div>
+
+            <div class="form-group">
+                <label class="label">Birthday</label>
+                <div class="flex gap-3">
+                    <select id="dob-month" class="input-field flex-1">
+                        <option value="">Month</option>
+                        <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+                        <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+                        <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+                        <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+                    </select>
+                    <select id="dob-day" class="input-field flex-1">
+                        <option value="">Day</option>
+                    </select>
+                    <select id="dob-year" class="input-field flex-1">
+                        <option value="">Year</option>
+                    </select>
+                </div>
+                <p class="hint-text"><b>Privacy Note:</b> If set to private, it will only show your birth date and month on your profile, hiding your birth year and age entirely.</p>
+            </div>
+
+            <div class="form-group">
+                <label class="label">Location</label>
+                <input type="text" id="location" placeholder="Location" class="input-field">
+            </div>
+
+            <div class="form-group">
+                <label class="label">Email address</label>
+                <input type="email" id="email" placeholder="Email" class="input-field" disabled title="Email cannot be changed">
+                <p id="login-method" class="hint-text">Logged in with ...</p>
+            </div>
+
+            <div class="form-group">
+                <label class="label">Bio</label>
+                <textarea id="bio" placeholder="Tell us about yourself" class="input-field h-32 resize-none"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="label">Biological Gender</label>
+                <select id="gender" class="input-field">
+                    <option value="">Select your gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="label">Sexual Orientation</label>
+                <select id="orientation" class="input-field">
+                    <option value="">Select orientation</option>
+                    <option value="Straight">Straight</option>
+                    <option value="Gay">Gay</option>
+                    <option value="Lesbian">Lesbian</option>
+                    <option value="Bisexual">Bisexual</option>
+                    <option value="Other">Other</option>
+                    <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+                <p class="hint-text">Private Data: Your sexual orientation is kept strictly private and is safely used only.</p>
+            </div>
+
+            <div class="form-group">
+                <label class="label">Account Privacy</label>
+                <div class="flex gap-6 mt-2">
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="radio" name="privacy" value="public" checked class="w-5 h-5 accent-black">
+                        <span class="text-[15px] font-medium text-gray-700 group-hover:text-black">Public</span>
+                    </label>
+                    <label class="flex items-center gap-3 cursor-pointer group">
+                        <input type="radio" name="privacy" value="private" class="w-5 h-5 accent-black">
+                        <span class="text-[15px] font-medium text-gray-700 group-hover:text-black">Private</span>
+                    </label>
+                </div>
+            </div>
+
+            <button type="submit" id="save-btn" class="save-btn">Save Changes</button>
+        </form>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
