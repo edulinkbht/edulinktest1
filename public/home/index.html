@@ -4144,7 +4144,7 @@
                             <i data-lucide="bell" class="w-6 h-6 text-gray-900 shrink-0"></i>
                             <div class="flex flex-col justify-center">
                                 <div class="font-bold text-gray-900 text-[15px]">Notifications</div>
-                                <div class="text-[13px] text-gray-500 mt-0.5 leading-snug">Disable notifications from certain people. Reduce distractions. <a href="https://idembt.vercel.app/account" target="_blank" class="text-blue-600 font-medium hover:underline" onclick="event.stopPropagation()">Learn more</a></div>
+                                <div class="text-[13px] text-gray-500 mt-0.5 leading-snug">Disable notifications from ceratin people. Reduce distractions. <a href="https://idembt.vercel.app/account" target="_blank" class="text-blue-600 font-medium hover:underline" onclick="event.stopPropagation()">Learn more</a></div>
                             </div>
                         </div>
                         <div class="p-4 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors" onclick="switchView('archived')">
@@ -4175,7 +4175,7 @@
                         <button onclick="switchView('settings')" class="p-0 hover:opacity-70 transition-opacity">
                             <i data-lucide="chevron-left" class="w-6 h-6 text-gray-900"></i>
                         </button>
-                        <h2 class="text-[16px] font-bold text-gray-900">Notification Setting</h2>
+                        <h2 class="text-[17px] font-bold text-gray-900">Notification Setting</h2>
                     </div>
 
                     <div class="p-5 bg-white rounded-2xl border border-gray-100 mb-8">
@@ -4183,7 +4183,7 @@
                             <i data-lucide="bell" class="w-6 h-6 text-gray-900 shrink-0 mt-1"></i>
                             <div class="flex-1">
                                 <div class="font-bold text-gray-900 text-[16px]">Notifications</div>
-                                <div class="text-[14px] text-gray-500 mt-1 leading-snug">Disable notifications from certain people. Reduce distractions. <a href="https://idembt.vercel.app/account" target="_blank" class="text-blue-600 font-medium hover:underline">Learn more</a></div>
+                                <div class="text-[14px] text-gray-500 mt-1 leading-snug">Disable notifications from ceratin people. Reduce distractions. <a href="https://idembt.vercel.app/account" target="_blank" class="text-blue-600 font-medium hover:underline">Learn more</a></div>
                             </div>
                         </div>
                     </div>
@@ -6395,12 +6395,6 @@
         window.handleNotifSearch = v => { window.notifSearchTerm = v.toLowerCase(); renderNotifications() };
         window.toggleNotifSelect = id => { window.selectedNotifs.has(id) ? window.selectedNotifs.delete(id) : window.selectedNotifs.add(id); renderNotifications() };
         window.deleteSelectedNotifs = async () => { if (!window.selectedNotifs.size) return showToast("None selected"); showAlert(`Delete ${window.selectedNotifs.size} items?`, async () => { const b = writeBatch(db); window.selectedNotifs.forEach(id => b.delete(doc(db, "notifications", id))); await b.commit(); window.notifSelectionMode = false; window.selectedNotifs.clear(); toggleNotifMenu(); showToast("Deleted") }) };
-        window.sectionExpanded = { 'Today': false, 'Last week': false, 'Earlier': false };
-        window.toggleSection = (section) => {
-            window.sectionExpanded[section] = !window.sectionExpanded[section];
-            renderNotifications();
-        };
-
         window.renderNotifications = () => {
             const c = document.getElementById('notification-list'), term = window.notifSearchTerm;
             let fl = notifications.filter(n => {
@@ -6408,9 +6402,8 @@
                 const matchesSearch = (!term || n.content.toLowerCase().includes(term) || (s.name || '').toLowerCase().includes(term) || (s.username || '').toLowerCase().includes(term));
                 return matchesSearch;
             });
-            if (!fl.length) return c.innerHTML = '<div class="text-center text-xs text-gray-400 py-10">No notifications</div>';
-
-            const likeGroups = new Map(), commentGroups = new Map(), otherItems = [];
+            if (!fl.length) return c.innerHTML = '<div class="text-center text-xs text-gray-400 py-4">No notifications</div>';
+            const likeGroups = new Map(), commentGroups = new Map(), finalItems = [];
             fl.forEach(n => {
                 if ((n.type === 'like' || n.type === 'comment_like') && n.postId) {
                     if (!likeGroups.has(n.postId)) likeGroups.set(n.postId, { notifs: [], latestTs: 0 });
@@ -6425,164 +6418,166 @@
                     const ts = n.timestamp?.toDate ? n.timestamp.toDate().getTime() : new Date(n.timestamp || 0).getTime();
                     if (ts > g.latestTs) g.latestTs = ts
                 } else {
-                    otherItems.push({ type: 'single', data: n, ts: n.timestamp?.toDate ? n.timestamp.toDate().getTime() : new Date(n.timestamp || 0).getTime() })
+                    finalItems.push({ type: 'single', data: n, ts: n.timestamp?.toDate ? n.timestamp.toDate().getTime() : new Date(n.timestamp || 0).getTime() })
                 }
             });
-
-            const finalItems = [...otherItems];
             likeGroups.forEach((g, pid) => { finalItems.push({ type: 'group_like', data: g.notifs, postId: pid, ts: g.latestTs }) });
             commentGroups.forEach((g, pid) => { finalItems.push({ type: 'group_comment', data: g.notifs, postId: pid, ts: g.latestTs }) });
             finalItems.sort((a, b) => b.ts - a.ts);
-
-            const getTimeGroup = (ts) => {
-                const d = new Date(ts), now = new Date();
-                const diff = now - d;
-                if (diff < 86400000) return 'Today';
-                if (diff < 604800000) return 'Last week';
-                return 'Earlier';
-            };
-
-            const groups = { 'Today': [], 'Last week': [], 'Earlier': [] };
-            finalItems.forEach(item => {
-                const groupName = getTimeGroup(item.ts);
-                groups[groupName].push(item);
-            });
-
-            let html = '';
-            const renderItem = (item) => {
+            const html = finalItems.map(item => {
                 if (item.type === 'group_like' || item.type === 'group_comment') {
                     const notifs = item.data, pid = item.postId, p = posts.find(x => x.id === pid);
                     const postImg = p ? (Array.isArray(p.media) ? p.media[0] : p.media) : null;
                     const isVid = postImg && (postImg.includes('video') || postImg.endsWith('.mp4'));
                     const showImg = postImg && !isVid ? postImg : null;
-                    
-                    const sortedNotifs = notifs.sort((a, b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0));
+                    const sortedNotifs = notifs.sort((a, b) => {
+                        const ta = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp || 0).getTime();
+                        const tb = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp || 0).getTime();
+                        return tb - ta
+                    });
+                    const uniqueIds = new Set();
                     const senders = [];
-                    const seenIds = new Set();
                     sortedNotifs.forEach(n => {
-                        if (!seenIds.has(n.senderId)) {
-                            seenIds.add(n.senderId);
+                        if (!uniqueIds.has(n.senderId)) {
+                            uniqueIds.add(n.senderId);
                             const u = users.find(user => user.id === n.senderId);
-                            if (u) senders.push(u);
+                            if (u) senders.push(u)
                         }
                     });
-
-                    if (senders.length === 0) return '';
-                    
-                    const totalLikesOnPost = p?.likes?.length || senders.length;
-                    const othersCount = Math.max(0, totalLikesOnPost - senders.length);
-
-                    let avatars = '', showAvatarCount = Math.min(senders.length, 2);
-                    for (let i = 0; i < showAvatarCount; i++) {
-                        avatars += `<div class="rounded-full w-8 h-8 border-2 border-white object-cover ${i > 0 ? '-ml-3' : ''} z-${20 - i * 10} bg-gray-100">
-                            <img src="${senders[i].avatar}" class="w-full h-full rounded-full object-cover">
-                        </div>`;
-                    }
-
+                    const count = senders.length;
+                    if (count === 0) return '';
+                    let avatars = '', showCount = Math.min(count, 2);
+                    for (let i = 0; i < showCount; i++) avatars += `<div class="rounded-full w-10 h-10 border-2 border-white object-cover ${i > 0 ? '-ml-4' : ''} z-${20 - i * 10} bg-gray-100"><img src="${senders[i].avatar}" class="w-full h-full rounded-full object-cover" onclick="event.stopPropagation();openProfilePreview('${senders[i].id}')" onload="this.classList.add('loaded')"></div>`;
+                    let text = '';
                     const isRepostLike = notifs.some(n => n.type === 'repost_like');
                     const isCommentLike = notifs.some(n => n.type === 'comment_like');
                     const actionText = item.type === 'group_like' ? (isRepostLike ? 'liked the post you reposted' : (isCommentLike ? 'liked your comment' : 'liked your post')) : 'commented on your post';
-                    
-                    let text = '';
-                    if (senders.length === 1) {
-                        text = `<span class="font-bold">@${senders[0].username}</span> ${othersCount > 0 ? `and ${othersCount} others` : ''} ${actionText}.`;
-                    } else if (senders.length === 2) {
-                        text = `<span class="font-bold">@${senders[0].username}</span>, <span class="font-bold">@${senders[1].username}</span> ${othersCount > 0 ? `and ${othersCount} others` : ''} ${actionText}.`;
-                    } else {
-                        text = `<span class="font-bold">@${senders[0].username}</span>, <span class="font-bold">@${senders[1].username}</span> and ${senders.length - 2 + othersCount} others ${actionText}.`;
-                    }
-
-                    return `<div class="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors cursor-pointer rounded-xl mb-1" onclick="openPostView('${pid}',true)">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <div class="relative flex items-center shrink-0">
-                                ${avatars}
-                                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${item.type === 'group_like' ? 'bg-red-500' : 'bg-blue-500'} flex items-center justify-center border border-white z-30">
-                                    <i data-lucide="${item.type === 'group_like' ? 'heart' : 'message-circle'}" class="w-2 h-2 text-white fill-white"></i>
+                    const iconClass = item.type === 'group_like' ? 'bg-red-500' : 'bg-blue-500';
+                    const iconName = item.type === 'group_like' ? 'heart' : 'message-circle';
+                    if (count === 1) text = `<span class="font-bold text-gray-900 inline-flex items-center">@${senders[0].username || 'user'}${senders[0].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span> ${actionText}.`;
+                    else if (count === 2) text = `<span class="font-bold text-gray-900 inline-flex items-center">@${senders[0].username || 'user'}${senders[0].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span> and <span class="font-bold text-gray-900 inline-flex items-center">@${senders[1].username || 'user'}${senders[1].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span> ${actionText}.`;
+                    else text = `<span class="font-bold text-gray-900 inline-flex items-center">@${senders[0].username || 'user'}${senders[0].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span>, <span class="font-bold text-gray-900 inline-flex items-center">@${senders[1].username || 'user'}${senders[1].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span> and ${count - 2} others ${actionText}.`;
+                    return `<div class="w-full p-4 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="openPostView('${pid}',true)">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-start gap-2.5">
+                                <div class="relative flex items-center shrink-0">
+                                    ${avatars}
+                                    <div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full ${iconClass} flex items-center justify-center border-2 border-white shadow-sm z-30">
+                                        <i data-lucide="${iconName}" class="w-3 h-3 text-white fill-white"></i>
+                                    </div>
+                                </div>
+                                <div class="pt-0.5">
+                                    <div class="text-[12px] text-gray-400">${formatDate(item.ts)}</div>
                                 </div>
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="text-[13.5px] text-gray-900 leading-tight">
-                                    ${text} <span class="text-gray-400 text-[12px] ml-1">${formatDate(item.ts)}</span>
-                                </div>
-                            </div>
+                            ${showImg ? `<div class="img-placeholder w-10 h-10 rounded-md shrink-0 border border-gray-200"><img src="${showImg}" class="w-full h-full rounded-md object-cover" onload="this.classList.add('loaded')"></div>` : ''}
                         </div>
-                        ${showImg ? `<img src="${showImg}" class="w-10 h-10 rounded-lg object-cover ml-3 border border-gray-100">` : ''}
-                    </div>`;
+                        <div class="text-[14.5px] leading-snug text-gray-700">${text}</div>
+                    </div>`
                 } else {
-                    const n = item.data, s = users.find(u => u.id === n.senderId) || { name: 'Admin', avatar: '', username: 'user', isOfficial: !1 };
-                    const map = {
+                    const n = item.data, s = users.find(u => u.id === n.senderId) || { name: 'Admin', avatar: '', username: 'user', isOfficial: !1 }, map = {
                         like: { i: 'heart', c: 'bg-red-500', fill: 'fill-white' },
                         comment_like: { i: 'heart', c: 'bg-red-500', fill: 'fill-white' },
+                        repost_like: { i: 'heart', c: 'bg-red-500', fill: 'fill-white' },
                         comment: { i: 'message-circle', c: 'bg-blue-500', fill: 'fill-white' },
+                        repost: { i: 'repeat', c: 'bg-green-500', fill: '' },
+                        reply: { i: 'corner-down-right', c: 'bg-teal-500', fill: '' },
                         follow: { i: 'user-plus', c: 'bg-indigo-500', fill: '' },
+                        official: { i: 'badge-check', c: 'bg-blue-600', fill: '' },
+                        system: { i: 'badge-check', c: 'bg-blue-600', fill: '' },
                         follow_request: { i: 'lock', c: 'bg-orange-500', fill: '' },
+                        collab_request: { i: 'users', c: 'bg-pink-500', fill: '' },
+                        mention: { i: 'at-sign', c: 'bg-green-500', fill: '' },
                         birthday: { i: 'gift', c: 'bg-purple-500', fill: '' },
+                        share: { i: 'share-2', c: 'bg-indigo-600', fill: '' },
                         default: { i: 'bell', c: 'bg-gray-500', fill: '' }
-                    }, cfg = map[n.type] || map.default;
+                    }, cfg = map[n.type] || map.default, p = n.postId ? posts.find(x => x.id === n.postId) : null, postImg = p ? (Array.isArray(p.media) ? p.media[0] : p.media) : null, isVid = postImg && (postImg.includes('video') || postImg.endsWith('.mp4')), showImg = postImg && !isVid ? postImg : null, click = window.notifSelectionMode ? '' : (['like', 'repost_like', 'comment', 'reply', 'mention', 'share'].includes(n.type) && n.postId ? `openPostView('${n.postId}',true)` : `showProfile('${s.id}')`);
+                    const urlMatch = n.content.match(/(https?:\/\/[^\s]+)/), previewId = `preview-notif-${n.id}`, previewHtml = urlMatch ? `<div id="${previewId}"></div>` : '';
+                    if (urlMatch) setTimeout(() => window.renderLinkPreview(urlMatch[0], previewId), 100);
+                    let act = '';
+                    if (n.type === 'follow_request') act = `<div class="flex gap-2 mt-2"><button onclick="acceptFollow('${n.id}','${s.id}')" class="btn-xs-blue">Accept</button><button onclick="deleteNotification('${n.id}')" class="btn-xs-gray">Delete</button></div>`;
+                    if (n.type === 'collab_request') act = `<div class="flex gap-2 mt-2"><button onclick="acceptCollab('${n.id}','${n.postId}')" class="btn-xs-blue">Accept</button><button onclick="declineCollab('${n.id}','${n.postId}')" class="btn-xs-gray">Decline</button></div>`;
                     
-                    const p = n.postId ? posts.find(x => x.id === n.postId) : null;
-                    const postImg = p ? (Array.isArray(p.media) ? p.media[0] : p.media) : null;
-                    const showImg = postImg && !(postImg.includes('video') || postImg.endsWith('.mp4')) ? postImg : null;
-
-                    return `<div class="flex items-center justify-between p-3 hover:bg-gray-50 transition-colors cursor-pointer rounded-xl mb-1" onclick="${n.postId ? `openPostView('${n.postId}',true)` : `showProfile('${s.id}')`}">
-                        <div class="flex items-center gap-3 flex-1 min-w-0">
-                            <div class="relative shrink-0">
-                                <img src="${s.avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-100">
-                                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full ${cfg.c} flex items-center justify-center border border-white">
-                                    <i data-lucide="${cfg.i}" class="w-2 h-2 text-white ${cfg.fill || ''}"></i>
+                    let rightHtml = '';
+                    if (n.type === 'birthday') {
+                        const gender = (s.gender || 'Male').toLowerCase();
+                        const pronoun = gender === 'female' ? 'her' : 'him';
+                        const wished = n.wished === true;
+                        const thanked = n.thanked === true;
+                        
+                        const thankedHtml = thanked ? `
+                            <div class="relative mr-2">
+                                <div class="w-7 h-7 rounded-full border border-gray-100 shadow-sm bg-gray-100 overflow-hidden">
+                                    <img src="${s.avatar}" class="w-full h-full object-cover">
+                                </div>
+                                <div class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-red-500 border border-white flex items-center justify-center shadow-sm">
+                                    <i data-lucide="heart" class="w-2 h-2 text-white fill-white"></i>
+                                </div>
+                            </div>` : '';
+                            
+                        rightHtml = `<div class="flex items-center">${thankedHtml}<button onclick="event.stopPropagation(); wishBirthday('${s.id}', '${n.id}')" class="js-follow-btn-${s.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[95px] ${wished ? 'opacity-50 pointer-events-none' : ''}" ${wished ? 'disabled' : ''}>${wished ? 'Wished' : `Wish ${pronoun}`}</button></div>`;
+                    } else if (n.type === 'system' && n.content.includes('Happy Birthday! 🎂🎉')) {
+                        const thanked = n.thanked === true;
+                        rightHtml = `<button onclick="event.stopPropagation(); thankForBirthday('${s.id}', '${n.id}')" class="shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 flex items-center gap-1.5 ${thanked ? 'opacity-50 pointer-events-none' : ''}" ${thanked ? 'disabled' : ''}>
+                            ${thanked ? 'Thanked ❤️' : 'Thank you'}
+                        </button>`;
+                    } else if (showImg) {
+                        rightHtml = `<div class="img-placeholder w-10 h-10 rounded-md shrink-0 border border-gray-200"><img src="${showImg}" class="w-full h-full rounded-md object-cover" onclick="openPostView('${n.postId}',true)" onload="this.classList.add('loaded')"></div>`;
+                    } else if (n.type === 'follow' && !currentUser.following.includes(s.id)) {
+                        rightHtml = `<button onclick="event.stopPropagation(); toggleFollow('${s.id}')" class="js-follow-btn-${s.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[85px]">Follow back</button>`;
+                    }
+                    const chk = window.notifSelectionMode ? `<div class="pt-1 mr-3"><input type="checkbox" ${window.selectedNotifs.has(n.id) ? 'checked' : ''} onchange="toggleNotifSelect('${n.id}')" class="w-4 h-4 accent-blue-600 cursor-pointer rounded"></div>` : '';
+                    return `<div class="w-full p-4 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="${click}">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-start gap-2.5">
+                                ${chk}
+                                <div class="relative cursor-pointer shrink-0" onclick="${window.notifSelectionMode ? '' : `event.stopPropagation();openProfilePreview('${s.id}')`}">
+                                    <div class="w-11 h-11 rounded-full border border-gray-100 bg-gray-100 shadow-sm">
+                                        <img src="${s.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
+                                    </div>
+                                    <div class="absolute -bottom-0.5 -right-0.5 w-5 h-5 rounded-full ${cfg.c} flex items-center justify-center border-2 border-white shadow-sm">
+                                        <i data-lucide="${cfg.i}" class="w-3 h-3 text-white ${cfg.fill || ''}"></i>
+                                    </div>
+                                </div>
+                                <div class="pt-0.5">
+                                    <div class="flex items-center gap-1">
+                                        <span class="font-bold text-gray-900 hover:underline text-[15.5px]">@${s.username || 'user'}</span>
+                                        ${s.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge !m-0"></i>' : ''}
+                                    </div>
+                                    <div class="text-[12px] text-gray-400 mt-0.5">${formatDate(item.ts)}</div>
                                 </div>
                             </div>
-                            <div class="flex-1 min-w-0">
-                                <div class="text-[13.5px] text-gray-900 leading-tight">
-                                    <span class="font-bold">@${s.username}</span> ${n.content} <span class="text-gray-400 text-[12px] ml-1">${formatDate(item.ts)}</span>
-                                </div>
-                            </div>
+                            ${rightHtml}
                         </div>
-                        ${showImg ? `<img src="${showImg}" class="w-10 h-10 rounded-lg object-cover ml-3 border border-gray-100">` : ''}
-                    </div>`;
-                }
-            };
-
-            const sectionSubtexts = {
-                'Today': 'See what your friends are up to today, join the movement with them.',
-                'Last week': 'Catch up on what you missed last week. Stay connected with your network.',
-                'Earlier': 'Review your past activities and interactions from earlier.'
-            };
-
-            ['Today', 'Last week', 'Earlier'].forEach(groupName => {
-                const sectionItems = groups[groupName];
-                if (sectionItems.length > 0) {
-                    const isExpanded = window.sectionExpanded[groupName];
-                    const hasMore = sectionItems.length > 3;
-                    const toggleText = isExpanded ? 'See less' : 'See more';
-                    
-                    html += `
-                        <div class="px-1 py-4">
-                            <h3 class="text-[17px] font-bold text-gray-900 mb-1">${groupName}</h3>
-                            <div class="text-[14px] text-gray-500 leading-snug">
-                                ${sectionSubtexts[groupName]} 
-                                ${hasMore ? `<button onclick="toggleSection('${groupName}')" class="text-blue-600 font-bold hover:underline ml-1">${toggleText}</button>` : ''}
+                        <div class="pl-0 md:pl-0">
+                            <div class="text-[14.5px] leading-relaxed text-gray-700 mb-2">
+                                ${n.content.replace(urlMatch ? urlMatch[0] : '', '').trim()}
+                                ${urlMatch ? `<div class="mt-1.5"><a href="${urlMatch[0]}" target="_blank" class="text-black hover:underline font-medium text-[14.5px]" onclick="event.stopPropagation(); event.preventDefault(); confirmAndOpenLink('${urlMatch[0]}')">${urlMatch[0]}</a></div>` : ''}
                             </div>
-                        </div>`;
-                    
-                    const visibleItems = isExpanded ? sectionItems : sectionItems.slice(0, 3);
-                    visibleItems.forEach(item => {
-                        html += renderItem(item);
-                    });
+                            ${previewHtml}
+                            ${act}
+                        </div>
+                    </div>`
                 }
-            });
+            }).join('');
 
-            if (!term) {
-                html += `<div class="py-16 flex flex-col items-center justify-center text-gray-400 select-none">
-                    <div class="w-12 h-12 rounded-full border border-gray-100 flex items-center justify-center mb-3 bg-gray-50/50">
-                        <i data-lucide="bell-ring" class="w-6 h-6 text-gray-300"></i>
+            if (finalItems.length > 0 && !term) {
+                const footer = `<div class="py-16 flex flex-col items-center justify-center text-gray-400 select-none">
+                    <div class="w-14 h-14 rounded-full border border-gray-100 flex items-center justify-center mb-4 bg-gray-50/50 shadow-sm">
+                        <i data-lucide="bell-ring" class="w-7 h-7 text-gray-400"></i>
                     </div>
-                    <div class="text-[12px] font-bold text-gray-400">You're all caught up!</div>
+                    <div class="text-[13px] font-bold text-gray-500">Nothing more</div>
+                    <div class="text-[11px] text-gray-400 mt-1">You're all caught up!</div>
+                    <div class="h-20"></div>
                 </div>`;
+                if (c.innerHTML !== html + footer) {
+                    c.innerHTML = html + footer;
+                    refreshIcons();
+                }
+            } else if (c.innerHTML !== html) {
+                c.innerHTML = html;
+                refreshIcons();
             }
-
-            c.innerHTML = html;
-            refreshIcons();
         };
 
         window.openProfilePreview = (uid) => { const u = users.find(x => x.id === uid); if (!u) return; manageHistory('profile-preview-overlay'); 
