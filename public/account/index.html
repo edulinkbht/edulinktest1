@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idem Account System</title>
+    <style>
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-primary: #1a1a1a;
+            --text-secondary: #718096;
+            --input-border: #e2e8f0;
+            --input-focus: #4a5568;
+            --btn-primary: #1a1a1a;
+            --btn-secondary: #edf2f7;
+            --accent-green: #48bb78;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 32px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        }
+
+        /* View Switching Logic States */
+        .hidden { display: none !important; }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            text-align: left;
+        }
+
+        /* Banner & Profile Picture Setup */
+        .profile-media-group {
+            position: relative;
+            margin-bottom: 32px;
+        }
+
+        .banner-container {
+            width: 100%;
+            height: 160px;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #cbd5e1;
+        }
+
+        .banner-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .pfp-container {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 4px solid var(--card-bg);
+            overflow: hidden;
+            position: absolute;
+            bottom: -30px;
+            left: 24px;
+            background: #e2e8f0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .pfp-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* Input Elements */
+        .form-group {
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 1px solid var(--input-border);
+            border-radius: 14px;
+            font-size: 15px;
+            color: var(--text-primary);
+            outline: none;
+            background: #ffffff;
+            transition: border-color 0.2s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--input-focus);
+        }
+
+        textarea {
+            resize: vertical;
+            height: 90px;
+        }
+
+        .hint-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+            line-height: 1.4;
+        }
+
+        /* Row Layouts */
+        .form-row {
+            display: flex;
+            gap: 12px;
+        }
+        .form-row .form-group { flex: 1; }
+
+        /* Provider Badges */
+        .provider-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: var(--btn-secondary);
+            margin-bottom: 20px;
+        }
+
+        /* Buttons styling */
+        .btn {
+            padding: 14px 28px;
+            font-size: 15px;
+            font-weight: 600;
+            border-radius: 14px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn-primary { background: var(--btn-primary); color: #fff; }
+        .btn-secondary { background: var(--btn-secondary); color: var(--text-primary); margin-top: 10px; }
+
+        /* Toggle Wrapper for Password fields */
+        .password-container {
+            position: relative;
+        }
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div id="authView">
+            <h1>Idem Account System</h1>
+            <p style="color: var(--text-secondary); margin-bottom: 24px;">Please sign in to manage your decentralized profile settings.</p>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="authEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="authPassword" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Sign In / Sign Up with Email</button>
+                <button type="button" id="googleBtn" class="btn btn-secondary">Continue with Google</button>
+            </form>
+        </div>
+
+        <div id="profileView" class="hidden">
+            <h1>Idem Account System</h1>
+
+            <div id="providerStatus" class="provider-badge">Loading authentication payload...</div>
+
+            <div class="profile-media-group">
+                <div class="banner-container">
+                    <img id="bannerImg" src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?q=80&w=1000" alt="Banner">
+                </div>
+                <div class="pfp-container">
+                    <img id="pfpImg" src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?q=80&w=500" alt="Profile Picture">
+                </div>
+            </div>
+
+            <form id="profileForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="displayName">Display name</label>
+                        <input type="text" id="displayName" placeholder="Full name">
+                    </div>
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="username" maxlength="20">
+                        <div class="hint-text">Usernames can only contain lowercase letters, numbers, underscores, and periods (max 20 characters).</div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="bio">Bio</label>
+                    <textarea id="bio" placeholder="Tell us about yourself..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" id="profileEmail" disabled style="background-color: var(--btn-secondary); cursor: not-allowed;">
+                    </div>
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="location" placeholder="City, Country">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Password</label>
+                    <div class="password-container">
+                        <input type="password" id="profilePassword" value="••••••••" placeholder="New secure key passphrase">
+                        <button type="button" class="password-toggle" id="passToggle">Show</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Birthday</label>
+                    <div class="form-row">
+                        <select id="dobMonth">
+                            <option value="">Month</option>
+                            <option value="01">January</option><option value="02">February</option><option value="03">March</option>
+                            <option value="04">April</option><option value="05">May</option><option value="06">June</option>
+                            <option value="07">July</option><option value="08">August</option><option value="09">September</option>
+                            <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+                        </select>
+                        <select id="dobDay">
+                            <option value="">Day</option>
+                            </select>
+                        <select id="dobYear">
+                            <option value="">Year</option>
+                            </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="gender">Biological Gender</label>
+                        <select id="gender">
+                            <option value="">Select Sex</option>
+                            <option value="Female">Female</option>
+                            <option value="Male">Male</option>
+                            <option value="Intersex">Intersex</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="orientation">Sexual Orientation</label>
+                        <select id="orientation">
+                            <option value="">Select Option</option>
+                            <option value="Straight">Straight</option>
+                            <option value="Gay">Gay</option>
+                            <option value="Lesbian">Lesbian</option>
+                            <option value="Bisexual">Bisexual</option>
+                            <option value="Queer">Queer</option>
+                            <option value="Secret">Prefer not to say</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dobPrivacy">Birthdate Visibility</label>
+                        <select id="dobPrivacy">
+                            <option value="public">Public</option>
+                            <option value="private">Private</option>
+                        </select>
+                        <div class="hint-text"><b>Privacy Note:</b> If set to private, it will only show your birth date and month on your profile, hiding your birth year and age entirely.</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="profilePrivacy">Account Privacy Status</label>
+                        <select id="profilePrivacy">
+                            <option value="public">Public Network Profile</option>
+                            <option value="private">Private Vaulted Profile</option>
+                        </select>
+                        <div class="hint-text">Governs cross-platform search engine discovery indexes.</div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Save Profile Architecture</button>
+                <button type="button" id="logoutBtn" class="btn btn-secondary">Sign Out</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getAuth, 
+            onAuthStateChanged, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword,
+            signInWithPopup, 
+            GoogleAuthProvider,
+            signOut,
+            updatePassword
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            getFirestore, 
+            doc, 
+            getDoc, 
+            setDoc 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Provided Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
+            authDomain: "edulinki.firebaseapp.com",
+            projectId: "edulinki",
+            storageBucket: "edulinki.firebasestorage.app",
+            messagingSenderId: "248886466474",
+            appId: "1:248886466474:web:160043201a6b28bafbbdd3",
+            measurementId: "G-MQBH12VL7N"
+        };
+
+        // Instantiations
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const googleProvider = new GoogleAuthProvider();
+
+        // UI Element Selectors
+        const authView = document.getElementById('authView');
+        const profileView = document.getElementById('profileView');
+        const loginForm = document.getElementById('loginForm');
+        const googleBtn = document.getElementById('googleBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const profileForm = document.getElementById('profileForm');
+        const providerStatus = document.getElementById('providerStatus');
+        const passToggle = document.getElementById('passToggle');
+        const profilePassword = document.getElementById('profilePassword');
+
+        // Dynamic Generation of DOB Dropdowns
+        const daySelect = document.getElementById('dobDay');
+        for (let i = 1; i <= 31; i++) {
+            let opt = document.createElement('option');
+            opt.value = i < 10 ? '0' + i : i.toString();
+            opt.textContent = i;
+            daySelect.appendChild(opt);
+        }
+        const yearSelect = document.getElementById('dobYear');
+        const currentYear = new Date().getFullYear();
+        for (let i = currentYear; i >= 1920; i--) {
+            let opt = document.createElement('option');
+            opt.value = i.toString();
+            opt.textContent = i;
+            yearSelect.appendChild(opt);
+        }
+
+        // Toggle Password Visibilities
+        passToggle.addEventListener('click', () => {
+            if (profilePassword.type === "password") {
+                profilePassword.type = "text";
+                passToggle.textContent = "Hide";
+            } else {
+                profilePassword.type = "password";
+                passToggle.textContent = "Show";
+            }
+        });
+
+        // Enforce Username constraints inline
+        document.getElementById('username').addEventListener('input', function() {
+            this.value = this.value.toLowerCase().replace(/[^a-z0-9_.]/g, '');
+        });
+
+        // Auth Observer State Mapping
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                authView.classList.add('hidden');
+                profileView.classList.remove('hidden');
+
+                // Determine Provider
+                const providerId = user.providerData[0]?.providerId;
+                if (providerId === 'google.com') {
+                    providerStatus.innerHTML = `🟢 Connected via OAuth Strategy: Google Account`;
+                } else {
+                    providerStatus.innerHTML = `🟢 Connected via Native Security Stack: Email Node`;
+                }
+
+                // Hydrate defaults from Auth Credentials object
+                document.getElementById('profileEmail').value = user.email || '';
+                document.getElementById('displayName').value = user.displayName || '';
+                if(user.photoURL) document.getElementById('pfpImg').src = user.photoURL;
+
+                // Query Datastore Document Node
+                const docRef = doc(db, "users", user.uid);
+                const docSnap = await getDoc(docRef);
+
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    document.getElementById('displayName').value = data.displayName || '';
+                    document.getElementById('username').value = data.username || '';
+                    document.getElementById('bio').value = data.bio || '';
+                    document.getElementById('location').value = data.location || '';
+                    document.getElementById('dobMonth').value = data.dobMonth || '';
+                    document.getElementById('dobDay').value = data.dobDay || '';
+                    document.getElementById('dobYear').value = data.dobYear || '';
+                    document.getElementById('gender').value = data.gender || '';
+                    document.getElementById('orientation').value = data.orientation || '';
+                    document.getElementById('dobPrivacy').value = data.dobPrivacy || 'public';
+                    document.getElementById('profilePrivacy').value = data.profilePrivacy || 'public';
+                }
+            } else {
+                profileView.classList.add('hidden');
+                authView.classList.remove('hidden');
+            }
+        });
+
+        // Handle Form Logins / Dynamic Signup Registrations
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('authEmail').value;
+            const password = document.getElementById('authPassword').value;
+
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (err) {
+                if (err.code === 'auth/user-not-found') {
+                    try {
+                        await createUserWithEmailAndPassword(auth, email, password);
+                    } catch (signUpErr) {
+                        alert("Authentication creation failure: " + signUpErr.message);
+                    }
+                } else {
+                    alert("Authentication execution boundary fault: " + err.message);
+                }
+            }
+        });
+
+        // Google Federated Login Execution
+        googleBtn.addEventListener('click', async () => {
+            try {
+                await signInWithPopup(auth, googleProvider);
+            } catch (err) {
+                alert("Google Authentication layer drop context: " + err.message);
+            }
+        });
+
+        // Global Form mutations submission
+        profileForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const user = auth.currentUser;
+            if (!user) return;
+
+            // Handle Password Change requests
+            const newPassword = profilePassword.value;
+            if (newPassword && newPassword !== '••••••••') {
+                try {
+                    await updatePassword(user, newPassword);
+                    alert("Credential matrix update synchronized successfully.");
+                } catch (err) {
+                    alert("Security parameter modification rejected: " + err.message);
+                }
+            }
+
+            // Assemble Document Payload
+            const payload = {
+                displayName: document.getElementById('displayName').value,
+                username: document.getElementById('username').value,
+                bio: document.getElementById('bio').value,
+                location: document.getElementById('location').value,
+                dobMonth: document.getElementById('dobMonth').value,
+                dobDay: document.getElementById('dobDay').value,
+                dobYear: document.getElementById('dobYear').value,
+                gender: document.getElementById('gender').value,
+                orientation: document.getElementById('orientation').value,
+                dobPrivacy: document.getElementById('dobPrivacy').value,
+                profilePrivacy: document.getElementById('profilePrivacy').value,
+                lastUpdated: new Date().toISOString()
+            };
+
+            try {
+                await setDoc(doc(db, "users", user.uid), payload, { merge: true });
+                alert("Profile changes successfully written to Firestore.");
+            } catch (err) {
+                alert("Database operations transaction failure: " + err.message);
+            }
+        });
+
+        // Disconnect session
+        logoutBtn.addEventListener('click', () => signOut(auth));
+    </script>
+</body>
+</html>
