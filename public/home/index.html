@@ -6497,8 +6497,9 @@
                         const isRepostLike = notifs.some(n => n.type === 'repost_like');
                         const isCommentLike = notifs.some(n => n.type === 'comment_like');
                         const actionText = item.type === 'group_like' ? (isRepostLike ? 'liked the post you reposted' : (isCommentLike ? 'liked your comment' : 'liked your post')) : 'commented on your post';
-                        const iconClass = item.type === 'group_like' ? 'bg-red-500' : 'bg-blue-500';
+                        const iconColorClass = item.type === 'group_like' ? 'text-red-500' : 'text-[#3897f0]';
                         const iconName = item.type === 'group_like' ? 'heart' : 'message-circle';
+                        const iconFill = item.type === 'group_like' ? 'fill-red-500' : 'fill-[#3897f0]';
                         
                         let text = '';
                         if (count === 1) {
@@ -6516,8 +6517,8 @@
                                 <div class="flex items-center gap-3">
                                     <div class="relative flex items-center shrink-0">
                                         ${avatars}
-                                        <div class="absolute -bottom-1 -right-1 w-4.5 h-4.5 rounded-full ${iconClass} flex items-center justify-center border-2 border-white shadow-sm z-30">
-                                            <i data-lucide="${iconName}" class="w-2.5 h-2.5 text-white fill-white"></i>
+                                        <div class="absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-white flex items-center justify-center border-2 border-white shadow-sm z-30">
+                                            <i data-lucide="${iconName}" class="w-3.5 h-3.5 ${iconColorClass} ${iconFill}"></i>
                                         </div>
                                     </div>
                                     <div class="flex flex-col">
@@ -6529,28 +6530,28 @@
                         </div>`;
                     } else {
                         const n = item.data, s = users.find(u => u.id === n.senderId) || { name: 'Admin', avatar: '', username: 'user', isOfficial: !1 }, map = {
-                            like: { i: 'heart', c: 'bg-red-500', fill: 'fill-white' },
-                            comment_like: { i: 'heart', c: 'bg-red-500', fill: 'fill-white' },
-                            repost_like: { i: 'heart', c: 'bg-red-500', fill: 'fill-white' },
-                            comment: { i: 'message-circle', c: 'bg-blue-500', fill: 'fill-white' },
-                            repost: { i: 'repeat', c: 'bg-green-500', fill: '' },
-                            reply: { i: 'corner-down-right', c: 'bg-teal-500', fill: '' },
-                            follow: { i: 'user-plus', c: 'bg-indigo-500', fill: '' },
-                            official: { i: 'badge-check', c: 'bg-blue-600', fill: '' },
-                            system: { i: 'badge-check', c: 'bg-blue-600', fill: '' },
-                            follow_request: { i: 'lock', c: 'bg-orange-500', fill: '' },
-                            collab_request: { i: 'users', c: 'bg-pink-500', fill: '' },
-                            mention: { i: 'at-sign', c: 'bg-green-500', fill: '' },
-                            birthday: { i: 'gift', c: 'bg-purple-500', fill: '' },
-                            share: { i: 'share-2', c: 'bg-indigo-600', fill: '' },
-                            default: { i: 'bell', c: 'bg-gray-500', fill: '' }
+                            like: { i: 'heart', c: 'text-red-500', fill: 'fill-red-500' },
+                            comment_like: { i: 'heart', c: 'text-red-500', fill: 'fill-red-500' },
+                            repost_like: { i: 'heart', c: 'text-red-500', fill: 'fill-red-500' },
+                            comment: { i: 'message-circle', c: 'text-[#3897f0]', fill: 'fill-[#3897f0]' },
+                            repost: { i: 'repeat', c: 'text-green-500', fill: '' },
+                            reply: { i: 'corner-down-right', c: 'text-teal-500', fill: '' },
+                            follow: { i: 'user-plus', c: 'text-indigo-500', fill: '' },
+                            official: { i: 'badge-check', c: 'text-blue-600', fill: '' },
+                            system: { i: 'badge-check', c: 'text-blue-600', fill: '' },
+                            follow_request: { i: 'lock', c: 'text-orange-500', fill: '' },
+                            collab_request: { i: 'users', c: 'text-pink-500', fill: '' },
+                            mention: { i: 'at-sign', c: 'text-green-500', fill: '' },
+                            birthday: { i: 'gift', c: 'text-purple-500', fill: '' },
+                            share: { i: 'share-2', c: 'text-indigo-600', fill: '' },
+                            default: { i: 'bell', c: 'text-gray-500', fill: '' }
                         }, cfg = map[n.type] || map.default, p = n.postId ? posts.find(x => x.id === n.postId) : null, postImg = p ? (Array.isArray(p.media) ? p.media[0] : p.media) : null, isVid = postImg && (postImg.includes('video') || postImg.endsWith('.mp4')), showImg = postImg && !isVid ? postImg : null, click = window.notifSelectionMode ? '' : (['like', 'repost_like', 'comment', 'reply', 'mention', 'share'].includes(n.type) && n.postId ? `openPostView('${n.postId}',true)` : `showProfile('${s.id}')`);
                         
                         let rightHtml = '';
                         if (showImg) {
                             rightHtml = `<div class="img-placeholder w-11 h-11 rounded-lg shrink-0 border border-gray-100 overflow-hidden"><img src="${showImg}" class="w-full h-full object-cover" onclick="openPostView('${n.postId}',true)" onload="this.classList.add('loaded')"></div>`;
                         } else if (n.type === 'follow' && !currentUser.following.includes(s.id)) {
-                            rightHtml = `<button onclick="event.stopPropagation(); toggleFollow('${s.id}')" class="js-follow-btn-${s.id} shrink-0 bg-[#0095f6] text-white text-[13px] px-4 py-1.5 rounded-lg font-bold hover:bg-[#1877f2] transition-all active:scale-95">Follow</button>`;
+                            rightHtml = `<button onclick="event.stopPropagation(); toggleFollow('${s.id}')" class="js-follow-btn-${s.id} shrink-0 bg-[#3897f0] text-white text-[13px] px-4 py-1.5 rounded-lg font-bold hover:bg-[#3897f0]/90 transition-all active:scale-95">Follow</button>`;
                         }
 
                         return `<div class="w-full p-4 hover:bg-gray-50/50 transition-colors cursor-pointer group" onclick="${click}">
@@ -6560,8 +6561,8 @@
                                         <div class="w-11 h-11 rounded-full border border-gray-100 bg-gray-100 overflow-hidden">
                                             <img src="${s.avatar}" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
                                         </div>
-                                        <div class="absolute -bottom-0.5 -right-0.5 w-4.5 h-4.5 rounded-full ${cfg.c} flex items-center justify-center border-2 border-white shadow-sm">
-                                            <i data-lucide="${cfg.i}" class="w-2.5 h-2.5 text-white ${cfg.fill || ''}"></i>
+                                        <div class="absolute -bottom-1 -right-1 w-5.5 h-5.5 rounded-full bg-white flex items-center justify-center border-2 border-white shadow-sm">
+                                            <i data-lucide="${cfg.i}" class="w-3.5 h-3.5 ${cfg.c} ${cfg.fill || ''}"></i>
                                         </div>
                                     </div>
                                     <div class="flex flex-col">
@@ -6605,7 +6606,7 @@
             const isFriend = window.isFriend(uid);
             fb.innerText = isF ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? 'Request' : 'Follow');
             fb.onclick = (e) => { e.stopPropagation(); toggleFollow(uid) };
-            fb.className = `flex-1 py-3 ${isF ? 'bg-gray-100 text-gray-900' : 'bg-[#065fd4] text-white'} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
+            fb.className = `flex-1 py-3 ${isF ? 'bg-gray-100 text-gray-900' : 'bg-[#3897f0] text-white'} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
         }
         document.getElementById('pp-avatar').src = u.avatar; document.getElementById('pp-banner').style.backgroundImage = `url(${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'})`; document.getElementById('pp-name').innerHTML = `${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}`; document.getElementById('pp-username').innerText = `@${u.username || 'user'}`; const pCount = posts.filter(p => p.authorId === uid && (p.content || p.media)).length; document.getElementById('pp-posts-count').innerText = pCount; document.getElementById('pp-followers-count').innerText = u.followers ? u.followers.length : 0; document.getElementById('pp-following-count').innerText = u.following ? u.following.length : 0; document.getElementById('pp-visit-btn').onclick = () => { closeProfilePreview(); showProfile(uid) }; document.getElementById('pp-share-btn').onclick = (e) => { e.stopPropagation(); closeProfilePreview(); manageHistory('share-overlay'); window.currentSharePid = null; const url = `${window.location.origin}/profile/${u.username || 'user'}`; document.getElementById('share-link-input').value = url; document.getElementById('share-link-text').innerText = url; document.getElementById('share-owner-avatar').src = u.avatar; const pc = document.getElementById('share-post-preview'); pc.innerHTML = `<div class="bg-white border border-gray-200 rounded-xl p-3 mb-6 flex items-center gap-3"><div class="w-12 h-12 rounded-full border border-gray-100 flex-shrink-0 bg-gray-100"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div class="flex-1 min-w-0"><div class="font-bold text-gray-900">${u.name}</div><div class="text-xs text-gray-500">@${u.username}</div></div><button class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-bold">View</button></div>`; pc.classList.remove('hidden'); toggleModalAnim('share-overlay', 'share-modal', !0) }; toggleModalAnim('profile-preview-overlay', 'profile-preview-modal', true); refreshIcons() };
         window.closeProfilePreview = () => { toggleModalAnim('profile-preview-overlay', 'profile-preview-modal', false) }; window.deleteNotification = async id => showAlert("Delete?", async () => await deleteDoc(doc(db, "notifications", id))); window.performClearAllNotifications = async () => { const b = writeBatch(db), s = await getDocs(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id))); s.forEach(d => b.delete(d.ref)); await b.commit(); showToast("Cleared") }; window.confirmDeleteAllActivities = () => showAlert("Are you sure you want to delete all of your activities?", async () => { await window.performClearAllNotifications() }); window.clearAllNotifications = () => window.confirmDeleteAllActivities(); window.toggleNotifications = () => switchView('notifications');
@@ -6715,13 +6716,13 @@
                 const isNowFriend = window.isFriend(uid);
                 if (b.id === 'profile-follow-btn') {
                     b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
-                    b.className = `js-follow-btn-${uid} ${isNowF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#2b59c3] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
+                    b.className = `js-follow-btn-${uid} ${isNowF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#3897f0] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
                 } else if (b.id === 'pp-follow-btn') {
                     b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
-                    b.className = `flex-1 py-3 ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#2b59c3] text-white'} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
+                    b.className = `flex-1 py-3 ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3897f0] text-white'} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
                 } else {
                     b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : 'Follow';
-                    b.className = `js-follow-btn-${uid} text-[13px] font-bold ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#2b59c3] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90`;
+                    b.className = `js-follow-btn-${uid} text-[13px] font-bold ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3897f0] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90`;
                 }
             };
 
