@@ -126,7 +126,6 @@
             color: var(--text-primary);
         }
 
-        /* Modernized Unified Input Box Container Structure */
         .input-container-field {
             display: flex;
             align-items: center;
@@ -158,7 +157,6 @@
             color: var(--placeholder-color);
         }
 
-        /* Styling for standard dropdown elements */
         .form-control-raw {
             width: 100%;
             padding: 16px 18px;
@@ -187,7 +185,6 @@
             min-width: 130px;
         }
 
-        /* Cleaned Dropdown Arrow System Override to fix Double Icons */
         select.form-control-raw {
             appearance: none;
             -webkit-appearance: none;
@@ -200,7 +197,7 @@
         }
 
         select.form-control-raw::-ms-expand {
-            display: none; /* Disables IE/Edge native arrow element entirely */
+            display: none;
         }
 
         .privacy-note {
@@ -359,7 +356,6 @@
             font-weight: 600;
         }
 
-        /* Modal Overlay Screen */
         .verification-modal-overlay {
             position: fixed;
             top: 0;
@@ -450,7 +446,7 @@
             We've sent a verification link to:
             <span id="sent-target-string" class="target-email-highlight">your.email@example.com</span>
             <br><br>
-            Please check your inbox and click the link. This screen will automatically clear once verified.
+            Please check your inbox <strong>and spam folder</strong>, then click the link. This screen will automatically clear and redirect you once verified.
         </p>
         <button type="button" id="resend-verification-btn" class="submit-btn" style="margin-top:0;">Resend Link</button>
         <button type="button" id="cancel-verification-btn" class="secondary-modal-btn">Cancel registration</button>
@@ -612,7 +608,6 @@
 
     let pollingTimerInstance = null;
 
-    // Form Submit controller
     document.getElementById('signup-form').addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -656,17 +651,13 @@
             submitBtn.disabled = true;
             submitBtn.textContent = "Processing...";
 
-            // 1. Create firebase account instance
             const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
             
-            // 2. Transmit immediate verification validation token link
             await sendEmailVerification(userCredential.user);
 
-            // 3. Mount full wait screen background loop layout overlay
             document.getElementById('sent-target-string').textContent = emailInput.value;
             document.getElementById('verification-overlay').classList.remove('hidden');
 
-            // 4. Fire persistent authentication validation monitor pipelines
             startVerificationCheckLoop();
 
         } catch (error) {
@@ -702,7 +693,7 @@
                     document.getElementById('verification-overlay').classList.add('hidden');
                     
                     const feedbackText = document.getElementById('clean-feedback-box');
-                    feedbackText.textContent = "Success! Your email address has been verified. Welcome aboard!";
+                    feedbackText.textContent = "Success! Your email address has been verified. Redirecting you shortly...";
                     feedbackText.className = "clean-text-status success-type";
                     
                     document.getElementById('signup-form').reset();
@@ -710,6 +701,14 @@
                     
                     document.getElementById('submit-btn').disabled = false;
                     document.getElementById('submit-btn').textContent = "Create Account";
+
+                    // Handle smart redirection to the user's past destination
+                    setTimeout(() => {
+                        const urlParams = new URLSearchParams(window.location.search);
+                        // Tries to grab `?redirect=...` parameter, falls back to referring site, or defaults to root.
+                        const redirectUrl = urlParams.get('redirect') || document.referrer || '/';
+                        window.location.href = redirectUrl;
+                    }, 2000);
                 }
             }
         }, 2000);
@@ -746,7 +745,6 @@
         submitBtn.textContent = "Create Account";
     });
 
-    // --- GLOBAL BOUNDARY ROUTERS ---
     window.validateUsername = function(input) {
         let value = input.value.toLowerCase();
         value = value.replace(/[^a-z0-9._]/g, '');
@@ -839,7 +837,6 @@
         }
     };
 
-    // Auto-populate date components
     const dayMenu = document.getElementById('birth-day');
     for (let d = 1; d <= 31; d++) {
         let option = document.createElement('option');
