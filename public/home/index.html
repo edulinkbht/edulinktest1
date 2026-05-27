@@ -937,7 +937,7 @@
             padding: 20px 24px;
             width: calc(100% - 32px);
             max-width: 400px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: none; /* Removed shadow as requested */
             border: 1px solid #eaeaea;
             box-sizing: border-box;
             opacity: 0;
@@ -950,6 +950,19 @@
             opacity: 1;
             transform: translateX(-50%) translateY(0);
             pointer-events: auto;
+        }
+
+        @media (min-width: 1024px) {
+            .toast {
+                left: 24px;
+                bottom: 140px;
+                width: 212px;
+                transform: translateY(20px);
+                padding: 16px;
+            }
+            .toast.show {
+                transform: translateY(0);
+            }
         }
 
         .toast-close-btn {
@@ -3071,18 +3084,6 @@
                 data-lucide="x" class="w-8 h-8"></i></button>
         <div id="lightbox-wrapper" class="w-full h-full flex justify-center items-center p-6"></div>
     </div>
-    <div id="toast" class="toast">
-        <button class="toast-close-btn" onclick="this.parentElement.classList.remove('show')" aria-label="Close">
-            <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M13 1L1 13M1 1L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        </button>
-        <div class="toast-header">
-            <img src="https://i.imghippo.com/files/YVls8804tw.png" alt="Icon" class="toast-custom-icon" id="toast-icon-img">
-            <div class="toast-title" id="toast-title">Success notification</div>
-        </div>
-        <div class="toast-subtitle" id="toast-msg">Subtitle and associated information pertaining to the event.</div>
-    </div>
     <div id="likes-overlay"
         class="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
         onclick="closeLikes()">
@@ -4497,13 +4498,20 @@
         window.sourceCandidates = async (context, searchTerm = '') => {
             if (!context) return [];
 
-            // "Thunder" Retrieval: In-Network (Direct Follows)
-            const thunderCandidates = posts.filter(p => context.socialGraph.following.includes(p.authorId) && canSeePost(p));
+            let combined = [];
+            const filter = window.activeFeedFilter || 'all';
 
-            // "Phoenix" Retrieval: Out-of-Network (Discovery/Discovery Algorithm)
-            const phoenixCandidates = posts.filter(p => !context.socialGraph.following.includes(p.authorId) && p.authorId !== context.id && canSeePost(p));
-
-            let combined = [...thunderCandidates, ...phoenixCandidates];
+            if (filter === 'all') {
+                // "Thunder" Retrieval: In-Network (Direct Follows)
+                const thunder = posts.filter(p => context.socialGraph.following.includes(p.authorId) && canSeePost(p));
+                // "Phoenix" Retrieval: Out-of-Network (Discovery/Discovery Algorithm)
+                const phoenix = posts.filter(p => !context.socialGraph.following.includes(p.authorId) && p.authorId !== context.id && canSeePost(p));
+                combined = [...thunder, ...phoenix];
+            } else if (filter === 'following') {
+                combined = posts.filter(p => context.socialGraph.following.includes(p.authorId) && canSeePost(p));
+            } else if (filter === 'friends') {
+                combined = posts.filter(p => window.isFriend(p.authorId) && canSeePost(p));
+            }
 
             // Apply text search filter if provided
             if (searchTerm) {
@@ -9294,6 +9302,18 @@
         }, true);
         refreshIcons();
     </script>
+    <div id="toast" class="toast">
+        <button class="toast-close-btn" onclick="this.parentElement.classList.remove('show')" aria-label="Close">
+            <svg width="10" height="10" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 1L1 13M1 1L13 13" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+        <div class="toast-header">
+            <img src="https://i.imghippo.com/files/YVls8804tw.png" alt="Icon" class="toast-custom-icon" id="toast-icon-img">
+            <div class="toast-title" id="toast-title">Success notification</div>
+        </div>
+        <div class="toast-subtitle" id="toast-msg">Subtitle and associated information pertaining to the event.</div>
+    </div>
 </body>
 
 </html>
