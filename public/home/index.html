@@ -6283,14 +6283,15 @@
             document.getElementById('toggle-mute-comments').checked = !!s.muteComments;
             document.getElementById('toggle-mute-reposts').checked = !!s.muteReposts;
 
-            // Render friend previews
+            // Render friend previews (mutual friends)
             const preview = document.getElementById('notif-friends-preview');
-            const mutedIds = s.mutedFriends || [];
-            if (mutedIds.length > 0) {
-                const mutedUsers = users.filter(u => mutedIds.includes(u.id)).slice(0, 3);
-                preview.innerHTML = mutedUsers.map(u => `<img src="${u.avatar}" class="w-7 h-7 rounded-full border-2 border-white object-cover">`).join('');
+            const allFriends = users.filter(u => window.isFriend(u.id));
+            
+            if (allFriends.length > 0) {
+                const displayFriends = allFriends.slice(0, 2);
+                preview.innerHTML = displayFriends.map(u => `<img src="${u.avatar}" class="w-8 h-8 rounded-full border-2 border-white object-cover">`).join('');
             } else {
-                preview.innerHTML = '<i data-lucide="users" class="w-6 h-6 text-gray-400"></i>';
+                preview.innerHTML = '<div class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center"><i data-lucide="users" class="w-5 h-5 text-gray-400"></i></div>';
                 refreshIcons();
             }
         };
@@ -6301,16 +6302,19 @@
             const s = currentUser.settings || {};
             const mutedIds = s.mutedFriends || [];
             
-            // Friends are those who follow you and you follow back (or just following/followers based on app design)
-            // Let's assume friends are people you follow.
+            // Friends are mutual following (A follows B AND B follows A)
             const friends = users.filter(u => 
                 u.id !== currentUser.id && 
-                (currentUser.following || []).includes(u.id) &&
+                window.isFriend(u.id) &&
                 (term === "" || (u.name || "").toLowerCase().includes(term.toLowerCase()) || (u.username || "").toLowerCase().includes(term.toLowerCase()))
             );
 
             if (friends.length === 0) {
-                list.innerHTML = '<div class="text-center py-10 text-gray-400">No friends found</div>';
+                list.innerHTML = `<div class="text-center py-20 text-gray-400 flex flex-col items-center gap-3">
+                    <i data-lucide="users" class="w-12 h-12 opacity-20"></i>
+                    <p class="text-sm">No mutual friends found</p>
+                </div>`;
+                refreshIcons();
                 return;
             }
 
