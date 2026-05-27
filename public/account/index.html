@@ -1,251 +1,437 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
     <title>Account Settings - EduLink</title>
+    <link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Google+Sans:wght@400;500;700&display=swap');
-        
+
+        :root {
+            --surface: #ffffff;
+            --background: #ffffff;
+            --on-surface: #0f0f0f;
+            --text-secondary: #374151;
+            --outline: #e5e7eb;
+            --hover-bg: #f2f2f2;
+            --primary: #000000
+        }
+
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #ffffff;
-            color: #0f0f0f;
-        }
-        
-        .google-font {
-            font-family: 'Google Sans', sans-serif;
+            background-color: var(--background);
+            color: var(--on-surface);
+            overflow: hidden;
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .input-field {
-            width: 100%;
-            background-color: #ffffff;
-            border: 1px solid #e5e7eb;
+        h1, h2, h3, .google-font {
+            font-family: 'Google Sans', 'Inter', sans-serif
+        }
+
+        * {
+            scrollbar-width: none;
+            -ms-overflow-style: none
+        }
+
+        *::-webkit-scrollbar {
+            width: 0;
+            background: transparent;
+            display: none
+        }
+
+        .app-panel {
+            background: var(--surface);
+            border-radius: 0;
+            border: none;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all .3s cubic-bezier(.2, 0, 0, 1)
+        }
+
+        @media (min-width:768px) {
+            .app-panel:not(#main-sidebar) {
+                border-radius: 20px;
+                border: 1px solid var(--outline);
+                box-shadow: 0 1px 2px rgba(0, 0, 0, .03)
+            }
+        }
+
+        #main-sidebar {
+            width: 88px;
+            flex-shrink: 0;
+            padding: 24px 12px;
+            border: none !important;
+            background: transparent !important;
+            box-shadow: none !important;
+            transition: width .3s cubic-bezier(.2, 0, 0, 1), padding .3s ease;
+            position: relative;
+            z-index: 40;
+            overflow: visible !important;
+        }
+
+        @media (min-width:1024px) {
+            #main-sidebar {
+                width: 260px;
+                padding: 24px 20px;
+                position: absolute;
+                height: 100%;
+            }
+            #workspace-layout {
+                padding-left: 260px;
+            }
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 12px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 15px;
             border-radius: 12px;
-            padding: 12px 16px;
-            outline: none;
-            transition: border-color 0.2s;
+            cursor: pointer;
+            text-decoration: none;
+            margin-bottom: 4px;
+            justify-content: center;
         }
 
-        .input-field:focus {
-            border-color: #3b82f6;
+        .nav-item:hover {
+            color: var(--on-surface);
+            background-color: var(--hover-bg)
         }
 
-        .label {
-            font-weight: 600;
-            font-size: 14px;
-            color: #1f1f1f;
-            margin-bottom: 8px;
-            display: block;
+        .nav-item.active {
+            color: #000;
+            background-color: #f3f4f6;
+            font-weight: 600
         }
 
-        .section-container {
-            max-width: 600px;
+        @media (min-width:1024px) {
+            .nav-item {
+                justify-content: flex-start;
+                padding: 10px 16px
+            }
+        }
+
+        /* Account Settings Specific Styles */
+        .settings-container {
+            max-width: 640px;
             margin: 0 auto;
             padding: 24px 16px;
         }
 
-        .banner-container {
+        .banner-preview-container {
             width: 100%;
-            height: 180px;
-            border-radius: 20px;
-            background-color: #f3f4f6;
+            aspect-ratio: 3 / 1;
+            background: #f3f4f6;
+            border-radius: 24px;
             overflow: hidden;
             position: relative;
             cursor: pointer;
+            border: 1px solid var(--outline);
         }
 
-        .banner-image {
+        .banner-preview-image {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
 
-        .pfp-container {
+        .pfp-preview-container {
+            position: absolute;
+            bottom: 12px;
+            left: 12px;
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            border: 4px solid #ffffff;
-            background-color: #f3f4f6;
-            position: absolute;
-            bottom: -40px;
-            left: 20px;
+            border: 4px solid white;
+            background: #e5e7eb;
             overflow: hidden;
-            cursor: pointer;
-            z-index: 10;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
 
-        .pfp-image {
+        .pfp-preview-image {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
 
-        .save-btn {
-            background-color: #000000;
-            color: #ffffff;
-            font-weight: 600;
-            padding: 12px 24px;
-            border-radius: 9999px;
-            transition: opacity 0.2s;
+        .input-group {
+            margin-bottom: 24px;
         }
 
-        .save-btn:hover {
-            opacity: 0.8;
+        .input-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--on-surface);
+            margin-bottom: 8px;
         }
 
-        .save-btn:disabled {
-            background-color: #9ca3af;
+        .settings-input {
+            width: 100%;
+            background-color: #ffffff;
+            border: 1px solid var(--outline);
+            border-radius: 14px;
+            padding: 12px 16px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .settings-input:focus {
+            border-color: #000;
+            box-shadow: 0 0 0 1px #000;
+        }
+
+        .settings-input:disabled {
+            background-color: #f9fafb;
+            color: #6b7280;
             cursor: not-allowed;
+        }
+
+        .save-button {
+            background: #000;
+            color: #fff;
+            padding: 14px 28px;
+            border-radius: 9999px;
+            font-weight: 700;
+            font-size: 15px;
+            transition: all 0.2s;
+            width: 100%;
+            margin-top: 24px;
+        }
+
+        .save-button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .save-button:active {
+            transform: translateY(0);
+        }
+
+        .save-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .loading-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.8);
+            inset: 0;
+            background: rgba(255,255,255,0.8);
+            backdrop-blur: 4px;
             display: flex;
             align-items: center;
             justify-content: center;
             z-index: 1000;
         }
+
+        .logo-spinner {
+            width: 48px;
+            height: 48px;
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.7; }
+        }
     </style>
 </head>
+
 <body>
-    <div id="loading" class="loading-overlay">
-        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-black"></div>
+    <div id="loading-overlay" class="loading-overlay">
+        <img src="https://i.imghippo.com/files/fRGt5603uII.png" class="logo-spinner">
     </div>
 
-    <div class="section-container">
-        <div class="flex items-center justify-between mb-8">
-            <h1 class="text-2xl font-bold google-font">Idem Account System</h1>
-            <a href="index.html" class="text-sm text-gray-500 hover:text-black flex items-center gap-1">
-                <i data-lucide="arrow-left" class="w-4 h-4"></i>
-                Back to Home
+    <aside id="main-sidebar" class="hidden md:flex app-panel">
+        <div class="h-12 flex items-center gap-3 mb-10 px-2 cursor-pointer logo-container" onclick="window.location.href='index.html'">
+            <img src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain shrink-0">
+            <h1 class="text-[20px] font-bold text-[#1f1f1f] sidebar-label hidden lg:block tracking-tight">EduLink</h1>
+        </div>
+        <nav class="flex-1 space-y-2 pt-8">
+            <a href="index.html" class="nav-item">
+                <i data-lucide="home" class="w-7 h-7"></i>
+                <span class="sidebar-label hidden lg:block">Home</span>
             </a>
-        </div>
+            <a href="index.html?view=explore" class="nav-item">
+                <i data-lucide="search" class="w-7 h-7"></i>
+                <span class="sidebar-label hidden lg:block">Search</span>
+            </a>
+            <a href="accounts.html" class="nav-item active">
+                <i data-lucide="settings" class="w-7 h-7"></i>
+                <span class="sidebar-label hidden lg:block">Settings</span>
+            </a>
+        </nav>
+    </aside>
 
-        <div class="mb-16 relative">
-            <div class="banner-container" onclick="document.getElementById('banner-input').click()">
-                <img id="banner-preview" src="https://i.imghippo.com/files/vgr8207c.png" class="banner-image">
-                <div class="pfp-container" onclick="event.stopPropagation(); document.getElementById('pfp-input').click()">
-                    <img id="pfp-preview" src="https://i.imghippo.com/files/vgr8207c.png" class="pfp-image">
+    <div id="workspace-layout" class="flex-1 flex min-w-0 gap-2 relative overflow-hidden transition-all duration-300">
+        <main id="main-panel" class="app-panel min-w-0 relative w-full lg:w-[640px] lg:ml-12">
+            <header id="main-header"
+                class="h-16 md:h-20 flex items-center justify-between px-4 md:px-0 shrink-0 z-20 absolute top-0 w-full bg-white border-b border-[#f0f0f0]">
+                <div class="md:hidden flex items-center gap-3 cursor-pointer px-4" onclick="window.location.href='index.html'">
+                    <img src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
+                    <h1 class="text-lg font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
+                </div>
+                <div class="flex-1 px-4">
+                    <h2 class="text-[18px] font-bold text-[#1f1f1f] google-font">Account System</h2>
+                </div>
+            </header>
+
+            <div class="flex-1 h-full overflow-y-auto no-scrollbar pt-16 md:pt-20">
+                <div class="settings-container">
+                    <!-- Banner and PFP Section -->
+                    <div class="mb-10 relative">
+                        <div class="banner-preview-container" onclick="document.getElementById('banner-input').click()">
+                            <img id="banner-preview" src="https://i.imghippo.com/files/vgr8207c.png" class="banner-preview-image">
+                            <div class="pfp-preview-container" onclick="event.stopPropagation(); document.getElementById('pfp-input').click()">
+                                <img id="pfp-preview" src="https://i.imghippo.com/files/vgr8207c.png" class="pfp-preview-image">
+                            </div>
+                        </div>
+                        <input type="file" id="banner-input" class="hidden" accept="image/*">
+                        <input type="file" id="pfp-input" class="hidden" accept="image/*">
+                    </div>
+
+                    <form id="account-form" class="pb-20">
+                        <div class="input-group">
+                            <label class="input-label">Display Name</label>
+                            <input type="text" id="name" placeholder="Full name" class="settings-input">
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label">Username</label>
+                            <input type="text" id="username" placeholder="username" class="settings-input">
+                            <p class="text-[12px] text-gray-400 mt-2">Lowercase letters, numbers, underscores, and periods (max 20).</p>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label">Birthday</label>
+                            <div class="flex gap-3">
+                                <select id="dob-month" class="settings-input flex-1">
+                                    <option value="">Month</option>
+                                    <option value="1">January</option><option value="2">February</option><option value="3">March</option>
+                                    <option value="4">April</option><option value="5">May</option><option value="6">June</option>
+                                    <option value="7">July</option><option value="8">August</option><option value="9">September</option>
+                                    <option value="10">October</option><option value="11">November</option><option value="12">December</option>
+                                </select>
+                                <select id="dob-day" class="settings-input flex-1">
+                                    <option value="">Day</option>
+                                </select>
+                                <select id="dob-year" class="settings-input flex-1">
+                                    <option value="">Year</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label">Location</label>
+                            <input type="text" id="location" placeholder="Where are you based?" class="settings-input">
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label">Bio</label>
+                            <textarea id="bio" placeholder="Tell the world about yourself..." class="settings-input h-24 resize-none"></textarea>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div>
+                                <label class="input-label">Gender</label>
+                                <select id="gender" class="settings-input">
+                                    <option value="">Select</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                    <option value="Prefer not to say">Secret</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="input-label">Orientation</label>
+                                <select id="orientation" class="settings-input">
+                                    <option value="">Select</option>
+                                    <option value="Straight">Straight</option>
+                                    <option value="Gay">Gay</option>
+                                    <option value="Lesbian">Lesbian</option>
+                                    <option value="Bisexual">Bisexual</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label">Email Address</label>
+                            <input type="email" id="email" class="settings-input" disabled>
+                            <p id="login-method" class="text-[11px] text-gray-400 mt-1"></p>
+                        </div>
+
+                        <div class="input-group">
+                            <label class="input-label">Account Privacy</label>
+                            <div class="flex gap-6 p-1">
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="radio" name="privacy" value="public" class="w-4 h-4 accent-black">
+                                    <span class="text-[15px] font-medium text-gray-700 group-hover:text-black">Public</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer group">
+                                    <input type="radio" name="privacy" value="private" class="w-4 h-4 accent-black">
+                                    <span class="text-[15px] font-medium text-gray-700 group-hover:text-black">Private</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="save-btn" class="save-button">Update Profile</button>
+                    </form>
                 </div>
             </div>
-            <input type="file" id="banner-input" class="hidden" accept="image/*">
-            <input type="file" id="pfp-input" class="hidden" accept="image/*">
-        </div>
+        </main>
 
-        <form id="account-form" class="space-y-6">
-            <div>
-                <label class="label">Display name</label>
-                <input type="text" id="name" placeholder="Full name" class="input-field">
+        <aside id="trending-panel" class="hidden xl:flex w-[380px] p-6 flex-col gap-6">
+            <div class="bg-gray-50 rounded-[24px] p-6 border border-gray-100">
+                <h3 class="font-bold text-[16px] mb-3">Privacy & Safety</h3>
+                <p class="text-[13px] text-gray-500 leading-relaxed mb-4">
+                    Your account settings help us personalize your EduLink experience and keep your data secure. 
+                </p>
+                <a href="#" class="text-blue-600 text-[13px] font-bold hover:underline">Learn more about Idem</a>
             </div>
-
-            <div>
-                <label class="label">Username</label>
-                <input type="text" id="username" placeholder="username" class="input-field">
-                <p class="text-[12px] text-gray-500 mt-2">Usernames can only contain lowercase letters, numbers, underscores, and periods (max 20 characters).</p>
-            </div>
-
-            <div>
-                <label class="label">Birthday</label>
-                <div class="flex gap-4">
-                    <select id="dob-month" class="input-field flex-1">
-                        <option value="">Month</option>
-                        <option value="1">January</option><option value="2">February</option><option value="3">March</option>
-                        <option value="4">April</option><option value="5">May</option><option value="6">June</option>
-                        <option value="7">July</option><option value="8">August</option><option value="9">September</option>
-                        <option value="10">October</option><option value="11">November</option><option value="12">December</option>
-                    </select>
-                    <select id="dob-day" class="input-field flex-1">
-                        <option value="">Day</option>
-                        <!-- Days will be populated by JS -->
-                    </select>
-                    <select id="dob-year" class="input-field flex-1">
-                        <option value="">Year</option>
-                        <!-- Years will be populated by JS -->
-                    </select>
-                </div>
-                <p class="text-[12px] text-gray-500 mt-2"><b>Privacy Note:</b> If set to private, it will only show your birth date and month on your profile, hiding your birth year and age entirely.</p>
-            </div>
-
-            <div>
-                <label class="label">Location</label>
-                <input type="text" id="location" placeholder="Location" class="input-field">
-            </div>
-
-            <div>
-                <label class="label">Email</label>
-                <input type="email" id="email" placeholder="Email" class="input-field" disabled>
-                <p id="login-method" class="text-[11px] text-gray-400 mt-1">Logged in with ...</p>
-            </div>
-
-            <div>
-                <label class="label">Password</label>
-                <div class="relative">
-                    <input type="password" id="password" value="********" class="input-field" disabled>
-                    <button type="button" onclick="alert('Password change logic would go here')" class="absolute right-4 top-1/2 -translate-y-1/2 text-blue-600 font-bold text-sm">Change</button>
+            
+            <div class="px-6 py-4 mt-auto">
+                <div class="flex flex-wrap gap-x-3 gap-y-1 text-[#777] text-[13px] font-normal opacity-80">
+                    <span>© 2026</span>
+                    <a href="#" class="hover:underline">Terms</a>
+                    <a href="#" class="hover:underline">Privacy</a>
+                    <a href="#" class="hover:underline">Help</a>
                 </div>
             </div>
-
-            <div>
-                <label class="label">Bio</label>
-                <textarea id="bio" placeholder="Tell us about yourself" class="input-field h-24 resize-none"></textarea>
-            </div>
-
-            <div class="flex gap-4">
-                <div class="flex-1">
-                    <label class="label">Gender</label>
-                    <select id="gender" class="input-field">
-                        <option value="">Select Gender</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                    </select>
-                </div>
-                <div class="flex-1">
-                    <label class="label">Sexual Orientation</label>
-                    <select id="orientation" class="input-field">
-                        <option value="">Select Orientation</option>
-                        <option value="Straight">Straight</option>
-                        <option value="Gay">Gay</option>
-                        <option value="Lesbian">Lesbian</option>
-                        <option value="Bisexual">Bisexual</option>
-                        <option value="Other">Other</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label class="label">Account Privacy</label>
-                <div class="flex gap-4">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="privacy" value="public" checked class="w-4 h-4">
-                        <span>Public</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="radio" name="privacy" value="private" class="w-4 h-4">
-                        <span>Private</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="pt-8 flex justify-end">
-                <button type="submit" id="save-btn" class="save-btn">Save Changes</button>
-            </div>
-        </form>
+        </aside>
     </div>
+
+    <nav id="mobile-bottom-nav"
+        class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
+        <a href="index.html" class="flex flex-col items-center justify-center gap-1 text-gray-500">
+            <i data-lucide="home" class="w-6 h-6"></i>
+        </a>
+        <a href="index.html?view=explore" class="flex flex-col items-center justify-center gap-1 text-gray-500">
+            <i data-lucide="search" class="w-6 h-6"></i>
+        </a>
+        <a href="accounts.html" class="flex flex-col items-center justify-center gap-1 text-black">
+            <i data-lucide="settings" class="w-6 h-6"></i>
+        </a>
+    </nav>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged, updateEmail, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
         import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
         import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
@@ -264,89 +450,76 @@
         const db = getFirestore(app);
         const storage = getStorage(app);
 
-        let currentUserData = null;
-
-        // Populate Days and Years
+        // Populate DOB
         const daySelect = document.getElementById('dob-day');
         for (let i = 1; i <= 31; i++) {
             const opt = document.createElement('option');
             opt.value = i; opt.textContent = i;
             daySelect.appendChild(opt);
         }
-
         const yearSelect = document.getElementById('dob-year');
-        const currentYear = new Date().getFullYear();
-        for (let i = currentYear; i >= currentYear - 100; i--) {
+        const currYear = new Date().getFullYear();
+        for (let i = currYear; i >= currYear - 100; i--) {
             const opt = document.createElement('option');
             opt.value = i; opt.textContent = i;
             yearSelect.appendChild(opt);
         }
 
-        // Auth Check
         onAuthStateChanged(auth, async (user) => {
             if (!user) {
-                window.location.href = 'index.html'; // Redirect if not logged in
+                window.location.href = 'index.html';
                 return;
             }
 
-            // Fetch User Data
-            const userRef = doc(db, "users", user.uid);
-            const userSnap = await getDoc(userRef);
-
+            const userSnap = await getDoc(doc(db, "users", user.uid));
             if (userSnap.exists()) {
-                currentUserData = userSnap.data();
-                fillForm(currentUserData, user);
+                const data = userSnap.data();
+                document.getElementById('name').value = data.name || '';
+                document.getElementById('username').value = data.username || '';
+                document.getElementById('bio').value = data.bio || '';
+                document.getElementById('location').value = data.location || '';
+                document.getElementById('email').value = user.email || '';
+                document.getElementById('gender').value = data.gender || '';
+                document.getElementById('orientation').value = data.orientation || '';
+                
+                if (data.dob) {
+                    const [y, m, d] = data.dob.split('-');
+                    document.getElementById('dob-year').value = y;
+                    document.getElementById('dob-month').value = parseInt(m);
+                    document.getElementById('dob-day').value = parseInt(d);
+                }
+
+                if (data.avatar) document.getElementById('pfp-preview').src = data.avatar;
+                if (data.banner) document.getElementById('banner-preview').src = data.banner;
+
+                const isGoogle = user.providerData.some(p => p.providerId === 'google.com');
+                document.getElementById('login-method').textContent = `Authenticated via ${isGoogle ? 'Google' : 'Email'}`;
+
+                const privacyRadios = document.getElementsByName('privacy');
+                privacyRadios.forEach(r => { if (r.value === (data.privacy || 'public')) r.checked = true; });
             }
-            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('loading-overlay').classList.add('hidden');
         });
 
-        function fillForm(data, user) {
-            document.getElementById('name').value = data.name || '';
-            document.getElementById('username').value = data.username || '';
-            document.getElementById('bio').value = data.bio || '';
-            document.getElementById('location').value = data.location || '';
-            document.getElementById('email').value = user.email || '';
-            document.getElementById('gender').value = data.gender || '';
-            document.getElementById('orientation').value = data.orientation || '';
-            
-            if (data.dob) {
-                const [y, m, d] = data.dob.split('-');
-                document.getElementById('dob-year').value = y;
-                document.getElementById('dob-month').value = parseInt(m);
-                document.getElementById('dob-day').value = parseInt(d);
-            }
-
-            if (data.avatar) document.getElementById('pfp-preview').src = data.avatar;
-            if (data.banner) document.getElementById('banner-preview').src = data.banner;
-
-            const isGoogle = user.providerData.some(p => p.providerId === 'google.com');
-            document.getElementById('login-method').textContent = `Logged in with ${isGoogle ? 'Google' : 'Email'}`;
-
-            const privacyRadios = document.getElementsByName('privacy');
-            privacyRadios.forEach(r => {
-                if (r.value === (data.privacy || 'public')) r.checked = true;
-            });
-        }
-
         // Image Previews
-        document.getElementById('banner-input').onchange = e => handleImageSelect(e, 'banner-preview');
-        document.getElementById('pfp-input').onchange = e => handleImageSelect(e, 'pfp-preview');
+        const setupPreview = (inputId, previewId) => {
+            document.getElementById(inputId).onchange = e => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = ev => document.getElementById(previewId).src = ev.target.result;
+                    reader.readAsDataURL(file);
+                }
+            };
+        };
+        setupPreview('banner-input', 'banner-preview');
+        setupPreview('pfp-input', 'pfp-preview');
 
-        function handleImageSelect(e, previewId) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = rev => document.getElementById(previewId).src = rev.target.result;
-                reader.readAsDataURL(file);
-            }
-        }
-
-        // Form Submit
         document.getElementById('account-form').onsubmit = async (e) => {
             e.preventDefault();
-            const saveBtn = document.getElementById('save-btn');
-            saveBtn.disabled = true;
-            saveBtn.textContent = 'Saving...';
+            const btn = document.getElementById('save-btn');
+            btn.disabled = true;
+            btn.textContent = 'Updating...';
 
             try {
                 const user = auth.currentUser;
@@ -361,34 +534,33 @@
                     dob: `${document.getElementById('dob-year').value}-${document.getElementById('dob-month').value.padStart(2, '0')}-${document.getElementById('dob-day').value.padStart(2, '0')}`
                 };
 
-                // Upload images if changed
                 const bannerFile = document.getElementById('banner-input').files[0];
                 const pfpFile = document.getElementById('pfp-input').files[0];
 
                 if (bannerFile) {
-                    const bannerRef = ref(storage, `banners/${user.uid}`);
-                    await uploadBytes(bannerRef, bannerFile);
-                    updates.banner = await getDownloadURL(bannerRef);
+                    const bRef = ref(storage, `banners/${user.uid}`);
+                    await uploadBytes(bRef, bannerFile);
+                    updates.banner = await getDownloadURL(bRef);
                 }
-
                 if (pfpFile) {
-                    const pfpRef = ref(storage, `avatars/${user.uid}`);
-                    await uploadBytes(pfpRef, pfpFile);
-                    updates.avatar = await getDownloadURL(pfpRef);
+                    const pRef = ref(storage, `avatars/${user.uid}`);
+                    await uploadBytes(pRef, pfpFile);
+                    updates.avatar = await getDownloadURL(pRef);
                 }
 
                 await updateDoc(doc(db, "users", user.uid), updates);
-                alert('Settings updated successfully!');
-            } catch (error) {
-                console.error(error);
-                alert('Error updating settings: ' + error.message);
+                alert('Profile updated successfully!');
+            } catch (err) {
+                console.error(err);
+                alert('Failed to update: ' + err.message);
             } finally {
-                saveBtn.disabled = false;
-                saveBtn.textContent = 'Save Changes';
+                btn.disabled = false;
+                btn.textContent = 'Update Profile';
             }
         };
 
         lucide.createIcons();
     </script>
 </body>
+
 </html>
