@@ -143,7 +143,7 @@
             box-shadow: 0 0 0 1px var(--input-focus-border);
         }
 
-        .input-container-field input, .input-container-field select {
+        .input-container-field input {
             flex: 1;
             width: 100%;
             padding: 16px 0;
@@ -152,15 +152,13 @@
             outline: none;
             color: var(--entered-text-color);
             background-color: transparent;
-            appearance: none;
-            -webkit-appearance: none;
         }
 
         .input-container-field input::placeholder {
             color: var(--placeholder-color);
         }
 
-        /* Separate custom styling purely for native raw layout controls */
+        /* Styling for standard dropdown elements */
         .form-control-raw {
             width: 100%;
             padding: 16px 18px;
@@ -189,12 +187,20 @@
             min-width: 130px;
         }
 
+        /* Cleaned Dropdown Arrow System Override to fix Double Icons */
         select.form-control-raw {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
             background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%238a8d91%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
             background-repeat: no-repeat;
             background-position: right 18px top 50%;
             background-size: 11px auto;
             padding-right: 42px;
+        }
+
+        select.form-control-raw::-ms-expand {
+            display: none; /* Disables IE/Edge native arrow element entirely */
         }
 
         .privacy-note {
@@ -235,7 +241,6 @@
             flex-shrink: 0;
         }
 
-        /* Unified Fixed Inline View Password Toggle Button */
         .toggle-password-inline {
             background: none;
             border: none;
@@ -301,7 +306,6 @@
             content: '●';
         }
 
-        /* Refactored Clean Text-Based Error Display Rules */
         .container-error-state {
             border-color: var(--health-weak) !important;
             box-shadow: 0 0 0 1px var(--health-weak) !important;
@@ -355,7 +359,7 @@
             font-weight: 600;
         }
 
-        /* Premium Async Email Verification Waiting Modal Screen Overlay */
+        /* Modal Overlay Screen */
         .verification-modal-overlay {
             position: fixed;
             top: 0;
@@ -377,7 +381,6 @@
             width: 100%;
         }
 
-        /* Smooth Geometric Indeterminate Spinner Architecture */
         .loading-spinner-circle {
             width: 48px;
             height: 48px;
@@ -609,7 +612,7 @@
 
     let pollingTimerInstance = null;
 
-    // Standard Form Submit pipeline
+    // Form Submit controller
     document.getElementById('signup-form').addEventListener('submit', async (event) => {
         event.preventDefault();
 
@@ -619,7 +622,6 @@
         const feedbackText = document.getElementById('clean-feedback-box');
         const submitBtn = document.getElementById('submit-btn');
 
-        // Reset text messages
         feedbackText.className = "clean-text-status hidden";
         feedbackText.textContent = "";
 
@@ -637,7 +639,6 @@
             return;
         }
 
-        // Strength evaluation checks
         const val = passwordInput.value;
         const hasUpper = /[A-Z]/.test(val);
         const hasLower = /[a-z]/.test(val);
@@ -655,17 +656,17 @@
             submitBtn.disabled = true;
             submitBtn.textContent = "Processing...";
 
-            // 1. Create firebase user instance
+            // 1. Create firebase account instance
             const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
             
-            // 2. Fire immediate verification email transaction
+            // 2. Transmit immediate verification validation token link
             await sendEmailVerification(userCredential.user);
 
-            // 3. Render full screen system waiting modal
+            // 3. Mount full wait screen background loop layout overlay
             document.getElementById('sent-target-string').textContent = emailInput.value;
             document.getElementById('verification-overlay').classList.remove('hidden');
 
-            // 4. Initialize real-time state pooling check loop until user clicks confirmation
+            // 4. Fire persistent authentication validation monitor pipelines
             startVerificationCheckLoop();
 
         } catch (error) {
@@ -687,28 +688,23 @@
         }
     });
 
-    // Real-Time Polling Verification Server Sync Loop Engine
     function startVerificationCheckLoop() {
         if (pollingTimerInstance) clearInterval(pollingTimerInstance);
 
         pollingTimerInstance = setInterval(async () => {
             const currentUser = auth.currentUser;
             if (currentUser) {
-                // Request server refresh updates manually
                 await currentUser.reload();
                 
                 if (currentUser.emailVerified) {
                     clearInterval(pollingTimerInstance);
                     
-                    // Clear the modal overlay screen layout smoothly
                     document.getElementById('verification-overlay').classList.add('hidden');
                     
-                    // Display success metrics inline using clean text styling rules
                     const feedbackText = document.getElementById('clean-feedback-box');
                     feedbackText.textContent = "Success! Your email address has been verified. Welcome aboard!";
                     feedbackText.className = "clean-text-status success-type";
                     
-                    // Clear fields and restore base views
                     document.getElementById('signup-form').reset();
                     window.checkPasswordHealth(document.getElementById('password'));
                     
@@ -716,10 +712,9 @@
                     document.getElementById('submit-btn').textContent = "Create Account";
                 }
             }
-        }, 2000); // Poll server every 2 seconds
+        }, 2000);
     }
 
-    // Modal Action Elements Bindings
     document.getElementById('resend-verification-btn').addEventListener('click', async () => {
         const btn = document.getElementById('resend-verification-btn');
         try {
@@ -742,7 +737,6 @@
     document.getElementById('cancel-verification-btn').addEventListener('click', async () => {
         if (pollingTimerInstance) clearInterval(pollingTimerInstance);
         try {
-            // Sign out the unverified profile out cleanly
             await signOut(auth);
         } catch(e){}
         
@@ -752,7 +746,7 @@
         submitBtn.textContent = "Create Account";
     });
 
-    // --- SCOPING ATTACHMENT ROUTERS ---
+    // --- GLOBAL BOUNDARY ROUTERS ---
     window.validateUsername = function(input) {
         let value = input.value.toLowerCase();
         value = value.replace(/[^a-z0-9._]/g, '');
@@ -845,7 +839,7 @@
         }
     };
 
-    // Auto-populate structural date dropdown lists
+    // Auto-populate date components
     const dayMenu = document.getElementById('birth-day');
     for (let d = 1; d <= 31; d++) {
         let option = document.createElement('option');
