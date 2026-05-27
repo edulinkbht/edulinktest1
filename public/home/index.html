@@ -3125,20 +3125,137 @@
         class="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-transparent hidden opacity-0 transition-opacity duration-150"
         onclick="closeSettings()">
         <div id="settings-modal"
-            class="bg-white w-full h-auto md:w-[400px] md:max-h-[80vh] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-150 flex flex-col overflow-hidden"
+            class="bg-white w-full h-full md:h-auto md:w-[400px] md:max-h-[80vh] md:rounded-[24px] rounded-none shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-150 flex flex-col overflow-hidden"
+            onclick="event.stopPropagation()">
+            <div class="modal-drag-handle md:hidden"></div>
+            <div class="modal-standard-header border-b border-gray-100">
+                <div class="flex items-center justify-between w-full px-2">
+                    <div class="flex items-center">
+                        <button onclick="closeSettings()" class="p-2 hover:bg-gray-100 rounded-full transition-colors md:hidden">
+                            <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                        </button>
+                        <button onclick="closeSettings()" class="hidden md:flex modal-chevron-btn">
+                            <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                        </button>
+                        <span class="text-lg font-bold ml-2">Settings and activity</span>
+                    </div>
+                    <button onclick="closeSettings()" class="md:hidden p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 flex flex-col gap-1" id="settings-content"></div>
+        </div>
+    </div>
+    <!-- Age Visibility Overlay -->
+    <div id="age-overlay"
+        class="fixed inset-0 z-[80] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
+        onclick="closeAgeSettings()">
+        <div id="age-modal"
+            class="bg-white w-full h-auto md:w-[450px] md:max-h-[90vh] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden"
             onclick="event.stopPropagation()">
             <div class="modal-drag-handle"></div>
             <div class="modal-standard-header">
                 <div class="flex items-center">
-                    <button onclick="closeSettings()" class="modal-chevron-btn">
+                    <button onclick="closeAgeSettings()" class="modal-chevron-btn">
                         <i data-lucide="chevron-down" class="w-6 h-6"></i>
                     </button>
-                    <span class="modal-standard-title">Settings</span>
+                    <span class="modal-standard-title">Age Visibility</span>
                 </div>
             </div>
-            <div class="p-4 flex flex-col gap-2" id="settings-content"></div>
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                <div class="p-4 bg-gray-50 rounded-xl">
+                    <div class="toggle-setting-row">
+                        <div>
+                            <div class="font-bold text-gray-900 text-[15px]">Hide Birth Year</div>
+                            <div class="text-xs text-gray-500 mt-0.5">Show only your month and day of birth</div>
+                        </div>
+                        <div id="toggle-hide-age" class="toggle-switch"
+                            onclick="updateAgeVisibilitySetting()">
+                            <div class="toggle-dot"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-2">
+                    <p class="text-xs text-gray-400 text-center leading-relaxed">When hidden, others will only see your birthday without the year, similar to Instagram.</p>
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- Notification Settings Overlay -->
+    <div id="notification-settings-overlay"
+        class="fixed inset-0 z-[80] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
+        onclick="closeNotificationSettings()">
+        <div id="notification-settings-modal"
+            class="bg-white w-full h-full md:h-auto md:w-[500px] md:max-h-[90vh] md:rounded-[24px] rounded-none shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden"
+            onclick="event.stopPropagation()">
+            <div class="modal-drag-handle md:hidden"></div>
+            <div class="modal-standard-header border-b border-gray-100">
+                <div class="flex items-center justify-between w-full px-2">
+                    <div class="flex items-center">
+                        <button onclick="closeNotificationSettings()" class="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                            <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                        </button>
+                        <span class="text-lg font-bold ml-2">Notifications</span>
+                    </div>
+                    <button onclick="closeNotificationSettings()" class="md:hidden p-2 hover:bg-gray-100 rounded-full transition-colors">
+                        <i data-lucide="x" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-6">
+                <div class="space-y-1">
+                    <div class="text-xs font-bold text-gray-500 px-2 py-2 uppercase tracking-wider">Posts, Stories and Comments</div>
+                    <div class="p-4 bg-gray-50 rounded-2xl space-y-4">
+                        <div class="toggle-setting-row">
+                            <div class="font-medium text-gray-900">Likes</div>
+                            <div id="notif-likes" class="toggle-switch active" onclick="updateNotificationPref('likes')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                        <div class="toggle-setting-row">
+                            <div class="font-medium text-gray-900">Comments</div>
+                            <div id="notif-comments" class="toggle-switch active" onclick="updateNotificationPref('comments')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="text-xs font-bold text-gray-500 px-2 py-2 uppercase tracking-wider">Following and Followers</div>
+                    <div class="p-4 bg-gray-50 rounded-2xl space-y-4">
+                        <div class="toggle-setting-row">
+                            <div class="font-medium text-gray-900">New Followers</div>
+                            <div id="notif-followers" class="toggle-switch active" onclick="updateNotificationPref('followers')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                        <div class="toggle-setting-row">
+                            <div class="font-medium text-gray-900">Accepted Follow Requests</div>
+                            <div id="notif-requests" class="toggle-switch active" onclick="updateNotificationPref('requests')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="text-xs font-bold text-gray-500 px-2 py-2 uppercase tracking-wider">From EduLink</div>
+                    <div class="p-4 bg-gray-50 rounded-2xl space-y-4">
+                        <div class="toggle-setting-row">
+                            <div class="font-medium text-gray-900">Announcements</div>
+                            <div id="notif-announcements" class="toggle-switch active" onclick="updateNotificationPref('announcements')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="privacy-overlay"
         class="fixed inset-0 z-[80] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
         onclick="closePrivacySettings()">
@@ -3874,10 +3991,7 @@
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
-                <span class="sidebar-label hidden lg:block">Activity</span><span id="nav-notif-badge" class="nav-badge">0</span></a><a
-                href="#" onclick="switchView('saved');return false;" id="nav-saved" class="nav-item">
-                <i data-lucide="bookmark" class="w-7 h-7" id="nav-saved-icon"></i>
-                <span class="sidebar-label hidden lg:block">Favourite</span></a><a href="#"
+                <span class="sidebar-label hidden lg:block">Activity</span><span id="nav-notif-badge" class="nav-badge">0</span></a><a href="#"
                 onclick="showProfile(auth.currentUser?auth.currentUser.uid:null);return false;" id="nav-profile"
                 class="nav-item">
                 <div class="w-7 h-7 rounded-full overflow-hidden shrink-0 border border-gray-100">
@@ -3908,25 +4022,17 @@
         <!-- Desktop More Menu -->
         <div id="more-menu">
             <div id="more-menu-content" class="flex flex-col gap-1">
-                <div class="more-menu-item" onclick="window.location.href='/settings'; closeMoreMenu()">
+                <div class="more-menu-item" onclick="openSettings()">
                     <i data-lucide="settings"></i>
                     <span>Settings</span>
-                </div>
-                <div class="more-menu-item" onclick="switchView('saved'); closeMoreMenu()">
-                    <i data-lucide="bookmark"></i>
-                    <span>Saved</span>
                 </div>
                 <div class="more-menu-item" onclick="window.location.href='/blog'; closeMoreMenu()">
                     <i data-lucide="grid-2x2"></i>
                     <span>Blog</span>
                 </div>
-                <div class="more-menu-item" onclick="window.location.href='/termsandservices'; closeMoreMenu()">
+                <div class="more-menu-item" onclick="window.location.href='/terms'; closeMoreMenu()">
                     <i data-lucide="file-text"></i>
                     <span>Terms</span>
-                </div>
-                <div class="more-menu-item" onclick="openPrivacySettings(); closeMoreMenu()">
-                    <i data-lucide="lock"></i>
-                    <span>Account Privacy</span>
                 </div>
                 <div id="more-menu-broadcast" class="more-menu-item hidden" onclick="openAnnouncement(); closeMoreMenu()">
                     <i data-lucide="megaphone"></i>
@@ -4105,6 +4211,19 @@
                     <div id="explore-results" class="space-y-0 pt-0"></div>
                 </div>
             </div>
+
+            <!-- Settings View -->
+            <div id="view-settings" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-16 md:pt-20">
+                <div class="max-w-2xl mx-auto">
+                    <div class="px-6 py-8 border-b border-gray-100">
+                        <h2 class="text-3xl font-bold text-gray-900">Settings</h2>
+                        <p class="text-gray-500 mt-2">Manage your account and activity preferences</p>
+                    </div>
+                    <div id="desktop-settings-content" class="p-4 space-y-2">
+                        <!-- Settings sections will be injected here -->
+                    </div>
+                </div>
+            </div>
         </main>
         <aside id="trending-panel" class="trending-panel hidden xl:flex">
             <div id="background-upload-container" class="w-full"></div>
@@ -4121,7 +4240,7 @@
             <div class="px-6 py-4">
                 <div class="flex flex-wrap gap-x-3 gap-y-1 text-[#777] text-[13px] font-normal opacity-80">
                     <span>© 2026</span>
-                    <a href="/termsandservices" class="hover:underline">EduLink Terms</a>
+                    <a href="/terms" class="hover:underline">EduLink Terms</a>
                     <a href="/privacy" class="hover:underline">Privacy Policy</a>
                     <a href="/report" class="hover:underline">Report a problem</a>
 
@@ -5022,78 +5141,12 @@
         function ed() { isDraggingBanner = !1 }
         window.openSettings = () => {
             if (window.innerWidth >= 768) {
-                document.getElementById('more-menu').classList.toggle('active');
+                switchView('settings');
+                closeMoreMenu();
                 return;
             }
             manageHistory('settings-overlay');
-            const c = document.getElementById('settings-content');
-            if (c.innerHTML.trim() === "") {
-                let admBtn = '';
-                if (currentUser.email === 'edulinkbht@gmail.com') {
-                    admBtn = `<button onclick="openAnnouncement()" class="post-option-item group w-full">
-                        <div class="icon-circle"><i data-lucide="megaphone" class="w-5 h-5"></i></div>
-                        <div class="flex-1">
-                            <div class="font-bold text-gray-900 text-[15px]">Broadcast Announcement</div>
-                            <div class="text-xs text-gray-500">Send to all users</div>
-                        </div>
-                    </button>`;
-                }
-                c.innerHTML = `
-                    <button onclick="window.location.href='/settings'" class="post-option-item group w-full">
-                        <div class="icon-circle"><i data-lucide="settings" class="w-5 h-5"></i></div>
-                        <div class="flex-1 text-left">
-                            <div class="font-bold text-gray-900 text-[15px]">Settings</div>
-                            <div class="text-xs text-gray-500">General account settings</div>
-                        </div>
-                    </button>
-                    <button onclick="switchView('saved'); closeSettings()" class="post-option-item group w-full">
-                        <div class="icon-circle"><i data-lucide="bookmark" class="w-5 h-5"></i></div>
-                        <div class="flex-1 text-left">
-                            <div class="font-bold text-gray-900 text-[15px]">Saved</div>
-                            <div class="text-xs text-gray-500">Your saved posts</div>
-                        </div>
-                    </button>
-                    <button onclick="window.location.href='/blog'" class="post-option-item group w-full">
-                        <div class="icon-circle"><i data-lucide="grid-2x2" class="w-5 h-5"></i></div>
-                        <div class="flex-1 text-left">
-                            <div class="font-bold text-gray-900 text-[15px]">Blog</div>
-                            <div class="text-xs text-gray-500">Explore official posts</div>
-                        </div>
-                    </button>
-                    <button onclick="window.location.href='/termsandservices'; closeSettings()" class="post-option-item group w-full">
-                        <div class="icon-circle"><i data-lucide="file-text" class="w-5 h-5"></i></div>
-                        <div class="flex-1 text-left">
-                            <div class="font-bold text-gray-900 text-[15px]">Terms</div>
-                            <div class="text-xs text-gray-500">Policies and agreements</div>
-                        </div>
-                    </button>
-                    <button onclick="openPrivacySettings()" class="post-option-item group w-full">
-                        <div class="icon-circle"><i data-lucide="lock" class="w-5 h-5"></i></div>
-                        <div class="flex-1 text-left">
-                            <div class="font-bold text-gray-900 text-[15px]">Account Privacy</div>
-                            <div class="text-xs text-gray-500">Manage visibility and data</div>
-                        </div>
-                    </button>
-                    ${admBtn}
-                    <button onclick="openSwitchAccount()" class="post-option-item group w-full">
-                        <div class="icon-circle"><i data-lucide="repeat" class="w-5 h-5"></i></div>
-                        <div class="flex-1 text-left">
-                            <div class="font-bold text-gray-900 text-[15px]">Switch accounts</div>
-                            <div class="text-xs text-gray-500">Log into another account</div>
-                        </div>
-                    </button>
-                    <div class="h-px bg-gray-100 my-2 mx-2"></div>
-                    <div onclick="window.logoutWithConfirm()" class="logout-btn-custom group">
-                        <img src="${currentUser.avatar}" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
-                        <div class="flex-1">
-                            <div class="font-bold text-red-600 text-[15px]">Log Out</div>
-                            <div class="text-xs text-gray-400 truncate">@${currentUser.username || 'user'}</div>
-                        </div>
-                        <i data-lucide="log-out" class="w-5 h-5 text-red-400 group-hover:text-red-600 transition-colors"></i>
-                    </div>
-                `;
-                refreshIcons();
-            }
+            renderMobileSettings();
             toggleModalAnim('settings-overlay', 'settings-modal', !0);
         };
         window.closeMoreMenu = () => {
@@ -5119,8 +5172,206 @@
             await signOut(auth);
             window.location.href = '/login';
         };
-        window.openMobileSettings = () => {
-            window.openSettings();
+        window.renderMobileSettings = () => {
+            const c = document.getElementById('settings-content');
+            let admBtn = '';
+            if (currentUser.email === 'edulinkbht@gmail.com') {
+                admBtn = `<button onclick="openAnnouncement()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="megaphone" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Broadcast Announcement</div>
+                        <div class="text-xs text-gray-500">Send to all users</div>
+                    </div>
+                </button>`;
+            }
+            c.innerHTML = `
+                <div class="text-xs font-bold text-gray-500 px-2 py-3 uppercase tracking-wider">Your account</div>
+                <button onclick="openPrivacySettings()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="lock" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Account Privacy</div>
+                        <div class="text-xs text-gray-500">Manage visibility and data</div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                </button>
+                <button onclick="openAgeSettings()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="calendar" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Age visibility</div>
+                        <div class="text-xs text-gray-500">Hide or show your birth year</div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                </button>
+
+                <div class="text-xs font-bold text-gray-500 px-2 py-3 mt-4 uppercase tracking-wider">Your activity</div>
+                <button onclick="switchView('saved'); closeSettings()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="bookmark" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Saved</div>
+                        <div class="text-xs text-gray-500">Your saved posts</div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                </button>
+
+                <div class="text-xs font-bold text-gray-500 px-2 py-3 mt-4 uppercase tracking-wider">How you use EduLink</div>
+                <button onclick="openNotificationSettings()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="bell" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Notifications</div>
+                        <div class="text-xs text-gray-500">Push and in-app alerts</div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                </button>
+                <button onclick="window.location.href='/terms'; closeSettings()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="file-text" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Terms</div>
+                        <div class="text-xs text-gray-500">Policies and agreements</div>
+                    </div>
+                    <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                </button>
+                ${admBtn}
+                
+                <div class="text-xs font-bold text-gray-500 px-2 py-3 mt-4 uppercase tracking-wider">Login</div>
+                <button onclick="openSwitchAccount()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="repeat" class="w-5 h-5"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-gray-900 text-[15px]">Switch accounts</div>
+                        <div class="text-xs text-gray-500">Log into another account</div>
+                    </div>
+                </button>
+                <button onclick="window.logoutWithConfirm()" class="post-option-item group w-full">
+                    <div class="icon-circle"><i data-lucide="log-out" class="w-5 h-5 text-red-500"></i></div>
+                    <div class="flex-1 text-left">
+                        <div class="font-bold text-red-600 text-[15px]">Log Out</div>
+                        <div class="text-xs text-gray-400 truncate">@${currentUser.username || 'user'}</div>
+                    </div>
+                </button>
+            `;
+            refreshIcons();
+        };
+
+        window.renderDesktopSettings = () => {
+            const c = document.getElementById('desktop-settings-content');
+            let admBtn = '';
+            if (currentUser.email === 'edulinkbht@gmail.com') {
+                admBtn = `
+                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer group" onclick="openAnnouncement()">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-black text-white flex items-center justify-center">
+                                <i data-lucide="megaphone" class="w-6 h-6"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-gray-900 text-lg">Broadcast Announcement</h3>
+                                <p class="text-gray-500">Send a notification to all users on the platform</p>
+                            </div>
+                        </div>
+                        <i data-lucide="chevron-right" class="w-6 h-6 text-gray-300 group-hover:text-gray-900 transition-colors"></i>
+                    </div>
+                </div>`;
+            }
+            c.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Your Account Section -->
+                    <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer group" onclick="openPrivacySettings()">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+                                    <i data-lucide="lock" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900 text-lg">Account Privacy</h3>
+                                    <p class="text-gray-500">Manage who can see your profile and posts</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer group" onclick="openAgeSettings()">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+                                    <i data-lucide="calendar" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900 text-lg">Age visibility</h3>
+                                    <p class="text-gray-500">Choose to hide or show your birth year</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Your Activity Section -->
+                    <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer group" onclick="switchView('saved')">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+                                    <i data-lucide="bookmark" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900 text-lg">Saved Posts</h3>
+                                    <p class="text-gray-500">View and manage posts you've bookmarked</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notifications Section -->
+                    <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer group" onclick="openNotificationSettings()">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+                                    <i data-lucide="bell" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900 text-lg">Notifications</h3>
+                                    <p class="text-gray-500">Control your push and in-app notification alerts</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- App Section -->
+                    <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer group" onclick="window.location.href='/terms'">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+                                    <i data-lucide="file-text" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900 text-lg">Terms & Policies</h3>
+                                    <p class="text-gray-500">Read our terms of service and privacy policies</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100 hover:border-gray-200 transition-all cursor-pointer group" onclick="openSwitchAccount()">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 rounded-xl bg-white border border-gray-200 flex items-center justify-center">
+                                    <i data-lucide="repeat" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-gray-900 text-lg">Switch Account</h3>
+                                    <p class="text-gray-500">Log into another EduLink account</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                ${admBtn}
+
+                <div class="pt-8">
+                    <button onclick="window.logoutWithConfirm()" class="w-full p-4 bg-red-50 text-red-600 rounded-2xl font-bold hover:bg-red-100 transition-all flex items-center justify-center gap-2">
+                        <i data-lucide="log-out" class="w-5 h-5"></i>
+                        Log Out of @${currentUser.username || 'user'}
+                    </button>
+                </div>
+            `;
+            refreshIcons();
         };
         window.closeSettings = () => toggleModalAnim('settings-overlay', 'settings-modal', !1);
         window.openPrivacySettings = () => { manageHistory('privacy-overlay'); closeSettings(); document.getElementById('privacy-overlay').classList.remove('hidden'); toggleModalAnim('privacy-overlay', 'privacy-modal', !0); document.getElementById('privacy-user-avatar').src = currentUser.avatar; document.getElementById('privacy-user-name').innerText = currentUser.name; const s = currentUser.settings || {}, pt = document.getElementById('toggle-privacy-main'), ht = document.getElementById('toggle-hide-connections'); if (s.privateNetwork) pt.classList.add('active'); else pt.classList.remove('active'); if (s.hideConnections) ht.classList.add('active'); else ht.classList.remove('active') }; window.closePrivacySettings = () => toggleModalAnim('privacy-overlay', 'privacy-modal', !1);
@@ -5195,6 +5446,57 @@
             }
         });
         window.updatePrivacySetting = async k => { const el = k === 'privateNetwork' ? document.getElementById('toggle-privacy-main') : document.getElementById('toggle-hide-connections'), ia = el.classList.contains('active'), nv = !ia; el.classList.toggle('active'); const s = currentUser.settings || {}, k2 = k; s[k2] = nv; await updateDoc(doc(db, "users", currentUser.id), { settings: s }); currentUser.settings = s; if (k === 'privateNetwork') showToast(`Account is now ${nv ? 'Private' : 'Public'}`); else showToast("Settings saved") };
+
+        window.openAgeSettings = () => {
+            manageHistory('age-overlay');
+            closeSettings();
+            const overlay = document.getElementById('age-overlay');
+            overlay.classList.remove('hidden');
+            const s = currentUser.settings || {};
+            const toggle = document.getElementById('toggle-hide-age');
+            if (s.hideAge) toggle.classList.add('active');
+            else toggle.classList.remove('active');
+            toggleModalAnim('age-overlay', 'age-modal', !0);
+        };
+        window.closeAgeSettings = () => toggleModalAnim('age-overlay', 'age-modal', !1);
+        window.updateAgeVisibilitySetting = async () => {
+            const el = document.getElementById('toggle-hide-age');
+            const isActive = el.classList.contains('active');
+            const newValue = !isActive;
+            el.classList.toggle('active');
+            const s = currentUser.settings || {};
+            s.hideAge = newValue;
+            await updateDoc(doc(db, "users", currentUser.id), { settings: s });
+            currentUser.settings = s;
+            showToast(newValue ? "Age hidden" : "Age visible");
+        };
+
+        window.openNotificationSettings = () => {
+            manageHistory('notification-settings-overlay');
+            closeSettings();
+            const overlay = document.getElementById('notification-settings-overlay');
+            overlay.classList.remove('hidden');
+            const s = currentUser.settings?.notifications || { likes: true, comments: true, followers: true, requests: true, announcements: true };
+            ['likes', 'comments', 'followers', 'requests', 'announcements'].forEach(k => {
+                const el = document.getElementById(`notif-${k}`);
+                if (s[k]) el.classList.add('active');
+                else el.classList.remove('active');
+            });
+            toggleModalAnim('notification-settings-overlay', 'notification-settings-modal', !0);
+        };
+        window.closeNotificationSettings = () => toggleModalAnim('notification-settings-overlay', 'notification-settings-modal', !1);
+        window.updateNotificationPref = async (k) => {
+            const el = document.getElementById(`notif-${k}`);
+            const isActive = el.classList.contains('active');
+            const newValue = !isActive;
+            el.classList.toggle('active');
+            const s = currentUser.settings || {};
+            if (!s.notifications) s.notifications = { likes: true, comments: true, followers: true, requests: true, announcements: true };
+            s.notifications[k] = newValue;
+            await updateDoc(doc(db, "users", currentUser.id), { settings: s });
+            currentUser.settings = s;
+            showToast("Preferences saved");
+        };
         window.openProfileFilter = () => { manageHistory('profile-filter-overlay'); toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !0);['latest', 'oldest', 'popular'].forEach(s => { const el = document.getElementById(`sort-check-${s}`); if (window.profileSort === s) el.classList.remove('hidden'); else el.classList.add('hidden') }) }; window.closeProfileFilter = () => toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !1);
         window.setProfileSort = s => { window.profileSort = s; renderProfileContent(window.currentViewingProfileId, window.currentProfileTab); closeProfileFilter() };
         window.togglePrivacy = async () => { const t = document.getElementById('toggle-privacy'), p = !t.classList.contains('active'); t.classList.toggle('active'); const s = currentUser.settings || {}; s.privateNetwork = p; await updateDoc(doc(db, "users", currentUser.id), { settings: s }); currentUser.settings = s; showToast(`Account is ${p ? 'Private' : 'Public'}`) };
@@ -5212,7 +5514,7 @@
             refreshIcons();
         };
         window.switchView = async (v, direction = 'none') => {
-            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); const tp = document.getElementById('trending-panel'), mh = document.getElementById('main-header'), mbn = document.getElementById('mobile-bottom-nav'), mnh = document.getElementById('mobile-notifications-header'); window.currentViewName = v; if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } if (mbn) mbn.classList.remove('hidden'); if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } if (v === 'profile' && mh) mh.classList.add('hidden'); if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); if (window.innerWidth >= 1280) tp.classList.remove('hidden'), tp.classList.add('xl:flex'); if (v !== 'ai') { const el = document.getElementById(`view-${v}`); if (el) { el.classList.remove('hidden'); if (direction === 'left') el.classList.add('slide-in-left'); if (direction === 'right') el.classList.add('slide-in-right') } } document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); if (nav) nav.classList.add('active'); if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('top'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
+            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications', 'settings'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); const tp = document.getElementById('trending-panel'), mh = document.getElementById('main-header'), mbn = document.getElementById('mobile-bottom-nav'), mnh = document.getElementById('mobile-notifications-header'); window.currentViewName = v; if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } if (mbn) mbn.classList.remove('hidden'); if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } if (v === 'profile' && mh) mh.classList.add('hidden'); if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); if (window.innerWidth >= 1280) tp.classList.remove('hidden'), tp.classList.add('xl:flex'); if (v !== 'ai') { const el = document.getElementById(`view-${v}`); if (el) { el.classList.remove('hidden'); if (direction === 'left') el.classList.add('slide-in-left'); if (direction === 'right') el.classList.add('slide-in-right') } } document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); if (nav) nav.classList.add('active'); if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('top'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') } else if (v === 'settings') { if (nav) nav.classList.add('active'); renderDesktopSettings(); }
 
             // Desktop header search placeholder
             const gs = document.getElementById('global-search');
@@ -6076,7 +6378,18 @@
             else visible.forEach(p => c.appendChild(createPostElement(p, 'saved'))); 
             refreshIcons() 
         };
-        async function sendNotification(rid, t, c, pid = null) { await setDoc(doc(db, "notifications", `${t}_${currentUser.id}_${pid || 'general'}_${rid}`), { receiverId: rid, senderId: currentUser.id, type: t, content: c, timestamp: serverTimestamp(), read: !1, postId: pid }, { merge: !0 }) }
+        async function sendNotification(rid, t, c, pid = null) {
+            const receiver = users.find(u => u.id === rid);
+            if (receiver && receiver.settings && receiver.settings.notifications) {
+                const n = receiver.settings.notifications;
+                if (['like', 'repost_like', 'comment_like'].includes(t) && n.likes === false) return;
+                if (['comment', 'reply'].includes(t) && n.comments === false) return;
+                if (t === 'follow' && n.followers === false) return;
+                if (['follow_request', 'collab_request'].includes(t) && n.requests === false) return;
+                if (t === 'system' && n.announcements === false) return;
+            }
+            await setDoc(doc(db, "notifications", `${t}_${currentUser.id}_${pid || 'general'}_${rid}`), { receiverId: rid, senderId: currentUser.id, type: t, content: c, timestamp: serverTimestamp(), read: !1, postId: pid }, { merge: !0 })
+        }
         window.switchNotifTab = t => { activeNotifTab = t; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));[`ntab-${t}`, `ntab-${t}-mobile`].forEach(id => document.getElementById(id)?.classList.add('active')); renderNotifications() };
         window.toggleNotifMenu = () => { manageHistory('notif-options-overlay'); const o = document.getElementById('notif-options-overlay'), m = document.getElementById('notif-options-modal'); o.classList.remove('hidden'); m.style.transition = 'none'; o.classList.add('opacity-0'); m.classList.add('translate-y-full'); void m.offsetWidth; m.style.transition = ''; setTimeout(() => { o.classList.remove('opacity-0'); m.classList.remove('translate-y-full') }, 20) }; window.closeNotifOptions = () => { const o = document.getElementById('notif-options-overlay'), m = document.getElementById('notif-options-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full'); setTimeout(() => o.classList.add('hidden'), 200) };
         window.toggleNotifSelection = () => { window.notifSelectionMode = !window.notifSelectionMode; if (!window.notifSelectionMode) window.selectedNotifs.clear(); renderNotifications() };
@@ -6446,7 +6759,7 @@
             const bioHtml = u.bio ? `<div class="text-[14px] leading-relaxed text-gray-800 break-words mt-2 mb-1">${formatContent(u.bio)}</div>${previewHtml}` : `<div class="text-[14px] leading-relaxed text-gray-400 italic mt-2 mb-1">No bio yet</div>`;
             c.innerHTML = `<div class="profile-banner-container"><img src="${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'}" class="profile-banner-img" style="object-position:center ${u.bannerPos || 50}%" onload="this.classList.add('loaded')"></div><div class="bg-white rounded-t-[30px] -mt-6 relative z-10 pt-2 px-4 md:px-6 min-h-[calc(100%-140px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"><div class="flex justify-between items-end -mt-14 mb-4 px-2"><div class="flex items-end gap-3"><div class="rounded-full border-4 border-white bg-gray-100 w-24 h-24 shrink-0 flex items-center justify-center overflow-hidden" id="profile-avatar-wrap"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover cursor-pointer" onclick="openLightbox('${u.avatar}')" onload="this.classList.add('loaded')" onerror="this.style.display='none';this.parentElement.innerHTML='<i data-lucide=\'user-round\' class=\'w-12 h-12 text-gray-400\'></i>';refreshIcons()"></div>${mutualFriendsHtml}</div>${ab}</div><div class="mb-3"><h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}${u.banned ? '<i data-lucide="ban" class="text-red-600 w-6 h-6"></i>' : ''}</h1>
                     <div class="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
-                        ${u.dob ? `<span>${window.calculateAge(u.dob)} years old</span>` : ''}
+                        ${u.dob ? `<span>${u.settings?.hideAge ? `Born ${window.formatBirthday(u.dob)}` : `${window.calculateAge(u.dob)} years old`}</span>` : ''}
                         ${u.location ? `<span>• ${u.location}</span>` : ''}
                     </div>
                     ${bioHtml}${stats}</div><div class="-mx-4 md:-mx-6"><div class="tab-group mb-0">${tabs}</div><div id="profile-content-area" class="pb-20 md:pb-0"></div></div></div>`; switchView('profile'); renderProfileContent(uid, tab); syncURLState(); refreshIcons(); window.updateMobileFooterProfile();
@@ -7131,6 +7444,12 @@
             const m = today.getMonth() - birthDate.getMonth();
             if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
             return age;
+        };
+
+        window.formatBirthday = (dob) => {
+            if (!dob) return "";
+            const date = new Date(dob);
+            return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
         };
 
         window.updateEditAge = () => {
