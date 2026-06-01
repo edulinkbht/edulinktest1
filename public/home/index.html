@@ -6395,6 +6395,8 @@
         window.handleNotifSearch = v => { window.notifSearchTerm = v.toLowerCase(); renderNotifications() };
         window.toggleNotifSelect = id => { window.selectedNotifs.has(id) ? window.selectedNotifs.delete(id) : window.selectedNotifs.add(id); renderNotifications() };
         window.deleteSelectedNotifs = async () => { if (!window.selectedNotifs.size) return showToast("None selected"); showAlert(`Delete ${window.selectedNotifs.size} items?`, async () => { const b = writeBatch(db); window.selectedNotifs.forEach(id => b.delete(doc(db, "notifications", id))); await b.commit(); window.notifSelectionMode = false; window.selectedNotifs.clear(); toggleNotifMenu(); showToast("Deleted") }) };
+        window.expandedNotifSections = { today: false, lastweek: false, earlier: false };
+        window.toggleNotifSection = s => { window.expandedNotifSections[s] = !window.expandedNotifSections[s]; renderNotifications(); };
         window.renderNotifications = () => {
             const c = document.getElementById('notification-list'), term = window.notifSearchTerm;
             let fl = notifications.filter(n => {
@@ -6402,7 +6404,28 @@
                 const matchesSearch = (!term || n.content.toLowerCase().includes(term) || (s.name || '').toLowerCase().includes(term) || (s.username || '').toLowerCase().includes(term));
                 return matchesSearch;
             });
-            if (!fl.length) return c.innerHTML = '<div class="text-center text-xs text-gray-400 py-4">No notifications</div>';
+            
+            const headerHtml = `
+                <div class="max-w-2xl mx-auto w-full px-4 pt-6 md:pt-8">
+                    <h2 class="text-[22px] md:text-[24px] font-bold text-gray-900 mb-5">User's preference</h2>
+                    <div class="bg-white rounded-2xl border border-gray-100 divide-y divide-gray-100 mb-6 overflow-hidden">
+                        <div class="p-4 md:p-5 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors" onclick="switchView('notification-settings')">
+                            <i data-lucide="bell" class="w-7 h-7 text-gray-900 shrink-0"></i>
+                            <div class="flex-1 min-w-0">
+                                <div class="font-bold text-gray-900 text-[16px] md:text-[17px]">Notifications</div>
+                                <div class="text-[13px] md:text-[14px] text-gray-500 mt-0.5 leading-snug">Disable notifications from certain people. Reduce distractions. <a href="https://idembt.vercel.app/account" target="_blank" class="text-blue-600 font-medium hover:underline" onclick="event.stopPropagation()">Learn more</a></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            if (!fl.length) {
+                c.innerHTML = headerHtml + '<div class="text-center text-xs text-gray-400 py-4">No notifications</div>';
+                refreshIcons();
+                return;
+            }
+            
             const likeGroups = new Map(), commentGroups = new Map(), finalItems = [];
             fl.forEach(n => {
                 if ((n.type === 'like' || n.type === 'comment_like') && n.postId) {
@@ -6424,7 +6447,24 @@
             likeGroups.forEach((g, pid) => { finalItems.push({ type: 'group_like', data: g.notifs, postId: pid, ts: g.latestTs }) });
             commentGroups.forEach((g, pid) => { finalItems.push({ type: 'group_comment', data: g.notifs, postId: pid, ts: g.latestTs }) });
             finalItems.sort((a, b) => b.ts - a.ts);
-            const html = finalItems.map(item => {
+            
+            // Categorize items
+            const now = new Date().getTime();
+            const oneDay = 86400000;
+            const oneWeek = 604800000;
+            
+            const todayItems = [];
+            const lastWeekItems = [];
+            const earlierItems = [];
+            
+            finalItems.forEach(item => {
+                const age = now - item.ts;
+                if (age < oneDay) todayItems.push(item);
+                else if (age < oneWeek) lastWeekItems.push(item);
+                else earlierItems.push(item);
+            });
+            
+            const renderItem = (item) => {
                 if (item.type === 'group_like' || item.type === 'group_comment') {
                     const notifs = item.data, pid = item.postId, p = posts.find(x => x.id === pid);
                     const postImg = p ? (Array.isArray(p.media) ? p.media[0] : p.media) : null;
@@ -6559,25 +6599,48 @@
                         </div>
                     </div>`
                 }
-            }).join('');
-
-            if (finalItems.length > 0 && !term) {
-                const footer = `<div class="py-16 flex flex-col items-center justify-center text-gray-400 select-none">
+            };
+            
+            const renderSection = (title, items, key, description) => {
+                if (items.length === 0) return '';
+                
+                const isExpanded = window.expandedNotifSections[key];
+                const displayItems = isExpanded ? items : items.slice(0, 3);
+                const itemsHtml = displayItems.map(renderItem).join('');
+                const hasMore = items.length > 3;
+                
+                return `
+                    <div class="max-w-2xl mx-auto w-full px-4 mb-5">
+                        <h3 class="text-[18px] font-bold text-gray-900 mb-2">${title}</h3>
+                        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden mb-2">
+                            <div class="p-4 border-b border-gray-100">
+                                <div class="text-gray-700 text-[14px]">
+                                    ${description}
+                                    ${hasMore ? `<button onclick="event.stopPropagation(); toggleNotifSection('${key}')" class="text-blue-600 font-bold hover:underline ml-1">See more</button>` : ''}
+                                </div>
+                            </div>
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                `;
+            };
+            
+            const sectionsHtml = 
+                renderSection('Today', todayItems, 'today', 'See what your friends are up to, join the movement with them.') +
+                renderSection('Last week', lastWeekItems, 'lastweek', 'See what you have missed so far, get in touch with them. Engage and grow.') +
+                renderSection('Earlier', earlierItems, 'earlier', 'Your older notifications and activities.');
+            
+            const footer = finalItems.length > 0 && !term ? `<div class="py-16 flex flex-col items-center justify-center text-gray-400 select-none">
                     <div class="w-14 h-14 rounded-full border border-gray-100 flex items-center justify-center mb-4 bg-gray-50/50 shadow-sm">
                         <i data-lucide="bell-ring" class="w-7 h-7 text-gray-400"></i>
                     </div>
                     <div class="text-[13px] font-bold text-gray-500">Nothing more</div>
                     <div class="text-[11px] text-gray-400 mt-1">You're all caught up!</div>
                     <div class="h-20"></div>
-                </div>`;
-                if (c.innerHTML !== html + footer) {
-                    c.innerHTML = html + footer;
-                    refreshIcons();
-                }
-            } else if (c.innerHTML !== html) {
-                c.innerHTML = html;
-                refreshIcons();
-            }
+                </div>` : '';
+            
+            c.innerHTML = headerHtml + sectionsHtml + footer;
+            refreshIcons();
         };
 
         window.openProfilePreview = (uid) => { const u = users.find(x => x.id === uid); if (!u) return; manageHistory('profile-preview-overlay'); 
