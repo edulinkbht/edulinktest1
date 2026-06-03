@@ -5344,7 +5344,7 @@
 
         window.closeSwitchAccount = () => toggleModalAnim('switch-account-overlay', 'switch-account-modal', false);
 
-        document.getElementById('switch-login-btn').addEventListener('click', async () => {
+        const handleSwitchAccountLogin = async () => {
             const emailInput = document.getElementById('switch-email-input').value.trim();
             const passwordInput = document.getElementById('switch-password-input').value;
             const btn = document.getElementById('switch-login-btn');
@@ -5380,6 +5380,21 @@
                 showToast(error.message || 'Login failed');
                 btn.disabled = false;
                 btn.innerText = 'Log In';
+            }
+        };
+        document.getElementById('switch-login-btn').addEventListener('click', handleSwitchAccountLogin);
+        
+        // Add Enter key listeners to both inputs
+        document.getElementById('switch-email-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSwitchAccountLogin();
+            }
+        });
+        document.getElementById('switch-password-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                handleSwitchAccountLogin();
             }
         });
         window.updatePrivacySetting = async k => { const el = k === 'privateNetwork' ? document.getElementById('toggle-privacy-main') : document.getElementById('toggle-hide-connections'), ia = el.classList.contains('active'), nv = !ia; el.classList.toggle('active'); const s = currentUser.settings || {}, k2 = k; s[k2] = nv; await updateDoc(doc(db, "users", currentUser.id), { settings: s }); currentUser.settings = s; if (k === 'privateNetwork') showToast(`Account is now ${nv ? 'Private' : 'Public'}`); else showToast("Settings saved") };
