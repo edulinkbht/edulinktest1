@@ -9065,31 +9065,39 @@
 
             try {
                 if (isImage && window.APP_CONFIG.imgHippoApiKey) {
+                    console.log('Starting ImgHippo upload...');
                     if (onProgress) onProgress(10);
                     
                     const formData = new FormData();
                     formData.append('api_key', window.APP_CONFIG.imgHippoApiKey);
                     formData.append('file', f);
 
+                    console.log('Sending request to ImgHippo...');
                     const response = await fetch('https://api.imghippo.com/v1/upload', {
                         method: 'POST',
                         body: formData
                     });
 
+                    console.log('ImgHippo response status:', response.status);
                     const j = await response.json();
+                    console.log('ImgHippo response:', j);
                     
                     if (onProgress) onProgress(100);
                     if (j.success && j.data && j.data.url) {
+                        console.log('ImgHippo upload successful! URL:', j.data.url);
                         return j.data.url;
                     } else {
                         throw new Error(j.message || 'ImgHippo upload failed');
                     }
+                } else if (isImage) {
+                    console.log('ImgHippo API key not found, skipping to Firebase');
                 }
             } catch (e) { 
                 console.warn('ImgHippo failed, falling back to Firebase', e.message); 
             }
             
             try {
+                console.log('Starting Firebase upload...');
                 if (typeof storage !== 'undefined' && typeof ref !== 'undefined') {
                     const fileName = `${Date.now()}_${f.name || 'file'}`;
                     const mr = ref(storage, `uploads/${currentUser.id}/${fileName}`);
@@ -9101,14 +9109,20 @@
                         uploadTask.on('state_changed', 
                             (snapshot) => {
                                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                console.log('Firebase upload progress:', progress);
                                 if (onProgress) onProgress(progress);
                             }, 
-                            (error) => reject(error), 
+                            (error) => {
+                                console.error('Firebase upload error:', error);
+                                reject(error);
+                            }, 
                             async () => {
                                 try {
                                     const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                                    console.log('Firebase upload successful! URL:', downloadURL);
                                     resolve(downloadURL);
                                 } catch (err) {
+                                    console.error('Firebase getDownloadURL error:', err);
                                     reject(err);
                                 }
                             }
@@ -9117,6 +9131,7 @@
                 }
             } catch (e) { 
                 console.error('Firebase fallback failed', e); 
+                showToast('Upload failed', true);
                 throw e;
             }
         }
