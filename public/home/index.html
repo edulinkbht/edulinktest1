@@ -9091,6 +9091,7 @@
                     let width = img.width;
                     let height = img.height;
 
+                    // Step 1: Resize down to max 1080px to reduce pixel count
                     if (width > height) {
                         if (width > maxWidth) {
                             height *= maxWidth / width;
@@ -9115,6 +9116,10 @@
                     ctx.drawImage(img, 0, 0, width, height);
 
                     const type = 'image/jpeg'; 
+                    // JPEG automatically implements:
+                    // - YCbCr color space (prioritizes brightness over color)
+                    // - Quantization (groups similar colors)
+                    // - Huffman coding (pattern matching like run-length encoding)
                     canvas.toBlob((blob) => {
                         if (blob) {
                             resolve(new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: type }));
