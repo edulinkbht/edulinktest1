@@ -4459,6 +4459,35 @@
         const sentinel = document.getElementById('feed-sentinel');
         if (sentinel) feedObserver.observe(sentinel);
 
+        // Virtual List Memory Management: Post Observer to track visibility
+        window.postsInDOM = new Map();
+        const postObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const postEl = entry.target;
+                if (!entry.isIntersecting) {
+                    // Unload images from DOM when post is way off-screen to save RAM
+                    const allImgs = postEl.querySelectorAll('img');
+                    allImgs.forEach(img => {
+                        if (img.src && !img.dataset.originalSrc && img.classList.contains('loaded')) {
+                            img.dataset.originalSrc = img.src;
+                        }
+                    });
+                } else {
+                    // Restore images when post comes back into view
+                    const allImgs = postEl.querySelectorAll('img[data-original-src]');
+                    allImgs.forEach(img => {
+                        if (img.dataset.originalSrc) {
+                            img.src = img.dataset.originalSrc;
+                            img.removeAttribute('data-original-src');
+                        }
+                    });
+                }
+            });
+        }, {
+            root: document.getElementById('view-feed'),
+            rootMargin: '800px 0px 800px 0px' // Keep 800px buffer above/below
+        });
+
         // Also fix profile infinite scroll to use the correct root
         function setupProfileInfiniteScroll(uid, t, allPosts) {
             if (window.profileObserver) window.profileObserver.disconnect();
@@ -5598,6 +5627,13 @@
         let touchStartX = 0, touchEndX = 0; window.handleTouchStart = e => touchStartX = e.changedTouches[0].screenX; window.handleTouchEnd = (e, pid, ov) => { touchEndX = e.changedTouches[0].screenX; const w = e.currentTarget.closest('.post-carousel'); if (w && Math.abs(touchStartX - touchEndX) > 50) moveCarousel(w.id, touchStartX > touchEndX ? 1 : -1) };
         function createPostElement(p, ctx = 'feed') {
             const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); d.id = `post-card-${ctx}-${p.id}`; d.className = "post-card group overflow-hidden"; d.onclick = () => { openPostView(p.id); trackInteraction(p.id, 'view', 1) };
+            // Observe for virtual list memory management
+            if (ctx === 'feed' && window.postsInDOM && window.postsInDOM.set) {
+                window.postsInDOM.set(p.id, d);
+                if (typeof postObserver !== 'undefined') {
+                    postObserver.observe(d);
+                }
+            }
             let mh = "", lh = "";
             if (p.embedVideo) {
                 mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
