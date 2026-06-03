@@ -4439,7 +4439,7 @@
         window.profileSort = 'latest'; window.isDesktopThreadMode = false;
         window.currentDownloadImages = []; window.selectedDownloadIndices = new Set();
         window.currentCommentFilter = 'latest'; window.sessionSeenPosts = new Set();
-        window.feedPagination = { cursor: 0, limit: 12, loading: false, hasMore: true, allCandidates: [] };
+        window.feedPagination = { cursor: 0, limit: 20, loading: false, hasMore: true, allCandidates: [] };
         window.imageLoadCache = new Set();
 
         // Initialize Intersection Observer for Infinite Scroll
@@ -4532,7 +4532,44 @@
             const trigger = document.getElementById('profile-load-more-trigger');
             if (trigger) window.profileObserver.observe(trigger);
         }
-        window.trackInteraction = async (pid, type, weight = 1) => { if (!currentUser) return; const r = doc(db, "users", currentUser.id), p = posts.find(x => x.id === pid); if (!p) return; const s = currentUser.interests || {}; s.authors = s.authors || {}; s.tags = s.tags || {}; s.disliked = s.disliked || []; if (type === 'not_interested') { if (!s.disliked.includes(pid)) s.disliked.push(pid); weight = -50 } if (p.authorId) s.authors[p.authorId] = (s.authors[p.authorId] || 0) + weight; const tags = p.content.match(/#(\w+)/g); if (tags) tags.forEach(t => { const tn = t.substring(1).toLowerCase(); s.tags[tn] = (s.tags[tn] || 0) + weight }); await updateDoc(r, { interests: s }); currentUser.interests = s; if (type === 'not_interested') { showToast("We'll show you less of this") } else if (type === 'show_more') showToast("We'll show you more of this") };
+        window.trackInteraction = async (pid, type, weight = 1) => { 
+            if (!currentUser) return; 
+            const r = doc(db, "users", currentUser.id), p = posts.find(x => x.id === pid); 
+            if (!p) return; 
+            const s = currentUser.interests || {}; 
+            s.authors = s.authors || {}; 
+            s.tags = s.tags || {}; 
+            s.disliked = s.disliked || []; 
+            s.savedPosts = s.savedPosts || [];
+            s.imageInteractions = s.imageInteractions || {};
+            
+            if (type === 'not_interested') { 
+                if (!s.disliked.includes(pid)) s.disliked.push(pid); 
+                weight = -50;
+            } else if (type === 'save') {
+                if (!s.savedPosts.includes(pid)) s.savedPosts.push(pid);
+                weight = 30;
+            } else if (type === 'carousel_swipe') {
+                s.imageInteractions[p.authorId] = (s.imageInteractions[p.authorId] || 0) + weight;
+                weight = 25;
+            } else if (type === 'pinch_zoom') {
+                s.imageInteractions[p.authorId] = (s.imageInteractions[p.authorId] || 0) + weight;
+                weight = 20;
+            }
+            
+            if (p.authorId) s.authors[p.authorId] = (s.authors[p.authorId] || 0) + weight; 
+            const tags = p.content.match(/#(\w+)/g); 
+            if (tags) tags.forEach(t => { const tn = t.substring(1).toLowerCase(); s.tags[tn] = (s.tags[tn] || 0) + weight }); 
+            await updateDoc(r, { interests: s }); 
+            currentUser.interests = s; 
+            if (type === 'not_interested') { 
+                showToast("We'll show you less of this");
+            } else if (type === 'show_more') {
+                showToast("We'll show you more of this");
+            } else if (type === 'save') {
+                showToast("Post saved!");
+            }
+        };
         /* ==========================================================================
            INDUSTRIAL-GRADE RECOMMENDATION PIPELINE (4 STAGES)
            ========================================================================== */
@@ -4547,12 +4584,13 @@
                     followers: currentUser.followers || [],
                     friends: currentUser.friends || []
                 },
-                engagementHistory: currentUser.interests || { authors: {}, tags: {}, disliked: [] },
-                features: currentUser.settings || {}
+                engagementHistory: currentUser.interests || { authors: {}, tags: {}, disliked: [], imageInteractions: {}, savedPosts: [] },
+                features: currentUser.settings || {},
+                location: currentUser.location || null // Location data (if available)
             };
         };
 
-        // STAGE 2: CANDIDATE SOURCING (Thunder & Phoenix Retrieval)
+        // STAGE 2: CANDIDATE SOURCING (Thunder & Phoenix Retrieval + Location Boost)
         window.sourceCandidates = async (context, searchTerm = '') => {
             if (!context) return [];
 
@@ -4582,7 +4620,7 @@
 
         // STAGE 3: SCORING & RANKING (Phoenix Scorer / Grok Transformer Simulation)
         window.scoreAndRankCandidates = (candidates, context) => {
-            const weights = { like: 10, repost: 12, dwell: 8, report: -100 };
+            const weights = { like: 10, repost: 12, dwell: 8, report: -100, image: 15, location: 12 };
             const seenPosts = window.sessionSeenPosts || new Set();
 
             return candidates.map(p => {
@@ -4591,21 +4629,28 @@
                 const pRepost = calculatePRepost(p, context);
                 const pDwell = calculatePDwell(p, context); // Simulated Dwell Time probability
                 const pReport = calculatePReport(p, context);
+                const pImage = calculatePImage(p, context); // Image-specific engagement
+                const pLocation = calculatePLocation(p, context); // Location relevance
 
-                // Weighted Score Formula: (w1 * Plike) + (w2 * Prepost) + (w3 * Pdwell) - (w4 * Preport)
-                let score = (weights.like * pLike) + (weights.repost * pRepost) + (weights.dwell * pDwell) + (weights.report * pReport);
+                // Weighted Score Formula: (w1 * Plike) + (w2 * Prepost) + (w3 * Pdwell) + (w4 * Pimage) + (w5 * Plocation) - (w6 * Preport)
+                let score = (weights.like * pLike) + 
+                           (weights.repost * pRepost) + 
+                           (weights.dwell * pDwell) + 
+                           (weights.image * pImage) + 
+                           (weights.location * pLocation) + 
+                           (weights.report * pReport);
 
-                // Recency Decay: Halve score every 48 hours for extreme freshness
+                // Recency Decay: Halve score every 72 hours (slower decay to show more content longer)
                 const ts = p.timestamp?.toDate ? p.timestamp.toDate().getTime() : new Date(p.timestamp || 0).getTime();
                 const hoursOld = (Date.now() - ts) / 3600000;
-                const recencyFactor = Math.pow(0.5, hoursOld / 48);
+                const recencyFactor = Math.pow(0.5, hoursOld / 72);
                 score *= recencyFactor;
 
-                // Penalize seen content to prevent repetitive loops
-                if (seenPosts.has(p.id)) score -= 50;
+                // Penalize seen content to prevent repetitive loops (less penalty to show more content)
+                if (seenPosts.has(p.id)) score -= 25;
 
                 // Randomize slightly so content changes on refresh
-                score += (Math.random() * 20);
+                score += (Math.random() * 15);
 
                 return { ...p, pipelineScore: score };
             }).sort((a, b) => b.pipelineScore - a.pipelineScore);
@@ -4621,13 +4666,13 @@
                 if (context.engagementHistory.disliked?.includes(p.id)) continue;
                 if (!canSeePost(p)) continue;
 
-                // Author Diversity: Don't show more than 2 posts from same author in top batch
+                // Author Diversity: Don't show more than 3 posts from same author in top batch (increased to allow more content)
                 const authorId = p.authorId;
                 authorCounts[authorId] = (authorCounts[authorId] || 0) + 1;
-                if (authorCounts[authorId] > 2) continue;
+                if (authorCounts[authorId] > 3) continue;
 
                 finalSelection.push(p);
-                if (finalSelection.length >= 100) break; // Selection limit for this pass
+                if (finalSelection.length >= 200) break; // Selection limit increased to 200 for more content
             }
             return finalSelection;
         };
@@ -4660,6 +4705,68 @@
             let prob = 0.2; // High baseline for stop-scrolling
             if (p.media) prob += 0.3; // Images/Video catch eye
             if (p.content?.length > 100) prob += 0.15; // Longer text = more dwell if read
+            return Math.min(1.0, prob);
+        };
+
+        const calculatePImage = (p, ctx) => {
+            let prob = 0.05; // Baseline for image engagement
+            
+            // Check if post has media (images or carousel)
+            if (p.media) {
+                prob += 0.2; // Base boost for any media
+                
+                // Check if it's a carousel (array of media)
+                if (Array.isArray(p.media) && p.media.length > 1) {
+                    prob += 0.3; // Higher boost for carousels (strong engagement signal)
+                }
+                
+                // Check if user has saved this post before
+                if (ctx.engagementHistory.savedPosts?.includes(p.id)) {
+                    prob += 0.4; // Big boost for saved content (holy grail for images)
+                }
+                
+                // Check if user has interacted with this author's images before
+                if (ctx.engagementHistory.imageInteractions?.[p.authorId]) {
+                    prob += 0.25;
+                }
+            }
+            
+            return Math.min(1.0, prob);
+        };
+
+        const calculatePLocation = (p, ctx) => {
+            let prob = 0.05; // Baseline for location relevance
+            
+            // Boost for posts from same region/country (simulated with user metadata)
+            const author = users.find(u => u.id === p.authorId);
+            if (author) {
+                // Simple heuristic: if author is followed by many local users, boost
+                const localFollowers = author.followers?.filter(f => {
+                    const followerUser = users.find(u => u.id === f);
+                    return followerUser && followerUser.location === ctx.location;
+                })?.length || 0;
+                
+                if (localFollowers > 0) {
+                    prob += Math.min(0.3, localFollowers * 0.05);
+                }
+                
+                // If author is local, big boost
+                if (author.location === ctx.location) {
+                    prob += 0.4;
+                }
+            }
+            
+            // Check for location tags in post content
+            if (p.content && ctx.location) {
+                const locationKeywords = [ctx.location, ctx.location?.toLowerCase()];
+                for (const keyword of locationKeywords) {
+                    if (keyword && p.content.toLowerCase().includes(keyword.toLowerCase())) {
+                        prob += 0.25;
+                        break;
+                    }
+                }
+            }
+            
             return Math.min(1.0, prob);
         };
 
