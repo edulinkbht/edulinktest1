@@ -9063,39 +9063,35 @@
                 throw new Error('this file is not supported');
             }
 
+            // Try our API proxy first (uses Cloudinary/ImgHippo server-side)
             try {
-                if (isImage && window.APP_CONFIG.imgHippoApiKey) {
-                    console.log('Starting ImgHippo upload...');
-                    if (onProgress) onProgress(10);
-                    
-                    const formData = new FormData();
-                    formData.append('api_key', window.APP_CONFIG.imgHippoApiKey);
-                    formData.append('file', f);
+                console.log('Starting upload via API proxy...');
+                if (onProgress) onProgress(10);
+                
+                const formData = new FormData();
+                formData.append('file', f);
+                
+                const response = await fetch('/api/api', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    console.log('Sending request to ImgHippo...');
-                    const response = await fetch('https://api.imghippo.com/v1/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    console.log('ImgHippo response status:', response.status);
-                    const j = await response.json();
-                    console.log('ImgHippo response:', j);
-                    
-                    if (onProgress) onProgress(100);
-                    if (j.status === 200 && j.data && j.data.url) {
-                        console.log('ImgHippo upload successful! URL:', j.data.url);
-                        return j.data.url;
-                    } else {
-                        throw new Error(j.message || 'ImgHippo upload failed');
-                    }
-                } else if (isImage) {
-                    console.log('ImgHippo API key not found, skipping to Firebase');
+                console.log('API proxy response status:', response.status);
+                const j = await response.json();
+                console.log('API proxy response:', j);
+                
+                if (onProgress) onProgress(100);
+                if (j.url) {
+                    console.log('Upload successful! URL:', j.url);
+                    return j.url;
+                } else {
+                    throw new Error(j.error || 'Upload failed');
                 }
-            } catch (e) { 
-                console.warn('ImgHippo failed, falling back to Firebase', e.message); 
+            } catch (e) {
+                console.warn('API proxy upload failed, falling back to Firebase', e.message);
             }
             
+            // Fallback to Firebase
             try {
                 console.log('Starting Firebase upload...');
                 if (typeof storage !== 'undefined' && typeof ref !== 'undefined') {
