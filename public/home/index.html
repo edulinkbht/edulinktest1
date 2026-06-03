@@ -105,10 +105,7 @@
         }
 
         .img-placeholder {
-            background-color: #f3f4f6;
-            background-size: cover;
-            background-position: center;
-            filter: blur(20px);
+            background-color: #efefef;
             position: relative;
             overflow: hidden;
             width: 100%;
@@ -116,18 +113,39 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: filter 0.3s ease, opacity 0.3s ease;
         }
 
-        /* Show neutral grey when avatar image is broken */
+        /* Instagram-style LQIP: tiny image stretched + GPU blur (instant from JSON) */
+        .ig-blur-layer {
+            position: absolute;
+            inset: -18%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            filter: blur(28px);
+            transform: scale(1.12);
+            transform-origin: center;
+            z-index: 0;
+            opacity: 1;
+            pointer-events: none;
+            will-change: opacity, filter;
+            transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .ig-blur-layer--empty {
+            inset: 0;
+            transform: none;
+            filter: none;
+            background: linear-gradient(135deg, #e8e8e8 0%, #f3f4f6 45%, #e0e0e0 100%);
+        }
+
         .img-placeholder img:not(.loaded) {
             color: transparent;
-            /* hide alt text */
         }
 
         .img-placeholder img {
             opacity: 0;
-            transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1);
             width: 100%;
             height: 100%;
             object-fit: cover;
@@ -139,10 +157,12 @@
             opacity: 1;
         }
 
+        .img-placeholder.loaded .ig-blur-layer {
+            opacity: 0;
+        }
+
         .img-placeholder.loaded {
             background-color: transparent;
-            filter: blur(0);
-            background-image: none;
         }
 
         .fade-in {
@@ -2106,15 +2126,29 @@
 
         .post-media-blur-bg {
             position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
+            inset: -18%;
             background-size: cover;
             background-position: center;
-            filter: blur(30px);
-            transform: scale(1.2);
+            background-repeat: no-repeat;
+            filter: blur(32px);
+            transform: scale(1.14);
+            transform-origin: center;
             z-index: 0;
+            opacity: 1;
+            pointer-events: none;
+            transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .post-media-blur-bg--empty {
+            inset: 0;
+            transform: none;
+            filter: none;
+            background: linear-gradient(135deg, #ebebeb 0%, #f4f4f4 50%, #e5e5e5 100%);
+        }
+
+        .post-media-container.loaded .post-media-blur-bg,
+        .post-carousel.loaded .post-media-blur-bg {
+            opacity: 0;
         }
 
         .post-carousel-inner {
@@ -2322,43 +2356,7 @@
             border-bottom: none
         }
 
-        .img-placeholder {
-            background-color: #f3f4f6;
-            background-size: cover;
-            background-position: center;
-            filter: blur(20px);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: filter 0.3s ease, opacity 0.3s ease;
-        }
-
-        .img-placeholder img {
-            visibility: hidden;
-            opacity: 0;
-            transition: opacity 0.4s ease-in-out;
-            background-color: white;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            position: relative;
-            z-index: 1;
-        }
-
-        .img-placeholder img.loaded {
-            visibility: visible;
-            opacity: 1;
-        }
-
-        /* Remove blur when loaded */
-        .img-placeholder.loaded {
-            animation: none;
-            background-image: none;
-            background-color: transparent;
-            filter: blur(0);
-        }
+        /* img-placeholder / ig-blur-layer — see primary block above */
 
 
         img {
@@ -5762,7 +5760,9 @@
                 mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
             } else if (p.media) {
                 const ma = Array.isArray(p.media) ? p.media : [p.media];
-                const bgMedia = ma.find(m => !m.includes('video') && !m.includes('.mp4') && !m.startsWith('data:video')) || ma[0];
+                const bgIdx = ma.findIndex(m => !m.includes('video') && !m.includes('.mp4') && !m.startsWith('data:video'));
+                const blurIdx = bgIdx >= 0 ? bgIdx : 0;
+                const BP = window.BlurPlaceholder;
                 if (ma.length === 1) {
                     const s = ma[0],
                         iv = s.includes('video') || s.includes('.mp4') || s.startsWith('data:video');
@@ -5775,7 +5775,7 @@
                         }
                         videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
                     }
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'} post-media-container" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${!iv ? `<div class="post-media-blur-bg" style="background-image: url('${bgMedia}')"></div>` : ''}${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'} post-media-container${isCached && !iv ? ' loaded' : ''}" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${!iv ? BP.postBlurBg(p, 0) : ''}${iv ? videoHtml : BP.mediaHtml(s, BP.get(p, 0), '', isCached)}</div>`
                 } else {
                     const cid = `carousel-${ctx}-${p.id}`,
                         iid = `inner-${ctx}-${p.id}`,
@@ -5793,10 +5793,10 @@
                             }
                             videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata"></video>`;
                         }
-                        sl += `<div class="post-carousel-item bg-transparent flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
+                        sl += `<div class="post-carousel-item bg-transparent flex items-center justify-center">${iv ? videoHtml : BP.mediaHtml(s, BP.get(p, i), '', isCached)}</div>`;
                         dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="dot-${ctx}-${p.id}-${i}"></div>`
                     });
-                    mh = `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel touch-pan-y max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)"><div class="post-media-blur-bg" style="background-image: url('${bgMedia}')"></div><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
+                    mh = `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel touch-pan-y max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)">${BP.postBlurBg(p, blurIdx)}<div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
                     (window.carouselStates = window.carouselStates || {})[cid] = {
                         index: 0,
                         total: ma.length
@@ -6422,7 +6422,9 @@
             if (window.currentViewingProfileId === currentUser.id && window.currentProfileTab === 'reposts') renderProfileContent(currentUser.id, 'reposts');
             closeShareMenu();
         };
-        function createCarouselHTML(ma, prefix, pid) {
+        function createCarouselHTML(ma, prefix, pid, post = null) {
+            const BP = window.BlurPlaceholder;
+            const p = post || posts.find(x => x.id === pid);
             let sl = '',
                 dt = '';
             ma.forEach((s, i) => {
@@ -6436,7 +6438,7 @@
                     }
                     videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata"></video>`;
                 }
-                sl += `<div class="post-carousel-item img-placeholder bg-gray-50 flex items-center justify-center">${iv ? videoHtml : `<img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')">`}</div>`;
+                sl += `<div class="post-carousel-item bg-gray-50 flex items-center justify-center">${iv ? videoHtml : BP.mediaHtml(s, p ? BP.get(p, i) : BP.cloudinaryGhost(s), '', isCached)}</div>`;
                 dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="${prefix}-dot-${pid}-${i}"></div>`
             });
             const cid = `${prefix}-carousel-${pid}`,
@@ -6446,9 +6448,12 @@
                 index: 0,
                 total: ma.length
             };
-            // Find first non-video media for background
-            const bgMedia = ma.find(m => !m.includes('video') && !m.includes('.mp4') && !m.startsWith('data:video')) || ma[0];
-            return `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel shadow-sm max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${pid}',true)"><div class="post-media-blur-bg" style="background-image: url('${bgMedia}')"></div><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`
+            const blurIdx = ma.findIndex(m => !m.includes('video') && !m.includes('.mp4') && !m.startsWith('data:video'));
+            const blurBg = p ? BP.postBlurBg(p, blurIdx >= 0 ? blurIdx : 0) : (() => {
+                const ghost = BP.cloudinaryGhost(ma[blurIdx >= 0 ? blurIdx : 0]);
+                return ghost ? `<div class="post-media-blur-bg" style="${BP.style(ghost)}"></div>` : `<div class="post-media-blur-bg post-media-blur-bg--empty"></div>`;
+            })();
+            return `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel shadow-sm max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${pid}',true)">${blurBg}<div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`
         }
         window.sharePost = pid => { manageHistory('share-overlay'); window.currentSharePid = pid; const p = posts.find(x => x.id === pid); if (!p) return; const url = window.getPostUrl(p.authorId, pid), pc = document.getElementById('share-post-preview'); document.getElementById('share-link-input').value = url; document.getElementById('share-link-text').innerText = url; const isRep = currentUser.reposts?.includes(pid); const rb = document.getElementById('share-repost-btn'), rt = document.getElementById('share-repost-text'), ri = document.getElementById('share-repost-icon'); if (rb && rt && ri) { rt.innerText = isRep ? 'Un-Repost' : 'Repost'; ri.className = `share-icon-circle ${isRep ? 'bg-green-600' : 'bg-green-500'} text-white` } if (p) { const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '' }; document.getElementById('share-owner-avatar').src = a.avatar; const m = p.media ? (Array.isArray(p.media) ? p.media[0] : p.media) : null, isV = (m && (m.includes('video') || m.endsWith('.mp4'))) || p.embedVideo, mh = m ? (isV ? `<div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center shrink-0"><i data-lucide="play" class="w-6 h-6 text-white"></i></div>` : `<div class="w-16 h-16 rounded-lg shrink-0 bg-gray-100"><img src="${m}" class="w-full h-full rounded-lg object-cover" onload="this.classList.add('loaded')"></div>`) : (p.embedVideo ? `<div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center shrink-0"><i data-lucide="play" class="w-6 h-6 text-white"></i></div>` : ''); pc.innerHTML = `<div class="bg-white border border-gray-200 rounded-xl p-3 mb-6"><div class="flex items-center gap-2 mb-2"><div class="w-5 h-5 rounded-full bg-gray-100"><img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><span class="text-xs font-bold text-gray-900 truncate">${a.name}</span></div><div class="flex gap-3 items-center"><div class="flex-1 min-w-0"><p class="text-xs text-gray-600 line-clamp-2 mb-2 leading-relaxed">${p.content || (m || p.embedVideo ? 'Shared a post' : '')}</p><div class="flex items-center gap-3 text-gray-400"><div class="flex items-center gap-1 text-[10px] font-medium"><i data-lucide="heart" class="w-3 h-3"></i> ${p.likes?.length || 0}</div><div class="flex items-center gap-1 text-[10px] font-medium"><i data-lucide="message-circle" class="w-3 h-3"></i> ${p.comments?.length || 0}</div></div></div>${mh}</div></div>`; pc.classList.remove('hidden'); const dl = document.getElementById('share-dl-btn'); if (dl) dl.remove(); if (m && !isV) { const g = document.getElementById('share-grid-options'); if (!document.getElementById(`share-dl-${pid}`)) { const d = document.createElement('div'); d.id = `share-dl-${pid}`; d.className = "share-icon-btn"; d.onclick = () => triggerShare('download'); d.innerHTML = `<div class="share-icon-circle bg-gray-100 text-gray-800 border border-gray-200" id="dl-icon-${pid}"><i data-lucide="download" class="w-6 h-6"></i></div><span class="text-xs font-medium text-gray-700" id="dl-text-${pid}">Download</span>`; g.appendChild(d) } } refreshIcons() } else pc.classList.add('hidden'); toggleModalAnim('share-overlay', 'share-modal', !0) };
         window.closeShareMenu = () => { const o = document.getElementById('share-overlay'), m = document.getElementById('share-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => { o.classList.add('hidden'); window.currentSharePid = null; document.querySelectorAll('[id^="share-dl-"]').forEach(e => e.remove()) }, 200) };
@@ -7100,7 +7105,7 @@
                 videoHtml = `<video src="${m}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover pointer-events-none" preload="metadata"></video>`;
             }
             return `<div class="grid-post-item group ${!m && !p.embedVideo ? 'border border-gray-100' : ''}" onclick="openPostView('${p.id}')">
-                ${m ? (isV ? videoHtml : `<div class="img-placeholder w-full h-full"><img src="${m}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>` + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2"><i data-lucide="gallery-horizontal" class="w-4 h-4 text-white drop-shadow-md fill-white"></i></div>` : '')) : (p.embedVideo ? `<div class="w-full h-full flex items-center justify-center bg-gray-900 border border-gray-800"><i data-lucide="video" class="w-8 h-8 text-gray-500"></i></div>` : `<div class="grid-post-text-preview !bg-transparent">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`)}
+                ${m ? (isV ? videoHtml : window.BlurPlaceholder.mediaHtml(m, window.BlurPlaceholder.get(p, 0), '', false) + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2 z-10"><i data-lucide="gallery-horizontal" class="w-4 h-4 text-white drop-shadow-md fill-white"></i></div>` : '')) : (p.embedVideo ? `<div class="w-full h-full flex items-center justify-center bg-gray-900 border border-gray-800"><i data-lucide="video" class="w-8 h-8 text-gray-500"></i></div>` : `<div class="grid-post-text-preview !bg-transparent">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`)}
                 <div class="grid-post-overlay">
                     <div class="flex items-center gap-1"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> <span class="js-like-count-${p.id}">${likeText}</span></div>
                     <div class="flex items-center gap-1"><i data-lucide="message-circle" class="w-5 h-5 fill-white"></i> <span class="js-comment-count-${p.id}">${commentText}</span></div>
@@ -7391,12 +7396,13 @@
                         }
                         videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="stage-content rounded-none" controls playsinline preload="metadata"></video>`;
                     }
-                    const mhtml = iv ? videoHtml : `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`;
+                    const BP = window.BlurPlaceholder;
+                    const mhtml = iv ? videoHtml : `<div class="post-media-container rounded-none overflow-hidden">${BP.postBlurBg(p, 0)}${BP.mediaHtml(s, BP.get(p, 0), 'stage-content', isCached)}</div>`;
                     mhDesktop = mhtml;
                     mhMobile = mhtml
                 } else {
-                    mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id);
-                    mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id)
+                    mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id, p);
+                    mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id, p)
                 }
             } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), postBodyHtml = window.renderTextWithReadMore(p.content, `post-${p.id}`), allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all" onkeydown="handleMentionKeydown(event,'comment-input-desktop','mention-suggestions-desktop');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCommentDesktop();}" onkeyup="handleMentionInput('comment-input-desktop','mention-suggestions-desktop')"><button onclick="submitCommentDesktop()" class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all" onkeydown="handleMentionKeydown(event,'mobile-comment-input','mention-suggestions-mobile')" onkeyup="handleMentionInput('mobile-comment-input','mention-suggestions-mobile')"><button onclick="submitCommentMobile()" class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm"><i data-lucide="arrow-up" class="w-5 h-5"></i></button></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const filterLabel = window.currentCommentFilter.charAt(0).toUpperCase() + window.currentCommentFilter.slice(1); const filterBtn = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="icon-btn hover:bg-gray-100"><i data-lucide="list-filter" class="w-5 h-5 text-gray-600"></i></button>`; const mobileCommentFilterCtrl = fromN ? `<button type="button" onclick="confirmDeleteAllActivities()" class="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-50"><i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Delete</button>` : `<button onclick="openCommentFilter()" class="flex items-center gap-2 text-xs font-bold text-gray-600 bg-gray-100 px-3 py-1.5 rounded-full hover:bg-gray-200 transition-colors"><span id="current-filter-label">${filterLabel}</span> <i data-lucide="list-filter" class="w-4 h-4"></i></button>`; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button>${mobileCommentFilterCtrl}</div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
             let desktopAction = '', mobileAction = ''; if (p.claimLink) { const cb = `<button class="action-btn text-black border-gray-100 bg-gray-50 hover:bg-gray-100 !px-4 !py-2.5 !rounded-full border border-gray-100" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`; desktopAction = cb; mobileAction = cb } else { desktopAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''} !p-2.5 !rounded-full border border-gray-100 hover:bg-gray-50" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>`; mobileAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>` }
@@ -9215,11 +9221,86 @@
                     ctx.imageSmoothingEnabled = true;
                     ctx.imageSmoothingQuality = 'low';
                     ctx.drawImage(img, 0, 0, 20, 20);
-                    resolve(canvas.toDataURL('image/jpeg', 0.5));
+                    resolve(canvas.toDataURL('image/jpeg', 0.45));
                 };
                 img.onerror = () => reject(new Error("Tiny thumbnail generation failed"));
                 img.src = url;
             });
+        };
+
+        /** Instagram-style placeholders: LQIP base64 in feed JSON, stretched + blurred locally */
+        window.BlurPlaceholder = {
+            list(p) {
+                if (!p?.mediaBlur) return [];
+                return Array.isArray(p.mediaBlur) ? p.mediaBlur : [p.mediaBlur];
+            },
+            get(p, index = 0) {
+                const blurs = this.list(p);
+                if (blurs[index]) return blurs[index];
+                const media = Array.isArray(p?.media) ? p.media : (p?.media ? [p.media] : []);
+                return this.cloudinaryGhost(media[index]) || null;
+            },
+            cloudinaryGhost(url) {
+                if (!url || typeof url !== 'string') return null;
+                if (url.includes('cloudinary.com') && url.includes('/upload/') && !url.includes('w_32')) {
+                    return url.replace('/upload/', '/upload/w_32,h_32,c_fill,e_blur:1200,q_20,f_jpg/');
+                }
+                return null;
+            },
+            style(blur) {
+                if (!blur) return '';
+                const s = String(blur).replace(/\\/g, '\\\\').replace(/'/g, '%27');
+                return `background-image:url('${s}')`;
+            },
+            layer(blur) {
+                return blur
+                    ? `<div class="ig-blur-layer" style="${this.style(blur)}"></div>`
+                    : `<div class="ig-blur-layer ig-blur-layer--empty"></div>`;
+            },
+            postBlurBg(p, index = 0) {
+                const blur = this.get(p, index);
+                return blur
+                    ? `<div class="post-media-blur-bg" style="${this.style(blur)}"></div>`
+                    : `<div class="post-media-blur-bg post-media-blur-bg--empty"></div>`;
+            },
+            onImageLoad(img) {
+                const ph = img.closest('.img-placeholder');
+                if (ph) ph.classList.add('loaded');
+                const wrap = img.closest('.post-media-container') || img.closest('.post-carousel');
+                if (wrap) wrap.classList.add('loaded');
+            },
+            mediaHtml(src, blur, extraClass = '', cached = false) {
+                const cachedCls = cached ? ' loaded' : '';
+                const onload = `window.imageLoadCache.add(this.src);this.classList.add('loaded');window.BlurPlaceholder.onImageLoad(this)`;
+                return `<div class="img-placeholder w-full h-full flex items-center justify-center${cached ? ' loaded' : ''}">${this.layer(blur)}<img src="${src}" class="w-full h-full object-cover${extraClass ? ' ' + extraClass : ''}${cachedCls}" onload="${onload}"></div>`;
+            },
+            async fromUrl(url) {
+                if (!url || url.includes('video') || url.endsWith('.mp4')) return null;
+                const ghost = this.cloudinaryGhost(url);
+                if (ghost) return ghost;
+                if (url.startsWith('data:image')) {
+                    return new Promise((resolve, reject) => {
+                        const img = new Image();
+                        img.onload = () => {
+                            const canvas = document.createElement('canvas');
+                            const ctx = canvas.getContext('2d');
+                            canvas.width = 20;
+                            canvas.height = 20;
+                            ctx.drawImage(img, 0, 0, 20, 20);
+                            resolve(canvas.toDataURL('image/jpeg', 0.45));
+                        };
+                        img.onerror = reject;
+                        img.src = url;
+                    });
+                }
+                try {
+                    const res = await fetch(url, { mode: 'cors' });
+                    const blob = await res.blob();
+                    return await window.generateTinyThumbnail(blob);
+                } catch {
+                    return null;
+                }
+            }
         };
         window.compressImage = async (file, maxWidth = 1080, maxHeight = 1080, quality = 0.85) => {
             return new Promise((resolve, reject) => {
@@ -9315,6 +9396,7 @@
                     window.updateUploadWidget(uploadId, 5, "Initializing...", thumbUrl);
                     
                     let mu = [];
+                    let mediaBlur = [];
                     const activeIndices = images.map((url, i) => url ? i : -1).filter(i => i !== -1);
                     const totalSteps = activeIndices.length;
                     let completedSteps = 0;
@@ -9322,11 +9404,25 @@
                     for (const i of activeIndices) {
                         const url = images[i];
                         let blob = blobs[i];
+                        let blurEntry = null;
+
+                        if (blob?.type?.startsWith('image/')) {
+                            try {
+                                blurEntry = await window.generateTinyThumbnail(blob);
+                            } catch (le) {
+                                console.warn("LQIP generation failed", le);
+                            }
+                        } else if (!blob && url && !url.includes('video') && !url.endsWith('.mp4')) {
+                            try {
+                                blurEntry = await window.BlurPlaceholder.fromUrl(url);
+                            } catch (le) {
+                                console.warn("LQIP from URL failed", le);
+                            }
+                        }
                         
                         if (blob) {
                             const baseProgress = 10 + (completedSteps / totalSteps) * 80;
                             
-                            // Compression for images
                             if (blob.type.startsWith('image/')) {
                                 window.updateUploadWidget(uploadId, baseProgress, `Optimizing...`, thumbUrl);
                                 try {
@@ -9358,6 +9454,7 @@
                         } else {
                             mu.push(url);
                         }
+                        mediaBlur.push(blurEntry);
                         completedSteps++;
                     }
 
@@ -9404,10 +9501,16 @@
                         claimLink: claimLink,
                         settings: { privacy: privacy ? 'private' : 'public', showLikes: sl, showComments: sc, allowLikeView: alv, allowComments: ac }
                     };
+                    if (mediaBlur.some(b => b) && mp) {
+                        const compact = mediaBlur.map(b => b || null);
+                        pd.mediaBlur = compact.length === 1 ? compact[0] : compact;
+                    }
 
                     let pid = null;
                     if (editingId) {
-                        await updateDoc(doc(db, "posts", editingId), { content: tr, media: mp, embedVideo: embedVideoUrl, settings: pd.settings, claimLink: claimLink });
+                        const editPayload = { content: tr, media: mp, embedVideo: embedVideoUrl, settings: pd.settings, claimLink: claimLink };
+                        if (pd.mediaBlur) editPayload.mediaBlur = pd.mediaBlur;
+                        await updateDoc(doc(db, "posts", editingId), editPayload);
                         pid = editingId;
                     } else {
                         const r = await addDoc(collection(db, "posts"), pd);
@@ -9614,15 +9717,11 @@
 
                 if (el.complete && el.naturalWidth > 0) {
                     el.classList.add('loaded');
-                    const placeholder = el.closest('.img-placeholder');
-                    if (placeholder) {
-                        placeholder.classList.add('loaded');
-                    }
+                    if (window.BlurPlaceholder) window.BlurPlaceholder.onImageLoad(el);
                 } else {
                     el.onload = () => {
                         el.classList.add('loaded');
-                        const p = el.closest('.img-placeholder');
-                        if (p) p.classList.add('loaded');
+                        if (window.BlurPlaceholder) window.BlurPlaceholder.onImageLoad(el);
                     };
                 }
             }
