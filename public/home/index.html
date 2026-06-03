@@ -105,10 +105,17 @@
         }
 
         .img-placeholder {
-            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 25%, #f3f4f6 50%, #d1d5db 75%, #e5e7eb 100%);
-            background-size: cover;
-            filter: blur(20px);
-            transform: scale(1.1);
+            background: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #d1d5db 75%), 
+                linear-gradient(-45deg, transparent 75%, #d1d5db 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            filter: blur(5px);
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
             position: relative;
             overflow: hidden;
             width: 100%;
@@ -116,7 +123,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: filter 0.3s ease, transform 0.3s ease;
+            transition: filter 0.3s ease, opacity 0.3s ease;
+            background-color: #f3f4f6;
         }
 
         /* Show neutral grey when avatar image is broken */
@@ -131,8 +139,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            filter: blur(0);
-            transform: scale(1);
+            image-rendering: auto;
         }
 
         .img-placeholder img.loaded {
@@ -142,7 +149,7 @@
         .img-placeholder.loaded {
             background: transparent;
             filter: blur(0);
-            transform: scale(1);
+            background-image: none;
         }
 
         .fade-in {
@@ -2303,16 +2310,24 @@
         }
 
         .img-placeholder {
-            background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 25%, #f3f4f6 50%, #d1d5db 75%, #e5e7eb 100%);
-            background-size: cover;
-            filter: blur(20px);
-            transform: scale(1.1);
+            background: 
+                linear-gradient(45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(-45deg, #e5e7eb 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #d1d5db 75%), 
+                linear-gradient(-45deg, transparent 75%, #d1d5db 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            filter: blur(5px);
+            image-rendering: pixelated;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: crisp-edges;
             position: relative;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: filter 0.3s ease, transform 0.3s ease;
+            transition: filter 0.3s ease, opacity 0.3s ease;
+            background-color: #f3f4f6;
         }
 
         .img-placeholder img {
@@ -2323,8 +2338,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            filter: blur(0);
-            transform: scale(1);
+            image-rendering: auto;
         }
 
         .img-placeholder img.loaded {
@@ -2338,7 +2352,6 @@
             background-image: none;
             background-color: transparent;
             filter: blur(0);
-            transform: scale(1);
         }
 
 
@@ -8877,7 +8890,7 @@
             const renderedW = w * ratio * scaleFactor;
             const renderedH = h * ratio * scaleFactor;
             ctx.drawImage(img, -renderedW / 2, -renderedH / 2, renderedW, renderedH);
-            canvas.toBlob(b => { window.composeImageBlobs[i] = b; const u = URL.createObjectURL(b); window.composeImages[i] = u; renderMediaGrid(); closeImageAdjust() }, 'image/jpeg', 0.95);
+            canvas.toBlob(b => { window.composeImageBlobs[i] = b; const u = URL.createObjectURL(b); window.composeImages[i] = u; renderMediaGrid(); closeImageAdjust() }, 'image/jpeg', 0.85);
         };
         window.handleGridUpload = i => { window.currentUploadIndex = i; document.getElementById('grid-upload-input').click() }; window.onGridFileSelect = e => { const f = e.target.files[0]; if (!f) return; const hasVideo = window.composeImageBlobs.some(b => b && b.type && b.type.startsWith('video/')) || window.composeImages.some(u => u && (u.includes('video') || u.endsWith('.mp4'))); if (f.type.startsWith('video/') && hasVideo) { showToast("Only one video allowed", !0); document.getElementById('grid-upload-input').value = ""; return } const r = new FileReader(); r.onload = ev => { window.composeImages[window.currentUploadIndex] = ev.target.result; window.composeImageBlobs[window.currentUploadIndex] = f; renderMediaGrid() }; r.readAsDataURL(f); document.getElementById('grid-upload-input').value = "" }; window.removeGridImage = i => { window.composeImages[i] = null; window.composeImageBlobs[i] = null; const v = window.composeImages.filter(x => x !== null), vb = window.composeImageBlobs.filter(x => x !== null); window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; v.forEach((val, idx) => window.composeImages[idx] = val); vb.forEach((val, idx) => window.composeImageBlobs[idx] = val); renderMediaGrid() };
         window.handleComposeAction = () => { if (window.composeStep === 1) goToStep2(); else window.publishPost() }; window.goToStep2 = () => { window.composeStep = 2; document.getElementById('compose-step-1').classList.add('hidden'); document.getElementById('compose-step-2').classList.remove('hidden'); document.getElementById('compose-tools-bar').classList.remove('hidden'); document.getElementById('compose-footer-settings').classList.remove('hidden'); document.getElementById('compose-action-btn').innerText = "Post"; document.getElementById('compose-action-btn').onclick = window.publishPost };
@@ -8996,7 +9009,7 @@
             }
         };
 
-        window.compressImage = async (file, maxWidth = 800, maxHeight = 800, quality = 0.5) => {
+        window.compressImage = async (file, maxWidth = 1080, maxHeight = 1080, quality = 0.85) => {
             return new Promise((resolve, reject) => {
                 const img = new Image();
                 const url = URL.createObjectURL(file);
@@ -9027,7 +9040,7 @@
                     ctx.fillRect(0, 0, width, height);
                     
                     ctx.imageSmoothingEnabled = true;
-                    ctx.imageSmoothingQuality = 'medium'; 
+                    ctx.imageSmoothingQuality = 'high'; 
                     ctx.drawImage(img, 0, 0, width, height);
 
                     const type = 'image/jpeg'; 
