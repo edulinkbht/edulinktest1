@@ -2099,7 +2099,27 @@
             touch-action: pan-y pinch-zoom
         }
 
+        /* For single media posts */
+        .post-media-container {
+            position: relative;
+        }
+
+        .post-media-blur-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-size: cover;
+            background-position: center;
+            filter: blur(30px);
+            transform: scale(1.2);
+            z-index: 0;
+        }
+
         .post-carousel-inner {
+            position: relative;
+            z-index: 1;
             display: flex;
             transition: transform .3s ease-out;
             height: 100%;
@@ -2114,14 +2134,14 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            background: #f6f7f8
+            background: transparent;
         }
 
         .post-carousel-item img,
         .post-carousel-item video {
             width: 100%;
             height: 100%;
-            object-fit: cover
+            object-fit: contain;
         }
 
         .carousel-dots-outside {
@@ -3696,14 +3716,13 @@
     <div id="compose-overlay"
         class="fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-[#000]/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
         onclick="attemptCloseCompose()">
-        <!-- Mobile modal (original design) -->
-        <div id="compose-modal-mobile"
-            class="md:hidden bg-white w-full h-full rounded-none shadow-2xl relative transform translate-y-full transition-transform duration-200 flex flex-col mx-auto overflow-hidden"
+        <div id="compose-modal"
+            class="bg-white w-full h-full md:h-[650px] md:w-[95%] md:max-w-[750px] rounded-none md:rounded-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col mx-auto overflow-hidden"
             onclick="event.stopPropagation()">
-            <div id="compose-progress-overlay-mobile"
+            <div id="compose-progress-overlay"
                 class="absolute inset-0 bg-white/90 backdrop-blur-sm z-[60] hidden flex-col items-center justify-center">
                 <div class="w-64 h-2 bg-gray-200 rounded-full overflow-hidden mb-4">
-                    <div id="post-progress-bar-mobile" class="h-full bg-black transition-all duration-300 w-0"></div>
+                    <div id="post-progress-bar" class="h-full bg-black transition-all duration-300 w-0"></div>
                 </div>
                 <p class="font-bold text-gray-900 animate-pulse">Posting...</p>
             </div>
@@ -3714,360 +3733,127 @@
                         <button onclick="handleComposeBack()" class="modal-chevron-btn">
                             <i data-lucide="chevron-down" class="w-6 h-6"></i>
                         </button>
-                        <span id="compose-header-title-mobile" class="modal-standard-title">Create Post</span>
+                        <span id="compose-header-title" class="modal-standard-title">Create Post</span>
                     </div>
                 </div>
             </div>
-            <div id="compose-body-mobile" class="flex-1 overflow-y-auto relative">
-                <div id="compose-step-1-mobile" class="p-0 h-full flex flex-col">
-                    <div class="grid grid-cols-2 gap-[1px] bg-gray-200 border-b border-gray-200" id="media-grid-container-mobile"></div>
+            <div id="compose-body" class="flex-1 overflow-y-auto relative">
+                <div id="compose-step-1" class="p-0 md:p-4 h-full flex flex-col">
+                    <div class="grid grid-cols-2 gap-[1px] md:gap-4 bg-gray-200 md:bg-transparent border-b border-gray-200 md:border-none" id="media-grid-container"></div>
                     <div class="flex-1 bg-white"></div>
                 </div>
-                <div id="compose-step-2-mobile" class="p-4 hidden flex flex-1 flex-col">
+                <div id="compose-step-2" class="p-4 hidden flex flex-1 flex-col">
                     <div class="flex gap-3 mb-4 items-center">
                         <div class="img-placeholder w-10 h-10 rounded-full border border-gray-100 overflow-hidden">
-                            <img id="compose-avatar-mobile" src="" class="w-full h-full rounded-full object-cover"
+                            <img id="compose-avatar" src="" class="w-full h-full rounded-full object-cover"
                                 onload="this.classList.add('loaded')">
                         </div>
                         <div>
-                            <div id="compose-name-mobile" class="text-[15px] font-bold text-[#1f1f1f]">User</div>
+                            <div id="compose-name" class="text-[15px] font-bold text-[#1f1f1f]">User</div>
                         </div>
                     </div>
                     <div class="relative flex-1 flex flex-col min-h-[300px]">
-                        <textarea id="compose-text-mobile" placeholder="What's on your mind?"
+                        <textarea id="compose-text" placeholder="What's on your mind?"
                             class="w-full flex-1 text-lg resize-none border-none outline-none bg-transparent placeholder-gray-400 p-2"
                             oninput="window.handleComposeInput(this)"
-                            onkeydown="window.handleMentionKeydown(event,'compose-text-mobile','compose-mention-suggestions-mobile')"
-                            onkeyup="window.handleMentionInput('compose-text-mobile','compose-mention-suggestions-mobile')"></textarea>
-                        <div id="compose-mention-suggestions-mobile"
+                            onkeydown="window.handleMentionKeydown(event,'compose-text','compose-mention-suggestions')"
+                            onkeyup="window.handleMentionInput('compose-text','compose-mention-suggestions')"></textarea>
+                        <div id="compose-mention-suggestions"
                             class="mention-suggestions hidden !top-auto !bottom-full !mb-2"></div>
-                        <div id="shared-post-preview-container-mobile" class="hidden"></div>
+                        <div id="shared-post-preview-container" class="hidden"></div>
                     </div>
-                    <div id="collab-chips-container-mobile" class="flex flex-wrap mb-2"></div>
+                    <div id="collab-chips-container" class="flex flex-wrap mb-2"></div>
                 </div>
             </div>
-            <div id="compose-tools-bar-mobile"
+            <div id="compose-tools-bar"
                 class="hidden flex items-center justify-between border-t border-gray-100 p-3 relative bg-white z-20">
                 <div class="relative flex items-center gap-2">
                     <button
-                        onclick="window.toggleComposeEmojiPicker(); document.getElementById('embed-link-prompt-mobile').classList.add('hidden')"
+                        onclick="window.toggleComposeEmojiPicker(); document.getElementById('embed-link-prompt').classList.add('hidden')"
                         class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
                         <i data-lucide="smile" class="w-5 h-5"></i>
                     </button>
                     <button
-                        onclick="document.getElementById('embed-link-prompt-mobile').classList.toggle('hidden'); document.getElementById('quick-emoji-picker-mobile').classList.add('hidden')"
+                        onclick="document.getElementById('embed-link-prompt').classList.toggle('hidden'); document.getElementById('quick-emoji-picker').classList.add('hidden')"
                         class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
                         title="Embed Google Drive Video">
                         <i data-lucide="folder-up" class="w-5 h-5"></i>
                     </button>
-                    <div id="quick-emoji-picker-mobile"
+                    <div id="quick-emoji-picker"
                         class="hidden absolute bottom-full left-0 mb-2 w-[360px] h-[320px] bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
                         <div class="p-3 border-b border-gray-100">
                             <div class="relative group">
                                 <i data-lucide="search"
                                     class="absolute left-5 top-3.5 w-5 h-5 text-[#667085] pointer-events-none"></i>
-                                <input type="text" id="compose-emoji-search-mobile"
+                                <input type="text" id="compose-emoji-search"
                                     placeholder="Search emojis..."
                                     class="w-full bg-[#f3f4f6] text-[#1f1f1f] rounded-full py-3.5 pl-14 pr-6 outline-none focus:bg-[#ffffff] focus:shadow-sm focus:ring-1 focus:ring-gray-200 transition-all text-[15px] placeholder:text-[#667085]">
                             </div>
                         </div>
-                        <div id="compose-emoji-grid-mobile"
+                        <div id="compose-emoji-grid"
                             class="grid grid-cols-8 gap-1.5 p-3 overflow-y-auto h-[calc(320px-56px)]">
                             <div class="col-span-8 text-center text-xs text-gray-400 py-8">Loading…</div>
                         </div>
                     </div>
-                    <div id="embed-link-prompt-mobile"
+                    <div id="embed-link-prompt"
                         class="hidden absolute bottom-full left-0 mb-2 w-[280px] bg-white border border-gray-100 p-3 shadow-lg rounded-xl z-30">
                         <label class="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-2"><i
                                 data-lucide="video" class="w-3 h-3"></i> Embed Drive Video</label>
-                        <input type="url" id="compose-embed-link-mobile" placeholder="Paste link here..."
+                        <input type="url" id="compose-embed-link" placeholder="Paste link here..."
                             class="w-full border border-gray-200 rounded-lg py-1.5 px-3 text-sm outline-none focus:border-blue-500 font-medium text-gray-900"
-                            onchange="document.getElementById('embed-link-prompt-mobile').classList.add('hidden'); if(this.value) window.showToast('Embed link ready')">
+                            onchange="document.getElementById('embed-link-prompt').classList.add('hidden'); if(this.value) window.showToast('Embed link ready')">
                     </div>
                 </div>
-                <div id="word-count-display-mobile" class="text-xs text-gray-400 font-medium">0/500 words</div>
+                <div id="word-count-display" class="text-xs text-gray-400 font-medium">0/500 words</div>
             </div>
             <div class="bg-white border-t border-gray-100 z-10">
-                <div id="compose-footer-settings-mobile" class="hidden border-b border-gray-100">
+                <div id="compose-footer-settings" class="hidden border-b border-gray-100">
                     <div class="flex items-center justify-between p-3 cursor-pointer hover:bg-gray-50 transition-colors"
                         onclick="toggleComposeSettings()"><span
                             class="text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2"><i
                                 data-lucide="settings-2" class="w-4 h-4"></i> Post Settings</span><i
-                            data-lucide="chevron-up" id="compose-settings-arrow-mobile"
+                            data-lucide="chevron-up" id="compose-settings-arrow"
                             class="w-4 h-4 text-gray-400 transition-transform"></i></div>
-                    <div id="compose-settings-area-mobile" class="hidden px-4 pb-4 space-y-3 bg-gray-50/50">
+                    <div id="compose-settings-area" class="hidden px-4 pb-4 space-y-3 bg-gray-50/50">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="lock"
                                     class="w-4 h-4"></i> Private (Only Me)</div><input type="checkbox"
-                                id="post-setting-privacy-mobile" class="accent-blue-600 w-4 h-4 cursor-pointer">
+                                id="post-setting-privacy" class="accent-blue-600 w-4 h-4 cursor-pointer">
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="heart"
                                     class="w-4 h-4"></i> Show Like Count</div><input type="checkbox"
-                                id="post-setting-likes-mobile" class="accent-blue-600 w-4 h-4 cursor-pointer" checked>
+                                id="post-setting-likes" class="accent-blue-600 w-4 h-4 cursor-pointer" checked>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="message-square"
                                     class="w-4 h-4"></i> Show Comment Count</div><input type="checkbox"
-                                id="post-setting-comments-mobile" class="accent-blue-600 w-4 h-4 cursor-pointer" checked>
+                                id="post-setting-comments" class="accent-blue-600 w-4 h-4 cursor-pointer" checked>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="users"
                                     class="w-4 h-4"></i> Allow viewers to see who liked</div><input type="checkbox"
-                                id="post-setting-like-view-mobile" class="accent-blue-600 w-4 h-4 cursor-pointer" checked>
+                                id="post-setting-like-view" class="accent-blue-600 w-4 h-4 cursor-pointer" checked>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="message-circle"
                                     class="w-4 h-4"></i> Allow comments</div><input type="checkbox"
-                                id="post-setting-allow-comments-mobile" class="accent-blue-600 w-4 h-4 cursor-pointer" checked>
+                                id="post-setting-allow-comments" class="accent-blue-600 w-4 h-4 cursor-pointer" checked>
                         </div>
                         <div class="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             onclick="openClaimOverlay()">
                             <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="shopping-bag"
                                     class="w-4 h-4"></i> Add Claim Link</div>
-                            <div class="flex items-center gap-2"><span id="claim-status-indicator-mobile"
+                            <div class="flex items-center gap-2"><span id="claim-status-indicator"
                                     class="text-xs font-bold text-gray-400">Off</span><i data-lucide="chevron-right"
                                     class="w-4 h-4 text-gray-400"></i></div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="p-4 bg-white"><button id="compose-action-btn-mobile"
+            <div class="p-4 md:p-6 bg-white"><button id="compose-action-btn"
                     class="w-full py-4 bg-[#f3f4f6] text-[#1f1f1f] font-bold rounded-[18px] hover:bg-gray-200 transition-all active:scale-[0.98]"
                     onclick="handleComposeAction()">Skip</button></div>
-        </div>
-
-        <!-- Desktop modal (3-column design) -->
-        <div id="compose-modal-desktop"
-            class="hidden md:flex fixed inset-0 bg-[#f9fafb]"
-            onclick="event.stopPropagation()">
-            <!-- Left Sidebar -->
-            <aside class="hidden lg:flex flex-col px-4 py-6 bg-white border-r border-gray-100 w-[240px]">
-                <div class="h-12 flex items-center gap-3 mb-10 cursor-pointer logo-container" onclick="closeCompose(); window.location.reload()">
-                    <img src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain shrink-0">
-                    <h1 class="text-[20px] font-bold text-[#1f1f1f] sidebar-label tracking-tight">EduLink</h1>
-                </div>
-                <nav class="flex-1 space-y-2 pt-8">
-                    <a href="#" onclick="closeCompose(); switchView('feed');return false;" class="nav-item">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" class="custom-icon custom-icon-filled">
-                            <path d="M3 10.5L10.2 4.6C11.3 3.7 12.7 3.7 13.8 4.6L21 10.5C21.6 11 22 11.7 22 12.5V19C22 20.7 20.7 22 19 22H15C14.4 22 14 21.6 14 21V15C14 13.9 13.1 13 12 13C10.9 13 10 13.9 10 15V21C10 21.6 9.6 22 9 22H5C3.3 22 2 20.7 2 19V12.5C2 11.7 2.4 11 3 10.5Z" />
-                        </svg>
-                        <span class="sidebar-label">Home</span>
-                    </a>
-                </nav>
-            </aside>
-
-            <!-- Center Column -->
-            <main class="flex-1 flex flex-col items-center justify-center py-8 overflow-hidden">
-                <div class="w-full max-w-[640px] flex flex-col gap-6 px-4">
-                    <!-- Top Search/Filter -->
-                    <div class="flex items-center gap-4">
-                        <div class="flex-1 relative group">
-                            <i data-lucide="search" class="absolute left-5 top-3.5 w-5 h-5 text-[#667085] pointer-events-none"></i>
-                            <input type="text" placeholder="Search EduLink" class="w-full bg-[#f3f4f6] rounded-full py-3.5 pl-14 pr-6 outline-none focus:bg-[#ffffff] focus:shadow-sm focus:ring-1 focus:ring-gray-200 transition-all text-[15px] placeholder:text-[#667085]">
-                        </div>
-                        <button class="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors">
-                            <i data-lucide="sliders-horizontal" class="w-5 h-5 text-gray-600"></i>
-                            <span class="text-sm font-bold text-gray-700">Filter</span>
-                        </button>
-                    </div>
-
-                    <!-- Step 1: Media Upload -->
-                    <div id="compose-desktop-step-1" class="flex flex-col gap-4">
-                        <div class="bg-white rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
-                                <i data-lucide="info" class="w-5 h-5 text-gray-700"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-900 text-lg mb-1">Uploading Media</h3>
-                                <p class="text-gray-500 text-sm leading-relaxed">Your media are stored in third party storage builds, Idem don't own it's own database center. <a href="#" class="text-blue-600 font-medium hover:underline">Learn more</a></p>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                            <div class="grid grid-cols-2 gap-[1px] bg-gray-100" id="media-grid-container-desktop"></div>
-                        </div>
-
-                        <button id="compose-desktop-action-btn-1"
-                            class="w-full py-4 bg-black text-white font-bold rounded-[18px] hover:bg-gray-800 transition-all flex items-center justify-between px-6"
-                            onclick="handleComposeAction()">
-                            <span>Skip</span>
-                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-
-                    <!-- Step 2: Caption Input -->
-                    <div id="compose-desktop-step-2" class="flex flex-col gap-4 hidden">
-                        <div class="bg-white rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
-                                <i data-lucide="info" class="w-5 h-5 text-gray-700"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-900 text-lg mb-1">Including Caption</h3>
-                                <p class="text-gray-500 text-sm leading-relaxed">Being aware of what you post is really important, use the right words to express yourself. <a href="#" class="text-blue-600 font-medium hover:underline">Learn more</a></p>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-2xl border border-gray-100 p-4">
-                            <div class="flex items-center gap-3 mb-6">
-                                <div class="img-placeholder w-10 h-10 rounded-full border border-gray-100 overflow-hidden flex-shrink-0">
-                                    <img id="compose-avatar-desktop" src="" class="w-full h-full rounded-full object-cover"
-                                        onload="this.classList.add('loaded')">
-                                </div>
-                                <div>
-                                    <div id="compose-name-desktop" class="text-[15px] font-bold text-[#1f1f1f]">User</div>
-                                </div>
-                            </div>
-                            <textarea id="compose-text-desktop" placeholder="What's on your mind?"
-                                class="w-full h-48 text-lg resize-none border-none outline-none bg-transparent placeholder-gray-400"
-                                oninput="window.handleComposeInput(this)"
-                                onkeydown="window.handleMentionKeydown(event,'compose-text-desktop','compose-mention-suggestions-desktop')"
-                                onkeyup="window.handleMentionInput('compose-text-desktop','compose-mention-suggestions-desktop')"></textarea>
-                            <div id="compose-mention-suggestions-desktop" class="mention-suggestions hidden !top-auto !bottom-full !mb-2"></div>
-                            <div class="flex items-center gap-2 mt-4">
-                                <button
-                                    class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
-                                    onclick="window.toggleComposeEmojiPicker(); document.getElementById('embed-link-prompt-desktop').classList.add('hidden')">
-                                    <i data-lucide="smile" class="w-5 h-5"></i>
-                                </button>
-                                <button
-                                    class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors"
-                                    onclick="document.getElementById('embed-link-prompt-desktop').classList.toggle('hidden'); document.getElementById('quick-emoji-picker-desktop').classList.add('hidden')"
-                                    title="Embed Google Drive Video">
-                                    <i data-lucide="folder-up" class="w-5 h-5"></i>
-                                </button>
-                            </div>
-                            <div id="quick-emoji-picker-desktop"
-                                class="hidden absolute bottom-full left-0 mb-2 w-[360px] h-[320px] bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
-                                <div class="p-3 border-b border-gray-100">
-                                    <div class="relative group">
-                                        <i data-lucide="search"
-                                            class="absolute left-5 top-3.5 w-5 h-5 text-[#667085] pointer-events-none"></i>
-                                        <input type="text" id="compose-emoji-search-desktop"
-                                            placeholder="Search emojis..."
-                                            class="w-full bg-[#f3f4f6] text-[#1f1f1f] rounded-full py-3.5 pl-14 pr-6 outline-none focus:bg-[#ffffff] focus:shadow-sm focus:ring-1 focus:ring-gray-200 transition-all text-[15px] placeholder:text-[#667085]">
-                                    </div>
-                                </div>
-                                <div id="compose-emoji-grid-desktop"
-                                    class="grid grid-cols-8 gap-1.5 p-3 overflow-y-auto h-[calc(320px-56px)]">
-                                    <div class="col-span-8 text-center text-xs text-gray-400 py-8">Loading…</div>
-                                </div>
-                            </div>
-                            <div id="embed-link-prompt-desktop"
-                                class="hidden mt-4 p-3 bg-gray-50 rounded-xl border border-gray-100">
-                                <label class="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-2"><i
-                                        data-lucide="video" class="w-3 h-3"></i> Embed Drive Video</label>
-                                <input type="url" id="compose-embed-link-desktop" placeholder="Paste link here..."
-                                    class="w-full border border-gray-200 rounded-lg py-1.5 px-3 text-sm outline-none focus:border-blue-500 font-medium text-gray-900"
-                                    onchange="if(this.value) window.showToast('Embed link ready')">
-                            </div>
-                        </div>
-
-                        <button id="compose-desktop-action-btn-2"
-                            class="w-full py-4 bg-black text-white font-bold rounded-[18px] hover:bg-gray-800 transition-all flex items-center justify-between px-6"
-                            onclick="handleComposeAction()">
-                            <span>Next</span>
-                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-
-                    <!-- Step3: Post Settings -->
-                    <div id="compose-desktop-step-3" class="flex flex-col gap-4 hidden">
-                        <div class="bg-white rounded-2xl border border-gray-100 p-4 flex items-start gap-3">
-                            <div class="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center flex-shrink-0">
-                                <i data-lucide="info" class="w-5 h-5 text-gray-700"></i>
-                            </div>
-                            <div>
-                                <h3 class="font-bold text-gray-900 text-lg mb-1">Post Settings</h3>
-                                <p class="text-gray-500 text-sm leading-relaxed">Change the way other interacts with your post. Change the privacy settings and hide certain things. <a href="#" class="text-blue-600 font-medium hover:underline">Learn more</a></p>
-                            </div>
-                        </div>
-
-                        <div class="bg-white rounded-2xl border border-gray-100 p-4 space-y-3">
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 text-gray-700">
-                                    <i data-lucide="lock" class="w-5 h-5"></i>
-                                    <span>Private (Only Me)</span>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="post-setting-privacy-desktop" class="sr-only peer">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 text-gray-700">
-                                    <i data-lucide="heart" class="w-5 h-5"></i>
-                                    <span>Show Like Count</span>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="post-setting-likes-desktop" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 text-gray-700">
-                                    <i data-lucide="message-square" class="w-5 h-5"></i>
-                                    <span>Show Comment Count</span>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="post-setting-comments-desktop" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 text-gray-700">
-                                    <i data-lucide="users" class="w-5 h-5"></i>
-                                    <span>Allow viewers to see who liked</span>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="post-setting-like-view-desktop" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 text-gray-700">
-                                    <i data-lucide="message-circle" class="w-5 h-5"></i>
-                                    <span>Allow comments</span>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="post-setting-allow-comments-desktop" class="sr-only peer" checked>
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center gap-2 text-gray-700">
-                                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-                                    <span>Add Claim Link</span>
-                                </div>
-                                <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" id="post-setting-claim-link-desktop" class="sr-only peer" onchange="if(this.checked) openClaimOverlay()">
-                                    <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                                </label>
-                            </div>
-                        </div>
-
-                        <button id="compose-desktop-action-btn-3"
-                            class="w-full py-4 bg-black text-white font-bold rounded-[18px] hover:bg-gray-800 transition-all flex items-center justify-between px-6"
-                            onclick="handleComposeAction()">
-                            <span>Post</span>
-                            <i data-lucide="chevron-right" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                </div>
-            </main>
-
-            <!-- Right Column: Planet Graphic -->
-            <aside class="hidden xl:flex w-[340px] bg-white border-l border-gray-100 flex-col items-center justify-center p-8">
-                <div class="w-full flex flex-col items-center justify-center">
-                    <div class="w-[300px] h-[300px] rounded-[24px] bg-black flex items-center justify-center overflow-hidden mb-6">
-                        <img src="https://i.imghippo.com/files/2qJ894208235221075756.webp" class="w-full h-full object-cover" alt="Planet">
-                    </div>
-                    <div class="w-full text-center space-y-1">
-                        <p class="text-[13px] text-gray-500">© 2026 EduLink Terms Privacy Policy</p>
-                        <p class="text-[12px] text-gray-400">Report a problem</p>
-                    </div>
-                </div>
-            </aside>
         </div>
     </div>
     </div>
@@ -4673,7 +4459,7 @@
         window.profileSort = 'latest'; window.isDesktopThreadMode = false;
         window.currentDownloadImages = []; window.selectedDownloadIndices = new Set();
         window.currentCommentFilter = 'latest'; window.sessionSeenPosts = new Set();
-        window.feedPagination = { cursor: 0, limit: 12, loading: false, hasMore: true, allCandidates: [] };
+        window.feedPagination = { cursor: 0, limit: 20, loading: false, hasMore: true, allCandidates: [] };
         window.imageLoadCache = new Set();
 
         // Initialize Intersection Observer for Infinite Scroll
@@ -4766,7 +4552,44 @@
             const trigger = document.getElementById('profile-load-more-trigger');
             if (trigger) window.profileObserver.observe(trigger);
         }
-        window.trackInteraction = async (pid, type, weight = 1) => { if (!currentUser) return; const r = doc(db, "users", currentUser.id), p = posts.find(x => x.id === pid); if (!p) return; const s = currentUser.interests || {}; s.authors = s.authors || {}; s.tags = s.tags || {}; s.disliked = s.disliked || []; if (type === 'not_interested') { if (!s.disliked.includes(pid)) s.disliked.push(pid); weight = -50 } if (p.authorId) s.authors[p.authorId] = (s.authors[p.authorId] || 0) + weight; const tags = p.content.match(/#(\w+)/g); if (tags) tags.forEach(t => { const tn = t.substring(1).toLowerCase(); s.tags[tn] = (s.tags[tn] || 0) + weight }); await updateDoc(r, { interests: s }); currentUser.interests = s; if (type === 'not_interested') { showToast("We'll show you less of this") } else if (type === 'show_more') showToast("We'll show you more of this") };
+        window.trackInteraction = async (pid, type, weight = 1) => { 
+            if (!currentUser) return; 
+            const r = doc(db, "users", currentUser.id), p = posts.find(x => x.id === pid); 
+            if (!p) return; 
+            const s = currentUser.interests || {}; 
+            s.authors = s.authors || {}; 
+            s.tags = s.tags || {}; 
+            s.disliked = s.disliked || []; 
+            s.savedPosts = s.savedPosts || [];
+            s.imageInteractions = s.imageInteractions || {};
+            
+            if (type === 'not_interested') { 
+                if (!s.disliked.includes(pid)) s.disliked.push(pid); 
+                weight = -50;
+            } else if (type === 'save') {
+                if (!s.savedPosts.includes(pid)) s.savedPosts.push(pid);
+                weight = 30;
+            } else if (type === 'carousel_swipe') {
+                s.imageInteractions[p.authorId] = (s.imageInteractions[p.authorId] || 0) + weight;
+                weight = 25;
+            } else if (type === 'pinch_zoom') {
+                s.imageInteractions[p.authorId] = (s.imageInteractions[p.authorId] || 0) + weight;
+                weight = 20;
+            }
+            
+            if (p.authorId) s.authors[p.authorId] = (s.authors[p.authorId] || 0) + weight; 
+            const tags = p.content.match(/#(\w+)/g); 
+            if (tags) tags.forEach(t => { const tn = t.substring(1).toLowerCase(); s.tags[tn] = (s.tags[tn] || 0) + weight }); 
+            await updateDoc(r, { interests: s }); 
+            currentUser.interests = s; 
+            if (type === 'not_interested') { 
+                showToast("We'll show you less of this");
+            } else if (type === 'show_more') {
+                showToast("We'll show you more of this");
+            } else if (type === 'save') {
+                showToast("Post saved!");
+            }
+        };
         /* ==========================================================================
            INDUSTRIAL-GRADE RECOMMENDATION PIPELINE (4 STAGES)
            ========================================================================== */
@@ -4781,12 +4604,13 @@
                     followers: currentUser.followers || [],
                     friends: currentUser.friends || []
                 },
-                engagementHistory: currentUser.interests || { authors: {}, tags: {}, disliked: [] },
-                features: currentUser.settings || {}
+                engagementHistory: currentUser.interests || { authors: {}, tags: {}, disliked: [], imageInteractions: {}, savedPosts: [] },
+                features: currentUser.settings || {},
+                location: currentUser.location || null // Location data (if available)
             };
         };
 
-        // STAGE 2: CANDIDATE SOURCING (Thunder & Phoenix Retrieval)
+        // STAGE 2: CANDIDATE SOURCING (Thunder & Phoenix Retrieval + Location Boost)
         window.sourceCandidates = async (context, searchTerm = '') => {
             if (!context) return [];
 
@@ -4816,7 +4640,7 @@
 
         // STAGE 3: SCORING & RANKING (Phoenix Scorer / Grok Transformer Simulation)
         window.scoreAndRankCandidates = (candidates, context) => {
-            const weights = { like: 10, repost: 12, dwell: 8, report: -100 };
+            const weights = { like: 10, repost: 12, dwell: 8, report: -100, image: 15, location: 12 };
             const seenPosts = window.sessionSeenPosts || new Set();
 
             return candidates.map(p => {
@@ -4825,21 +4649,28 @@
                 const pRepost = calculatePRepost(p, context);
                 const pDwell = calculatePDwell(p, context); // Simulated Dwell Time probability
                 const pReport = calculatePReport(p, context);
+                const pImage = calculatePImage(p, context); // Image-specific engagement
+                const pLocation = calculatePLocation(p, context); // Location relevance
 
-                // Weighted Score Formula: (w1 * Plike) + (w2 * Prepost) + (w3 * Pdwell) - (w4 * Preport)
-                let score = (weights.like * pLike) + (weights.repost * pRepost) + (weights.dwell * pDwell) + (weights.report * pReport);
+                // Weighted Score Formula: (w1 * Plike) + (w2 * Prepost) + (w3 * Pdwell) + (w4 * Pimage) + (w5 * Plocation) - (w6 * Preport)
+                let score = (weights.like * pLike) + 
+                           (weights.repost * pRepost) + 
+                           (weights.dwell * pDwell) + 
+                           (weights.image * pImage) + 
+                           (weights.location * pLocation) + 
+                           (weights.report * pReport);
 
-                // Recency Decay: Halve score every 48 hours for extreme freshness
+                // Recency Decay: Halve score every 72 hours (slower decay to show more content longer)
                 const ts = p.timestamp?.toDate ? p.timestamp.toDate().getTime() : new Date(p.timestamp || 0).getTime();
                 const hoursOld = (Date.now() - ts) / 3600000;
-                const recencyFactor = Math.pow(0.5, hoursOld / 48);
+                const recencyFactor = Math.pow(0.5, hoursOld / 72);
                 score *= recencyFactor;
 
-                // Penalize seen content to prevent repetitive loops
-                if (seenPosts.has(p.id)) score -= 50;
+                // Penalize seen content to prevent repetitive loops (less penalty to show more content)
+                if (seenPosts.has(p.id)) score -= 25;
 
                 // Randomize slightly so content changes on refresh
-                score += (Math.random() * 20);
+                score += (Math.random() * 15);
 
                 return { ...p, pipelineScore: score };
             }).sort((a, b) => b.pipelineScore - a.pipelineScore);
@@ -4855,13 +4686,13 @@
                 if (context.engagementHistory.disliked?.includes(p.id)) continue;
                 if (!canSeePost(p)) continue;
 
-                // Author Diversity: Don't show more than 2 posts from same author in top batch
+                // Author Diversity: Don't show more than 3 posts from same author in top batch (increased to allow more content)
                 const authorId = p.authorId;
                 authorCounts[authorId] = (authorCounts[authorId] || 0) + 1;
-                if (authorCounts[authorId] > 2) continue;
+                if (authorCounts[authorId] > 3) continue;
 
                 finalSelection.push(p);
-                if (finalSelection.length >= 100) break; // Selection limit for this pass
+                if (finalSelection.length >= 200) break; // Selection limit increased to 200 for more content
             }
             return finalSelection;
         };
@@ -4894,6 +4725,68 @@
             let prob = 0.2; // High baseline for stop-scrolling
             if (p.media) prob += 0.3; // Images/Video catch eye
             if (p.content?.length > 100) prob += 0.15; // Longer text = more dwell if read
+            return Math.min(1.0, prob);
+        };
+
+        const calculatePImage = (p, ctx) => {
+            let prob = 0.05; // Baseline for image engagement
+            
+            // Check if post has media (images or carousel)
+            if (p.media) {
+                prob += 0.2; // Base boost for any media
+                
+                // Check if it's a carousel (array of media)
+                if (Array.isArray(p.media) && p.media.length > 1) {
+                    prob += 0.3; // Higher boost for carousels (strong engagement signal)
+                }
+                
+                // Check if user has saved this post before
+                if (ctx.engagementHistory.savedPosts?.includes(p.id)) {
+                    prob += 0.4; // Big boost for saved content (holy grail for images)
+                }
+                
+                // Check if user has interacted with this author's images before
+                if (ctx.engagementHistory.imageInteractions?.[p.authorId]) {
+                    prob += 0.25;
+                }
+            }
+            
+            return Math.min(1.0, prob);
+        };
+
+        const calculatePLocation = (p, ctx) => {
+            let prob = 0.05; // Baseline for location relevance
+            
+            // Boost for posts from same region/country (simulated with user metadata)
+            const author = users.find(u => u.id === p.authorId);
+            if (author) {
+                // Simple heuristic: if author is followed by many local users, boost
+                const localFollowers = author.followers?.filter(f => {
+                    const followerUser = users.find(u => u.id === f);
+                    return followerUser && followerUser.location === ctx.location;
+                })?.length || 0;
+                
+                if (localFollowers > 0) {
+                    prob += Math.min(0.3, localFollowers * 0.05);
+                }
+                
+                // If author is local, big boost
+                if (author.location === ctx.location) {
+                    prob += 0.4;
+                }
+            }
+            
+            // Check for location tags in post content
+            if (p.content && ctx.location) {
+                const locationKeywords = [ctx.location, ctx.location?.toLowerCase()];
+                for (const keyword of locationKeywords) {
+                    if (keyword && p.content.toLowerCase().includes(keyword.toLowerCase())) {
+                        prob += 0.25;
+                        break;
+                    }
+                }
+            }
+            
             return Math.min(1.0, prob);
         };
 
@@ -5869,6 +5762,7 @@
                 mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
             } else if (p.media) {
                 const ma = Array.isArray(p.media) ? p.media : [p.media];
+                const bgMedia = ma.find(m => !m.includes('video') && !m.includes('.mp4') && !m.startsWith('data:video')) || ma[0];
                 if (ma.length === 1) {
                     const s = ma[0],
                         iv = s.includes('video') || s.includes('.mp4') || s.startsWith('data:video');
@@ -5879,9 +5773,9 @@
                         if (s.includes('cloudinary.com')) {
                             poster = s.replace(/\.[^.]+$/, '.jpg');
                         }
-                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
+                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
                     }
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'}" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'} post-media-container" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${!iv ? `<div class="post-media-blur-bg" style="background-image: url('${bgMedia}')"></div>` : ''}${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
                 } else {
                     const cid = `carousel-${ctx}-${p.id}`,
                         iid = `inner-${ctx}-${p.id}`,
@@ -5897,12 +5791,12 @@
                             if (s.includes('cloudinary.com')) {
                                 poster = s.replace(/\.[^.]+$/, '.jpg');
                             }
-                            videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata"></video>`;
+                            videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata"></video>`;
                         }
-                        sl += `<div class="post-carousel-item bg-gray-50 flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
+                        sl += `<div class="post-carousel-item bg-transparent flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
                         dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="dot-${ctx}-${p.id}-${i}"></div>`
                     });
-                    mh = `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel touch-pan-y max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
+                    mh = `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel touch-pan-y max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)"><div class="post-media-blur-bg" style="background-image: url('${bgMedia}')"></div><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
                     (window.carouselStates = window.carouselStates || {})[cid] = {
                         index: 0,
                         total: ma.length
@@ -6552,7 +6446,9 @@
                 index: 0,
                 total: ma.length
             };
-            return `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel shadow-sm max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${pid}',true)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`
+            // Find first non-video media for background
+            const bgMedia = ma.find(m => !m.includes('video') && !m.includes('.mp4') && !m.startsWith('data:video')) || ma[0];
+            return `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel shadow-sm max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${pid}',true)"><div class="post-media-blur-bg" style="background-image: url('${bgMedia}')"></div><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="chevron-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`
         }
         window.sharePost = pid => { manageHistory('share-overlay'); window.currentSharePid = pid; const p = posts.find(x => x.id === pid); if (!p) return; const url = window.getPostUrl(p.authorId, pid), pc = document.getElementById('share-post-preview'); document.getElementById('share-link-input').value = url; document.getElementById('share-link-text').innerText = url; const isRep = currentUser.reposts?.includes(pid); const rb = document.getElementById('share-repost-btn'), rt = document.getElementById('share-repost-text'), ri = document.getElementById('share-repost-icon'); if (rb && rt && ri) { rt.innerText = isRep ? 'Un-Repost' : 'Repost'; ri.className = `share-icon-circle ${isRep ? 'bg-green-600' : 'bg-green-500'} text-white` } if (p) { const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '' }; document.getElementById('share-owner-avatar').src = a.avatar; const m = p.media ? (Array.isArray(p.media) ? p.media[0] : p.media) : null, isV = (m && (m.includes('video') || m.endsWith('.mp4'))) || p.embedVideo, mh = m ? (isV ? `<div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center shrink-0"><i data-lucide="play" class="w-6 h-6 text-white"></i></div>` : `<div class="w-16 h-16 rounded-lg shrink-0 bg-gray-100"><img src="${m}" class="w-full h-full rounded-lg object-cover" onload="this.classList.add('loaded')"></div>`) : (p.embedVideo ? `<div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center shrink-0"><i data-lucide="play" class="w-6 h-6 text-white"></i></div>` : ''); pc.innerHTML = `<div class="bg-white border border-gray-200 rounded-xl p-3 mb-6"><div class="flex items-center gap-2 mb-2"><div class="w-5 h-5 rounded-full bg-gray-100"><img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><span class="text-xs font-bold text-gray-900 truncate">${a.name}</span></div><div class="flex gap-3 items-center"><div class="flex-1 min-w-0"><p class="text-xs text-gray-600 line-clamp-2 mb-2 leading-relaxed">${p.content || (m || p.embedVideo ? 'Shared a post' : '')}</p><div class="flex items-center gap-3 text-gray-400"><div class="flex items-center gap-1 text-[10px] font-medium"><i data-lucide="heart" class="w-3 h-3"></i> ${p.likes?.length || 0}</div><div class="flex items-center gap-1 text-[10px] font-medium"><i data-lucide="message-circle" class="w-3 h-3"></i> ${p.comments?.length || 0}</div></div></div>${mh}</div></div>`; pc.classList.remove('hidden'); const dl = document.getElementById('share-dl-btn'); if (dl) dl.remove(); if (m && !isV) { const g = document.getElementById('share-grid-options'); if (!document.getElementById(`share-dl-${pid}`)) { const d = document.createElement('div'); d.id = `share-dl-${pid}`; d.className = "share-icon-btn"; d.onclick = () => triggerShare('download'); d.innerHTML = `<div class="share-icon-circle bg-gray-100 text-gray-800 border border-gray-200" id="dl-icon-${pid}"><i data-lucide="download" class="w-6 h-6"></i></div><span class="text-xs font-medium text-gray-700" id="dl-text-${pid}">Download</span>`; g.appendChild(d) } } refreshIcons() } else pc.classList.add('hidden'); toggleModalAnim('share-overlay', 'share-modal', !0) };
         window.closeShareMenu = () => { const o = document.getElementById('share-overlay'), m = document.getElementById('share-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => { o.classList.add('hidden'); window.currentSharePid = null; document.querySelectorAll('[id^="share-dl-"]').forEach(e => e.remove()) }, 200) };
@@ -8929,68 +8825,13 @@
             }
         };
         window.openCompose = (isEdit = false) => {
-            manageHistory('compose-overlay');
-            closeCreateMenu();
-            document.getElementById('compose-overlay').classList.remove('opacity-0', 'pointer-events-none');
-
-            const isMobile = window.innerWidth < 768;
-            const mobileModal = document.getElementById('compose-modal-mobile');
-            const desktopModal = document.getElementById('compose-modal-desktop');
-
-            if (isMobile) {
-                mobileModal.classList.remove('hidden');
-                mobileModal.classList.remove('translate-y-full');
-                if (mobileModal) {
-                    mobileModal.ondragover = e => { e.preventDefault(); mobileModal.classList.add('drag-over') };
-                    mobileModal.ondragleave = () => mobileModal.classList.remove('drag-over');
-                    mobileModal.ondrop = e => { e.preventDefault(); mobileModal.classList.remove('drag-over'); const files = e.dataTransfer.files; if (files.length) handleDroppedFiles(files) };
-                }
-            } else {
-                desktopModal.classList.remove('hidden');
-                if (desktopModal) {
-                    desktopModal.ondragover = e => { e.preventDefault(); desktopModal.classList.add('drag-over') };
-                    desktopModal.ondragleave = () => desktopModal.classList.remove('drag-over');
-                    desktopModal.ondrop = e => { e.preventDefault(); desktopModal.classList.remove('drag-over'); const files = e.dataTransfer.files; if (files.length) handleDroppedFiles(files) };
-                }
+            manageHistory('compose-overlay'); closeCreateMenu(); document.getElementById('compose-overlay').classList.remove('opacity-0', 'pointer-events-none'); const modal = document.getElementById('compose-modal'); modal.classList.remove('scale-95'); modal.classList.remove('translate-y-full');
+            if (modal) {
+                modal.ondragover = e => { e.preventDefault(); modal.classList.add('drag-over') };
+                modal.ondragleave = () => modal.classList.remove('drag-over');
+                modal.ondrop = e => { e.preventDefault(); modal.classList.remove('drag-over'); const files = e.dataTransfer.files; if (files.length) handleDroppedFiles(files) };
             }
-
-            if (!isEdit) {
-                window.composeStep = 1;
-                window.composeImages = [null, null, null, null];
-                window.composeImageBlobs = [null, null, null, null];
-                window.selectedCollaborators = [];
-                window.editingPostId = null;
-                window.currentClaimLink = null;
-                document.getElementById('claim-link-input').value = '';
-
-                if (isMobile) {
-                    document.getElementById('compose-embed-link-mobile').value = '';
-                    const ci = document.getElementById('claim-status-indicator-mobile');
-                    if (ci) { ci.innerText = 'Off'; ci.classList.remove('text-green-600'); ci.classList.add('text-gray-400') }
-                    document.getElementById('compose-text-mobile').value = "";
-                    document.getElementById('word-count-display-mobile').innerText = "0/500 words";
-                    document.getElementById('compose-header-title-mobile').innerText = "Create Post";
-                    document.getElementById('compose-step-1-mobile').classList.remove('hidden');
-                    document.getElementById('compose-step-2-mobile').classList.add('hidden');
-                    document.getElementById('compose-tools-bar-mobile').classList.add('hidden');
-                    document.getElementById('compose-footer-settings-mobile').classList.add('hidden');
-                    document.getElementById('compose-action-btn-mobile').innerText = "Skip";
-                } else {
-                    document.getElementById('compose-embed-link-desktop').value = '';
-                    const avatarEl = document.getElementById('compose-avatar-desktop');
-                    const nameEl = document.getElementById('compose-name-desktop');
-                    if (avatarEl) avatarEl.src = currentUser.avatar;
-                    if (nameEl) nameEl.innerText = currentUser.name;
-                    document.getElementById('compose-desktop-step-1').classList.remove('hidden');
-                    document.getElementById('compose-desktop-step-2').classList.add('hidden');
-                    document.getElementById('compose-desktop-step-3').classList.add('hidden');
-                    const btn = document.getElementById('compose-desktop-action-btn-1');
-                    btn.innerHTML = `<span>Skip</span><i data-lucide="chevron-right" class="w-5 h-5"></i>`;
-                }
-                renderMediaGrid();
-                renderCollabChips();
-                refreshIcons();
-            }
+            if (!isEdit) { window.composeStep = 1; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; window.selectedCollaborators = []; window.editingPostId = null; window.currentClaimLink = null; document.getElementById('claim-link-input').value = ''; document.getElementById('compose-embed-link').value = ''; const ci = document.getElementById('claim-status-indicator'); if (ci) { ci.innerText = 'Off'; ci.classList.remove('text-green-600'); ci.classList.add('text-gray-400') } document.getElementById('compose-text').value = ""; document.getElementById('word-count-display').innerText = "0/500 words"; document.getElementById('compose-header-title').innerText = "Create Post"; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); document.getElementById('compose-action-btn').innerText = "Skip"; renderMediaGrid(); renderCollabChips() }
         };
         window.handleDroppedFiles = files => {
             const count = Math.min(files.length, 4);
@@ -9139,113 +8980,45 @@
             window.renderComposeEmojis(window.__composeEmojiAll || []);
             setTimeout(() => search?.focus(), 50);
         };
-        window.closeCompose = () => {
-            document.getElementById('compose-overlay').classList.add('opacity-0', 'pointer-events-none');
-            const mobileModal = document.getElementById('compose-modal-mobile');
-            const desktopModal = document.getElementById('compose-modal-desktop');
-            if (mobileModal) {
-                mobileModal.classList.add('translate-y-full');
-                mobileModal.classList.add('hidden');
-            }
-            if (desktopModal) desktopModal.classList.add('hidden');
-            
-            setTimeout(() => {
-                window.editingPostId = null;
-                window.composeImages = [null, null, null, null];
-                window.composeImageBlobs = [null, null, null, null];
-            }, 200);
-        };
-        
-        window.attemptCloseCompose = () => {
-            const isMobile = window.innerWidth < 768;
-            const textId = isMobile ? 'compose-text-mobile' : 'compose-text-desktop';
-            const textEl = document.getElementById(textId);
-            const hc = (textEl?.value.trim().length > 0) || window.composeImages.some(x => x !== null);
-            if (hc && !window.editingPostId) {
-                showAlert("Discard post?", () => closeCompose());
-            } else {
-                closeCompose();
-            }
-        };
+        window.closeCompose = () => { document.getElementById('compose-overlay').classList.add('opacity-0', 'pointer-events-none'); const modal = document.getElementById('compose-modal'); modal.classList.add('scale-95'); modal.classList.add('translate-y-full'); setTimeout(() => { window.editingPostId = null; document.getElementById('compose-text').value = ""; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null] }, 200) };
         window.toggleComposeSettings = () => { const a = document.getElementById('compose-settings-area'), ar = document.getElementById('compose-settings-arrow'); a.classList.toggle('hidden'); ar.style.transform = a.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)' };
         window.openUploadOptions = () => document.getElementById('upload-options-modal').classList.remove('hidden'); window.triggerUpload = m => { window.uploadMode = m; document.getElementById('upload-options-modal').classList.add('hidden'); const i = document.getElementById('media-input'); if (m === 'multiple') i.setAttribute('multiple', ''); else i.removeAttribute('multiple'); i.click() }; window.handleFileSelect = e => { const f = e.target.files; if (f.length > 0) { window.currentMediaBlob = []; window.currentMedia = []; const c = document.getElementById('media-preview-container'), inr = document.getElementById('preview-inner'); c.classList.remove('hidden'); inr.innerHTML = ''; const ps = Array.from(f).map(file => { window.currentMediaBlob.push(file); return new Promise(r => { const d = new FileReader(); d.onload = ev => { window.currentMedia.push(ev.target.result); const iv = file.type.startsWith('video'), el = document.createElement(iv ? 'video' : 'img'); el.src = ev.target.result; el.className = "h-20 w-20 object-cover rounded-md border border-gray-200 shrink-0"; if(iv){el.muted=true;el.preload="metadata";el.onloadeddata=()=>el.currentTime=0.1;el.onseeked=()=>{el.play();setTimeout(()=>el.pause(),10);}} inr.appendChild(el); r() }; d.readAsDataURL(file) }) }); Promise.all(ps).then(() => showToast(`${f.length} file(s) ready`)) } }; window.removeMedia = () => { window.currentMedia = []; window.currentMediaBlob = []; document.getElementById('media-preview-container').classList.add('hidden'); document.getElementById('media-input').value = "" };
         window.renderMediaGrid = () => {
-            const grids = [
-                document.getElementById('media-grid-container-mobile'),
-                document.getElementById('media-grid-container-desktop')
-            ].filter(Boolean);
-            
-            const hasImage = window.composeImages.some(x => x !== null);
-            
-            grids.forEach(grid => {
-                grid.innerHTML = '';
-                for (let i = 0; i < 4; i++) {
-                    const url = window.composeImages[i];
-                    const div = document.createElement('div');
-                    div.className = "aspect-square flex items-center justify-center relative overflow-hidden bg-white transition-colors md:rounded-xl md:border md:border-gray-200";
-                    if (url) {
-                        div.className = "aspect-square relative shadow-sm cursor-pointer hover:opacity-90 transition-opacity md:rounded-xl overflow-hidden md:border md:border-gray-200";
-                        div.onclick = () => openImageAdjust(i);
-                        const isVid = url.includes('video') || url.endsWith('.mp4') || (window.composeImageBlobs[i] && window.composeImageBlobs[i].type.startsWith('video'));
-                        if (isVid) {
-                            div.innerHTML = `<video src="${url}" class="w-full h-full object-cover pointer-events-none" muted preload="metadata" onloadeddata="this.currentTime=0.1" onseeked="this.play();setTimeout(()=>this.play(),10)"></video><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`;
-                        } else {
-                            div.innerHTML = `<img src="${url}" class="w-full h-full object-cover"><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`;
-                        }
+            const grid = document.getElementById('media-grid-container'),
+                btn = document.getElementById('compose-action-btn');
+            grid.innerHTML = '';
+            let hasImage = false;
+            for (let i = 0; i < 4; i++) {
+                const url = window.composeImages[i],
+                    div = document.createElement('div');
+                div.className = "aspect-square flex items-center justify-center relative overflow-hidden bg-white transition-colors md:rounded-xl md:border md:border-gray-200";
+                if (url) {
+                    hasImage = true;
+                    div.className = "aspect-square relative shadow-sm cursor-pointer hover:opacity-90 transition-opacity md:rounded-xl overflow-hidden md:border md:border-gray-200";
+                    div.onclick = () => openImageAdjust(i);
+                    const isVid = url.includes('video') || url.endsWith('.mp4') || (window.composeImageBlobs[i] && window.composeImageBlobs[i].type.startsWith('video'));
+                    if (isVid) {
+                        div.innerHTML = `<video src="${url}" class="w-full h-full object-cover pointer-events-none" muted preload="metadata" onloadeddata="this.currentTime=0.1" onseeked="this.play();setTimeout(()=>this.play(),10)"></video><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`;
                     } else {
-                        const isNext = (i === 0) || (window.composeImages[i - 1] !== null);
-                        if (isNext) {
-                            div.innerHTML = `<i data-lucide="plus" class="w-8 h-8 text-gray-400"></i>`;
-                            div.classList.add('cursor-pointer', 'hover:bg-gray-50');
-                            div.onclick = () => window.handleGridUpload(i);
-                        }
-                    }
-                    grid.appendChild(div);
-                }
-            });
-
-            const isMobile = window.innerWidth < 768;
-            if (window.composeStep === 1) {
-                if (isMobile) {
-                    const btn = document.getElementById('compose-action-btn-mobile');
-                    if (btn) {
-                        btn.innerText = hasImage ? "Next" : "Skip";
-                        btn.onclick = window.handleComposeAction;
+                        div.innerHTML = `<img src="${url}" class="w-full h-full object-cover" id="compose-img-${i}"><button onclick="event.stopPropagation();removeGridImage(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80"><i data-lucide="x" class="w-4 h-4"></i></button>`;
                     }
                 } else {
-                    const btn = document.getElementById('compose-desktop-action-btn-1');
-                    if (btn) {
-                        btn.innerHTML = `<span>${hasImage ? "Next" : "Skip"}</span><i data-lucide="chevron-right" class="w-5 h-5"></i>`;
-                        btn.onclick = window.handleComposeAction;
+                    const isNext = (i === 0) || (window.composeImages[i - 1] !== null);
+                    if (isNext) {
+                        div.innerHTML = `<i data-lucide="plus" class="w-8 h-8 text-gray-400"></i>`;
+                        div.classList.add('cursor-pointer', 'hover:bg-gray-50');
+                        div.onclick = () => window.handleGridUpload(i)
+                    } else {
+                        div.innerHTML = '';
                     }
                 }
+                grid.appendChild(div)
             }
-            refreshIcons();
-        };
-        
-        window.handleComposeAction = () => {
-            const isMobile = window.innerWidth < 768;
             if (window.composeStep === 1) {
-                if (isMobile) {
-                    window.composeStep = 2;
-                    document.getElementById('compose-step-1-mobile').classList.add('hidden');
-                    document.getElementById('compose-step-2-mobile').classList.remove('hidden');
-                    document.getElementById('compose-tools-bar-mobile').classList.remove('hidden');
-                    document.getElementById('compose-footer-settings-mobile').classList.remove('hidden');
-                    document.getElementById('compose-action-btn-mobile').innerText = "Post";
-                    document.getElementById('compose-action-btn-mobile').onclick = window.publishPost;
-                } else {
-                    window.composeStep = 2;
-                    document.getElementById('compose-desktop-step-1').classList.add('hidden');
-                    document.getElementById('compose-desktop-step-2').classList.remove('hidden');
-                }
-            } else if (window.composeStep === 2 && !isMobile) {
-                window.composeStep = 3;
-                document.getElementById('compose-desktop-step-2').classList.add('hidden');
-                document.getElementById('compose-desktop-step-3').classList.remove('hidden');
-            } else {
-                window.publishPost();
+                btn.innerText = hasImage ? "Next" : "Skip";
+                btn.onclick = window.handleComposeAction
             }
+            refreshIcons()
         };
         window.openImageAdjust = i => {
             const url = window.composeImages[i]; if (!url || url.includes('video') || url.endsWith('.mp4')) return; window.adjustingImageIndex = i; window.adjustZoom = 1; window.adjustX = 0; window.adjustY = 0; manageHistory('adjust-image-overlay'); const o = document.getElementById('adjust-image-overlay'), img = document.getElementById('adjust-image-target'); img.src = url; img.style.transform = `translate(0px, 0px) scale(1)`; document.getElementById('adjust-zoom-range').value = 1; o.classList.remove('hidden'); setTimeout(() => o.classList.remove('opacity-0'), 20);
@@ -9313,33 +9086,37 @@
                 throw new Error('this file is not supported');
             }
 
+            // Try our API proxy first (uses Cloudinary/ImgHippo server-side)
             try {
-                if (isImage && window.APP_CONFIG.imgHippoApiKey) {
-                    if (onProgress) onProgress(10);
-                    
-                    const formData = new FormData();
-                    formData.append('api_key', window.APP_CONFIG.imgHippoApiKey);
-                    formData.append('file', f);
+                console.log('Starting upload via API proxy...');
+                if (onProgress) onProgress(10);
+                
+                const formData = new FormData();
+                formData.append('file', f);
+                
+                const response = await fetch('/api/api', {
+                    method: 'POST',
+                    body: formData
+                });
 
-                    const response = await fetch('https://api.imghippo.com/v1/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    const j = await response.json();
-                    
-                    if (onProgress) onProgress(100);
-                    if (j.success && j.data && j.data.url) {
-                        return j.data.url;
-                    } else {
-                        throw new Error(j.message || 'ImgHippo upload failed');
-                    }
+                console.log('API proxy response status:', response.status);
+                const j = await response.json();
+                console.log('API proxy response:', j);
+                
+                if (onProgress) onProgress(100);
+                if (j.url) {
+                    console.log('Upload successful! URL:', j.url);
+                    return j.url;
+                } else {
+                    throw new Error(j.error || 'Upload failed');
                 }
-            } catch (e) { 
-                console.warn('ImgHippo failed, falling back to Firebase', e.message); 
+            } catch (e) {
+                console.warn('API proxy upload failed, falling back to Firebase', e.message);
             }
             
+            // Fallback to Firebase
             try {
+                console.log('Starting Firebase upload...');
                 if (typeof storage !== 'undefined' && typeof ref !== 'undefined') {
                     const fileName = `${Date.now()}_${f.name || 'file'}`;
                     const mr = ref(storage, `uploads/${currentUser.id}/${fileName}`);
@@ -9351,14 +9128,20 @@
                         uploadTask.on('state_changed', 
                             (snapshot) => {
                                 const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                                console.log('Firebase upload progress:', progress);
                                 if (onProgress) onProgress(progress);
                             }, 
-                            (error) => reject(error), 
+                            (error) => {
+                                console.error('Firebase upload error:', error);
+                                reject(error);
+                            }, 
                             async () => {
                                 try {
                                     const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                                    console.log('Firebase upload successful! URL:', downloadURL);
                                     resolve(downloadURL);
                                 } catch (err) {
+                                    console.error('Firebase getDownloadURL error:', err);
                                     reject(err);
                                 }
                             }
@@ -9367,6 +9150,7 @@
                 }
             } catch (e) { 
                 console.error('Firebase fallback failed', e); 
+                showToast('Upload failed', true);
                 throw e;
             }
         }
@@ -9498,27 +9282,18 @@
         window.publishPost = async () => {
             if (window.isUploading) return showToast("An upload is already in progress", !0);
 
-            const isMobile = window.innerWidth < 768;
-            const textId = isMobile ? 'compose-text-mobile' : 'compose-text-desktop';
-            const embedLinkId = isMobile ? 'compose-embed-link-mobile' : 'compose-embed-link-desktop';
-            const privacyId = isMobile ? 'post-setting-privacy-mobile' : 'post-setting-privacy-desktop';
-            const slId = isMobile ? 'post-setting-likes-mobile' : 'post-setting-likes-desktop';
-            const scId = isMobile ? 'post-setting-comments-mobile' : 'post-setting-comments-desktop';
-            const alvId = isMobile ? 'post-setting-like-view-mobile' : 'post-setting-like-view-desktop';
-            const acId = isMobile ? 'post-setting-allow-comments-mobile' : 'post-setting-allow-comments-desktop';
-            
-            const tr = document.getElementById(textId)?.value.trim() || '';
+            const tr = document.getElementById('compose-text').value.trim();
             const hasImages = window.composeImages.some(x => x !== null);
             if (!tr.trim() && !hasImages) return showToast("Empty!", !0);
             if (tr.trim().split(/\s+/).length > 500) return showToast("Post too long (max 500 words)", !0);
             
             // Capture all current state before closing modal
-            const privacy = document.getElementById(privacyId)?.checked || false;
-            const sl = document.getElementById(slId)?.checked ?? true;
-            const sc = document.getElementById(scId)?.checked ?? true;
-            const alv = document.getElementById(alvId)?.checked ?? true;
-            const ac = document.getElementById(acId)?.checked ?? true;
-            const embedLinkRaw = document.getElementById(embedLinkId)?.value.trim() || '';
+            const privacy = document.getElementById('post-setting-privacy').checked;
+            const sl = document.getElementById('post-setting-likes').checked;
+            const sc = document.getElementById('post-setting-comments').checked;
+            const alv = document.getElementById('post-setting-like-view').checked;
+            const ac = document.getElementById('post-setting-allow-comments').checked;
+            const embedLinkRaw = document.getElementById('compose-embed-link').value.trim();
             const claimLink = window.currentClaimLink || null;
             const collaborators = [...(window.selectedCollaborators || [])];
             const images = [...window.composeImages];
