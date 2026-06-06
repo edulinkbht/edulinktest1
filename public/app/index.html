@@ -327,6 +327,7 @@ svg{display:block;flex-shrink:0}
         <div class="drop-title">Drag photos and videos here</div>
         <div class="drop-sub">Share photos from your computer</div>
         <button class="drop-select-btn" onclick="document.getElementById('file-input').click();event.stopPropagation()">Select from computer</button>
+        <button id="skip-image-btn" style="background:none;border:none;color:#8e8e8e;font-size:13px;cursor:pointer;margin-top:4px;text-decoration:underline" onclick="event.stopPropagation()">Post text only (no photo)</button>
       </div>
     </div>
 
@@ -340,7 +341,7 @@ svg{display:block;flex-shrink:0}
         <button class="modal-share-btn" id="share-btn">Share</button>
       </div>
       <div class="preview-section">
-        <div class="preview-img-wrap">
+        <div class="preview-img-wrap" id="preview-img-wrap">
           <img id="preview-img" src="" alt=""/>
         </div>
         <div class="preview-form">
@@ -520,48 +521,83 @@ function handleFile(file){
   r.readAsDataURL(file);
 }
 
-// ── UPLOAD TO FREEIMAGE.HOST ──
+// skip-image button — go straight to caption step without a file
+document.getElementById('skip-image-btn').addEventListener('click', ()=>{
+  selectedFile=null;
+  document.getElementById('preview-img').src='';
+  document.getElementById('preview-img-wrap').style.display='none';
+  document.getElementById('step-drop').style.display='none';
+  document.getElementById('step-preview').style.display='block';
+});
+
+// ── UPLOAD TO FREEIMAGE.HOST via base64 (avoids CORS preflight) ──
 async function uploadImage(file){
-  const fd = new FormData();
-  fd.append('key', FREEIMAGE_KEY);
-  fd.append('action', 'upload');
-  fd.append('source', file);        // FILE goes as 'source'
-  fd.append('format', 'json');
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onerror = ()=> reject(new Error('Could not read file'));
+    reader.onload = async (ev)=>{
+      try {
+        // Strip the data:image/...;base64, prefix — send raw base64
+        const base64 = ev.target.result.split(',')[1];
 
-  const pb = document.getElementById('progress-bar');
-  const pf = document.getElementById('progress-fill');
-  pb.style.display='block';
-  pf.style.width='30%';
+        const pb = document.getElementById('progress-bar');
+        const pf = document.getElementById('progress-fill');
+        pb.style.display='block';
+        pf.style.width='30%';
 
-  const res = await fetch('https://freeimage.host/api/1/upload', {
-    method:'POST',
-    body: fd
-    // NO Content-Type header — browser sets multipart boundary automatically
+        // Send as URL-encoded body so browser won't send CORS preflight
+        const body = new URLSearchParams();
+        body.append('key', FREEIMAGE_KEY);
+        body.append('action', 'upload');
+        body.append('source', base64);
+        body.append('format', 'json');
+
+        pf.style.width='60%';
+
+        const res = await fetch('https://freeimage.host/api/1/upload', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: body.toString()
+        });
+
+        pf.style.width='85%';
+
+        const text = await res.text();
+        let json;
+        try { json = JSON.parse(text); }
+        catch(e){ throw new Error('Bad response from image host: '+text.slice(0,120)); }
+
+        pf.style.width='100%';
+
+        if(json.status_code===200 && json.image?.url){
+          resolve(json.image.url);
+        } else if(json.image?.url){
+          resolve(json.image.url);
+        } else {
+          throw new Error(json.error?.message || json.status_txt || 'Upload failed');
+        }
+      } catch(e){ reject(e); }
+    };
+    reader.readAsDataURL(file);
   });
-
-  pf.style.width='80%';
-
-  if(!res.ok) throw new Error(`HTTP ${res.status}`);
-  const json = await res.json();
-  pf.style.width='100%';
-
-  // freeimage.host returns: { status_code: 200, image: { url, ... } }
-  if(json.status_code !== 200 || !json.image?.url){
-    throw new Error(json.error?.message || 'Upload failed — unexpected response');
-  }
-  return json.image.url;
 }
 
-// ── SHARE POST ──
+// ── SHARE POST (works with or without image) ──
 document.getElementById('share-btn').addEventListener('click', async()=>{
-  if(!selectedFile||!user) return;
+  if(!user) return;
+  const caption  = document.getElementById('caption-input').value.trim();
+  const tagsRaw  = document.getElementById('tags-input').value.trim();
+  // must have at least caption or image
+  if(!selectedFile && !caption){ toast('Add a caption or photo to post'); return; }
+
   const btn = document.getElementById('share-btn');
   btn.disabled=true; btn.textContent='Sharing...';
   try {
-    const imageUrl = await uploadImage(selectedFile);
-    const caption  = document.getElementById('caption-input').value.trim();
-    const tagsRaw  = document.getElementById('tags-input').value.trim();
-    const tags     = tagsRaw ? tagsRaw.trim().split(/\s+/).filter(Boolean).map(t=>t.startsWith('#')?t:'#'+t) : [];
+    let imageUrl = '';
+    if(selectedFile){
+      imageUrl = await uploadImage(selectedFile);
+    }
+    const tags = tagsRaw ? tagsRaw.trim().split(/\s+/).filter(Boolean).map(t=>t.startsWith('#')?t:'#'+t) : [];
     await addDoc(collection(db,'posts'),{
       imageUrl, caption, tags,
       authorName: user.displayName || 'User',
@@ -577,6 +613,7 @@ document.getElementById('share-btn').addEventListener('click', async()=>{
     loadPosts();
   } catch(e){
     toast('Error: '+e.message);
+    console.error(e);
   } finally {
     btn.disabled=false; btn.textContent='Share';
   }
@@ -623,44 +660,50 @@ function postHTML(p){
   const av = p.authorPhoto || avatar(p.authorName);
   const uname = p.authorEmail ? p.authorEmail.split('@')[0] : (p.authorName||'user');
   const tags = (p.tags||[]).map(t=>`<span class="post-tags">${esc(t)}</span> `).join('');
-  return `
-<div class="post-card" data-id="${p.id}">
-  <div class="post-header">
-    <div class="post-avatar-ring">
-      <div class="post-avatar-ring-inner"><img src="${esc(av)}" alt=""/></div>
-    </div>
-    <div class="post-author">${esc(uname)} <span>• 1h</span></div>
-    ${p.authorId !== user?.uid ? '<span class="post-follow">Follow</span>' : ''}
-    <button class="post-more">···</button>
-  </div>
-  <img class="post-image square" src="${esc(p.imageUrl)}" alt="${esc(p.caption)}" loading="lazy"/>
-  <div class="post-actions-row">
-    <button class="act-btn like-btn ${liked?'liked':''}" data-id="${p.id}" title="Like">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="${liked?'#ed4956':'none'}" stroke="${liked?'#ed4956':'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-      </svg>
-    </button>
-    <button class="act-btn" title="Comment">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-    </button>
-    <button class="act-btn" title="Share">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-    </button>
-    <div class="spacer"></div>
-    <button class="act-btn" title="Save">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
-    </button>
-  </div>
-  <div class="post-likes">${p.likes||0} like${p.likes!==1?'s':''}</div>
-  ${p.caption||tags ? `<div class="post-caption"><b>${esc(uname)}</b>${esc(p.caption)} ${tags}</div>` : ''}
-  <div class="post-comments-link">View all comments</div>
-  <div class="post-time">${timeAgo(p.createdAt)}</div>
-  <div class="post-add-comment">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#262626" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-    <input class="comment-input" type="text" placeholder="Add a comment…" autocomplete="off"/>
-    <button class="comment-post-btn">Post</button>
-  </div>
-</div>`;
+  const heartFill = liked ? '#ed4956' : 'none';
+  const heartStroke = liked ? '#ed4956' : 'currentColor';
+  const likedClass = liked ? 'liked' : '';
+
+  // build image or text block
+  let mediaBlock = '';
+  if(p.imageUrl){
+    mediaBlock = '<img class="post-image square" src="'+esc(p.imageUrl)+'" alt="" loading="lazy"/>';
+  } else if(p.caption){
+    mediaBlock = '<div style="padding:32px 20px;font-size:18px;color:#262626;line-height:1.75;background:#fafafa;border-top:1px solid #efefef;border-bottom:1px solid #efefef;min-height:120px">'+esc(p.caption)+'</div>';
+  }
+
+  const captionBlock = (p.imageUrl && p.caption) || tags
+    ? '<div class="post-caption"><b>'+esc(uname)+'</b> '+esc(p.imageUrl ? p.caption : '')+' '+tags+'</div>'
+    : '';
+
+  return (
+    '<div class="post-card" data-id="'+p.id+'">'+
+    '<div class="post-header">'+
+      '<div class="post-avatar-ring"><div class="post-avatar-ring-inner"><img src="'+esc(av)+'" alt=""/></div></div>'+
+      '<div class="post-author">'+esc(uname)+' <span>· '+timeAgo(p.createdAt)+'</span></div>'+
+      (p.authorId !== user?.uid ? '<span class="post-follow">Follow</span>' : '')+
+      '<button class="post-more">···</button>'+
+    '</div>'+
+    mediaBlock+
+    '<div class="post-actions-row">'+
+      '<button class="act-btn like-btn '+likedClass+'" data-id="'+p.id+'" title="Like">'+
+        '<svg width="24" height="24" viewBox="0 0 24 24" fill="'+heartFill+'" stroke="'+heartStroke+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'+
+      '</button>'+
+      '<button class="act-btn" title="Comment"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>'+
+      '<button class="act-btn" title="Share"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>'+
+      '<div class="spacer"></div>'+
+      '<button class="act-btn" title="Save"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></button>'+
+    '</div>'+
+    '<div class="post-likes">'+(p.likes||0)+' like'+(p.likes!==1?'s':'')+'</div>'+
+    captionBlock+
+    '<div class="post-comments-link">View all comments</div>'+
+    '<div class="post-add-comment">'+
+      '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8e8e8e" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 13s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>'+
+      '<input class="comment-input" type="text" placeholder="Add a comment…" autocomplete="off"/>'+
+      '<button class="comment-post-btn">Post</button>'+
+    '</div>'+
+    '</div>'
+  );
 }
 
 async function toggleLike(postId){
