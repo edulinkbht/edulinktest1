@@ -11,41 +11,24 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: 'No file provided' });
       }
 
-      // Try Cloudinary first if available
-      if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && process.env.CLOUDINARY_API_SECRET) {
-        const cloudinaryForm = new FormData();
-        cloudinaryForm.append('file', file);
-        cloudinaryForm.append('upload_preset', 'unsigned_preset'); // Or use signed upload
-        
-        const cloudinaryRes = await fetch(`https://api.cloudinary.com/v1_1/${process.env.CLOUDINARY_CLOUD_NAME}/auto/upload`, {
-          method: 'POST',
-          body: cloudinaryForm
-        });
-        
-        const cloudinaryData = await cloudinaryRes.json();
-        if (cloudinaryData.secure_url) {
-          return res.status(200).json({ url: cloudinaryData.secure_url });
-        }
+      // Use ImgHippo with provided API key
+      const imgHippoForm = new FormData();
+      imgHippoForm.append('api_key', 'd28bf3c492ad07b53dc4e3f9ce99b072');
+      imgHippoForm.append('file', file);
+      
+      const imgHippoRes = await fetch('https://api.imghippo.com/v1/upload', {
+        method: 'POST',
+        body: imgHippoForm
+      });
+      
+      const imgHippoData = await imgHippoRes.json();
+      console.log('ImgHippo response:', imgHippoData);
+      
+      if (imgHippoData.status === 200 && imgHippoData.data?.url) {
+        return res.status(200).json({ url: imgHippoData.data.url });
+      } else {
+        return res.status(500).json({ error: imgHippoData.error || 'Upload failed' });
       }
-
-      // Try ImgHippo if Cloudinary fails
-      if (process.env.IMGHIPPO_API_KEY) {
-        const imgHippoForm = new FormData();
-        imgHippoForm.append('api_key', process.env.IMGHIPPO_API_KEY);
-        imgHippoForm.append('file', file);
-        
-        const imgHippoRes = await fetch('https://api.imghippo.com/v1/upload', {
-          method: 'POST',
-          body: imgHippoForm
-        });
-        
-        const imgHippoData = await imgHippoRes.json();
-        if (imgHippoData.status === 200 && imgHippoData.data?.url) {
-          return res.status(200).json({ url: imgHippoData.data.url });
-        }
-      }
-
-      return res.status(500).json({ error: 'All upload methods failed' });
 
     } catch (error) {
       console.error('Upload error:', error);
