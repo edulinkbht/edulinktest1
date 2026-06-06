@@ -61,7 +61,7 @@
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
             margin-bottom: 30px;
             backdrop-filter: blur(10px);
-            display: none; /* Hidden until logged in */
+            display: none;
         }
 
         .input-group { margin-bottom: 15px; }
@@ -108,7 +108,6 @@
         .post-caption { padding: 15px; }
         .post-caption span { font-weight: bold; margin-right: 8px; }
 
-        /* Hide sections initially */
         #feed { display: none; }
         #login-btn { display: block; }
         #logout-btn { display: none; }
@@ -145,10 +144,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-        
-        // Notice: Firebase Storage was removed from imports since we are using FreeImage.host now
 
-        // Your Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
             authDomain: "edulinki.firebaseapp.com",
@@ -159,12 +155,10 @@
             measurementId: "G-MQBH12VL7N"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // DOM Elements
         const loginBtn = document.getElementById('login-btn');
         const logoutBtn = document.getElementById('logout-btn');
         const uploadSection = document.getElementById('upload-section');
@@ -175,8 +169,6 @@
         const uploadStatus = document.getElementById('upload-status');
 
         let currentUser = null;
-
-        // --- AUTHENTICATION ---
         const provider = new GoogleAuthProvider();
 
         loginBtn.addEventListener('click', () => {
@@ -201,7 +193,7 @@
                 logoutBtn.style.display = 'none';
                 uploadSection.style.display = 'none';
                 feedSection.style.display = 'none';
-                feedSection.innerHTML = ''; // Clear feed
+                feedSection.innerHTML = '';
             }
         });
 
@@ -219,27 +211,30 @@
             postBtn.disabled = true;
 
             try {
-                // 1. Upload Image to FreeImage API
+                // Formatting payload EXACTLY as the API documentation specifies
                 const formData = new FormData();
-                formData.append('image', file);
+                formData.append('key', FREEIMAGE_API_KEY);
+                formData.append('action', 'upload');
+                formData.append('source', file); // MUST be 'source'
+                formData.append('format', 'json');
                 
-                const response = await fetch(`https://freeimage.host/api/1/upload?key=${FREEIMAGE_API_KEY}`, {
+                // Make the POST request
+                const response = await fetch('https://freeimage.host/api/1/upload', {
                     method: 'POST',
                     body: formData
                 });
                 
                 const data = await response.json();
                 
-                if (!data.success) {
-                    throw new Error("Failed to upload image. " + (data.error ? data.error.message : ""));
+                // The API returns status_code 200 on success
+                if (data.status_code !== 200) {
+                    throw new Error(data.error ? data.error.message : "Image upload failed");
                 }
 
-                // Get the direct URL of the uploaded image
                 const downloadURL = data.image.url;
-
                 uploadStatus.innerText = "Saving post to Database...";
 
-                // 2. Save Post Data to Firestore
+                // Save to Firebase
                 await addDoc(collection(db, "posts"), {
                     imageUrl: downloadURL,
                     caption: caption,
@@ -248,32 +243,32 @@
                     createdAt: serverTimestamp()
                 });
 
-                // Reset form
                 uploadStatus.innerText = "Post uploaded successfully!";
                 setTimeout(() => { uploadStatus.innerText = ""; }, 3000);
                 imageInput.value = '';
                 captionInput.value = '';
 
             } catch (error) {
-                console.error("Upload failed", error);
-                uploadStatus.innerText = "Error: " + error.message;
+                console.error("Upload Error:", error);
+                // Catching specific CORS or Network failures
+                if (error.message === "Failed to fetch") {
+                    uploadStatus.innerText = "Error: Browser blocked the request (CORS) or network offline. Check console (F12).";
+                } else {
+                    uploadStatus.innerText = "Error: " + error.message;
+                }
             } finally {
                 postBtn.disabled = false;
             }
         });
 
-        // --- FEED LOGIC ---
         function loadFeed() {
             const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-            
             onSnapshot(q, (snapshot) => {
-                feedSection.innerHTML = ''; // Clear current feed
+                feedSection.innerHTML = ''; 
                 snapshot.forEach((doc) => {
                     const post = doc.data();
-                    
                     const postElement = document.createElement('div');
                     postElement.className = 'post-card';
-                    
                     postElement.innerHTML = `
                         <div class="post-header">
                             <img src="${post.userPhoto || 'https://via.placeholder.com/35'}" alt="User">
