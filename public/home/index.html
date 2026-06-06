@@ -9165,33 +9165,32 @@
                 throw new Error('this file is not supported');
             }
 
-            // Use ImgHippo directly
+            // Use our API proxy to upload to ImgHippo
             try {
-                console.log('Starting upload to ImgHippo...');
+                console.log('Starting upload via API proxy...');
                 if (onProgress) onProgress(10);
                 
                 const formData = new FormData();
-                formData.append('api_key', 'd28bf3c492ad07b53dc4e3f9ce99b072');
                 formData.append('file', f);
                 
-                const response = await fetch('https://api.imghippo.com/v1/upload', {
+                const response = await fetch('/api/api', {
                     method: 'POST',
                     body: formData
                 });
 
-                console.log('ImgHippo response status:', response.status);
+                console.log('API proxy response status:', response.status);
                 const j = await response.json();
-                console.log('ImgHippo response:', j);
+                console.log('API proxy response:', j);
                 
                 if (onProgress) onProgress(100);
-                if (j.status === 200 && j.data && j.data.url) {
-                    console.log('Upload successful! URL:', j.data.url);
-                    return j.data.url;
+                if (j.url) {
+                    console.log('Upload successful! URL:', j.url);
+                    return j.url;
                 } else {
                     throw new Error(j.error || 'Upload failed');
                 }
             } catch (e) {
-                console.error('ImgHippo upload failed', e);
+                console.error('Upload failed', e);
                 showToast('Upload failed', true);
                 throw e;
             }
