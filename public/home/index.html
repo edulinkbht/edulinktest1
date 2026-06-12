@@ -31,6 +31,13 @@
             overflow: hidden;
             overscroll-behavior-y: none;
             -webkit-tap-highlight-color: transparent;
+            transition: padding .3s cubic-bezier(.2, 0, 0, 1);
+        }
+
+        @media (min-width:768px) {
+            body.scrolled {
+                padding: 0 !important;
+            }
         }
 
         #view-feed, #view-explore, #view-profile, #view-notifications, #view-saved, #view-network, #view-events {
@@ -170,6 +177,10 @@
                 border-radius: 20px;
                 border: none;
                 box-shadow: 0 1px 2px rgba(0, 0, 0, .03)
+            }
+            
+            .app-panel.scrolled:not(#main-sidebar) {
+                border-radius: 0;
             }
             
             #main-panel.profile-view {
@@ -4829,8 +4840,8 @@
         window.commentSearchTerm = ''; window.isCommentSearchOpen = false;
         window.currentClaimLink = null;
         const feedView = document.getElementById('view-feed'), exploreView = document.getElementById('view-explore'), ptrSpinner = document.getElementById('ptr-spinner'), refreshIcons = () => window.lucide?.createIcons();
-        if (feedView) { feedView.addEventListener('touchstart', e => { if (!feedView.scrollTop && !isRefreshing) { ptrStartY = e.touches[0].pageY; isPtr = true; ptrSpinner.style.transition = 'none' } }, { passive: true }); feedView.addEventListener('touchmove', e => { if (!isPtr || isRefreshing) return; const d = e.touches[0].pageY - ptrStartY; if (d > 0 && !feedView.scrollTop) { if (e.cancelable) e.preventDefault(); ptrDist = d; const y = Math.min(d * .4, 80); Object.assign(ptrSpinner.style, { transform: `translateX(-50%) translateY(${y}px) rotate(${y * 3}deg)`, opacity: Math.min(y / 40, 1) }) } else { isPtr = false; ptrSpinner.style.opacity = '0'; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)' } }, { passive: false }); feedView.addEventListener('touchend', async () => { if (!isPtr || isRefreshing) return; isPtr = false; ptrSpinner.style.transition = 'all .3s'; if (ptrDist > 100) { isRefreshing = true; Object.assign(ptrSpinner.style, { transform: 'translateX(-50%) translateY(50px)', opacity: '1' }); ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; refreshIcons(); await new Promise(r => setTimeout(r, 1000)); renderFeed(); showToast("Feed updated"); isRefreshing = false; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0'; setTimeout(() => { ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; refreshIcons() }, 300) } else { ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0' } ptrDist = 0 }); feedView.addEventListener('scroll', () => { const c = feedView.scrollTop, h = document.getElementById('main-header'); h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastScrollTop = Math.max(0, c) }, { passive: true }) }
-        if (exploreView) exploreView.addEventListener('scroll', () => { const c = exploreView.scrollTop, h = document.getElementById('explore-header-container'); h.style.transform = c > lastExploreScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastExploreScrollTop = Math.max(0, c) }, { passive: true });
+        if (feedView) { feedView.addEventListener('touchstart', e => { if (!feedView.scrollTop && !isRefreshing) { ptrStartY = e.touches[0].pageY; isPtr = true; ptrSpinner.style.transition = 'none' } }, { passive: true }); feedView.addEventListener('touchmove', e => { if (!isPtr || isRefreshing) return; const d = e.touches[0].pageY - ptrStartY; if (d > 0 && !feedView.scrollTop) { if (e.cancelable) e.preventDefault(); ptrDist = d; const y = Math.min(d * .4, 80); Object.assign(ptrSpinner.style, { transform: `translateX(-50%) translateY(${y}px) rotate(${y * 3}deg)`, opacity: Math.min(y / 40, 1) }) } else { isPtr = false; ptrSpinner.style.opacity = '0'; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)' } }, { passive: false }); feedView.addEventListener('touchend', async () => { if (!isPtr || isRefreshing) return; isPtr = false; ptrSpinner.style.transition = 'all .3s'; if (ptrDist > 100) { isRefreshing = true; Object.assign(ptrSpinner.style, { transform: 'translateX(-50%) translateY(50px)', opacity: '1' }); ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; refreshIcons(); await new Promise(r => setTimeout(r, 1000)); renderFeed(); showToast("Feed updated"); isRefreshing = false; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0'; setTimeout(() => { ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; refreshIcons() }, 300) } else { ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0' } ptrDist = 0 }); feedView.addEventListener('scroll', () => { const c = feedView.scrollTop, h = document.getElementById('main-header'); h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; const mainPanel = document.getElementById('main-panel'); if (c > 10) { document.body.classList.add('scrolled'); mainPanel.classList.add('scrolled'); } else { document.body.classList.remove('scrolled'); mainPanel.classList.remove('scrolled'); } lastScrollTop = Math.max(0, c) }, { passive: true }) }
+        if (exploreView) exploreView.addEventListener('scroll', () => { const c = exploreView.scrollTop, h = document.getElementById('explore-header-container'); h.style.transform = c > lastExploreScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; const mainPanel = document.getElementById('main-panel'); if (c > 10) { document.body.classList.add('scrolled'); mainPanel.classList.add('scrolled'); } else { document.body.classList.remove('scrolled'); mainPanel.classList.remove('scrolled'); } lastExploreScrollTop = Math.max(0, c) }, { passive: true });
         const formatDate = t => { if (!t) return ''; const d = t.toDate ? t.toDate() : new Date(t); if (isNaN(d.getTime())) return ''; const now = new Date(), s = (now - d) / 1000; if (s < 60) return 'Now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; if (s < 604800) return Math.floor(s / 86400) + 'd ago'; return d.toLocaleDateString() };
         
         const formatJoinedDate = t => {
