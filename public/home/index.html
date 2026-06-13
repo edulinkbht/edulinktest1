@@ -870,8 +870,8 @@
                 top: 20px;
                 align-self: flex-start;
                 max-height: calc(100vh - 40px);
-                overflow-y: auto;
-                transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
+                overflow-y: visible;
+                transition: transform 0.4s cubic-bezier(0.2, 0, 0, 1);
             }
         }
         .upload-widget {
@@ -9765,23 +9765,30 @@
         // Scroll behavior for trending panel (hide on scroll down, show on scroll up)
         (function() {
             let lastScrollTop = 0;
+            let ticking = false;
             const trendingPanel = document.getElementById('trending-panel');
             
             if (trendingPanel) {
                 const handleScroll = (e) => {
                     if (window.innerWidth < 1280) return;
                     
-                    const currentScrollTop = e.target.scrollTop;
-                    
-                    if (currentScrollTop > lastScrollTop && currentScrollTop > 50) {
-                        // Scrolling down - hide the panel
-                        trendingPanel.style.transform = 'translateY(100%)';
-                    } else {
-                        // Scrolling up - show the panel
-                        trendingPanel.style.transform = 'translateY(0)';
+                    if (!ticking) {
+                        window.requestAnimationFrame(() => {
+                            const currentScrollTop = e.target.scrollTop || 0;
+                            
+                            if (currentScrollTop > lastScrollTop && currentScrollTop > 150) {
+                                // Scrolling down - hide the panel
+                                trendingPanel.style.transform = 'translateY(calc(100% + 40px))';
+                            } else {
+                                // Scrolling up - show the panel
+                                trendingPanel.style.transform = 'translateY(0)';
+                            }
+                            
+                            lastScrollTop = currentScrollTop <= 0 ? 0 : currentScrollTop;
+                            ticking = false;
+                        });
+                        ticking = true;
                     }
-                    
-                    lastScrollTop = currentScrollTop <= 0 ? 0 : currentScrollTop;
                 };
                 
                 // Attach to all possible scroll containers in main panel
@@ -9797,7 +9804,7 @@
                 
                 scrollContainers.forEach(container => {
                     if (container) {
-                        container.addEventListener('scroll', handleScroll);
+                        container.addEventListener('scroll', handleScroll, { passive: true });
                     }
                 });
             }
