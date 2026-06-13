@@ -864,8 +864,14 @@
         @media (min-width:1280px) {
             .trending-panel {
                 width: 380px;
-                padding: 0 20px 24px 20px;
+                padding: 0 20px 24px 40px; /* Shifted right by adding more left padding */
                 gap: 20px;
+                position: sticky;
+                top: 20px;
+                align-self: flex-start;
+                max-height: calc(100vh - 40px);
+                overflow-y: auto;
+                transition: transform 0.3s cubic-bezier(0.2, 0, 0, 1);
             }
         }
         .upload-widget {
@@ -9755,6 +9761,48 @@
                 }
             }
         }, true);
+
+        // Scroll behavior for trending panel (hide on scroll down, show on scroll up)
+        (function() {
+            let lastScrollTop = 0;
+            const trendingPanel = document.getElementById('trending-panel');
+            
+            if (trendingPanel) {
+                const handleScroll = (e) => {
+                    if (window.innerWidth < 1280) return;
+                    
+                    const currentScrollTop = e.target.scrollTop;
+                    
+                    if (currentScrollTop > lastScrollTop && currentScrollTop > 50) {
+                        // Scrolling down - hide the panel
+                        trendingPanel.style.transform = 'translateY(100%)';
+                    } else {
+                        // Scrolling up - show the panel
+                        trendingPanel.style.transform = 'translateY(0)';
+                    }
+                    
+                    lastScrollTop = currentScrollTop <= 0 ? 0 : currentScrollTop;
+                };
+                
+                // Attach to all possible scroll containers in main panel
+                const scrollContainers = [
+                    document.getElementById('view-feed'),
+                    document.getElementById('view-explore'),
+                    document.getElementById('view-saved'),
+                    document.getElementById('view-archived'),
+                    document.getElementById('view-notifications'),
+                    document.getElementById('view-profile'),
+                    document.getElementById('view-network')
+                ];
+                
+                scrollContainers.forEach(container => {
+                    if (container) {
+                        container.addEventListener('scroll', handleScroll);
+                    }
+                });
+            }
+        })();
+
         refreshIcons();
     </script>
 </body>
