@@ -4095,7 +4095,7 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-3 pl-4 pr-4">
-                    <button
+                    <button id="filter-button"
                         class="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-colors"
                         onclick="openFeedFilter()">
                         <i data-lucide="sliders-horizontal" class="w-5 h-5 text-gray-600"></i>
@@ -5623,6 +5623,20 @@
         };
         window.switchView = async (v, direction = 'none') => {
             ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications', 'settings', 'archived', 'notification-settings', 'mute-friends'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); const tp = document.getElementById('trending-panel'), mh = document.getElementById('main-header'), mbn = document.getElementById('mobile-bottom-nav'), mnh = document.getElementById('mobile-notifications-header'), mp = document.getElementById('main-panel'); window.currentViewName = v; if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } if (mbn) mbn.classList.remove('hidden'); if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } if (v === 'profile' && mh) mh.classList.add('hidden'); if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends') && mh && window.innerWidth < 768) mh.classList.add('hidden'); if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); if (window.innerWidth >= 1280) tp.classList.remove('hidden'), tp.classList.add('xl:flex'); if (v !== 'ai') { const el = document.getElementById(`view-${v}`); if (el) { el.classList.remove('hidden'); if (direction === 'left') el.classList.add('slide-in-left'); if (direction === 'right') el.classList.add('slide-in-right') } } document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); if (nav) nav.classList.add('active'); 
+            
+            // Handle filter button and search container for explore view
+            const filterBtn = document.getElementById('filter-button');
+            const searchContainer = document.getElementById('global-search-container');
+            if (filterBtn && searchContainer && window.innerWidth >= 768) {
+                if (v === 'explore') {
+                    filterBtn.style.display = 'none';
+                    searchContainer.style.paddingRight = '1rem'; // Add more space
+                } else {
+                    filterBtn.style.display = 'flex';
+                    searchContainer.style.paddingRight = '';
+                }
+            }
+            
             if (v === 'settings') {
                 if (document.getElementById('settings-avatar')) document.getElementById('settings-avatar').src = currentUser.avatar;
             }
@@ -9677,6 +9691,21 @@
             if (originalSwitchView) originalSwitchView(view);
             updateNavIcons(view);
         };
+
+        // Initialize filter button and search container state on load
+        (function() {
+            const filterBtn = document.getElementById('filter-button');
+            const searchContainer = document.getElementById('global-search-container');
+            if (filterBtn && searchContainer && window.innerWidth >= 768) {
+                if (window.currentViewName === 'explore') {
+                    filterBtn.style.display = 'none';
+                    searchContainer.style.paddingRight = '1rem';
+                } else {
+                    filterBtn.style.display = 'flex';
+                    searchContainer.style.paddingRight = '';
+                }
+            }
+        })();
 
         // Handle legacy ?uid= param and new /profile/username path for pending profile
         const up = new URLSearchParams(window.location.search), dl = up.get('uid'); if (dl) window.pendingProfileUid = dl;
