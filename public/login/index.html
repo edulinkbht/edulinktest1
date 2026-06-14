@@ -625,7 +625,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script type="module">
         /* 
            FIREBASE INITIALIZATION & AUTHENTICATION LOGIC
@@ -1214,28 +1214,18 @@
                 qrSessionDoc = doc(db, "qr_logins", uniqueSessionToken);
                 await setDoc(qrSessionDoc, { status: "pending", timestamp: Date.now() });
 
-                // Generate QR code with the session ID
-                const qrData = uniqueSessionToken;
+                // Generate QR code with the session ID (using qrcodejs like demo)
                 qrCodeDisplay.innerHTML = '';
-                
-                // Fix QR code generation
-                QRCode.toCanvas(qrData, { 
-                    width: 250, 
+                new QRCode(qrCodeDisplay, {
+                    text: uniqueSessionToken,
+                    width: 250,
                     height: 250,
-                    margin: 0,
-                    color: {
-                        dark: '#000000',
-                        light: '#ffffff'
-                    }
-                }, function (error, canvas) {
-                    if (error) {
-                        console.error('QR Code Error:', error);
-                        qrStatus.textContent = 'Error generating QR code';
-                        return;
-                    }
-                    qrCodeDisplay.appendChild(canvas);
-                    qrStatus.textContent = 'Waiting for scan...';
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
                 });
+
+                qrStatus.textContent = 'Waiting for scan...';
 
                 // Listen for changes to the session document
                 unsubscribeQrListener = onSnapshot(qrSessionDoc, async (snapshot) => {
@@ -1285,6 +1275,12 @@
         }
 
         function closeQrLoginView() {
+            // Hide all views first
+            savedProfileView.classList.add('hidden');
+            loginView.classList.add('hidden');
+            signupView.classList.add('hidden');
+            qrLoginView.classList.add('hidden');
+            
             // Go back to previous view
             const savedData = localStorage.getItem('edulink_saved_user');
             if (savedData) {
