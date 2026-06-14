@@ -1752,7 +1752,7 @@
         }
 
         .toggle-switch.active {
-            background-color: #000000
+            background-color: #3D7EEB
         }
 
         .toggle-dot {
@@ -3792,6 +3792,71 @@
                         <div id="shared-post-preview-container" class="hidden"></div>
                     </div>
                     <div id="collab-chips-container" class="flex flex-wrap mb-2"></div>
+                </div>
+                <div id="compose-step-3" class="p-4 hidden flex flex-1 flex-col">
+                    <div class="flex items-center gap-3 mb-4">
+                        <i data-lucide="settings-2" class="w-6 h-6 text-gray-900"></i>
+                        <div class="font-bold text-gray-900 text-lg">Post Settings</div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center gap-3 text-sm text-gray-700">
+                                <i data-lucide="lock" class="w-5 h-5"></i>
+                                Private (Only Me)
+                            </div>
+                            <div id="toggle-privacy" class="toggle-switch" onclick="toggleSetting('privacy')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center gap-3 text-sm text-gray-700">
+                                <i data-lucide="heart" class="w-5 h-5"></i>
+                                Show Like Count
+                            </div>
+                            <div id="toggle-likes" class="toggle-switch active" onclick="toggleSetting('likes')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center gap-3 text-sm text-gray-700">
+                                <i data-lucide="message-square" class="w-5 h-5"></i>
+                                Show Comment Count
+                            </div>
+                            <div id="toggle-comments" class="toggle-switch active" onclick="toggleSetting('comments')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center gap-3 text-sm text-gray-700">
+                                <i data-lucide="users" class="w-5 h-5"></i>
+                                Allow viewers to see who liked
+                            </div>
+                            <div id="toggle-like-view" class="toggle-switch active" onclick="toggleSetting('likeView')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center gap-3 text-sm text-gray-700">
+                                <i data-lucide="message-circle" class="w-5 h-5"></i>
+                                Allow comments
+                            </div>
+                            <div id="toggle-allow-comments" class="toggle-switch active" onclick="toggleSetting('allowComments')">
+                                <div class="toggle-dot"></div>
+                            </div>
+                        </div>
+                        <div class="flex items-center justify-between cursor-pointer p-3 rounded-xl border border-gray-100 hover:bg-gray-100 transition-colors"
+                            onclick="openClaimOverlay()">
+                            <div class="flex items-center gap-3 text-sm text-gray-700">
+                                <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                                Add Claim Link
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span id="claim-status-indicator"
+                                    class="text-xs font-bold text-gray-400">Off</span>
+                                <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div id="compose-tools-bar"
@@ -6335,10 +6400,8 @@
                     : `<div class="px-4 pb-6 text-xs text-gray-400 italic">No posts found</div>`;
 
                 const sectionWithContainer = (title, inner) => `
-                    <div class="px-4 pt-4 pb-2">
-                        <div class="text-sm font-medium text-gray-700">${title}</div>
-                    </div>
-                    <div class="px-4 mb-2">
+                    <h2 class="text-[16px] font-bold text-gray-900 mb-4 px-1">${title}</h2>
+                    <div class="px-4 mb-10">
                         <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
                             ${inner}
                         </div>
@@ -9039,7 +9102,46 @@
             container.classList.add('hidden');
             container.innerHTML = '';
         };
-        window.editPost = pid => { const p = posts.find(x => x.id === pid); if (!p) return; closePostView(); document.getElementById('compose-text').value = p.content; window.editingPostId = pid; document.getElementById('compose-header-title').innerText = "Edit Post"; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; if (p.media) { const m = Array.isArray(p.media) ? p.media : [p.media]; m.forEach((url, i) => { if (i < 4) window.composeImages[i] = url }) } renderMediaGrid(); window.composeStep = 1; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); btn.innerText = hasImage ? "Next" : "Skip"; btn.onclick = window.handleComposeAction; if (p.embedVideo) { document.getElementById('compose-embed-link').value = p.embedVideo.replace('/preview', '/view'); } else { document.getElementById('compose-embed-link').value = ''; } openCompose(!0) }; window.deletePost = async pid => { showAlert("Delete post?", async () => { document.querySelectorAll(`[id*='post-card-'][id$='-${pid}']`).forEach(el => el.remove()); await deleteDoc(doc(db, "posts", pid)); showToast("Deleted") }) };
+        window.editPost = pid => { 
+            const p = posts.find(x => x.id === pid); 
+            if (!p) return; 
+            closePostView(); 
+            document.getElementById('compose-text').value = p.content; 
+            window.editingPostId = pid; 
+            document.getElementById('compose-header-title').innerText = "Edit Post"; 
+            window.composeImages = [null, null, null, null]; 
+            window.composeImageBlobs = [null, null, null, null]; 
+            if (p.media) { 
+                const m = Array.isArray(p.media) ? p.media : [p.media]; 
+                m.forEach((url, i) => { if (i < 4) window.composeImages[i] = url }) 
+            } 
+            renderMediaGrid(); 
+            window.composeStep = 1; 
+            document.getElementById('compose-step-1').classList.remove('hidden'); 
+            document.getElementById('compose-step-2').classList.add('hidden'); 
+            document.getElementById('compose-step-3').classList.add('hidden'); 
+            document.getElementById('compose-tools-bar').classList.add('hidden'); 
+            const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); 
+            btn.innerText = hasImage ? "Next" : "Skip"; 
+            btn.onclick = window.handleComposeAction; 
+            if (p.embedVideo) { 
+                document.getElementById('compose-embed-link').value = p.embedVideo.replace('/preview', '/view'); 
+            } else { 
+                document.getElementById('compose-embed-link').value = ''; 
+            }
+            // Apply saved settings to toggles
+            if (p.settings?.privacy === 'private') document.getElementById('toggle-privacy').classList.add('active');
+            else document.getElementById('toggle-privacy').classList.remove('active');
+            if (p.settings?.showLikes) document.getElementById('toggle-likes').classList.add('active');
+            else document.getElementById('toggle-likes').classList.remove('active');
+            if (p.settings?.showComments) document.getElementById('toggle-comments').classList.add('active');
+            else document.getElementById('toggle-comments').classList.remove('active');
+            if (p.settings?.allowLikeView) document.getElementById('toggle-like-view').classList.add('active');
+            else document.getElementById('toggle-like-view').classList.remove('active');
+            if (p.settings?.allowComments) document.getElementById('toggle-allow-comments').classList.add('active');
+            else document.getElementById('toggle-allow-comments').classList.remove('active');
+            openCompose(!0) 
+        }; window.deletePost = async pid => { showAlert("Delete post?", async () => { document.querySelectorAll(`[id*='post-card-'][id$='-${pid}']`).forEach(el => el.remove()); await deleteDoc(doc(db, "posts", pid)); showToast("Deleted") }) };
         window.toggleArchive = async (pid) => {
             const p = posts.find(x => x.id === pid);
             if (!p) return;
@@ -9062,7 +9164,34 @@
                 modal.ondragleave = () => modal.classList.remove('drag-over');
                 modal.ondrop = e => { e.preventDefault(); modal.classList.remove('drag-over'); const files = e.dataTransfer.files; if (files.length) handleDroppedFiles(files) };
             }
-            if (!isEdit) { window.composeStep = 1; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; window.selectedCollaborators = []; window.editingPostId = null; window.currentClaimLink = null; document.getElementById('claim-link-input').value = ''; document.getElementById('compose-embed-link').value = ''; const ci = document.getElementById('claim-status-indicator'); if (ci) { ci.innerText = 'Off'; ci.classList.remove('text-green-600'); ci.classList.add('text-gray-400') } document.getElementById('compose-text').value = ""; document.getElementById('word-count-display').innerText = "0/500 words"; document.getElementById('compose-header-title').innerText = "Create Post"; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); document.getElementById('compose-action-btn').innerText = "Skip"; renderMediaGrid(); renderCollabChips() }
+            if (!isEdit) { 
+                window.composeStep = 1; 
+                window.composeImages = [null, null, null, null]; 
+                window.composeImageBlobs = [null, null, null, null]; 
+                window.selectedCollaborators = []; 
+                window.editingPostId = null; 
+                window.currentClaimLink = null; 
+                document.getElementById('claim-link-input').value = ''; 
+                document.getElementById('compose-embed-link').value = ''; 
+                const ci = document.getElementById('claim-status-indicator'); 
+                if (ci) { ci.innerText = 'Off'; ci.classList.remove('text-green-600'); ci.classList.add('text-gray-400') } 
+                document.getElementById('compose-text').value = ""; 
+                document.getElementById('word-count-display').innerText = "0/500 words"; 
+                document.getElementById('compose-header-title').innerText = "Create Post"; 
+                document.getElementById('compose-step-1').classList.remove('hidden'); 
+                document.getElementById('compose-step-2').classList.add('hidden'); 
+                document.getElementById('compose-step-3').classList.add('hidden'); 
+                document.getElementById('compose-tools-bar').classList.add('hidden'); 
+                document.getElementById('compose-action-btn').innerText = "Skip"; 
+                // Reset toggles
+                document.getElementById('toggle-privacy').classList.remove('active');
+                document.getElementById('toggle-likes').classList.add('active');
+                document.getElementById('toggle-comments').classList.add('active');
+                document.getElementById('toggle-like-view').classList.add('active');
+                document.getElementById('toggle-allow-comments').classList.add('active');
+                renderMediaGrid(); 
+                renderCollabChips() 
+            }
         };
         window.handleDroppedFiles = files => {
             const count = Math.min(files.length, 4);
@@ -9306,8 +9435,50 @@
             }
             document.getElementById('grid-upload-input').value = ""; 
         }; window.removeGridImage = i => { window.composeImages[i] = null; window.composeImageBlobs[i] = null; const v = window.composeImages.filter(x => x !== null), vb = window.composeImageBlobs.filter(x => x !== null); window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null]; v.forEach((val, idx) => window.composeImages[idx] = val); vb.forEach((val, idx) => window.composeImageBlobs[idx] = val); renderMediaGrid() };
-        window.handleComposeAction = () => { if (window.composeStep === 1) goToStep2(); else window.publishPost() }; window.goToStep2 = () => { window.composeStep = 2; document.getElementById('compose-step-1').classList.add('hidden'); document.getElementById('compose-step-2').classList.remove('hidden'); document.getElementById('compose-tools-bar').classList.remove('hidden'); document.getElementById('compose-footer-settings').classList.remove('hidden'); document.getElementById('compose-action-btn').innerText = "Post"; document.getElementById('compose-action-btn').onclick = window.publishPost };
-        window.handleComposeBack = () => { if (window.composeStep === 2) { window.composeStep = 1; document.getElementById('compose-step-1').classList.remove('hidden'); document.getElementById('compose-step-2').classList.add('hidden'); document.getElementById('compose-tools-bar').classList.add('hidden'); document.getElementById('compose-footer-settings').classList.add('hidden'); document.getElementById('compose-header-title').innerText = "Create Post"; const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); btn.innerText = hasImage ? "Next" : "Skip"; btn.onclick = window.handleComposeAction } else attemptCloseCompose() };
+        window.handleComposeAction = () => { 
+            if (window.composeStep === 1) goToStep2(); 
+            else if (window.composeStep === 2) goToStep3();
+            else window.publishPost() 
+        }; 
+        window.goToStep2 = () => { 
+            window.composeStep = 2; 
+            document.getElementById('compose-step-1').classList.add('hidden'); 
+            document.getElementById('compose-step-2').classList.remove('hidden'); 
+            document.getElementById('compose-tools-bar').classList.remove('hidden'); 
+            document.getElementById('compose-action-btn').innerText = "Next"; 
+            document.getElementById('compose-action-btn').onclick = window.handleComposeAction;
+        };
+        window.goToStep3 = () => {
+            window.composeStep = 3;
+            document.getElementById('compose-step-2').classList.add('hidden');
+            document.getElementById('compose-tools-bar').classList.add('hidden');
+            document.getElementById('compose-step-3').classList.remove('hidden');
+            document.getElementById('compose-action-btn').innerText = "Post";
+            document.getElementById('compose-action-btn').onclick = window.publishPost;
+        };
+        window.toggleSetting = (key) => {
+            const el = document.getElementById(`toggle-${key}`);
+            el.classList.toggle('active');
+        };
+        window.handleComposeBack = () => { 
+            if (window.composeStep === 3) {
+                window.composeStep = 2;
+                document.getElementById('compose-step-3').classList.add('hidden');
+                document.getElementById('compose-step-2').classList.remove('hidden');
+                document.getElementById('compose-tools-bar').classList.remove('hidden');
+                document.getElementById('compose-action-btn').innerText = "Next";
+                document.getElementById('compose-action-btn').onclick = window.handleComposeAction;
+            } else if (window.composeStep === 2) { 
+                window.composeStep = 1; 
+                document.getElementById('compose-step-1').classList.remove('hidden'); 
+                document.getElementById('compose-step-2').classList.add('hidden'); 
+                document.getElementById('compose-tools-bar').classList.add('hidden'); 
+                document.getElementById('compose-header-title').innerText = "Create Post"; 
+                const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); 
+                btn.innerText = hasImage ? "Next" : "Skip"; 
+                btn.onclick = window.handleComposeAction 
+            } else attemptCloseCompose() 
+        };
         async function uploadMedia(f, onProgress) {
             const isVideo = f.type && f.type.startsWith('video/');
             const isImage = f.type && f.type.startsWith('image/');
@@ -9519,11 +9690,11 @@
             if (tr.trim().split(/\s+/).length > 500) return showToast("Post too long (max 500 words)", !0);
             
             // Capture all current state before closing modal
-            const privacy = document.getElementById('post-setting-privacy').checked;
-            const sl = document.getElementById('post-setting-likes').checked;
-            const sc = document.getElementById('post-setting-comments').checked;
-            const alv = document.getElementById('post-setting-like-view').checked;
-            const ac = document.getElementById('post-setting-allow-comments').checked;
+            const privacy = document.getElementById('toggle-privacy').classList.contains('active');
+            const sl = document.getElementById('toggle-likes').classList.contains('active');
+            const sc = document.getElementById('toggle-comments').classList.contains('active');
+            const alv = document.getElementById('toggle-like-view').classList.contains('active');
+            const ac = document.getElementById('toggle-allow-comments').classList.contains('active');
             const embedLinkRaw = document.getElementById('compose-embed-link').value.trim();
             const claimLink = window.currentClaimLink || null;
             const collaborators = [...(window.selectedCollaborators || [])];
