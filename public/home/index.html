@@ -7212,8 +7212,22 @@
                 if (tp.length === 0) c.innerHTML = '<div class="text-center py-20 text-gray-400"><i data-lucide="repeat" class="w-12 h-12 mb-2 opacity-20 mx-auto"></i><p>No reposts yet</p></div>';
                 else {
                     tp.sort((a, b) => b.timestamp - a.timestamp);
-                    c.innerHTML = '';
-                    tp.forEach(p => c.appendChild(createPostElement(p, 'reposts')));
+                    const limit = window.currentProfileVisibleCount || 9;
+                    const visiblePosts = tp.slice(0, limit);
+                    const hasMore = tp.length > limit;
+
+                    c.innerHTML = `<div class="grid-post-container" id="profile-grid-container">${visiblePosts.map(p => renderGridPostItem(p)).join('')}</div>
+                        <div id="profile-load-more-trigger" class="flex flex-col items-center justify-center pt-8 pb-20 ${hasMore ? '' : 'hidden'}">
+                            <div id="profile-loading-spinner" class="flex flex-col items-center gap-3">
+                                <img src="https://i.imghippo.com/files/YVls8804tw.png" class="logo-spinner" alt="Loading...">
+                                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] opacity-60">Loading next set</span>
+                            </div>
+                        </div>`;
+
+                    if (hasMore) {
+                        setupProfileInfiniteScroll(uid, t, tp);
+                    }
+                    window.currentViewingPostList = tp;
                 }
                 refreshIcons();
                 return;
