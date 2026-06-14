@@ -5421,7 +5421,17 @@
             });
             onSnapshot(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id)), s => {
                 notifications = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0));
-                const u = notifications.filter(n => !n.read).length, t = u > 99 ? '99+' : u, d = document.getElementById('nav-notif-badge'), m = document.getElementById('mobile-footer-badge');
+                // Count unique unread notifications (group by type + postId/commentId to avoid duplicates for multiple likes on same post)
+                const uniqueUnreadKeys = new Set();
+                notifications.filter(n => !n.read).forEach(n => {
+                    // Create a unique key based on notification type and target ID
+                    let key = n.type || 'unknown';
+                    if (n.postId) key += `_post_${n.postId}`;
+                    if (n.commentId) key += `_comment_${n.commentId}`;
+                    if (n.senderId) key += `_sender_${n.senderId}`;
+                    uniqueUnreadKeys.add(key);
+                });
+                const u = uniqueUnreadKeys.size, t = u > 99 ? '99+' : u, d = document.getElementById('nav-notif-badge'), m = document.getElementById('mobile-footer-badge');
                 if (d) { d.style.display = u ? 'flex' : 'none'; d.innerText = t }
                 if (m) { m.style.display = u ? 'flex' : 'none'; m.innerText = t }
                 if (!document.getElementById('view-notifications').classList.contains('hidden')) renderNotifications();
@@ -6265,7 +6275,7 @@
                         const isF = currentUser.following.includes(u.id);
                         const isFriend = window.isFriend(u.id);
                         return `
-                        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onclick="showProfile('${u.id}')">
+                        <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer" onclick="showProfile('${u.id}')">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div class="rounded-full w-12 h-12 shrink-0 overflow-hidden">
                                     <img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
@@ -6275,11 +6285,11 @@
                                         ${u.name || 'User'}
                                         ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}
                                     </div>
-                                    <div class="text-[13px] text-gray-500 font-medium truncate">@${u.username || 'user'}</div>
+                                    <div class="text-[13px] text-gray-500 font-medium truncate">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div>
                                 </div>
                             </div>
                             <button onclick="event.stopPropagation(); toggleFollow('${u.id}')" 
-                                class="js-follow-btn-${u.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[85px]">
+                                class="js-follow-btn-${u.id} shrink-0 text-[13px] px-6 py-2.5 rounded-full font-bold transition-all active:scale-95 min-w-[100px] ${isF ? (isFriend ? 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50' : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50') : 'bg-[#2b59c3] text-white hover:opacity-90'}">
                                 ${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}
                             </button>
                         </div>
@@ -6321,9 +6331,9 @@
                     const isF = currentUser.following.includes(u.id);
                     const d = document.createElement('div');
                     const isFriend = window.isFriend(u.id);
-                    d.className = "flex items-center justify-between px-4 py-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer last:border-b-0";
+                    d.className = "flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer last:border-b-0";
                     d.onclick = () => showProfile(u.id);
-                    d.innerHTML = `<div class="flex items-center gap-3"><div class="rounded-full w-12 h-12 shrink-0 overflow-hidden"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-[#1f1f1f] text-[15px] flex items-center">${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${u.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}</div><div class="text-[13px] text-gray-500 font-medium">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div></div></div><button onclick="event.stopPropagation(); toggleFollow('${u.id}')" class="js-follow-btn-${u.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-full font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[85px]">${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>`;
+                    d.innerHTML = `<div class="flex items-center gap-3"><div class="rounded-full w-12 h-12 shrink-0 overflow-hidden"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-[#1f1f1f] text-[15px] flex items-center">${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${u.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}</div><div class="text-[13px] text-gray-500 font-medium">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div></div></div><button onclick="event.stopPropagation(); toggleFollow('${u.id}')" class="js-follow-btn-${u.id} shrink-0 text-[13px] px-6 py-2.5 rounded-full font-bold transition-all active:scale-95 min-w-[100px] ${isF ? (isFriend ? 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50' : 'bg-white text-gray-900 border border-gray-200 hover:bg-gray-50') : 'bg-[#2b59c3] text-white hover:opacity-90'}">${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>`;
                     pl.appendChild(d);
                 }); else pl.innerHTML = '<div class="text-gray-400 text-xs italic text-center py-4">No people found</div>';
             } else {
