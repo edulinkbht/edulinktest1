@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reset Password - Edulink</title>
+    <style>
+        /* Design inspired by Screenshot 2026-06-14 at 1.00.00 PM.png */
+        :root {
+            --bg-color: #0c0d0e;
+            --text-main: #ffffff;
+            --text-muted: #8e8e93;
+            --input-bg: #18191b;
+            --input-border: #2c2d30;
+            --cobalt-blue: #003e7e;
+            --cobalt-hover: #0052a3;
+            --error-color: #ff453a;
+            --success-color: #30d158;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 1.5rem;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 380px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .back-arrow {
+            color: var(--text-main);
+            text-decoration: none;
+            font-size: 1.25rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .back-arrow:hover {
+            opacity: 0.7;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        input[type="email"] {
+            width: 100%;
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-main);
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="email"]:focus {
+            border-color: var(--text-muted);
+        }
+
+        input[type="email"]::placeholder {
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        .btn-primary {
+            width: 100%;
+            background-color: var(--cobalt-blue);
+            color: var(--text-main);
+            border: none;
+            padding: 1rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--cobalt-hover);
+        }
+
+        .btn-primary:active {
+            transform: scale(0.99);
+        }
+
+        .btn-secondary {
+            width: 100%;
+            background: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--input-border);
+            padding: 1rem;
+            border-radius: 50px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            text-align: center;
+            margin-top: 1.5rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .message {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            text-align: center;
+            line-height: 1.4;
+            display: none;
+        }
+
+        .message.error {
+            display: block;
+            background-color: rgba(255, 69, 58, 0.1);
+            border: 1px solid var(--error-color);
+            color: var(--error-color);
+        }
+
+        .message.success {
+            display: block;
+            background-color: rgba(48, 209, 88, 0.1);
+            border: 1px solid var(--success-color);
+            color: var(--success-color);
+        }
+
+        .message a {
+            color: var(--text-main);
+            text-decoration: underline;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header-row">
+            <a href="/login" class="back-arrow">&#10094;</a>
+            <h1>Reset Password</h1>
+        </div>
+        
+        <form id="resetForm">
+            <div class="form-group">
+                <input type="email" id="email" placeholder="Enter your email address" required autocomplete="off">
+            </div>
+            <button type="submit" class="btn-primary">Get Reset Link</button>
+        </form>
+
+        <div id="feedbackMessage" class="message"></div>
+
+        <a href="/login" class="btn-secondary">Back to log in</a>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+        import { getAuth, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+        
+        // Fetch configuration from API
+        const configResponse = await fetch('/api/api');
+        const config = await configResponse.json();
+        const firebaseConfig = config.firebaseConfig;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+
+        document.getElementById('resetForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+            
+            const emailInput = document.getElementById('email').value.trim().toLowerCase();
+            const feedback = document.getElementById('feedbackMessage');
+            
+            feedback.className = "message";
+            feedback.innerHTML = "";
+
+            try {
+                await sendPasswordResetEmail(auth, emailInput);
+                feedback.classList.add('success');
+                feedback.innerHTML = "Password reset link sent! Check your email inbox and spam folder.";
+            } catch (error) {
+                feedback.classList.add('error');
+                if (error.code === 'auth/user-not-found') {
+                    feedback.innerHTML = "No account exists with this email address.";
+                } else if (error.code === 'auth/invalid-email') {
+                    feedback.innerHTML = "Please enter a valid email address.";
+                } else {
+                    feedback.innerHTML = "Error sending reset link: " + error.message;
+                }
+            }
+        });
+    </script>
+
+</body>
+</html>
