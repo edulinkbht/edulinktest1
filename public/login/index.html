@@ -585,15 +585,6 @@
             </div>
 
             <button class="btn-primary" style="background: #00376b;" id="login-btn-qr">Log in</button>
-
-            <div class="page-footer" style="position: relative; bottom: auto; margin-top: 2rem; padding: 0;">
-                <a href="/newton">Newton</a>
-                <a href="/terms">Terms</a>
-                <a href="/privacy">Privacy</a>
-                <a href="/blog">Blog</a>
-                <a href="https://idembt.vercel.app" target="_blank">Idem</a>
-                <a href="/edulink">© 2026 Edulink</a>
-            </div>
         </div>
 
         <div class="page-footer">
@@ -1218,22 +1209,19 @@
             qrStatus.textContent = 'Generating QR code...';
 
             try {
-                // Create a new QR session in Firestore
-                const qrSessionsRef = collection(db, 'qrSessions');
-                const sessionData = {
-                    status: 'pending',
-                    createdAt: serverTimestamp()
-                };
-                qrSessionDoc = await addDoc(qrSessionsRef, sessionData);
-                const sessionId = qrSessionDoc.id;
+                // Create a new QR session in Firestore (matching demo collection name)
+                const uniqueSessionToken = "edulink_token_" + Math.random().toString(36).substring(2, 15);
+                qrSessionDoc = doc(db, "qr_logins", uniqueSessionToken);
+                await setDoc(qrSessionDoc, { status: "pending", timestamp: Date.now() });
 
                 // Generate QR code with the session ID
-                const qrData = `edulink-qr-login:${sessionId}`;
+                const qrData = uniqueSessionToken;
                 qrCodeDisplay.innerHTML = '';
                 
                 // Fix QR code generation
                 QRCode.toCanvas(qrData, { 
                     width: 250, 
+                    height: 250,
                     margin: 0,
                     color: {
                         dark: '#000000',
@@ -1254,16 +1242,15 @@
                     if (!snapshot.exists()) return;
 
                     const data = snapshot.data();
-                    if (data.status === 'scanned' && data.uid) {
-                        qrStatus.textContent = 'Logging you in...';
+                    if (data && data.status === "verified" && data.authorizedEmail) {
+                        qrStatus.textContent = 'Authorized! Logging you in...';
                         
-                        // Fetch the user's profile from Firestore
+                        // Fetch the user's profile from Firestore by email
                         try {
-                            const userRef = doc(db, "users", data.uid);
-                            const userSnap = await getDoc(userRef);
-                            
-                            if (userSnap.exists()) {
-                                const userData = userSnap.data();
+                            const q = query(collection(db, "users"), where("email", "==", data.authorizedEmail));
+                            const querySnapshot = await getDocs(q);
+                            if (!querySnapshot.empty) {
+                                const userData = querySnapshot.docs[0].data();
                                 // Save user to local storage
                                 saveUserToLocal(
                                     userData.email,
