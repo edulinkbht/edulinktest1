@@ -4123,6 +4123,7 @@
             </header>
             <div id="ptr-spinner"><i data-lucide="arrow-down" class="w-5 h-5"></i></div>
             <div id="view-feed" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20">
+                <div id="compose-form-container" class="hidden px-4 md:px-0 mb-4"></div>
                 <div id="feed-container"></div>
                 <div id="feed-sentinel" class="h-10 flex items-center justify-center">
                     <div id="feed-loader" class="hidden">
@@ -5485,9 +5486,11 @@
                 document.getElementById('edit-promo-btn').classList.remove('hidden');
                 document.getElementById('promo-section').classList.remove('hidden');
                 document.getElementById('create-option-ad').classList.remove('hidden');
+                document.getElementById('nav-create').classList.remove('hidden');
                 if (mmBroadcast) mmBroadcast.classList.remove('hidden');
             } else {
                 document.getElementById('create-option-ad').classList.add('hidden');
+                document.getElementById('nav-create').classList.add('hidden');
                 if (mmBroadcast) mmBroadcast.classList.add('hidden');
             }
             refreshIcons();
@@ -8690,7 +8693,217 @@
         window.promptForImageLink = () => { const u = prompt("Enter Image URL:"); if (u && (u.startsWith('http') || u.startsWith('data:'))) { window.currentMedia = [u]; window.currentMediaType = 'image'; document.getElementById('media-preview-container').classList.remove('hidden'); document.getElementById('preview-inner').innerHTML = `<img src="${u}" class="h-20 w-20 object-cover rounded-md">`; showToast("Added") } };
         window.openAnnouncement = () => { manageHistory('announcement-overlay'); const o = document.getElementById('announcement-overlay'); toggleModalAnim('announcement-overlay', 'announcement-overlay-modal', !0); closeSettings() }; window.closeAnnouncement = () => { toggleModalAnim('announcement-overlay', 'announcement-overlay-modal', !1) };
         window.sendAnnouncement = async () => { const t = document.getElementById('announcement-text').value.trim(); if (!t) return; showAlert("Broadcast?", async () => { for (const u of users) if (u.id !== currentUser.id) await addDoc(collection(db, "notifications"), { receiverId: u.id, senderId: currentUser.id, type: 'system', content: t, timestamp: serverTimestamp(), read: !1 }); showToast("Sent"); document.getElementById('announcement-text').value = ""; closeAnnouncement() }) };
-        window.openCreateMenu = () => { manageHistory('create-menu-overlay'); toggleModalAnim('create-menu-overlay', 'create-menu-modal', !0) }; window.closeCreateMenu = () => { toggleModalAnim('create-menu-overlay', 'create-menu-modal', !1) }; window.openEventComposer = () => { manageHistory('event-overlay'); closeCreateMenu(); removeEventCover(); document.getElementById('event-overlay').classList.remove('opacity-0', 'pointer-events-none'); document.getElementById('event-modal-box').classList.remove('scale-95') }; window.closeEventComposer = () => { document.getElementById('event-overlay').classList.add('opacity-0', 'pointer-events-none'); document.getElementById('event-modal-box').classList.add('scale-95') };
+        window.openCreateMenu = () => { 
+            const container = document.getElementById('compose-form-container');
+            if (container.classList.contains('hidden')) {
+                window.composeStep = 1;
+                window.composeImages = [null, null, null, null];
+                window.composeImageBlobs = [null, null, null, null];
+                renderComposeForm();
+                container.classList.remove('hidden');
+            } else {
+                container.classList.add('hidden');
+            }
+        };
+        window.closeCreateMenu = () => { 
+            const container = document.getElementById('compose-form-container');
+            container.classList.add('hidden');
+        };
+        window.renderComposeForm = () => {
+            const container = document.getElementById('compose-form-container');
+            container.innerHTML = `
+                <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+                    <div id="compose-step-1-container">
+                        <div class="p-4 border-b border-gray-100">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i data-lucide="info" class="w-5 h-5 text-gray-800"></i>
+                                <h2 class="text-lg font-bold text-gray-900">Upload Media</h2>
+                            </div>
+                            <p class="text-sm text-gray-600">Your media are stored in third party storage builds, I don't own its own database center. <a href="#" class="text-blue-600 font-medium hover:underline">Learn more</a></p>
+                        </div>
+                        <div class="grid grid-cols-2 gap-px bg-gray-100" id="compose-media-grid">
+                            ${window.composeImages.map((url, i) => {
+                                if (url) {
+                                    const isVid = url.includes('video') || url.endsWith('.mp4') || (window.composeImageBlobs[i] && window.composeImageBlobs[i].type.startsWith('video'));
+                                    return `
+                                        <div class="aspect-square relative overflow-hidden bg-white">
+                                            ${isVid ? `<video src="${url}" class="w-full h-full object-cover" muted preload="metadata" onloadeddata="this.currentTime=0.1" onseeked="this.play();setTimeout(()=>this.pause(),10)"></video>` : `<img src="${url}" class="w-full h-full object-cover">`}
+                                            <button onclick="window.removeMediaAtIndex(${i})" class="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-black/80">
+                                                <i data-lucide="x" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    `;
+                                } else if (i === 0 || window.composeImages[i - 1] !== null) {
+                                    return `
+                                        <div class="aspect-square bg-white flex items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors" onclick="document.getElementById('compose-media-upload-input').click()">
+                                            <div class="flex flex-col items-center gap-2">
+                                                <i data-lucide="upload" class="w-10 h-10 text-gray-400"></i>
+                                                <span class="text-sm font-medium text-gray-900">Add Your Media</span>
+                                            </div>
+                                        </div>
+                                    `;
+                                } else {
+                                    return `<div class="aspect-square bg-white"></div>`;
+                                }
+                            }).join('')}
+                        </div>
+                        <input type="file" id="compose-media-upload-input" class="hidden" accept="image/*,video/*" multiple onchange="window.handleComposeMediaUpload(event)">
+                    </div>
+                    
+                    <div id="compose-step-2-container" class="hidden">
+                        <div class="p-4 border-b border-gray-100">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i data-lucide="info" class="w-5 h-5 text-gray-800"></i>
+                                <h2 class="text-lg font-bold text-gray-900">Including Caption</h2>
+                            </div>
+                            <p class="text-sm text-gray-600">Being aware of what you post is really important, use the right words to express yourself. <a href="#" class="text-blue-600 font-medium hover:underline">Learn more</a></p>
+                        </div>
+                        <div class="p-4">
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-12 h-12 rounded-full overflow-hidden">
+                                    <img src="${currentUser?.avatar || ''}" class="w-full h-full object-cover">
+                                </div>
+                                <div class="font-bold text-gray-900">${currentUser?.name || 'User'}</div>
+                            </div>
+                            <textarea id="compose-text" placeholder="What's on your mind?" class="w-full h-48 text-lg resize-none border-none outline-none bg-transparent placeholder-gray-400" oninput="window.handleComposeInput(this)" onkeydown="window.handleMentionKeydown(event,'compose-text','compose-mention-suggestions')" onkeyup="window.handleMentionInput('compose-text','compose-mention-suggestions')"></textarea>
+                            <div class="flex items-center gap-2 mt-4">
+                                <button onclick="window.toggleComposeEmojiPicker()" class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+                                    <i data-lucide="smile" class="w-5 h-5"></i>
+                                </button>
+                                <button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+                                    <i data-lucide="image" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                            <div id="quick-emoji-picker" class="hidden w-full md:w-80 h-64 bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50 mt-2">
+                                <div class="p-3 border-b border-gray-100">
+                                    <div class="relative group">
+                                        <i data-lucide="search" class="absolute left-3 top-2.5 w-5 h-5 text-gray-500 pointer-events-none"></i>
+                                        <input type="text" id="compose-emoji-search" placeholder="Search emojis..." class="w-full bg-gray-100 text-gray-900 rounded-full py-2.5 pl-10 pr-4 outline-none focus:bg-white focus:ring-1 focus:ring-gray-200 transition-all text-sm placeholder-gray-500">
+                                    </div>
+                                </div>
+                                <div id="compose-emoji-grid" class="grid grid-cols-8 gap-1.5 p-3 overflow-y-auto h-40">
+                                    <div class="col-span-8 text-center text-xs text-gray-400 py-8">Loading…</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="compose-step-3-container" class="hidden">
+                        <div class="p-4 border-b border-gray-100">
+                            <div class="flex items-center gap-2 mb-2">
+                                <i data-lucide="info" class="w-5 h-5 text-gray-800"></i>
+                                <h2 class="text-lg font-bold text-gray-900">Post Settings</h2>
+                            </div>
+                            <p class="text-sm text-gray-600">Change the way other interacts with your post. Change the privacy settings and hide certain things. <a href="#" class="text-blue-600 font-medium hover:underline">Learn more</a></p>
+                        </div>
+                        <div class="p-4 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="lock" class="w-4 h-4"></i> Private (Only Me)</div><input type="checkbox" id="post-setting-privacy" class="accent-blue-600 w-5 h-5 cursor-pointer">
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="heart" class="w-4 h-4"></i> Show Like Count</div><input type="checkbox" id="post-setting-likes" class="accent-blue-600 w-5 h-5 cursor-pointer" checked>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="message-square" class="w-4 h-4"></i> Show Comment Count</div><input type="checkbox" id="post-setting-comments" class="accent-blue-600 w-5 h-5 cursor-pointer" checked>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="users" class="w-4 h-4"></i> Allow viewers to see who liked</div><input type="checkbox" id="post-setting-like-view" class="accent-blue-600 w-5 h-5 cursor-pointer" checked>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="message-circle" class="w-4 h-4"></i> Allow comments</div><input type="checkbox" id="post-setting-allow-comments" class="accent-blue-600 w-5 h-5 cursor-pointer" checked>
+                            </div>
+                            <div class="flex items-center justify-between cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors" onclick="openClaimOverlay()">
+                                <div class="flex items-center gap-2 text-sm text-gray-700"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Add Claim Link</div>
+                                <div class="flex items-center gap-2"><span id="claim-status-indicator" class="text-xs font-bold text-gray-400">Off</span><i data-lucide="chevron-right" class="w-4 h-4 text-gray-400"></i></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 border-t border-gray-100 flex justify-between items-center">
+                        <button id="compose-back-btn" class="font-bold text-gray-700 hover:text-gray-900 transition-colors" onclick="window.handleComposeBack()">
+                            <i data-lucide="chevron-left" class="w-5 h-5 inline-block mr-1"></i> Back
+                        </button>
+                        <button id="compose-action-btn" class="px-8 py-3 bg-[#3D7EEB] text-white font-bold rounded-full hover:opacity-90 transition-all active:scale-[0.98]" onclick="window.handleComposeAction()">
+                            ${window.composeImages.some(x => x !== null) ? 'Next' : 'Skip'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            refreshIcons();
+            window.updateComposeStepUI();
+        };
+        window.updateComposeStepUI = () => {
+            const step1 = document.getElementById('compose-step-1-container');
+            const step2 = document.getElementById('compose-step-2-container');
+            const step3 = document.getElementById('compose-step-3-container');
+            const actionBtn = document.getElementById('compose-action-btn');
+            const backBtn = document.getElementById('compose-back-btn');
+            
+            step1?.classList.add('hidden');
+            step2?.classList.add('hidden');
+            step3?.classList.add('hidden');
+            
+            if (window.composeStep === 1) {
+                step1?.classList.remove('hidden');
+                actionBtn.textContent = window.composeImages.some(x => x !== null) ? 'Next' : 'Skip';
+                backBtn.style.visibility = 'hidden';
+            } else if (window.composeStep === 2) {
+                step2?.classList.remove('hidden');
+                actionBtn.textContent = 'Next';
+                backBtn.style.visibility = 'visible';
+            } else if (window.composeStep === 3) {
+                step3?.classList.remove('hidden');
+                actionBtn.textContent = 'Post';
+                backBtn.style.visibility = 'visible';
+            }
+        };
+        window.handleComposeMediaUpload = async (e) => {
+            const files = Array.from(e.target.files);
+            let currentIndex = window.composeImages.findIndex(x => x === null);
+            if (currentIndex === -1) currentIndex = window.composeImages.length;
+            
+            for (let i = 0; i < files.length && currentIndex < 4; i++) {
+                const file = files[i];
+                const hasVideo = window.composeImageBlobs.some(b => b && b.type.startsWith('video/')) || window.composeImages.some(u => u && (u.includes('video') || u.endsWith('.mp4')));
+                if (file.type.startsWith('video/') && hasVideo) {
+                    showToast('Only one video allowed', true);
+                    continue;
+                }
+                
+                if (file.type.startsWith('image/')) {
+                    const compressed = await window.compressImage(file);
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        window.composeImages[currentIndex] = ev.target.result;
+                        window.composeImageBlobs[currentIndex] = compressed;
+                        window.renderComposeForm();
+                    };
+                    reader.readAsDataURL(compressed);
+                } else {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                        window.composeImages[currentIndex] = ev.target.result;
+                        window.composeImageBlobs[currentIndex] = file;
+                        window.renderComposeForm();
+                    };
+                    reader.readAsDataURL(file);
+                }
+                currentIndex++;
+            }
+            e.target.value = '';
+        };
+        window.removeMediaAtIndex = (i) => {
+            window.composeImages[i] = null;
+            window.composeImageBlobs[i] = null;
+            const filteredUrls = window.composeImages.filter(x => x !== null);
+            const filteredBlobs = window.composeImageBlobs.filter(x => x !== null);
+            window.composeImages = [null, null, null, null];
+            window.composeImageBlobs = [null, null, null, null];
+            filteredUrls.forEach((url, idx) => window.composeImages[idx] = url);
+            filteredBlobs.forEach((blob, idx) => window.composeImageBlobs[idx] = blob);
+            window.renderComposeForm();
+        };
+        window.openEventComposer = () => { manageHistory('event-overlay'); closeCreateMenu(); removeEventCover(); document.getElementById('event-overlay').classList.remove('opacity-0', 'pointer-events-none'); document.getElementById('event-modal-box').classList.remove('scale-95') }; window.closeEventComposer = () => { document.getElementById('event-overlay').classList.add('opacity-0', 'pointer-events-none'); document.getElementById('event-modal-box').classList.add('scale-95') };
         window.handleEventCoverSelect = e => { const f = e.target.files[0]; if (f) { currentEventCoverBlob = f; const r = new FileReader(); r.onload = x => { window.currentEventCover = x.target.result; document.getElementById('event-cover-preview').src = window.currentEventCover; document.getElementById('event-cover-preview-container').classList.remove('hidden'); document.getElementById('add-cover-btn').classList.add('hidden') }; r.readAsDataURL(f) } }; window.removeEventCover = () => { window.currentEventCover = null; currentEventCoverBlob = null; document.getElementById('event-cover-preview').src = ""; document.getElementById('event-cover-preview-container').classList.add('hidden'); document.getElementById('add-cover-btn').classList.remove('hidden'); document.getElementById('event-cover-input').value = "" }; window.publishEvent = () => { showToast("Coming soon!", !1); closeEventComposer() };
         window.showEngagementMetrics = (pid) => {
             const p = posts.find(x => x.id === pid);
@@ -9377,22 +9590,7 @@
             refreshIcons();
         }
         window.closeCompose = () => { 
-            document.getElementById('compose-overlay').classList.add('opacity-0', 'pointer-events-none'); 
-            const modal = document.getElementById('compose-modal'); 
-            modal.classList.add('scale-95'); 
-            modal.classList.add('translate-y-full'); 
-            setTimeout(() => { 
-                window.editingPostId = null; 
-                window.composeStep = 1; 
-                document.getElementById('compose-step-1').classList.remove('hidden'); 
-                document.getElementById('compose-step-2').classList.add('hidden'); 
-                document.getElementById('compose-step-3').classList.add('hidden'); 
-                document.getElementById('compose-action-btn').innerText = "Next"; 
-                document.getElementById('compose-action-btn').onclick = window.handleComposeAction; 
-                document.getElementById('compose-text').value = ""; 
-                window.composeImages = [null, null, null, null]; 
-                window.composeImageBlobs = [null, null, null, null]; 
-            }, 200) 
+            window.closeCreateMenu();
         };
         async function uploadMedia(f, onProgress) {
             const isVideo = f.type && f.type.startsWith('video/');
