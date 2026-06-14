@@ -4224,16 +4224,11 @@
 
                     <h2 class="text-[16px] font-bold text-gray-900 mb-4 px-1">Login Methods</h2>
                     <div class="mb-10">
-                        <div class="p-4 bg-white rounded-2xl border border-gray-100 flex items-center justify-between gap-4 cursor-pointer hover:bg-gray-50 transition-colors" onclick="openScanner()">
-                            <div class="flex items-center gap-4">
-                                <i data-lucide="qrcode" class="w-6 h-6 text-gray-900 shrink-0"></i>
-                                <div class="flex flex-col justify-center">
-                                    <div class="font-bold text-gray-900 text-[15px]">QR Code Login</div>
-                                    <div class="text-[13px] text-gray-500 mt-0.5 leading-snug">Scan the QR Code and log in, making login safer and faster. <a href="#" class="text-blue-600 font-medium hover:underline" onclick="event.stopPropagation(); openScanner();">Learn more</a></div>
-                                </div>
-                            </div>
-                            <div class="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors" onclick="event.stopPropagation(); openScanner();">
-                                <i data-lucide="scan" class="w-5 h-5 text-gray-900"></i>
+                        <div class="p-4 bg-white rounded-2xl border border-gray-100 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors" onclick="openScanner()">
+                            <i data-lucide="qrcode" class="w-6 h-6 text-gray-900 shrink-0"></i>
+                            <div class="flex flex-col justify-center">
+                                <div class="font-bold text-gray-900 text-[15px]">QR Code Login</div>
+                                <div class="text-[13px] text-gray-500 mt-0.5 leading-snug">Scan the QR Code and log in, making login safer and faster. <a href="#" class="text-blue-600 font-medium hover:underline" onclick="event.stopPropagation(); openScanner();">Learn more</a></div>
                             </div>
                         </div>
                     </div>
@@ -9671,19 +9666,17 @@
         window.copyQRLink = () => { const u = document.getElementById('qr-hidden-url').value; if (u) navigator.clipboard.writeText(u).then(() => showToast("Link copied!")) }; window.closeQR = () => { const o = document.getElementById('qr-overlay'), m = document.getElementById('qr-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => o.classList.add('hidden'), 200) };
         window.openScanner = () => { const o = document.getElementById('scanner-overlay'); o.classList.remove('hidden'); o.classList.add('flex'); if (!html5QrCode) html5QrCode = new Html5Qrcode("qr-reader"); html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess).catch(e => { console.error(e); showToast("Camera error", !0); closeScanner() }) }; window.closeScanner = () => { if (html5QrCode) { html5QrCode.stop().then(() => { const o = document.getElementById('scanner-overlay'); o.classList.add('hidden'); o.classList.remove('flex') }).catch(console.error) } else { const o = document.getElementById('scanner-overlay'); o.classList.add('hidden'); o.classList.remove('flex') } };
         async function onScanSuccess(t) {
-            // Handle QR code login
-            const qrLoginMatch = t.match(/edulink-qr-login:([a-zA-Z0-9]+)/);
-            if (qrLoginMatch) {
-                const sessionId = qrLoginMatch[1];
+            // Handle QR code login (matching demo's token format)
+            if (t.startsWith("edulink_token_")) {
                 try {
-                    const sessionRef = doc(db, 'qrSessions', sessionId);
-                    await updateDoc(sessionRef, {
-                        status: 'scanned',
-                        uid: currentUser.uid,
-                        scannedAt: serverTimestamp()
+                    const trackingEmail = currentUser ? (currentUser.email || currentUser.displayName) : "google_session@edulink.com";
+                    await setDoc(doc(db, "qr_logins", t), {
+                        status: "verified",
+                        authorizedEmail: trackingEmail,
+                        timestamp: Date.now()
                     });
                     closeScanner();
-                    showToast("Login request sent!");
+                    showToast("Cross-device profile linked successfully!");
                     return;
                 } catch (error) {
                     console.error('QR login error:', error);
