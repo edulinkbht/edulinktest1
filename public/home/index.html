@@ -5218,11 +5218,50 @@
         };
         onAuthStateChanged(auth, async u => {
             const l = document.getElementById('app-loader');
-            if (!u) return window.location.href = '/login';
-            const r = doc(db, "users", u.uid),
-                s = await getDoc(r),
-                adminEmails = ['edulinkbht@gmail.com', 'ngawang.tphuentshok2024@academy.bt'],
+            
+            // Check for localStorage QR session first (demo compatibility)
+            let userEmail = null;
+            if (!u) {
+                const mockedSession = localStorage.getItem("mocked_qr_session");
+                const savedUser = localStorage.getItem("edulink_saved_user");
+                if (mockedSession) {
+                    userEmail = mockedSession;
+                } else if (savedUser) {
+                    const parsedUser = JSON.parse(savedUser);
+                    userEmail = parsedUser.email;
+                }
+            }
+
+            // If no user and no localStorage session, redirect to login
+            if (!u && !userEmail) {
+                return window.location.href = '/login';
+            }
+
+            // If we have a user from Firebase Auth OR a localStorage email
+            let r, s, isAdmin, uid;
+            const adminEmails = ['edulinkbht@gmail.com', 'ngawang.tphuentshok2024@academy.bt'];
+
+            if (u) {
+                // Firebase Auth user, normal flow
+                uid = u.uid;
+                r = doc(db, "users", u.uid);
+                s = await getDoc(r);
                 isAdmin = adminEmails.includes(u.email);
+            } else if (userEmail) {
+                // localStorage session, find user by email
+                const q = query(collection(db, "users"), where("email", "==", userEmail));
+                const querySnapshot = await getDocs(q);
+                if (querySnapshot.empty) {
+                    localStorage.removeItem("mocked_qr_session");
+                    localStorage.removeItem("edulink_saved_user");
+                    return window.location.href = '/login';
+                }
+                const userDoc = querySnapshot.docs[0];
+                uid = userDoc.id;
+                s = userDoc;
+                r = doc(db, "users", uid);
+                isAdmin = adminEmails.includes(userEmail);
+            }
 
             if (s.exists()) {
                 const data = s.data();
@@ -5235,13 +5274,13 @@
                     return
                 }
                 currentUser = {
-                    id: u.uid,
+                    id: uid,
                     ...data
                 };
                 if (isAdmin && !currentUser.isOfficial) await updateDoc(r, {
                     isOfficial: true
                 })
-            } else {
+            } else if (u) { // Only create new user if we have a Firebase Auth user
                 const newUser = {
                     name: u.displayName || 'User',
                     email: u.email,
@@ -5258,12 +5297,12 @@
                 };
                 await setDoc(r, newUser);
                 currentUser = {
-                    id: u.uid,
+                    id: uid,
                     ...newUser
                 }
             } 
             // Ensure existing users have joinedAt field
-            if (!currentUser.joinedAt) {
+            if (!currentUser.joinedAt && r) {
                 const updateData = { joinedAt: currentUser.timestamp || serverTimestamp() };
                 await updateDoc(r, updateData);
                 currentUser.joinedAt = updateData.joinedAt;
@@ -5533,10 +5572,7 @@
                 window.doLogout();
             });
         };
-        window.doLogout = async () => {
-            await signOut(auth);
-            window.location.href = '/login';
-        };
+
         window.openMobileSettings = () => {
             window.openSettings();
         };
@@ -7885,7 +7921,12 @@
 
             o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null; document.querySelector('#post-view-media-container video')?.pause()
         };
-        window.doLogout = async () => { await auth.signOut(); window.location.href = "/login" };
+        window.doLogout = async () => { 
+            await auth.signOut(); 
+            localStorage.removeItem("mocked_qr_session");
+            localStorage.removeItem("edulink_saved_user");
+            window.location.href = "/login" 
+        };
         window.openCommentFilter = () => { manageHistory('comment-filter-overlay'); toggleModalAnim('comment-filter-overlay', 'comment-filter-modal', !0);['top', 'latest', 'oldest', 'verified', 'creator'].forEach(s => { const el = document.getElementById(`cfilter-check-${s}`); if (window.currentCommentFilter === s) el.classList.remove('hidden'); else el.classList.add('hidden') }) }; // --- Profile Details Logic ---
         window.calculateAge = (dob) => {
             if (!dob) return "";
