@@ -488,7 +488,7 @@
 <body>
 
     <div class="left-panel">
-        <div class="image-container"></div>
+        <div class="image-container" id="qr-trigger" style="cursor: pointer;"></div>
     </div>
 
     <div class="right-panel">
@@ -606,6 +606,27 @@
         </div>
     </div>
 
+    <!-- QR Code Login Overlay -->
+    <div id="qr-login-modal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 450px;">
+            <button class="modal-close-btn" id="qr-close-btn">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            
+            <h2 class="modal-name" style="margin-bottom: 0.5rem;">Scan the QR Code</h2>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.5rem; text-align: center;">Log in safely and quickly by scanning with the EduLink app</p>
+            
+            <div id="qr-code-container" style="width: 256px; height: 256px; margin: 0 auto 1.5rem auto; background: white; border-radius: 16px; padding: 16px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--divider-line);">
+                <div id="qr-code-display"></div>
+            </div>
+
+            <div id="qr-status" style="text-align: center; font-size: 0.85rem; color: var(--text-muted);">
+                Waiting for scan...
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <script type="module">
         /* 
            FIREBASE INITIALIZATION & AUTHENTICATION LOGIC
@@ -631,7 +652,11 @@
             query,
             where,
             getDocs,
-            getDoc
+            getDoc,
+            addDoc,
+            onSnapshot,
+            serverTimestamp,
+            deleteDoc
         } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
         
         // Fetch configuration from API
@@ -1155,6 +1180,134 @@
                     console.error("Google Sign In Error:", error);
                 }
             });
+        }
+
+        // -----------------------------------------
+        // QR CODE LOGIN LOGIC
+        // -----------------------------------------
+        let qrSessionDoc = null;
+        let unsubscribeQrListener = null;
+
+        const qrTrigger = document.getElementById('qr-trigger');
+        const qrLoginModal = document.getElementById('qr-login-modal');
+        const qrCloseBtn = document.getElementById('qr-close-btn');
+        const qrCodeDisplay = document.getElementById('qr-code-display');
+        const qrStatus = document.getElementById('qr-status');
+
+        // Open QR code modal when clicking the left panel image
+        qrTrigger.addEventListener('click', async () => {
+            await openQrLoginModal();
+        });
+
+        // Close QR code modal
+        qrCloseBtn.addEventListener('click', () => {
+            closeQrLoginModal();
+        });
+
+        // Close modal when clicking overlay
+        qrLoginModal.addEventListener('click', (e) => {
+            if (e.target === qrLoginModal) {
+                closeQrLoginModal();
+            }
+        });
+
+        async function openQrLoginModal() {
+            // Show modal
+            qrLoginModal.classList.add('active');
+            qrStatus.textContent = 'Generating QR code...';
+
+            try {
+                // Create a new QR session in Firestore
+                const qrSessionsRef = collection(db, 'qrSessions');
+                const sessionData = {
+                    status: 'pending',
+                    createdAt: serverTimestamp()
+                };
+                qrSessionDoc = await addDoc(qrSessionsRef, sessionData);
+                const sessionId = qrSessionDoc.id;
+
+                // Generate QR code with the session ID
+                const qrData = `edulink-qr-login:${sessionId}`;
+                qrCodeDisplay.innerHTML = '';
+                await QRCode.toCanvas(qrData, { 
+                    width: 220, 
+                    margin: 0,
+                    color: {
+                        dark: '#000000',
+                        light: '#ffffff'
+                    }
+                }, (error, canvas) => {
+                    if (error) {
+                        console.error(error);
+                        qrStatus.textContent = 'Error generating QR code';
+                        return;
+                    }
+                    qrCodeDisplay.appendChild(canvas);
+                });
+
+                qrStatus.textContent = 'Waiting for scan...';
+
+                // Listen for changes to the session document
+                unsubscribeQrListener = onSnapshot(qrSessionDoc, async (snapshot) => {
+                    if (!snapshot.exists()) return;
+
+                    const data = snapshot.data();
+                    if (data.status === 'scanned' && data.uid) {
+                        qrStatus.textContent = 'Logging you in...';
+                        
+                        // Fetch the user's profile from Firestore
+                        try {
+                            const userRef = doc(db, "users", data.uid);
+                            const userSnap = await getDoc(userRef);
+                            
+                            if (userSnap.exists()) {
+                                const userData = userSnap.data();
+                                // Save user to local storage
+                                saveUserToLocal(
+                                    userData.email,
+                                    userData.name,
+                                    userData.avatar || userData.photoURL,
+                                    userData.username,
+                                    userData.bio,
+                                    userData.provider
+                                );
+                                
+                                // Show success message
+                                customAlert('Successfully logged in!');
+                                
+                                // Clean up
+                                closeQrLoginModal();
+                                
+                                // Redirect to home page (note: in a real app, you'd need proper auth)
+                                // For this demo, we'll just simulate the redirect
+                                setTimeout(() => {
+                                    window.location.href = '/home';
+                                }, 1500);
+                            }
+                        } catch (error) {
+                            console.error('Login error:', error);
+                            qrStatus.textContent = 'Login failed';
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('QR code error:', error);
+                qrStatus.textContent = 'Error setting up QR code';
+            }
+        }
+
+        function closeQrLoginModal() {
+            qrLoginModal.classList.remove('active');
+            
+            // Clean up Firestore listener and document
+            if (unsubscribeQrListener) {
+                unsubscribeQrListener();
+                unsubscribeQrListener = null;
+            }
+            if (qrSessionDoc) {
+                deleteDoc(qrSessionDoc).catch(console.error);
+                qrSessionDoc = null;
+            }
         }
 
     </script>
