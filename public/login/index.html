@@ -1211,6 +1211,7 @@
             try {
                 // Create a new QR session in Firestore (matching demo collection name)
                 const uniqueSessionToken = "edulink_token_" + Math.random().toString(36).substring(2, 15);
+                console.log('Generated session token:', uniqueSessionToken);
                 qrSessionDoc = doc(db, "qr_logins", uniqueSessionToken);
                 await setDoc(qrSessionDoc, { status: "pending", timestamp: Date.now() });
 
@@ -1226,21 +1227,26 @@
                 });
 
                 qrStatus.textContent = 'Waiting for scan...';
+                console.log('QR code generated, listening for changes...');
 
                 // Listen for changes to the session document
                 unsubscribeQrListener = onSnapshot(qrSessionDoc, async (snapshot) => {
+                    console.log('Snapshot changed:', snapshot.data());
                     if (!snapshot.exists()) return;
 
                     const data = snapshot.data();
                     if (data && data.status === "verified" && data.authorizedEmail) {
                         qrStatus.textContent = 'Authorized! Logging you in...';
+                        console.log('Received authorization for:', data.authorizedEmail);
                         
                         // Fetch the user's profile from Firestore by email
                         try {
                             const q = query(collection(db, "users"), where("email", "==", data.authorizedEmail));
                             const querySnapshot = await getDocs(q);
+                            console.log('User query result size:', querySnapshot.size);
                             if (!querySnapshot.empty) {
                                 const userData = querySnapshot.docs[0].data();
+                                console.log('Found user data:', userData);
                                 // Save user to local storage
                                 saveUserToLocal(
                                     userData.email,
@@ -1250,17 +1256,17 @@
                                     userData.bio,
                                     userData.provider
                                 );
+                                console.log('User saved to localStorage');
                                 
-                                // Show success message
-                                customAlert('Successfully logged in!');
-                                
-                                // Clean up
+                                // Clean up first
                                 closeQrLoginView();
                                 
-                                // Redirect to home page
-                                setTimeout(() => {
-                                    window.location.href = '/home';
-                                }, 1000);
+                                // Redirect to home page immediately
+                                console.log('Redirecting to /home...');
+                                window.location.href = '/home';
+                            } else {
+                                console.error('No user found with that email');
+                                qrStatus.textContent = 'User not found';
                             }
                         } catch (error) {
                             console.error('Login error:', error);
