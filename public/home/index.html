@@ -3779,10 +3779,9 @@
                         </div>
                         <div>
                             <div id="compose-name" class="text-[15px] font-bold text-[#1f1f1f]">User</div>
-                            <div id="compose-username" class="text-sm text-gray-500 font-medium">@user</div>
                         </div>
                     </div>
-                    <div class="relative flex-1 flex flex-col min-h-[350px]">
+                    <div class="relative flex-1 flex flex-col min-h-[300px]">
                         <textarea id="compose-text" placeholder="What's on your mind?"
                             class="w-full flex-1 text-lg resize-none border-none outline-none bg-transparent placeholder-gray-400 p-2"
                             oninput="window.handleComposeInput(this)"
@@ -4291,10 +4290,11 @@
                                 </div>
                                 <div>
                                     <div id="create-name" class="text-[15px] font-bold text-[#1f1f1f]">User</div>
+                                    <div id="create-username" class="text-sm text-gray-500">@user</div>
                                 </div>
                             </div>
                             <textarea id="create-text" placeholder="What's on your mind?"
-                                class="w-full min-h-[200px] text-lg resize-none border border-gray-100 rounded-2xl p-4 outline-none bg-transparent placeholder-gray-400"
+                                class="w-full min-h-[350px] text-lg resize-none border border-gray-100 rounded-2xl p-4 outline-none bg-transparent placeholder-gray-400"
                                 oninput="window.handleComposeInput(this)"
                                 onkeydown="window.handleMentionKeydown(event,'create-text','create-mention-suggestions')"
                                 onkeyup="window.handleMentionInput('create-text','create-mention-suggestions')"></textarea>
@@ -5749,7 +5749,6 @@
             const _nha = document.getElementById('notif-header-avatar');
             if (_nha) _nha.src = u.avatar;
             document.getElementById('compose-name').innerText = u.name;
-            document.getElementById('compose-username').innerText = `@${u.username || 'user'}`;
             document.getElementById('compose-avatar').src = u.avatar;
             document.getElementById('edit-name').value = u.name;
             document.getElementById('edit-username').value = u.username || "";
@@ -6069,7 +6068,7 @@
             grid.innerHTML = '';
             for (let i = 0; i < 4; i++) {
                 const div = document.createElement('div');
-                div.className = 'relative aspect-square bg-gray-100 border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors';
+                div.className = 'relative aspect-square bg-gray-100 border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-200 transition-colors rounded-xl overflow-hidden';
                 
                 if (window.composeImages[i]) {
                     div.innerHTML = `<img src="${window.composeImages[i]}" class="w-full h-full object-cover" />
@@ -6106,8 +6105,10 @@
         window.updateCreateAvatar = () => {
             const avatar = document.getElementById('create-avatar');
             const name = document.getElementById('create-name');
+            const username = document.getElementById('create-username');
             if (avatar && currentUser) avatar.src = currentUser.avatar;
             if (name && currentUser) name.textContent = currentUser.name;
+            if (username && currentUser) username.textContent = '@' + (currentUser.username || 'user');
         };
 
         window.toggleCreateSetting = (setting) => {
@@ -6121,17 +6122,12 @@
 
         window.submitCreatePost = async () => {
             try {
-                showToast('Posting...', false);
+                showToast(window.editingPostId ? 'Updating...' : 'Posting...', false);
                 const text = document.getElementById('create-text')?.value || '';
                 const embedLink = document.getElementById('create-embed-link')?.value || '';
                 
                 const postData = {
-                    authorId: currentUser.id,
                     content: text,
-                    timestamp: serverTimestamp(),
-                    likes: [],
-                    comments: [],
-                    reposts: [],
                     settings: {
                         privacy: window.createSettings.privacy ? 'private' : 'public',
                         showLikes: window.createSettings.showLikes,
@@ -6143,25 +6139,52 @@
 
                 if (embedLink) {
                     postData.embedVideo = embedLink;
+                } else {
+                    postData.embedVideo = null;
                 }
 
-                const media = window.composeImageBlobs.filter(b => b !== null);
-                if (media.length > 0) {
-                    postData.media = [];
-                    for (const blob of media) {
-                        const storageRef = ref(storage, `posts/${currentUser.id}/${Date.now()}/${blob.name}`);
-                        const snapshot = await uploadBytes(storageRef, blob);
+                const mediaUrls = [];
+                const newBlobs = window.composeImageBlobs.filter(b => b !== null);
+                
+                for (let i = 0; i < 4; i++) {
+                    if (window.composeImageBlobs[i]) {
+                        // Upload new blob
+                        const storageRef = ref(storage, `posts/${currentUser.id}/${Date.now()}/image-${i}`);
+                        const snapshot = await uploadBytes(storageRef, window.composeImageBlobs[i]);
                         const url = await getDownloadURL(snapshot.ref);
-                        postData.media.push(url);
+                        mediaUrls.push(url);
+                    } else if (window.composeImages[i]) {
+                        // Existing URL
+                        mediaUrls.push(window.composeImages[i]);
                     }
+                }
+                
+                if (mediaUrls.length > 0) {
+                    postData.media = mediaUrls;
+                } else {
+                    postData.media = null;
                 }
 
                 if (window.currentClaimLink) {
                     postData.claimLink = window.currentClaimLink;
+                } else {
+                    postData.claimLink = null;
                 }
 
-                await addDoc(collection(db, "posts"), postData);
-                showToast('Posted!', false);
+                if (window.editingPostId) {
+                    await updateDoc(doc(db, "posts", window.editingPostId), postData);
+                    showToast('Updated!', false);
+                    window.editingPostId = null;
+                } else {
+                    postData.authorId = currentUser.id;
+                    postData.timestamp = serverTimestamp();
+                    postData.likes = [];
+                    postData.comments = [];
+                    postData.reposts = [];
+                    await addDoc(collection(db, "posts"), postData);
+                    showToast('Posted!', false);
+                }
+                
                 switchView('feed');
             } catch (error) {
                 console.error('Error posting:', error);
@@ -9429,41 +9452,37 @@
             const p = posts.find(x => x.id === pid); 
             if (!p) return; 
             closePostView(); 
-            document.getElementById('compose-text').value = p.content; 
+            // Switch to create view
             window.editingPostId = pid; 
-            document.getElementById('compose-header-title').innerText = "Edit Post"; 
             window.composeImages = [null, null, null, null]; 
             window.composeImageBlobs = [null, null, null, null]; 
             if (p.media) { 
                 const m = Array.isArray(p.media) ? p.media : [p.media]; 
                 m.forEach((url, i) => { if (i < 4) window.composeImages[i] = url }) 
-            } 
-            renderMediaGrid(); 
-            window.composeStep = 1; 
-            document.getElementById('compose-step-1').classList.remove('hidden'); 
-            document.getElementById('compose-step-2').classList.add('hidden'); 
-            document.getElementById('compose-step-3').classList.add('hidden'); 
-            document.getElementById('compose-tools-bar').classList.add('hidden'); 
-            const hasImage = window.composeImages.some(x => x !== null), btn = document.getElementById('compose-action-btn'); 
-            btn.innerText = hasImage ? "Next" : "Skip"; 
-            btn.onclick = window.handleComposeAction; 
-            if (p.embedVideo) { 
-                document.getElementById('compose-embed-link').value = p.embedVideo.replace('/preview', '/view'); 
-            } else { 
-                document.getElementById('compose-embed-link').value = ''; 
             }
-            // Apply saved settings to toggles
-            if (p.settings?.privacy === 'private') document.getElementById('toggle-privacy').classList.add('active');
-            else document.getElementById('toggle-privacy').classList.remove('active');
-            if (p.settings?.showLikes) document.getElementById('toggle-likes').classList.add('active');
-            else document.getElementById('toggle-likes').classList.remove('active');
-            if (p.settings?.showComments) document.getElementById('toggle-comments').classList.add('active');
-            else document.getElementById('toggle-comments').classList.remove('active');
-            if (p.settings?.allowLikeView) document.getElementById('toggle-like-view').classList.add('active');
-            else document.getElementById('toggle-like-view').classList.remove('active');
-            if (p.settings?.allowComments) document.getElementById('toggle-allow-comments').classList.add('active');
-            else document.getElementById('toggle-allow-comments').classList.remove('active');
-            openCompose(!0) 
+            // Populate the create view
+            document.getElementById('create-text').value = p.content;
+            if (p.embedVideo) { 
+                document.getElementById('create-embed-link').value = p.embedVideo.replace('/preview', '/view'); 
+            } else { 
+                document.getElementById('create-embed-link').value = ''; 
+            }
+            // Apply saved settings to create toggles
+            if (p.settings?.privacy === 'private') document.getElementById('create-toggle-privacy').classList.add('active');
+            else document.getElementById('create-toggle-privacy').classList.remove('active');
+            if (p.settings?.showLikes) document.getElementById('create-toggle-likes').classList.add('active');
+            else document.getElementById('create-toggle-likes').classList.remove('active');
+            if (p.settings?.showComments) document.getElementById('create-toggle-comments').classList.add('active');
+            else document.getElementById('create-toggle-comments').classList.remove('active');
+            if (p.settings?.allowLikeView) document.getElementById('create-toggle-like-view').classList.add('active');
+            else document.getElementById('create-toggle-like-view').classList.remove('active');
+            if (p.settings?.allowComments) document.getElementById('create-toggle-allow-comments').classList.add('active');
+            else document.getElementById('create-toggle-allow-comments').classList.remove('active');
+            // Initialize create view
+            initCreateMediaGrid();
+            updateCreateAvatar();
+            goToCreateStep(1);
+            switchView('create');
         }; window.deletePost = async pid => { showAlert("Delete post?", async () => { document.querySelectorAll(`[id*='post-card-'][id$='-${pid}']`).forEach(el => el.remove()); await deleteDoc(doc(db, "posts", pid)); showToast("Deleted") }) };
         window.toggleArchive = async (pid) => {
             const p = posts.find(x => x.id === pid);
@@ -9674,10 +9693,10 @@
             for (let i = 0; i < 4; i++) {
                 const url = window.composeImages[i],
                     div = document.createElement('div');
-                div.className = "aspect-square flex items-center justify-center relative overflow-hidden bg-white transition-colors rounded-xl border border-gray-200 md:border-gray-200";
+                div.className = "aspect-square flex items-center justify-center relative overflow-hidden bg-white transition-colors md:rounded-xl md:border md:border-gray-200";
                 if (url) {
                     hasImage = true;
-                    div.className = "aspect-square relative shadow-sm cursor-pointer hover:opacity-90 transition-opacity rounded-xl overflow-hidden border border-gray-200";
+                    div.className = "aspect-square relative shadow-sm cursor-pointer hover:opacity-90 transition-opacity md:rounded-xl overflow-hidden md:border md:border-gray-200";
                     div.onclick = () => openImageAdjust(i);
                     const isVid = url.includes('video') || url.endsWith('.mp4') || (window.composeImageBlobs[i] && window.composeImageBlobs[i].type.startsWith('video'));
                     if (isVid) {
