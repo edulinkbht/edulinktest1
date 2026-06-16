@@ -4300,15 +4300,34 @@
                                 onkeyup="window.handleMentionInput('create-text','create-mention-suggestions')"></textarea>
                             <div id="create-mention-suggestions" class="mention-suggestions hidden"></div>
                             <div id="create-tools-bar" class="flex items-center justify-between mt-4 gap-2">
-                                <div class="relative flex items-center gap-2">
-                                    <button onclick="window.toggleComposeEmojiPicker(); document.getElementById('create-embed-link-prompt').classList.add('hidden')"
-                                        class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
-                                        <i data-lucide="smile" class="w-5 h-5"></i>
-                                    </button>
-                                    <button onclick="document.getElementById('create-embed-link-prompt').classList.toggle('hidden'); document.getElementById('create-emoji-picker').classList.add('hidden')"
-                                        class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors" title="Embed Google Drive Video">
-                                        <i data-lucide="folder-up" class="w-5 h-5"></i>
-                                    </button>
+                                <div class="relative flex items-center gap-2 flex-1">
+                                    <!-- Normal buttons (emoji and folder) -->
+                                    <div id="create-tools-normal" class="flex items-center gap-2">
+                                        <button onclick="window.toggleComposeEmojiPicker();"
+                                            class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+                                            <i data-lucide="smile" class="w-5 h-5"></i>
+                                        </button>
+                                        <button onclick="window.toggleCreateEmbedMode(true)"
+                                            class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors" title="Embed Google Drive Video">
+                                            <i data-lucide="folder-up" class="w-5 h-5"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Embed link mode (back button + input) -->
+                                    <div id="create-tools-embed" class="hidden flex items-center gap-2 flex-1">
+                                        <button onclick="window.toggleCreateEmbedMode(false)"
+                                            class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-500 transition-colors">
+                                            <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                                        </button>
+                                        <div class="relative flex-1">
+                                            <i data-lucide="link" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"></i>
+                                            <input type="url" id="create-embed-link" placeholder="Paste Google Drive video link here..."
+                                                class="w-full bg-gray-100 text-gray-900 rounded-full py-2.5 pl-10 pr-4 outline-none focus:bg-white focus:ring-1 focus:ring-gray-200 transition-all text-sm"
+                                                onchange="if(this.value) window.showToast('Embed link ready')">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Emoji picker -->
                                     <div id="create-emoji-picker" class="hidden absolute bottom-full left-0 mb-2 w-[360px] h-[320px] bg-white border border-gray-100 rounded-xl shadow-lg overflow-hidden z-50">
                                         <div class="p-3 border-b border-gray-100">
                                             <div class="relative group">
@@ -4320,12 +4339,6 @@
                                         <div id="create-emoji-grid" class="grid grid-cols-8 gap-1.5 p-3 overflow-y-auto h-[calc(320px-56px)]">
                                             <div class="col-span-8 text-center text-xs text-gray-400 py-8">Loading…</div>
                                         </div>
-                                    </div>
-                                    <div id="create-embed-link-prompt" class="hidden absolute bottom-full left-0 mb-2 w-[280px] bg-white border border-gray-100 p-3 shadow-lg rounded-xl z-30">
-                                        <label class="text-xs font-bold text-gray-500 uppercase flex items-center gap-1 mb-2"><i data-lucide="video" class="w-3 h-3"></i> Embed Drive Video</label>
-                                        <input type="url" id="create-embed-link" placeholder="Paste link here..."
-                                            class="w-full border border-gray-200 rounded-lg py-1.5 px-3 text-sm outline-none focus:border-blue-500 font-medium text-gray-900"
-                                            onchange="document.getElementById('create-embed-link-prompt').classList.add('hidden'); if(this.value) window.showToast('Embed link ready')">
                                     </div>
                                 </div>
                                 <div id="create-word-count" class="text-xs text-gray-400 font-medium">0/500 words</div>
@@ -6031,6 +6044,16 @@
                 window.selectedSixArea = null;
                 // Uncheck all six areas radios
                 document.querySelectorAll('input[name="sixAreas"]').forEach(r => r.checked = false);
+                // Clear caption text and reset word count
+                const createText = document.getElementById('create-text');
+                if (createText) createText.value = '';
+                const createWordCount = document.getElementById('create-word-count');
+                if (createWordCount) createWordCount.innerText = '0/500 words';
+                // Reset embed tools to normal mode
+                if (window.toggleCreateEmbedMode) window.toggleCreateEmbedMode(false);
+                // Clear embed link input
+                const embedInput = document.getElementById('create-embed-link');
+                if (embedInput) embedInput.value = '';
                 initCreateMediaGrid();
                 updateCreateAvatar();
                 goToCreateStep(1);
@@ -9521,6 +9544,26 @@
             }, 20);
         };
         window.hidePostMenu = () => { const o = document.getElementById('post-options-overlay'), m = document.getElementById('post-options-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => o.classList.add('hidden'), 200) };
+        window.toggleCreateEmbedMode = (showEmbedMode) => {
+            const normalTools = document.getElementById('create-tools-normal');
+            const embedTools = document.getElementById('create-tools-embed');
+            const emojiPicker = document.getElementById('create-emoji-picker');
+            
+            if (showEmbedMode) {
+                normalTools.classList.add('hidden');
+                embedTools.classList.remove('hidden');
+                emojiPicker.classList.add('hidden');
+                // Focus on the input
+                const embedInput = document.getElementById('create-embed-link');
+                if (embedInput) embedInput.focus();
+                refreshIcons();
+            } else {
+                normalTools.classList.remove('hidden');
+                embedTools.classList.add('hidden');
+                refreshIcons();
+            }
+        };
+        
         window.handleComposeInput = (el) => {
             window.checkWordCount(el);
             window.handleSharedLinkDetection(el.value);
@@ -9562,11 +9605,18 @@
             }
             // Populate the create view
             document.getElementById('create-text').value = p.content;
-            if (p.embedVideo) { 
-                document.getElementById('create-embed-link').value = p.embedVideo.replace('/preview', '/view'); 
-            } else { 
-                document.getElementById('create-embed-link').value = ''; 
+            
+            // Reset embed tools to normal mode
+            if (window.toggleCreateEmbedMode) window.toggleCreateEmbedMode(false);
+            
+            // Populate embed link
+            const embedInput = document.getElementById('create-embed-link');
+            if (p.embedVideo && embedInput) { 
+                embedInput.value = p.embedVideo.replace('/preview', '/view'); 
+            } else if (embedInput) { 
+                embedInput.value = ''; 
             }
+            
             // Set claim link
             window.currentClaimLink = p.claimLink || null;
             
@@ -9686,7 +9736,13 @@
             }
             if (added > 0) showToast(`${added} file(s) processed`);
         };
-        window.checkWordCount = e => { const w = e.value.trim().split(/\s+/).filter(x => x).length; document.getElementById('word-count-display').innerText = `${w}/500 words` };
+        window.checkWordCount = e => { 
+            const w = e.value.trim().split(/\s+/).filter(x => x).length; 
+            const composeWordCount = document.getElementById('word-count-display');
+            const createWordCount = document.getElementById('create-word-count');
+            if (composeWordCount) composeWordCount.innerText = `${w}/500 words`;
+            if (createWordCount) createWordCount.innerText = `${w}/500 words`;
+        };
         window.attemptCloseCompose = () => { const hc = document.getElementById('compose-text').value.trim().length > 0 || window.composeImages.some(x => x !== null); if (hc && !window.editingPostId) showAlert("Discard post?", () => closeCompose()); else closeCompose() };
         let isComposeSubmitting = false;
         window.insertComposeEmoji = (e) => {
