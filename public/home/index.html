@@ -6287,7 +6287,8 @@
                 switchView('feed');
             } catch (error) {
                 console.error('Error posting:', error);
-                showToast('Error posting', true);
+                console.error('Error details:', JSON.stringify(error, null, 2));
+                showToast('Error: ' + (error.message || 'Unknown error'), true);
             }
         };
 
@@ -9566,16 +9567,27 @@
             } else { 
                 document.getElementById('create-embed-link').value = ''; 
             }
-            // Apply saved settings to create toggles
-            if (p.settings?.privacy === 'private') document.getElementById('create-toggle-privacy').classList.add('active');
+            // Set claim link
+            window.currentClaimLink = p.claimLink || null;
+            
+            // Apply saved settings to create toggles AND window.createSettings
+            window.createSettings = {
+                privacy: p.settings?.privacy === 'private',
+                showLikes: p.settings?.showLikes ?? true,
+                showComments: p.settings?.showComments ?? true,
+                allowLikeView: p.settings?.allowLikeView ?? true,
+                allowComments: p.settings?.allowComments ?? true
+            };
+            
+            if (window.createSettings.privacy) document.getElementById('create-toggle-privacy').classList.add('active');
             else document.getElementById('create-toggle-privacy').classList.remove('active');
-            if (p.settings?.showLikes) document.getElementById('create-toggle-likes').classList.add('active');
+            if (window.createSettings.showLikes) document.getElementById('create-toggle-likes').classList.add('active');
             else document.getElementById('create-toggle-likes').classList.remove('active');
-            if (p.settings?.showComments) document.getElementById('create-toggle-comments').classList.add('active');
+            if (window.createSettings.showComments) document.getElementById('create-toggle-comments').classList.add('active');
             else document.getElementById('create-toggle-comments').classList.remove('active');
-            if (p.settings?.allowLikeView) document.getElementById('create-toggle-like-view').classList.add('active');
+            if (window.createSettings.allowLikeView) document.getElementById('create-toggle-like-view').classList.add('active');
             else document.getElementById('create-toggle-like-view').classList.remove('active');
-            if (p.settings?.allowComments) document.getElementById('create-toggle-allow-comments').classList.add('active');
+            if (window.createSettings.allowComments) document.getElementById('create-toggle-allow-comments').classList.add('active');
             else document.getElementById('create-toggle-allow-comments').classList.remove('active');
             // Pre-select saved six areas tag
             if (p.sixAreasTag) {
