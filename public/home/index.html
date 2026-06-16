@@ -4369,7 +4369,7 @@
                                             <div class="text-xs text-gray-500 mt-0.5">Education, Learning Experience and other more</div>
                                         </div>
                                     </div>
-                                    <input type="radio" name="sixAreas" value="cerebral" class="w-5 h-5 text-blue-600" onchange="selectSixArea('cerebral')">
+                                    <input type="checkbox" name="sixAreas" value="cerebral" class="w-5 h-5 text-blue-600" onchange="toggleSixArea('cerebral')">
                                 </label>
                                 <!-- Social -->
                                 <label class="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors block">
@@ -4380,7 +4380,7 @@
                                             <div class="text-xs text-gray-500 mt-0.5">Mindfulness, Core Values, Inner Peace and other more</div>
                                         </div>
                                     </div>
-                                    <input type="radio" name="sixAreas" value="social" class="w-5 h-5 text-blue-600" onchange="selectSixArea('social')">
+                                    <input type="checkbox" name="sixAreas" value="social" class="w-5 h-5 text-blue-600" onchange="toggleSixArea('social')">
                                 </label>
                                 <!-- Spiritual -->
                                 <label class="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors block">
@@ -4391,7 +4391,7 @@
                                             <div class="text-xs text-gray-500 mt-0.5">Inner Peace, Meditation, Faith and other more</div>
                                         </div>
                                     </div>
-                                    <input type="radio" name="sixAreas" value="spiritual" class="w-5 h-5 text-blue-600" onchange="selectSixArea('spiritual')">
+                                    <input type="checkbox" name="sixAreas" value="spiritual" class="w-5 h-5 text-blue-600" onchange="toggleSixArea('spiritual')">
                                 </label>
                                 <!-- Emotional -->
                                 <label class="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors block">
@@ -4402,7 +4402,7 @@
                                             <div class="text-xs text-gray-500 mt-0.5">Mental Health, Self-Care, Vulnerability and other more</div>
                                         </div>
                                     </div>
-                                    <input type="radio" name="sixAreas" value="emotional" class="w-5 h-5 text-blue-600" onchange="selectSixArea('emotional')">
+                                    <input type="checkbox" name="sixAreas" value="emotional" class="w-5 h-5 text-blue-600" onchange="toggleSixArea('emotional')">
                                 </label>
                                 <!-- Physical -->
                                 <label class="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors block">
@@ -4413,7 +4413,7 @@
                                             <div class="text-xs text-gray-500 mt-0.5">Exercise, Nutrition, Sleep Routine and other more</div>
                                         </div>
                                     </div>
-                                    <input type="radio" name="sixAreas" value="physical" class="w-5 h-5 text-blue-600" onchange="selectSixArea('physical')">
+                                    <input type="checkbox" name="sixAreas" value="physical" class="w-5 h-5 text-blue-600" onchange="toggleSixArea('physical')">
                                 </label>
                                 <!-- Chill zone -->
                                 <label class="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors block">
@@ -4424,7 +4424,7 @@
                                             <div class="text-xs text-gray-500 mt-0.5">Fun, Meme, Chill, Peace and other more</div>
                                         </div>
                                     </div>
-                                    <input type="radio" name="sixAreas" value="chill-zone" class="w-5 h-5 text-blue-600" onchange="selectSixArea('chill-zone')">
+                                    <input type="checkbox" name="sixAreas" value="chill-zone" class="w-5 h-5 text-blue-600" onchange="toggleSixArea('chill-zone')">
                                 </label>
                             </div>
                         </div>
@@ -6041,8 +6041,8 @@
                     allowLikeView: true,
                     allowComments: true
                 };
-                window.selectedSixArea = null;
-                // Uncheck all six areas radios
+                window.selectedSixAreas = []; // Reset array!
+                // Uncheck all six areas checkboxes
                 document.querySelectorAll('input[name="sixAreas"]').forEach(r => r.checked = false);
                 // Clear caption text and reset word count
                 const createText = document.getElementById('create-text');
@@ -6230,15 +6230,20 @@
             }
         };
 
-        window.selectedSixArea = null;
-        window.selectSixArea = (area) => {
-            window.selectedSixArea = area;
+        window.selectedSixAreas = []; // Changed to array!
+        window.toggleSixArea = (area) => {
+            const index = window.selectedSixAreas.indexOf(area);
+            if (index > -1) {
+                window.selectedSixAreas.splice(index, 1);
+            } else {
+                window.selectedSixAreas.push(area);
+            }
         };
 
         window.submitCreatePost = async () => {
             // Check if six areas tag is selected (mandatory)
-            if (!window.selectedSixArea) {
-                showToast('Please select a Six Areas tag', true);
+            if (!window.selectedSixAreas || window.selectedSixAreas.length === 0) {
+                showToast('Please select at least one Six Areas tag', true);
                 return;
             }
 
@@ -6249,7 +6254,7 @@
                 
                 const postData = {
                     content: text,
-                    sixAreasTag: window.selectedSixArea,
+                    sixAreasTags: window.selectedSixAreas,
                     settings: {
                         privacy: window.createSettings.privacy ? 'private' : 'public',
                         showLikes: window.createSettings.showLikes,
@@ -6482,6 +6487,35 @@
             const urlMatch = p.content.match(/(https?:\/\/[^\s]+)/), previewId = `preview-${ctx}-${p.id}`, previewHtml = urlMatch ? `<div id="${previewId}"></div>` : '';
             if (urlMatch) setTimeout(() => window.renderLinkPreview(urlMatch[0], previewId), 100);
             const isV = p.media && (Array.isArray(p.media) ? p.media.some(m => m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video')) : (p.media.includes('video') || p.media.endsWith('.mp4') || p.media.startsWith('data:video')));
+            // --- Six Areas Tags Display ---
+            const tagDisplayNames = {
+                'cerebral': 'Cerebral',
+                'social': 'Social',
+                'spiritual': 'Spiritual',
+                'emotional': 'Emotional',
+                'physical': 'Physical',
+                'chill-zone': 'Chill Zone'
+            };
+            let sixAreasTags = [];
+            if (p.sixAreasTags && Array.isArray(p.sixAreasTags)) {
+                sixAreasTags = [...p.sixAreasTags];
+            } else if (p.sixAreasTag) {
+                sixAreasTags = [p.sixAreasTag]; // Backwards compatibility!
+            }
+            let tagsHtml = '';
+            if (sixAreasTags.length > 0) {
+                if (sixAreasTags.length === 6) {
+                    // All tags selected!
+                    tagsHtml = `<div class="mt-3 px-4"><span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-blue-500 text-white">All Tags</span></div>`;
+                } else {
+                    // Show individual tags!
+                    const tags = sixAreasTags.map(tag => {
+                        const displayName = tagDisplayNames[tag] || tag;
+                        return `<span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-bold bg-blue-500 text-white">${displayName}</span>`;
+                    }).join(' ');
+                    tagsHtml = `<div class="mt-3 px-4 flex flex-wrap gap-2">${tags}</div>`;
+                }
+            }
             let rh = "";
             if (ctx === 'reposts') {
                 const rUser = users.find(u => u.reposts?.includes(p.id));
@@ -6496,7 +6530,7 @@
             const isF = currentUser.following.includes(a.id);
             const isFriend = window.isFriend(a.id);
             const followBtn = (a.id !== currentUser.id) ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90">${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : '';
-            d.innerHTML = `<div class="bg-white md:rounded-2xl md:border md:border-gray-100 md:overflow-hidden">${rh}<div class="p-3 md:p-4"><div class="post-header"><div class="flex gap-3"><div class="post-avatar-container w-9 h-9 rounded-full"><img src="${a.avatar}" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')"></div><div><div class="flex items-center"><span class="post-author-name" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}</div><div class="post-meta flex items-center">${formatDate(p.timestamp)}</div></div></div><div class="flex items-center gap-1">${followBtn}<button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')"><i data-lucide="more-vertical" class="w-[26px] h-[26px]"></i></button></div></div><div class="post-content"><div class="post-body js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>${previewHtml}${mh}</div><div class="post-actions"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id}">${likeText}</span></button><button class="action-btn comment" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }"><i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}"></i> <span class="js-comment-count-${p.id}">${commentText}</span></button><button class="action-btn share-btn" onclick="event.stopPropagation(); sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${rightActionBtn}</div></div>${lh}</div>`; return d
+            d.innerHTML = `<div class="bg-white md:rounded-2xl md:border md:border-gray-100 md:overflow-hidden">${rh}<div class="p-3 md:p-4"><div class="post-header"><div class="flex gap-3"><div class="post-avatar-container w-9 h-9 rounded-full"><img src="${a.avatar}" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')"></div><div><div class="flex items-center"><span class="post-author-name" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}</div><div class="post-meta flex items-center">${formatDate(p.timestamp)}</div></div></div><div class="flex items-center gap-1">${followBtn}<button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')"><i data-lucide="more-vertical" class="w-[26px] h-[26px]"></i></button></div></div><div class="post-content"><div class="post-body js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>${previewHtml}${mh}${tagsHtml}</div><div class="post-actions"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id}">${likeText}</span></button><button class="action-btn comment" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }"><i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}"></i> <span class="js-comment-count-${p.id}">${commentText}</span></button><button class="action-btn share-btn" onclick="event.stopPropagation(); sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${rightActionBtn}</div></div>${lh}</div>`; return d
         }
         window.moveCarousel = (cid, dir) => { const s = window.carouselStates[cid]; if (!s) return; let n = s.index + dir; if (n < 0) n = 0; if (n >= s.total) n = s.total - 1; s.index = n; const outer = document.getElementById(cid), inner = outer ? outer.querySelector('.post-carousel-inner') : null; if (inner) inner.style.transform = `translateX(-${n * 100}%)`; const dc = document.getElementById(cid).nextElementSibling; if (dc) dc.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === n)); const ctid = cid.replace('carousel-', 'counter-'), cnt = document.getElementById(ctid); if (cnt) cnt.innerText = n + 1 };
         window.switchExploreMainTab = t => {
@@ -9639,15 +9673,22 @@
             else document.getElementById('create-toggle-like-view').classList.remove('active');
             if (window.createSettings.allowComments) document.getElementById('create-toggle-allow-comments').classList.add('active');
             else document.getElementById('create-toggle-allow-comments').classList.remove('active');
-            // Pre-select saved six areas tag
-            if (p.sixAreasTag) {
-                window.selectedSixArea = p.sixAreasTag;
-                const radio = document.querySelector(`input[name="sixAreas"][value="${p.sixAreasTag}"]`);
-                if (radio) radio.checked = true;
-            } else {
-                window.selectedSixArea = null;
-                // Uncheck all radios
-                document.querySelectorAll('input[name="sixAreas"]').forEach(r => r.checked = false);
+            // Pre-select saved six areas tags (handle both old single tag and new array!)
+            window.selectedSixAreas = [];
+            // Uncheck all first!
+            document.querySelectorAll('input[name="sixAreas"]').forEach(r => r.checked = false);
+            
+            if (p.sixAreasTags && Array.isArray(p.sixAreasTags)) {
+                window.selectedSixAreas = [...p.sixAreasTags];
+                p.sixAreasTags.forEach(tag => {
+                    const checkbox = document.querySelector(`input[name="sixAreas"][value="${tag}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+            } else if (p.sixAreasTag) {
+                // Handle old single tag format for backwards compatibility!
+                window.selectedSixAreas = [p.sixAreasTag];
+                const checkbox = document.querySelector(`input[name="sixAreas"][value="${p.sixAreasTag}"]`);
+                if (checkbox) checkbox.checked = true;
             }
             // Initialize create view
             initCreateMediaGrid();
