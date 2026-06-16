@@ -6385,6 +6385,9 @@
             window.feedPagination.loading = false;
             loader?.classList.add('hidden');
             refreshIcons();
+            
+            // Observe new video containers
+            window.observeVideoContainers();
 
             // If we are still intersecting (e.g. large screen or small posts), trigger next batch
             if (window.feedPagination.hasMore) {
@@ -7226,7 +7229,9 @@
             window.currentViewingPostList = visible; // Store for navigation
             if (!visible.length) c.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-gray-400 opacity-60"><i data-lucide="bookmark" class="w-16 h-16 mb-2"></i><p>No saved posts</p></div>'; 
             else visible.forEach(p => c.appendChild(createPostElement(p, 'saved'))); 
-            refreshIcons() 
+            refreshIcons();
+            // Observe new video containers
+            window.observeVideoContainers(); 
         };
         window.renderArchived = () => {
             const c = document.getElementById('archived-container'); 
@@ -7236,7 +7241,9 @@
             window.currentViewingPostList = visible; // Store for navigation
             if (!visible.length) c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="folder" class="w-16 h-16 mb-2"></i><p>No archived posts</p></div>'; 
             else visible.forEach(p => c.appendChild(createPostElement(p, 'archived'))); 
-            refreshIcons() 
+            refreshIcons();
+            // Observe new video containers
+            window.observeVideoContainers(); 
         };
         async function sendNotification(rid, t, c, pid = null) { 
             const rUser = users.find(u => u.id === rid);
@@ -7903,7 +7910,9 @@
                 setupProfileInfiniteScroll(uid, t, tp);
             }
             window.currentViewingPostList = tp; // Store the full list for navigation
-            refreshIcons()
+            refreshIcons();
+            // Observe new video containers
+            window.observeVideoContainers();
         };
 
         function renderGridPostItem(p) {
@@ -8542,7 +8551,18 @@
             }
             window.postViewStartTime = null;
 
-            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null; document.querySelector('#post-view-media-container video')?.pause()
+            // Stop all videos in the overlay
+            o.querySelectorAll('video').forEach(video => {
+                video.pause();
+                video.currentTime = 0;
+            });
+            // Stop all iframes (YouTube/Drive) by reloading
+            o.querySelectorAll('iframe').forEach(iframe => {
+                const src = iframe.src;
+                iframe.src = src;
+            });
+
+            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null;
         };
         window.doLogout = async () => { 
             await auth.signOut(); 
@@ -9741,6 +9761,38 @@
                 }
             }
         });
+
+        // Intersection Observer to pause videos when scrolled out of view
+        window.videoObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (!entry.isIntersecting) {
+                    // Pause native videos
+                    const video = entry.target.querySelector('video');
+                    if (video) {
+                        video.pause();
+                    }
+                    // Reload iframes to stop playback
+                    const iframe = entry.target.querySelector('iframe');
+                    if (iframe) {
+                        const src = iframe.src;
+                        iframe.src = src;
+                    }
+                }
+            });
+        }, { threshold: 0.25 }); // Trigger when 25% of the video is out of view
+
+        // Function to observe new video containers
+        window.observeVideoContainers = () => {
+            document.querySelectorAll('.post-media-container, .carousel-wrapper').forEach(container => {
+                if (container.dataset.observed !== 'true') {
+                    window.videoObserver.observe(container);
+                    container.dataset.observed = 'true';
+                }
+            });
+        };
+
+        // Initial observation when the app is ready!
+        setTimeout(() => window.observeVideoContainers(), 1000);
 
         window.toggleCreateEmbedMode = (showEmbedMode) => {
             const normalTools = document.getElementById('create-tools-normal');
