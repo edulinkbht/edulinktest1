@@ -7190,6 +7190,7 @@
         function createCarouselHTML(ma, prefix, pid) {
             let sl = '',
                 dt = '';
+            const isOverlay = prefix.includes('overlay');
             ma.forEach((s, i) => {
                 const isCached = window.imageLoadCache.has(s);
                 const iv = s.includes('video') || s.includes('.mp4') || s.startsWith('data:video');
@@ -7201,7 +7202,7 @@
                     }
                     videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata"></video>`;
                 }
-                sl += `<div class="post-carousel-item img-placeholder bg-gray-50 flex items-center justify-center">${iv ? videoHtml : `<img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')">`}</div>`;
+                sl += `<div class="post-carousel-item img-placeholder bg-gray-50 flex items-center justify-center">${iv ? videoHtml : `<img src="${s}" class="w-full h-full ${isOverlay ? 'object-contain' : 'object-cover'} ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')">`}</div>`;
                 dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="${prefix}-dot-${pid}-${i}"></div>`
             });
             const cid = `${prefix}-carousel-${pid}`,
@@ -8214,9 +8215,17 @@
             }
             let mhDesktop = '', mhMobile = '';
             if (p.embedVideo) {
-                const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${p.embedVideo}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
-                mhDesktop = ehtml;
-                mhMobile = ehtml;
+                const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
+                if (embedInfo.type === 'image') {
+                    const isCached = window.imageLoadCache.has(embedInfo.url);
+                    const imgHtml = `<div class="img-placeholder rounded-none overflow-hidden"><img src="${embedInfo.url}" class="stage-content w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${embedInfo.url}'); this.classList.add('loaded')"></div>`;
+                    mhDesktop = imgHtml;
+                    mhMobile = imgHtml;
+                } else {
+                    const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
+                    mhDesktop = ehtml;
+                    mhMobile = ehtml;
+                }
             } else if (p.media) {
                 const ma = Array.isArray(p.media) ? p.media : [p.media];
                 if (ma.length === 1) {
@@ -8231,7 +8240,7 @@
                         }
                         videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="stage-content rounded-none" controls playsinline preload="metadata"></video>`;
                     }
-                    const mhtml = iv ? videoHtml : `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`;
+                    const mhtml = iv ? videoHtml : `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`;
                     mhDesktop = mhtml;
                     mhMobile = mhtml
                 } else {
