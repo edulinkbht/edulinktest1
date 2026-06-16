@@ -4321,7 +4321,7 @@
                                         </button>
                                         <div class="relative flex-1">
                                             <i data-lucide="link" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500 pointer-events-none"></i>
-                                            <input type="url" id="create-embed-link" placeholder="Paste video link (Google Drive, YouTube, etc.) here..."
+                                            <input type="url" id="create-embed-link" placeholder="Paste image or video link here..."
                                                 class="w-full bg-gray-100 text-gray-900 rounded-full py-2.5 pl-10 pr-4 outline-none focus:bg-white focus:ring-1 focus:ring-gray-200 transition-all text-sm"
                                                 onchange="if(this.value) window.showToast('Embed link ready')">
                                         </div>
@@ -6411,8 +6411,15 @@
             }
             let mh = "", lh = "";
             if (p.embedVideo) {
-                const embedUrl = window.getVideoEmbedUrl(p.embedVideo);
-                mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedUrl}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
+                const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
+                if (embedInfo.type === 'image') {
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 cursor-pointer post-media-container" onclick="event.stopPropagation(); openLightbox('${embedInfo.url}','image')"><div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${embedInfo.url}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.url}'); this.classList.add('loaded')"></div></div>`;
+                } else if (embedInfo.type === 'video') {
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
+                } else {
+                    // If unknown type, just try as video
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
+                }
             } else if (p.media) {
                 const ma = Array.isArray(p.media) ? p.media : [p.media];
                 const bgMedia = ma.find(m => !m.includes('video') && !m.includes('.mp4') && !m.startsWith('data:video')) || ma[0];
@@ -9579,10 +9586,20 @@
             }, 20);
         };
         window.hidePostMenu = () => { const o = document.getElementById('post-options-overlay'), m = document.getElementById('post-options-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => o.classList.add('hidden'), 200) };
-        window.getVideoEmbedUrl = (url) => {
-            if (!url) return null;
+        window.getEmbedTypeAndUrl = (url) => {
+            if (!url) return { type: null, url: null };
             try {
                 const u = new URL(url);
+                let type = null;
+                let embedUrl = url;
+                
+                // Check if it's an image by file extension
+                const imageExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg', '.bmp', '.tif', '.tiff'];
+                const isImage = imageExtensions.some(ext => u.pathname.toLowerCase().endsWith(ext));
+                
+                if (isImage) {
+                    return { type: 'image', url: url };
+                }
                 
                 // YouTube
                 if (u.hostname.includes('youtube.com')) {
@@ -9591,34 +9608,61 @@
                         const pathParts = u.pathname.split('/');
                         videoId = pathParts.find(p => p.length === 11);
                     }
-                    if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+                    if (videoId) {
+                        type = 'video';
+                        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                    }
                 }
                 
                 // YouTube Short
-                if (u.hostname.includes('youtu.be')) {
+                else if (u.hostname.includes('youtu.be')) {
                     const videoId = u.pathname.substring(1);
-                    if (videoId) return `https://www.youtube.com/embed/${videoId}`;
+                    if (videoId) {
+                        type = 'video';
+                        embedUrl = `https://www.youtube.com/embed/${videoId}`;
+                    }
                 }
                 
                 // Google Drive
-                if (u.hostname.includes('drive.google.com')) {
+                else if (u.hostname.includes('drive.google.com')) {
                     const match = u.pathname.match(/\/file\/d\/([^/]+)/);
-                    if (match) return `https://drive.google.com/file/d/${match[1]}/preview`;
+                    if (match) {
+                        type = 'video';
+                        embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
+                    }
                 }
                 
                 // Vimeo
-                if (u.hostname.includes('vimeo.com')) {
+                else if (u.hostname.includes('vimeo.com')) {
                     const pathParts = u.pathname.split('/');
                     const videoId = pathParts.find(p => /^\d+$/.test(p));
-                    if (videoId) return `https://player.vimeo.com/video/${videoId}`;
+                    if (videoId) {
+                        type = 'video';
+                        embedUrl = `https://player.vimeo.com/video/${videoId}`;
+                    }
                 }
                 
-                // If no platform match, return the original URL (for direct video links)
-                return url;
+                // Check if it's a video by file extension
+                else {
+                    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi', '.mkv', '.flv'];
+                    const isVideo = videoExtensions.some(ext => u.pathname.toLowerCase().endsWith(ext));
+                    if (isVideo) {
+                        type = 'video';
+                        embedUrl = url;
+                    }
+                }
+                
+                return { type, url: embedUrl };
             } catch (e) {
-                // If invalid URL, just return the original
-                return url;
+                // If invalid URL, just return as unknown
+                return { type: null, url: url };
             }
+        };
+        
+        // Keep old function for backwards compatibility
+        window.getVideoEmbedUrl = (url) => {
+            const { url: embedUrl } = window.getEmbedTypeAndUrl(url);
+            return embedUrl;
         };
 
         window.toggleCreateEmbedMode = (showEmbedMode) => {
