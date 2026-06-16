@@ -7824,7 +7824,13 @@
             if (t === 'liked' && uid !== currentUser.id) return c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="lock" class="w-16 h-16 mb-2"></i><p>This user\'s likes are private.</p></div>', refreshIcons();
             
             let tp = posts.filter(p => {
-                const isVideoPost = p.embedVideo || (p.media && (Array.isArray(p.media) ? p.media.some(m => m && (m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video'))) : (p.media.includes('video') || p.media.endsWith('.mp4') || p.media.startsWith('data:video'))));
+                let isVideoPost = false;
+                if (p.embedVideo) {
+                    const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
+                    isVideoPost = embedInfo.type === 'video';
+                } else if (p.media) {
+                    isVideoPost = Array.isArray(p.media) ? p.media.some(m => m && (m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video'))) : (p.media.includes('video') || p.media.endsWith('.mp4') || p.media.startsWith('data:video'));
+                }
                 if (t === 'posts') return p.authorId === uid && !isVideoPost && !p.archived;
                 if (t === 'video') return p.authorId === uid && isVideoPost && !p.archived;
                 if (t === 'archived') return p.authorId === uid && p.archived;
@@ -7904,16 +7910,37 @@
                   isV = m && (m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video')), 
                   likeText = (p.likes?.length > 0) ? p.likes.length : '0', 
                   commentText = (p.comments?.length > 0) ? p.comments.length : '0';
-            let videoHtml = "";
-            if (isV) {
-                let poster = "";
-                if (m && m.includes('cloudinary.com')) {
-                    poster = m.replace(/\.[^.]+$/, '.jpg');
+            let mediaHtml = "";
+
+            if (m) {
+                if (isV) {
+                    let poster = "";
+                    if (m && m.includes('cloudinary.com')) {
+                        poster = m.replace(/\.[^.]+$/, '.jpg');
+                    }
+                    mediaHtml = `<video src="${m}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover pointer-events-none" preload="metadata"></video>`;
+                } else {
+                    mediaHtml = `<div class="img-placeholder w-full h-full"><img src="${m}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>` + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2"><i data-lucide="gallery-horizontal" class="w-4 h-4 text-white drop-shadow-md fill-white"></i></div>` : '');
                 }
-                videoHtml = `<video src="${m}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover pointer-events-none" preload="metadata"></video>`;
+            } else if (p.embedVideo) {
+                const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
+                if (embedInfo.type === 'image') {
+                    mediaHtml = `<div class="img-placeholder w-full h-full"><img src="${embedInfo.url}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>`;
+                } else if (embedInfo.type === 'video') {
+                    if (embedInfo.thumbnail) {
+                        mediaHtml = `<div class="img-placeholder w-full h-full relative"><img src="${embedInfo.thumbnail}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"><div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30"><i data-lucide="play" class="w-8 h-8 text-white"></i></div></div>`;
+                    } else {
+                        mediaHtml = `<div class="w-full h-full flex items-center justify-center bg-gray-100"><i data-lucide="video" class="w-8 h-8 text-gray-400"></i></div>`;
+                    }
+                } else {
+                    mediaHtml = `<div class="w-full h-full flex items-center justify-center bg-gray-100"><i data-lucide="link" class="w-8 h-8 text-gray-400"></i></div>`;
+                }
+            } else {
+                mediaHtml = `<div class="grid-post-text-preview !bg-transparent">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`;
             }
+
             return `<div class="grid-post-item group ${!m && !p.embedVideo ? 'border border-gray-100' : ''}" onclick="openPostView('${p.id}')">
-                ${m ? (isV ? videoHtml : `<div class="img-placeholder w-full h-full"><img src="${m}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>` + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2"><i data-lucide="gallery-horizontal" class="w-4 h-4 text-white drop-shadow-md fill-white"></i></div>` : '')) : (p.embedVideo ? `<div class="w-full h-full flex items-center justify-center bg-gray-900 border border-gray-800"><i data-lucide="video" class="w-8 h-8 text-gray-500"></i></div>` : `<div class="grid-post-text-preview !bg-transparent">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`)}
+                ${mediaHtml}
                 <div class="grid-post-overlay">
                     <div class="flex items-center gap-1"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> <span class="js-like-count-${p.id}">${likeText}</span></div>
                     <div class="flex items-center gap-1"><i data-lucide="message-circle" class="w-5 h-5 fill-white"></i> <span class="js-comment-count-${p.id}">${commentText}</span></div>
