@@ -2175,19 +2175,84 @@
             object-fit: contain;
         }
         
-        /* Clean video controls */
-        video::-webkit-media-controls-panel {
-            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        /* Custom video player styles */
+        .custom-video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
         }
         
-        video::-webkit-media-controls-play-button,
-        video::-webkit-media-controls-volume-slider,
-        video::-webkit-media-controls-timeline,
-        video::-webkit-media-controls-current-time-display,
-        video::-webkit-media-controls-time-remaining-display,
-        video::-webkit-media-controls-fullscreen-button,
-        video::-webkit-media-controls-mute-button {
-            filter: brightness(1.5);
+        .custom-video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .custom-video-controls {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.85));
+            padding: 16px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .custom-video-top-controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .custom-video-left,
+        .custom-video-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+        
+        .custom-video-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 100%;
+            background: rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #fff;
+        }
+        
+        .custom-video-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+        
+        .custom-video-progress {
+            width: 100%;
+            height: 6px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        
+        .custom-video-progress-bar {
+            height: 100%;
+            background: #fff;
+            border-radius: 3px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        
+        .custom-video-time {
+            font-size: 14px;
+            color: #fff;
+            font-weight: 500;
+            min-width: 100px;
         }
 
         .carousel-dots-outside {
@@ -9803,34 +9868,113 @@
             const { url: embedUrl } = window.getEmbedTypeAndUrl(url);
             return embedUrl;
         };
+        
+        // Custom video player helpers
+        window.formatTime = (seconds) => {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        };
+        
+        window.createCustomVideoPlayer = (videoUrl, posterUrl) => {
+            const container = document.createElement('div');
+            container.className = 'custom-video-container';
+            container.innerHTML = `
+                <video src="${videoUrl}" ${posterUrl ? `poster="${posterUrl}"` : ''} playsinline preload="metadata">
+                </video>
+                <div class="custom-video-controls">
+                    <div class="custom-video-progress" onclick="window.handleVideoProgressClick(event, this)">
+                        <div class="custom-video-progress-bar"></div>
+                    </div>
+                    <div class="custom-video-top-controls">
+                        <div class="custom-video-left">
+                            <button class="custom-video-btn" onclick="window.toggleVideoPlay(this)">
+                                <i data-lucide="play" class="w-6 h-6"></i>
+                            </button>
+                            <span class="custom-video-time">0:00 / 0:00</span>
+                        </div>
+                        <div class="custom-video-right">
+                            <button class="custom-video-btn" onclick="window.toggleVideoMute(this)">
+                                <i data-lucide="volume-2" class="w-5 h-5"></i>
+                            </button>
+                            <button class="custom-video-btn" onclick="window.toggleVideoFullscreen(this)">
+                                <i data-lucide="maximize" class="w-5 h-5"></i>
+                            </button>
+                            <button class="custom-video-btn">
+                                <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            const video = container.querySelector('video');
+            const timeDisplay = container.querySelector('.custom-video-time');
+            const progressBar = container.querySelector('.custom-video-progress-bar');
+            
+            video.addEventListener('loadedmetadata', function() {
+                timeDisplay.textContent = `0:00 / ${window.formatTime(video.duration)}`;
+            });
+            
+            video.addEventListener('timeupdate', function() {
+                const progress = (video.currentTime / video.duration) * 100;
+                progressBar.style.width = `${progress}%`;
+                timeDisplay.textContent = `${window.formatTime(video.currentTime)} / ${window.formatTime(video.duration)}`;
+            });
+            
+            return container;
+        };
+        
+        window.toggleVideoPlay = (btn) => {
+            const container = btn.closest('.custom-video-container');
+            const video = container.querySelector('video');
+            const icon = btn.querySelector('i');
+            
+            if (video.paused) {
+                video.play();
+                icon.setAttribute('data-lucide', 'pause');
+            } else {
+                video.pause();
+                icon.setAttribute('data-lucide', 'play');
+            }
+            lucide.createIcons();
+        };
+        
+        window.toggleVideoMute = (btn) => {
+            const container = btn.closest('.custom-video-container');
+            const video = container.querySelector('video');
+            const icon = btn.querySelector('i');
+            
+            video.muted = !video.muted;
+            icon.setAttribute('data-lucide', video.muted ? 'volume-x' : 'volume-2');
+            lucide.createIcons();
+        };
+        
+        window.toggleVideoFullscreen = (btn) => {
+            const container = btn.closest('.custom-video-container');
+            if (!document.fullscreenElement) {
+                container.requestFullscreen().catch(err => console.log(err));
+            } else {
+                document.exitFullscreen();
+            }
+        };
+        
+        window.handleVideoProgressClick = (e, progressEl) => {
+            const container = progressEl.closest('.custom-video-container');
+            const video = container.querySelector('video');
+            const rect = progressEl.getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            video.currentTime = pos * video.duration;
+        };
 
-        // Handle thumbnail clicks for embedded videos and native videos
+        // Handle thumbnail clicks for embedded videos and native videos: just open post overlay
         window.addEventListener('click', function(e) {
             const thumbnailOverlay = e.target.closest('.thumbnail-overlay');
             const nativeVideoThumbnail = e.target.closest('[data-video-url]');
+            const container = thumbnailOverlay?.closest('[data-embed-id]') || nativeVideoThumbnail;
             
-            if (thumbnailOverlay) {
-                e.stopPropagation();
-                const container = thumbnailOverlay.closest('[data-embed-id]');
-                if (container) {
-                    const embedUrl = container.getAttribute('data-embed-url');
-                    const embedId = container.getAttribute('data-embed-id');
-                    if (embedUrl && embedId) {
-                        thumbnailOverlay.style.display = 'none';
-                        // Add iframe directly
-                        container.innerHTML = `<iframe src="${embedUrl}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen></iframe>`;
-                    }
-                }
-            } else if (nativeVideoThumbnail) {
-                e.stopPropagation();
-                const videoUrl = nativeVideoThumbnail.getAttribute('data-video-url');
-                let poster = "";
-                if (videoUrl.includes('cloudinary.com')) {
-                    poster = videoUrl.replace(/\.[^.]+$/, '.jpg');
-                }
-                // Replace thumbnail with video player
-                nativeVideoThumbnail.innerHTML = `<video src="${videoUrl}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
-                nativeVideoThumbnail.onclick = null;
+            if (container) {
+                // Let the post card's default onclick handle opening post overlay, but stop propagation just in case
             }
         });
 
