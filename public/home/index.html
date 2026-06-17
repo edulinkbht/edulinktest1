@@ -2131,7 +2131,6 @@
         /* For single media posts */
         .post-media-container {
             position: relative;
-            aspect-ratio: 16 / 9;
         }
 
         .post-media-blur-bg {
@@ -4827,7 +4826,6 @@
         const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), storage = getStorage(app); window.auth = auth; window.db = db; window.increment = increment;
         window.APP_CONFIG = config; // Store globally for other functions
         let currentUser = null, users = [], posts = [], notifications = [], savedPosts = [], activeNotifTab = 'all', activeNetworkTab = 'people';
-        window.videoStates = {}; // To track video playback state by post ID
         window.replyingToCommentId = null; window.currentViewingProfileId = null; window.activeExploreTab = 'top'; window.activeExploreCategory = 'For You'; window.currentProfileTab = 'posts';
         window.postViewStartTime = null; window.viewedPostsInSession = new Set();
         window.addEventListener('beforeunload', () => {
@@ -6422,7 +6420,7 @@
                 } else if (embedInfo.type === 'video') {
                     // For YouTube videos with thumbnail, show thumbnail first
                     if (embedInfo.thumbnail) {
-                        mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 cursor-pointer post-media-container relative aspect-video" data-embed-id="${p.id}" data-embed-url="${embedInfo.url}">
+                        mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 cursor-pointer post-media-container relative" data-embed-id="${p.id}" data-embed-url="${embedInfo.url}">
                             <img src="${embedInfo.thumbnail}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.thumbnail}'); this.classList.add('loaded')" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
                             <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 thumbnail-overlay" data-embed-id="${p.id}">
                                 <div class="w-16 h-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center backdrop-blur-sm">
@@ -8215,17 +8213,6 @@
             window.currentCommentFilter = 'latest'; 
             window.commentSearchTerm = ''; 
             window.isCommentSearchOpen = false; 
-            
-            // Save video state from post card and pause it
-            const postCardVideo = document.querySelector(`#post-card-feed-${pid} video, #post-card-saved-${pid} video, #post-card-archived-${pid} video`);
-            if (postCardVideo) {
-                window.videoStates[pid] = {
-                    currentTime: postCardVideo.currentTime,
-                    paused: postCardVideo.paused
-                };
-                postCardVideo.pause();
-            }
-            
             o.classList.remove('hidden'); 
             o.classList.add('flex');
             window.postViewStartTime = Date.now(); // Track start time
@@ -8547,18 +8534,7 @@
                 </div>
             </div>`; c.innerHTML = desktopHTML + mobileHTML; 
             renderCommentsInModal(pid);
-            refreshIcons();
-            
-            // Restore video state in the overlay
-            setTimeout(() => {
-                const overlayVideo = document.querySelector(`#post-view-overlay video`);
-                if (overlayVideo && window.videoStates[pid]) {
-                    overlayVideo.currentTime = window.videoStates[pid].currentTime;
-                    if (!window.videoStates[pid].paused) {
-                        overlayVideo.play();
-                    }
-                }
-            }, 100);
+            refreshIcons()
         };
         window.toggleCommentSearch = () => { window.isCommentSearchOpen = !window.isCommentSearchOpen; window.commentSearchTerm = ''; const dhd = document.getElementById('comment-header-default'), dhs = document.getElementById('comment-header-search'); if (dhd && dhs) { if (window.isCommentSearchOpen) { dhd.classList.add('hidden'); dhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-desktop')?.focus(), 100) } else { dhd.classList.remove('hidden'); dhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } const mhd = document.getElementById('mobile-comment-header-default'), mhs = document.getElementById('mobile-comment-header-search'); if (mhd && mhs) { if (window.isCommentSearchOpen) { mhd.classList.add('hidden'); mhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-mobile')?.focus(), 100) } else { mhd.classList.remove('hidden'); mhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } };
         window.handleCommentSearch = (val) => { window.commentSearchTerm = val.toLowerCase(); renderCommentsInModal(window.currentViewingPostId) };
@@ -8575,13 +8551,10 @@
             }
             window.postViewStartTime = null;
 
-            // Save video state from overlay
+            // Stop all videos in the overlay
             o.querySelectorAll('video').forEach(video => {
-                window.videoStates[window.currentViewingPostId] = {
-                    currentTime: video.currentTime,
-                    paused: video.paused
-                };
                 video.pause();
+                video.currentTime = 0;
             });
             // Stop all iframes (YouTube/Drive) by reloading
             o.querySelectorAll('iframe').forEach(iframe => {
@@ -8590,17 +8563,6 @@
             });
 
             o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null;
-            
-            // Resume video in post card if we have a saved state
-            setTimeout(() => {
-                const postCardVideo = document.querySelector(`#post-card-feed-${window.currentViewingPostId || ''} video, #post-card-saved-${window.currentViewingPostId || ''} video, #post-card-archived-${window.currentViewingPostId || ''} video`);
-                if (postCardVideo && window.videoStates[window.currentViewingPostId]) {
-                    postCardVideo.currentTime = window.videoStates[window.currentViewingPostId].currentTime;
-                    if (!window.videoStates[window.currentViewingPostId].paused) {
-                        postCardVideo.play();
-                    }
-                }
-            }, 100);
         };
         window.doLogout = async () => { 
             await auth.signOut(); 
@@ -9741,7 +9703,8 @@
                         type = 'video';
                         videoId = match[1];
                         embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
-                        thumbnailUrl = `https://drive.google.com/thumbnail?id=${videoId}&sz=w1000`;
+                        // Drive doesn't have a direct thumbnail, so we'll use a placeholder
+                        thumbnailUrl = null;
                     }
                 }
                 
