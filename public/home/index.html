@@ -6461,15 +6461,23 @@
                     const s = ma[0],
                         iv = s.includes('video') || s.includes('.mp4') || s.startsWith('data:video');
                     const isCached = window.imageLoadCache.has(s);
-                    let videoHtml = "";
                     if (iv) {
                         let poster = "";
                         if (s.includes('cloudinary.com')) {
                             poster = s.replace(/\.[^.]+$/, '.jpg');
                         }
-                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
+                        // Show thumbnail first with play button
+                        mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 cursor-pointer post-media-container relative aspect-video" data-video-id="${p.id}" data-video-url="${s}">
+                            <img src="${poster || s}" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40">
+                                <div class="w-16 h-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center backdrop-blur-sm">
+                                    <i data-lucide="play" class="w-8 h-8 text-white"></i>
+                                </div>
+                            </div>
+                        </div>`;
+                    } else {
+                        mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 cursor-pointer post-media-container" onclick="event.stopPropagation();openLightbox('${s}','image')"><div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div></div>`
                     }
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'} post-media-container" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
                 } else {
                     const cid = `carousel-${ctx}-${p.id}`,
                         iid = `inner-${ctx}-${p.id}`,
@@ -8260,7 +8268,7 @@
                     mhDesktop = imgHtml;
                     mhMobile = imgHtml;
                 } else {
-                    const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
+                    const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0"></iframe></div>`;
                     mhDesktop = ehtml;
                     mhMobile = ehtml;
                 }
@@ -8866,7 +8874,7 @@
                     // Inject YouTube Embed
                     const container = document.getElementById('birthday-media-container');
                     if (container) {
-                        container.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/u57HBBO1zV4?autoplay=1&mute=0&controls=0&showinfo=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                        container.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/u57HBBO1zV4?controls=0&showinfo=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
                     }
                     
                     document.getElementById('user-birthday-overlay').style.display = 'flex';
@@ -9796,9 +9804,11 @@
             return embedUrl;
         };
 
-        // Handle thumbnail clicks for embedded videos
+        // Handle thumbnail clicks for embedded videos and native videos
         window.addEventListener('click', function(e) {
             const thumbnailOverlay = e.target.closest('.thumbnail-overlay');
+            const nativeVideoThumbnail = e.target.closest('[data-video-url]');
+            
             if (thumbnailOverlay) {
                 e.stopPropagation();
                 const container = thumbnailOverlay.closest('[data-embed-id]');
@@ -9808,9 +9818,19 @@
                     if (embedUrl && embedId) {
                         thumbnailOverlay.style.display = 'none';
                         // Add iframe directly
-                        container.innerHTML = `<iframe src="${embedUrl}?autoplay=1" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay"></iframe>`;
+                        container.innerHTML = `<iframe src="${embedUrl}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen></iframe>`;
                     }
                 }
+            } else if (nativeVideoThumbnail) {
+                e.stopPropagation();
+                const videoUrl = nativeVideoThumbnail.getAttribute('data-video-url');
+                let poster = "";
+                if (videoUrl.includes('cloudinary.com')) {
+                    poster = videoUrl.replace(/\.[^.]+$/, '.jpg');
+                }
+                // Replace thumbnail with video player
+                nativeVideoThumbnail.innerHTML = `<video src="${videoUrl}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
+                nativeVideoThumbnail.onclick = null;
             }
         });
 
@@ -10684,7 +10704,7 @@
             t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 4000);
         };
-        window.openLightbox = (s, t = 'image') => { const w = document.getElementById('lightbox-wrapper'), l = document.getElementById('lightbox'); if (t === 'video' || s.includes('.mp4') || s.includes('data:video')) w.innerHTML = `<video src="${s}" controls autoplay class="max-w-full max-h-[90vh] rounded-lg shadow-2xl"></video>`; else w.innerHTML = `<img src="${s}" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain">`; l.classList.add('active'); l.classList.remove('pointer-events-none', 'opacity-0') }; window.closeLightbox = () => { const l = document.getElementById('lightbox'); l.classList.remove('active'); l.classList.add('pointer-events-none', 'opacity-0'); const v = l.querySelector('video'); if (v) v.pause() };
+        window.openLightbox = (s, t = 'image') => { const w = document.getElementById('lightbox-wrapper'), l = document.getElementById('lightbox'); if (t === 'video' || s.includes('.mp4') || s.includes('data:video')) w.innerHTML = `<video src="${s}" controls class="max-w-full max-h-[90vh] rounded-lg shadow-2xl"></video>`; else w.innerHTML = `<img src="${s}" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain">`; l.classList.add('active'); l.classList.remove('pointer-events-none', 'opacity-0') }; window.closeLightbox = () => { const l = document.getElementById('lightbox'); l.classList.remove('active'); l.classList.add('pointer-events-none', 'opacity-0'); const v = l.querySelector('video'); if (v) v.pause() };
         window.openQR = uid => {
             manageHistory('qr-overlay');
             const id = uid || currentUser.id, u = users.find(x => x.id === id) || currentUser;
