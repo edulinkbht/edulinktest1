@@ -2168,10 +2168,26 @@
         }
 
         .post-carousel-item img,
-        .post-carousel-item video {
+        .post-carousel-item video,
+        .post-media-container video {
             width: 100%;
             height: 100%;
             object-fit: contain;
+        }
+        
+        /* Clean video controls */
+        video::-webkit-media-controls-panel {
+            background: linear-gradient(transparent, rgba(0,0,0,0.8));
+        }
+        
+        video::-webkit-media-controls-play-button,
+        video::-webkit-media-controls-volume-slider,
+        video::-webkit-media-controls-timeline,
+        video::-webkit-media-controls-current-time-display,
+        video::-webkit-media-controls-time-remaining-display,
+        video::-webkit-media-controls-fullscreen-button,
+        video::-webkit-media-controls-mute-button {
+            filter: brightness(1.5);
         }
 
         .carousel-dots-outside {
@@ -9752,8 +9768,7 @@
                     if (videoId) {
                         type = 'video';
                         embedUrl = `https://player.vimeo.com/video/${videoId}`;
-                        // Vimeo requires an API call for thumbnails, so we'll use a placeholder
-                        thumbnailUrl = null;
+                        thumbnailUrl = `https://vumbnail.com/${videoId}.jpg`;
                     }
                 }
                 
@@ -9805,7 +9820,7 @@
                 if (!entry.isIntersecting) {
                     // Pause native videos
                     const video = entry.target.querySelector('video');
-                    if (video) {
+                    if (video && !video.paused) {
                         video.pause();
                     }
                     // Reload iframes to stop playback
@@ -9816,7 +9831,7 @@
                     }
                 }
             });
-        }, { threshold: 0.25 }); // Trigger when 25% of the video is out of view
+        }, { threshold: 0.3 }); // Trigger when 30% of the video is out of view
 
         // Function to observe new video containers
         window.observeVideoContainers = () => {
