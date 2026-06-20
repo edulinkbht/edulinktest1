@@ -4801,8 +4801,9 @@
             </div>
         </aside>
     </div>
-    <div id="view-frame" class="fixed inset-0 z-30 bg-white hidden">
-        <div id="frame-container" class="h-full w-full flex"></div>
+    <div id="view-frame" class="fixed inset-0 z-30 bg-white hidden overflow-y-auto" style="scrollbar-width: none; -ms-overflow-style: none;">
+        <style>#view-frame::-webkit-scrollbar { display: none; }</style>
+        <div id="frame-container" class="min-h-full w-full flex items-start justify-center pt-12 pb-24"></div>
     </div>
     <nav id="mobile-bottom-nav"
         class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
@@ -6314,21 +6315,25 @@
             // We need to store the expansion state for the frame caption
             if (!window.expandedTexts) window.expandedTexts = new Set();
             
+            const hasCaption = post.content && post.content.trim() !== '';
+            const postDate = formatDate(post.timestamp || Date.now());
+            
             document.getElementById('frame-container').innerHTML = `
-                <!-- Left Spacer for Sidebar - make it a bit smaller to move video right -->
-                <div class="w-[80px] lg:w-[200px] flex-shrink-0"></div>
+                <!-- Left Spacer for Sidebar -->
+                <div class="hidden lg:block lg:w-[260px] flex-shrink-0"></div>
+                <div class="w-[88px] lg:hidden flex-shrink-0"></div>
                 
                 <!-- Main Content -->
-                <div class="flex-1 h-full flex items-center pt-8">
+                <div class="flex-1 flex items-start justify-center pt-4">
                     <!-- Center Content: Video + Bottom Info + Vertical Actions -->
-                    <div class="flex items-start">
+                    <div class="flex items-start gap-0">
                         <!-- Video Container (Vertical like Instagram Reels) -->
                         <div class="flex flex-col items-center">
                             <div class="relative overflow-hidden" style="width: 400px; height: 700px; border-radius: 8px;">
                                 ${mediaHtml}
                             </div>
                             
-                            <!-- Bottom Info: Author + Caption -->
+                            <!-- Bottom Info: Author + Caption/Date -->
                             <div class="mt-4 px-2" style="width: 400px;">
                                 <div class="flex items-start gap-3">
                                     <div class="img-placeholder rounded-full w-10 h-10 border border-gray-200 overflow-hidden shrink-0">
@@ -6338,9 +6343,13 @@
                                         <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
                                             @${author.username || author.name}
                                         </div>
-                                        <div class="text-sm text-gray-700">
-                                            ${window.renderTextWithReadMore(post.content || '', `frame-caption-${post.id}`)}
-                                        </div>
+                                        ${hasCaption ? `
+                                            <div class="text-sm text-gray-700">
+                                                ${window.renderTextWithReadMore(post.content, `frame-caption-${post.id}`)}
+                                            </div>
+                                        ` : `
+                                            <div class="text-sm text-gray-500">${postDate}</div>
+                                        `}
                                     </div>
                                 </div>
                             </div>
@@ -6420,6 +6429,10 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- Extra Right Spacer for balance -->
+                <div class="hidden lg:block lg:w-[260px] flex-shrink-0"></div>
+                <div class="w-[88px] lg:hidden flex-shrink-0"></div>
             `;
             
             // Initialize the like/save icons properly
@@ -6427,12 +6440,16 @@
             if (likeIcon) {
                 if (isLiked) {
                     likeIcon.classList.add('fill-red-500', 'text-red-500');
+                } else {
+                    likeIcon.classList.remove('fill-red-500', 'text-red-500');
                 }
             }
             const saveIcon = document.getElementById(`frame-save-icon-${post.id}`);
             if (saveIcon) {
                 if (isSaved) {
                     saveIcon.classList.add('fill-current');
+                } else {
+                    saveIcon.classList.remove('fill-current');
                 }
             }
             refreshIcons();
