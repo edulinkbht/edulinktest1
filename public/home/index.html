@@ -6339,7 +6339,7 @@
                 }
                 
                 return `
-                    <div class="frame-slide w-full h-full flex-shrink-0 snap-start flex items-center justify-center" data-index="${index}">
+                    <div class="frame-slide w-full h-full flex-shrink-0 flex items-center justify-center" data-index="${index}">
                         <!-- Left Spacer for Sidebar -->
                         <div class="hidden lg:block lg:w-[260px] flex-shrink-0"></div>
                         <div class="w-[88px] lg:hidden flex-shrink-0"></div>
@@ -6468,10 +6468,16 @@
             
             frameContainer.innerHTML = `
                 <style>
-                    .frame-scroll-container { scrollbar-width: none; -ms-overflow-style: none; }
+                    .frame-scroll-container { 
+                        scrollbar-width: none; 
+                        -ms-overflow-style: none; 
+                        scroll-snap-type: y mandatory; 
+                        overflow-y: scroll;
+                    }
                     .frame-scroll-container::-webkit-scrollbar { display: none; }
+                    .frame-slide { scroll-snap-align: start; }
                 </style>
-                <div class="frame-scroll-container w-full h-full flex flex-col overflow-y-auto snap-y snap-mandatory" id="frame-scroll-container">
+                <div class="frame-scroll-container w-full h-full flex flex-col" id="frame-scroll-container">
                     ${framesHtml}
                 </div>
             `;
@@ -6509,8 +6515,11 @@
                 });
             }
             
+            // Debounce scroll updates
+            let scrollTimeout;
             scrollContainer.addEventListener('scroll', () => {
-                updateActiveFrame();
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(updateActiveFrame, 100);
             });
             
             // Add keyboard navigation
