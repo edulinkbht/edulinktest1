@@ -6352,7 +6352,12 @@
                     // Don't autoplay initially - we'll control playback with updateActiveFrame
                     mediaHtml = `
                         <div class="w-full h-full bg-black" id="frame-skeleton-${post.id}"></div>
-                        <video src="${firstMedia}" class="absolute top-0 left-0 w-full h-full object-cover hidden" playsinline muted loop id="frame-video-${post.id}" onloadeddata="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden');"></video>
+                        <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black">
+                            <video src="${firstMedia}" class="w-full h-full object-contain hidden" playsinline muted loop id="frame-video-${post.id}" onloadeddata="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden');"></video>
+                            <button onclick="event.stopPropagation(); toggleVideoMute('frame-video-${post.id}', 'frame-mute-btn-${post.id}')" class="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors" id="frame-mute-btn-${post.id}">
+                                <i data-lucide="volume-x" class="w-5 h-5 text-white"></i>
+                            </button>
+                        </div>
                     `;
                 }
                 
@@ -6872,6 +6877,19 @@
                 const targetSlide = scrollContainer.querySelector(`[data-index="${newIndex}"]`);
                 if (targetSlide) {
                     targetSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        };
+
+        window.toggleVideoMute = (videoId, btnId) => {
+            const video = document.getElementById(videoId);
+            const btn = document.getElementById(btnId);
+            if (video && btn) {
+                video.muted = !video.muted;
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.setAttribute('data-lucide', video.muted ? 'volume-x' : 'volume-2');
+                    refreshIcons();
                 }
             }
         };
