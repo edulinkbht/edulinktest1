@@ -9703,8 +9703,8 @@
                         type = 'video';
                         videoId = match[1];
                         embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
-                        // Drive doesn't have a direct thumbnail, so we'll use a placeholder
-                        thumbnailUrl = null;
+                        // Use Google Drive thumbnail
+                        thumbnailUrl = `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1000`;
                     }
                 }
                 
@@ -9715,8 +9715,21 @@
                     if (videoId) {
                         type = 'video';
                         embedUrl = `https://player.vimeo.com/video/${videoId}`;
-                        // Vimeo requires an API call for thumbnails, so we'll use a placeholder
-                        thumbnailUrl = null;
+                        // Use vumbnail.com to get Vimeo thumbnail without API key
+                        thumbnailUrl = `https://vumbnail.com/${videoId}.jpg`;
+                    }
+                }
+                
+                // TikTok
+                else if (u.hostname.includes('tiktok.com')) {
+                    const pathParts = u.pathname.split('/');
+                    videoId = pathParts.find(p => /^\d+$/.test(p));
+                    if (videoId) {
+                        type = 'video';
+                        embedUrl = `https://www.tiktok.com/embed/v2/${videoId}`;
+                        // TikTok doesn't have a direct public thumbnail URL, but we can use a placeholder or try to get from oEmbed
+                        // For now, use a generic TikTok thumbnail placeholder
+                        thumbnailUrl = `https://img.icons8.com/color/452/tiktok.png`;
                     }
                 }
                 
@@ -9780,6 +9793,16 @@
                 }
             });
         }, { threshold: 0.25 }); // Trigger when 25% of the video is out of view
+
+        // One video at a time - pause all other videos when one plays
+        document.addEventListener('play', (e) => {
+            const videos = document.querySelectorAll('video');
+            videos.forEach(video => {
+                if (video !== e.target) {
+                    video.pause();
+                }
+            });
+        }, true);
 
         // Function to observe new video containers
         window.observeVideoContainers = () => {
