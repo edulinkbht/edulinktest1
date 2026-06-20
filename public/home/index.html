@@ -86,83 +86,6 @@
             stroke-width: 0.5;
         }
 
-        /* Custom Video Player Styles */
-        .custom-video-container {
-            position: relative;
-            width: 100%;
-            height: 100%;
-        }
-        .custom-video-container video {
-            width: 100%;
-            height: 100%;
-            object-contain: contain;
-            outline: none;
-        }
-        /* Hide default video controls */
-        video::-webkit-media-controls {
-            display: none !important;
-        }
-        video::-webkit-media-controls-enclosure {
-            display: none !important;
-        }
-        video::-webkit-media-controls-panel {
-            display: none !important;
-        }
-        video::-webkit-media-controls-play-button {
-            display: none !important;
-        }
-        video::-webkit-media-controls-volume-slider {
-            display: none !important;
-        }
-        video::-webkit-media-controls-mute-button {
-            display: none !important;
-        }
-        video::-webkit-media-controls-timeline {
-            display: none !important;
-        }
-        video::-webkit-media-controls-current-time-display {
-            display: none !important;
-        }
-        video::-webkit-media-controls-time-remaining-display {
-            display: none !important;
-        }
-        video::-webkit-media-controls-fullscreen-button {
-            display: none !important;
-        }
-        /* Firefox */
-        video::-moz-media-controls {
-            display: none !important;
-        }
-        /* Custom Controls */
-        .custom-video-controls {
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            pointer-events: none;
-        }
-        .custom-video-controls button {
-            pointer-events: auto;
-            background: rgba(0,0,0,0.5);
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: white;
-            transition: background 0.2s;
-        }
-        .custom-video-controls button:hover {
-            background: rgba(0,0,0,0.7);
-        }
-
         .ig-squircle {
             fill: none;
             stroke: currentColor;
@@ -6526,7 +6449,7 @@
                         if (s.includes('cloudinary.com')) {
                             poster = s.replace(/\.[^.]+$/, '.jpg');
                         }
-                        videoHtml = window.createCustomVideoHTML(s, poster, `${ctx}-${p.id}`);
+                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
                     }
                     mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'} post-media-container" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
                 } else {
@@ -6544,7 +6467,7 @@
                             if (s.includes('cloudinary.com')) {
                                 poster = s.replace(/\.[^.]+$/, '.jpg');
                             }
-                            videoHtml = window.createCustomVideoHTML(s, poster, `${ctx}-${p.id}-${i}`);
+                            videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata"></video>`;
                         }
                         sl += `<div class="post-carousel-item bg-transparent flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
                         dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="dot-${ctx}-${p.id}-${i}"></div>`
@@ -7280,7 +7203,7 @@
                     if (s.includes('cloudinary.com')) {
                         poster = s.replace(/\.[^.]+$/, '.jpg');
                     }
-                    videoHtml = window.createCustomVideoHTML(s, poster, `${prefix}-${pid}-${i}`);
+                    videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata"></video>`;
                 }
                 sl += `<div class="post-carousel-item img-placeholder bg-gray-50 flex items-center justify-center">${iv ? videoHtml : `<img src="${s}" class="w-full h-full ${isOverlay ? 'object-contain' : 'object-cover'} ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')">`}</div>`;
                 dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="${prefix}-dot-${pid}-${i}"></div>`
@@ -8324,7 +8247,7 @@
                         if (s.includes('cloudinary.com')) {
                             poster = s.replace(/\.[^.]+$/, '.jpg');
                         }
-                        videoHtml = window.createCustomVideoHTML(s, poster, `overlay-${p.id}`);
+                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="stage-content rounded-none" controls playsinline preload="metadata"></video>`;
                     }
                     const mhtml = iv ? videoHtml : `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`;
                     mhDesktop = mhtml;
@@ -9828,56 +9751,6 @@
             }
         };
         
-        // Create custom video HTML with mute/unmute control
-        window.createCustomVideoHTML = (src, poster = '', videoId = '') => {
-            const uniqueId = videoId || Math.random().toString(36).substr(2, 9);
-            return `
-                <div class="custom-video-container" id="video-container-${uniqueId}">
-                    <video 
-                        id="video-${uniqueId}" 
-                        src="${src}" 
-                        ${poster ? `poster="${poster}"` : ''} 
-                        class="w-full h-full object-contain" 
-                        playsinline 
-                        preload="metadata"
-                        onclick="event.stopPropagation(); toggleVideoPlay('video-${uniqueId}')"
-                    ></video>
-                    <div class="custom-video-controls">
-                        <button onclick="event.stopPropagation(); toggleVideoMute('video-${uniqueId}')" id="mute-btn-${uniqueId}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
-                        </button>
-                    </div>
-                </div>
-            `;
-        };
-
-        // Toggle video play/pause
-        window.toggleVideoPlay = (videoId) => {
-            const video = document.getElementById(videoId);
-            if (!video) return;
-            if (video.paused) {
-                video.play();
-            } else {
-                video.pause();
-            }
-        };
-
-        // Toggle video mute/unmute
-        window.toggleVideoMute = (videoId) => {
-            const video = document.getElementById(videoId);
-            const muteBtn = document.getElementById(`mute-btn-${videoId}`);
-            if (!video || !muteBtn) return;
-            
-            video.muted = !video.muted;
-            
-            // Update the icon by replacing innerHTML directly (fast!)
-            if (video.muted) {
-                muteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-x"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M17 9l4 4"/><path d="m21 9-4 4"/></svg>`;
-            } else {
-                muteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
-            }
-        };
-
         // Keep old function for backwards compatibility
         window.getVideoEmbedUrl = (url) => {
             const { url: embedUrl } = window.getEmbedTypeAndUrl(url);
