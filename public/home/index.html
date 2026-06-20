@@ -8227,28 +8227,28 @@
                 const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
                 if (embedInfo.type === 'image') {
                     const isCached = window.imageLoadCache.has(embedInfo.url);
-                    const imgHtml = `<div class="img-placeholder rounded-none overflow-hidden"><img src="${embedInfo.url}" class="stage-content w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${embedInfo.url}'); this.classList.add('loaded')"></div>`;
+                    const imgHtml = `<img src="${embedInfo.url}" class="w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${embedInfo.url}'); this.classList.add('loaded')">`;
                     mhDesktop = imgHtml;
                     mhMobile = imgHtml;
                 } else if (embedInfo.type === 'video') {
                     if (embedInfo.thumbnail) {
-                        const ehtml = `<div class="rounded-none overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 relative" data-embed-id="${p.id}" data-embed-url="${embedInfo.url}">
-                            <img src="${embedInfo.thumbnail}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.thumbnail}'); this.classList.add('loaded')" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
-                            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 thumbnail-overlay" data-embed-id="${p.id}">
-                                <div class="w-16 h-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center backdrop-blur-sm">
-                                    <i data-lucide="play" class="w-8 h-8 text-white"></i>
+                        const ehtml = `
+                            <img src="${embedInfo.thumbnail}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.thumbnail}'); this.classList.add('loaded')" onerror="this.style.display='none'">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/40 thumbnail-overlay" data-embed-id="${p.id}" data-embed-url="${embedInfo.url}">
+                                <div class="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                                    <i data-lucide="play" class="w-10 h-10 text-white"></i>
                                 </div>
                             </div>
-                        </div>`;
+                        `;
                         mhDesktop = ehtml;
                         mhMobile = ehtml;
                     } else {
-                        const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
+                        const ehtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
                         mhDesktop = ehtml;
                         mhMobile = ehtml;
                     }
                 } else {
-                    const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
+                    const ehtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
                     mhDesktop = ehtml;
                     mhMobile = ehtml;
                 }
@@ -8264,11 +8264,14 @@
                         if (s.includes('cloudinary.com')) {
                             poster = s.replace(/\.[^.]+$/, '.jpg');
                         }
-                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="stage-content rounded-none" controls playsinline preload="metadata"></video>`;
+                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata"></video>`;
+                        mhDesktop = videoHtml;
+                        mhMobile = videoHtml;
+                    } else {
+                        const mhtml = `<img src="${s}" class="stage-content w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')">`;
+                        mhDesktop = mhtml;
+                        mhMobile = mhtml;
                     }
-                    const mhtml = iv ? videoHtml : `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`;
-                    mhDesktop = mhtml;
-                    mhMobile = mhtml
                 } else {
                     mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id);
                     mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id)
@@ -8292,8 +8295,94 @@
                 }
             }
 
+            let isVideoPost = false;
+            if (p.embedVideo) {
+                const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
+                isVideoPost = embedInfo.type === 'video';
+            } else if (p.media) {
+                const ma = Array.isArray(p.media) ? p.media : [p.media];
+                const s = ma[0];
+                isVideoPost = s && (s.includes('video') || s.endsWith('.mp4') || s.startsWith('data:video'));
+            }
+
             let desktopHTML = '';
-            if (p.media || p.embedVideo) {
+            if (isVideoPost) {
+                // Special video post layout for desktop!
+                desktopHTML = `
+                <div class="desktop-split-view hidden md:flex w-full h-full flex-row overflow-hidden" style="max-width: 1200px;">
+                    <!-- Left Column: Video/Thumbnail & Post Info & Actions -->
+                    <div class="flex flex-col h-full justify-center px-8" style="flex: 2;">
+                        <div class="flex items-center justify-center mb-4">
+                            <div class="relative overflow-hidden" style="width: 600px; height: 600px; border-radius: 24px;">
+                                ${mhDesktop}
+                            </div>
+                        </div>
+
+                        <!-- Post Info & Actions -->
+                        <div class="flex flex-col items-start gap-3" style="width: 600px;">
+                            <!-- Author & Text -->
+                            <div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
+                                <div class="img-placeholder rounded-full w-12 h-12 border border-gray-100 overflow-hidden">
+                                    <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
+                                </div>
+                                <div class="flex flex-col">
+                                    <div class="font-bold text-gray-900 text-base flex items-center gap-1">@${a.username || a.name}${badge}</div>
+                                    <div class="text-sm text-gray-700">${postBodyHtml}</div>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons (Vertical) -->
+                            <div class="absolute right-8 top-1/2 -translate-y-1/2 flex flex-col gap-4">
+                                <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''} !p-3 !rounded-full border border-gray-200 !w-12 !h-12" onclick="event.stopPropagation(); toggleLike('${p.id}')">
+                                    <i data-lucide="heart" class="w-6 h-6"></i>
+                                </button>
+                                <button class="action-btn comment !p-3 !rounded-full border border-gray-200 !w-12 !h-12" onclick="${allowComments ? 'document.getElementById(\'comment-input-desktop\').focus()' : ''}">
+                                    <i data-lucide="message-circle" class="w-6 h-6"></i>
+                                </button>
+                                <button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''} !p-3 !rounded-full border border-gray-200 !w-12 !h-12" onclick="event.stopPropagation(); toggleSave('${p.id}')">
+                                    <i data-lucide="bookmark" class="w-6 h-6"></i>
+                                </button>
+                                <button class="action-btn share-btn !p-3 !rounded-full border border-gray-200 !w-12 !h-12" onclick="event.stopPropagation(); sharePost('${p.id}')">
+                                    <i data-lucide="redo-2" class="w-6 h-6"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Comments -->
+                    <div class="flex flex-col h-full bg-white rounded-[24px] shadow-lg" style="flex: 1; min-width: 400px;">
+                        <div id="post-view-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
+                            <div id="comment-header-default" class="flex items-center justify-between w-full">
+                                <span class="font-bold text-xl text-gray-900">Comments (${p.comments?.length || 0})</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="toggleCommentSearch()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                        <i data-lucide="search" class="w-5 h-5 text-gray-600"></i>
+                                    </button>
+                                    <button onclick="closePostView()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                        <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="comment-header-search" class="hidden w-full flex items-center gap-2">
+                                <div class="relative flex-1">
+                                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                                    <input type="text" id="comment-search-input-desktop" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search comments...">
+                                </div>
+                                <button onclick="toggleCommentSearch()" class="p-2 hover:bg-gray-100 rounded-full">
+                                    <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="post-view-comments" class="flex-1 overflow-y-auto px-6"></div>
+                        <div class="px-6 h-[72px] flex items-center border-t border-gray-100 bg-white shrink-0 rounded-b-[24px]">
+                            <div class="w-full">
+                                ${commentInputDesktop}
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+            } else if (p.media || p.embedVideo) {
+                // Original layout for non-video media posts
                 desktopHTML = `
                 <div class="desktop-split-view hidden md:flex w-full h-full bg-white flex-row overflow-hidden">
                     <!-- Left Column: Post Content & Actions -->
@@ -8383,6 +8472,7 @@
                     </div>
                 </div>`;
             } else {
+                // Original layout for text-only posts
                 desktopHTML = `
                 <div class="desktop-split-view hidden md:flex w-full h-full bg-white flex-row overflow-hidden">
                     <div class="flex-[1.3] flex flex-col h-full overflow-hidden">
