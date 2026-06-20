@@ -9831,25 +9831,50 @@
         // Create custom video HTML with mute/unmute control
         window.createCustomVideoHTML = (src, poster = '', videoId = '') => {
             const uniqueId = videoId || Math.random().toString(36).substr(2, 9);
-            return `
-                <div class="custom-video-container" id="video-container-${uniqueId}">
-                    <video 
-                        id="video-${uniqueId}" 
-                        src="${src}" 
-                        ${poster ? `poster="${poster}"` : ''} 
-                        class="w-full h-full object-contain" 
-                        playsinline 
-                        preload="metadata"
-                        onclick="event.stopPropagation(); toggleVideoPlay('video-${uniqueId}')"
-                        onvolumechange="syncMuteButton('video-${uniqueId}')"
-                    ></video>
-                    <div class="custom-video-controls">
-                        <button onclick="event.stopPropagation(); toggleVideoMute('video-${uniqueId}')" id="mute-btn-${uniqueId}">
-                            <i data-lucide="volume-2" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
+            const containerId = `video-container-${uniqueId}`;
+            
+            // Create the container first
+            const container = document.createElement('div');
+            container.id = containerId;
+            container.className = 'custom-video-container';
+            
+            // Create video element
+            const video = document.createElement('video');
+            video.id = `video-${uniqueId}`;
+            video.src = src;
+            if (poster) video.poster = poster;
+            video.className = 'w-full h-full object-contain';
+            video.setAttribute('playsinline', '');
+            video.setAttribute('preload', 'metadata');
+            video.onclick = (e) => {
+                e.stopPropagation();
+                toggleVideoPlay(`video-${uniqueId}`);
+            };
+            video.onvolumechange = () => {
+                syncMuteButton(`video-${uniqueId}`);
+            };
+            container.appendChild(video);
+            
+            // Create controls div
+            const controlsDiv = document.createElement('div');
+            controlsDiv.className = 'custom-video-controls';
+            
+            // Create mute button with initial icon
+            const muteBtn = document.createElement('button');
+            muteBtn.id = `mute-btn-${uniqueId}`;
+            muteBtn.onclick = (e) => {
+                e.stopPropagation();
+                toggleVideoMute(`video-${uniqueId}`);
+            };
+            
+            // Add initial volume icon
+            const initialIcon = lucide.createElement('volume-2', { class: 'w-5 h-5' });
+            muteBtn.appendChild(initialIcon);
+            controlsDiv.appendChild(muteBtn);
+            container.appendChild(controlsDiv);
+            
+            // Return outer HTML so we can use it in innerHTML
+            return container.outerHTML;
         };
 
         // Sync mute button icon with video state
