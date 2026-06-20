@@ -8230,6 +8230,23 @@
                     const imgHtml = `<div class="img-placeholder rounded-none overflow-hidden"><img src="${embedInfo.url}" class="stage-content w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${embedInfo.url}'); this.classList.add('loaded')"></div>`;
                     mhDesktop = imgHtml;
                     mhMobile = imgHtml;
+                } else if (embedInfo.type === 'video') {
+                    if (embedInfo.thumbnail) {
+                        const ehtml = `<div class="rounded-none overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 relative" data-embed-id="${p.id}" data-embed-url="${embedInfo.url}">
+                            <img src="${embedInfo.thumbnail}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.thumbnail}'); this.classList.add('loaded')" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 thumbnail-overlay" data-embed-id="${p.id}">
+                                <div class="w-16 h-16 rounded-full bg-white bg-opacity-20 flex items-center justify-center backdrop-blur-sm">
+                                    <i data-lucide="play" class="w-8 h-8 text-white"></i>
+                                </div>
+                            </div>
+                        </div>`;
+                        mhDesktop = ehtml;
+                        mhMobile = ehtml;
+                    } else {
+                        const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
+                        mhDesktop = ehtml;
+                        mhMobile = ehtml;
+                    }
                 } else {
                     const ehtml = `<div class="rounded-none overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay"></iframe></div>`;
                     mhDesktop = ehtml;
@@ -9703,8 +9720,7 @@
                         type = 'video';
                         videoId = match[1];
                         embedUrl = `https://drive.google.com/file/d/${match[1]}/preview`;
-                        // Drive doesn't have a direct thumbnail, so we'll use a placeholder
-                        thumbnailUrl = null;
+                        thumbnailUrl = `https://drive.google.com/thumbnail?id=${videoId}&sz=w1000`;
                     }
                 }
                 
@@ -9715,8 +9731,7 @@
                     if (videoId) {
                         type = 'video';
                         embedUrl = `https://player.vimeo.com/video/${videoId}`;
-                        // Vimeo requires an API call for thumbnails, so we'll use a placeholder
-                        thumbnailUrl = null;
+                        thumbnailUrl = `https://vumbnail.com/${videoId}.jpg`;
                     }
                 }
                 
