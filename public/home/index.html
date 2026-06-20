@@ -6561,8 +6561,8 @@
             // Add scroll listener to track current frame and control playback
             const scrollContainer = document.getElementById('frame-scroll-container');
             
-            // Scroll to the very top of the scroll container
-            scrollContainer.scrollTop = 0;
+            // Scroll to the very top of the scroll container, but a bit up
+            scrollContainer.scrollTop = Math.max(0, scrollContainer.clientHeight * 0 - 50);
             
             // Function to handle video play/pause
             function updateActiveFrame() {
@@ -7453,9 +7453,22 @@
         let touchStartX = 0, touchEndX = 0; window.handleTouchStart = e => touchStartX = e.changedTouches[0].screenX; window.handleTouchEnd = (e, pid, ov) => { touchEndX = e.changedTouches[0].screenX; const w = e.currentTarget.closest('.post-carousel'); if (w && Math.abs(touchStartX - touchEndX) > 50) moveCarousel(w.id, touchStartX > touchEndX ? 1 : -1) };
         function createPostElement(p, ctx = 'feed') {
             const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); d.id = `post-card-${ctx}-${p.id}`; d.className = "post-card group overflow-hidden w-full md:max-w-2xl md:mx-auto md:px-4 md:mb-4"; 
+            
+            // Check if this is a video post
+            const isVideoPost = () => {
+                if (p.embedVideo) {
+                    const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
+                    return embedInfo.type === 'video';
+                }
+                if (p.media) {
+                    const ma = Array.isArray(p.media) ? p.media : [p.media];
+                    return ma.some(m => m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video'));
+                }
+                return false;
+            };
+            
             d.onclick = () => { 
-                // Check if this is a video/embed post
-                if (p.media || p.embedVideo) {
+                if (isVideoPost()) {
                     openFrameView(p.id);
                 } else {
                     openPostView(p.id); 
@@ -9043,10 +9056,24 @@
         };
 
         function renderGridPostItem(p) {
-            const m = Array.isArray(p.media) ? p.media[0] : p.media, 
-                  isV = m && (m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video')), 
-                  likeText = (p.likes?.length > 0) ? p.likes.length : '0', 
-                  commentText = (p.comments?.length > 0) ? p.comments.length : '0';
+            const m = Array.isArray(p.media) ? p.media[0] : p.media;
+            
+            // Check if this is a video post
+            const isVideoPost = () => {
+                if (p.embedVideo) {
+                    const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
+                    return embedInfo.type === 'video';
+                }
+                if (p.media) {
+                    const ma = Array.isArray(p.media) ? p.media : [p.media];
+                    return ma.some(media => media.includes('video') || media.endsWith('.mp4') || media.startsWith('data:video'));
+                }
+                return false;
+            };
+            
+            const isV = isVideoPost();
+            const likeText = (p.likes?.length > 0) ? p.likes.length : '0';
+            const commentText = (p.comments?.length > 0) ? p.comments.length : '0';
             let mediaHtml = "";
 
             if (m) {
@@ -9076,7 +9103,7 @@
                 mediaHtml = `<div class="grid-post-text-preview !bg-transparent">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`;
             }
 
-            return `<div class="grid-post-item group ${!m && !p.embedVideo ? 'border border-gray-100' : ''}" onclick="${m || p.embedVideo ? `openFrameView('${p.id}')` : `openPostView('${p.id}')`}">
+            return `<div class="grid-post-item group ${!m && !p.embedVideo ? 'border border-gray-100' : ''}" onclick="${isVideoPost() ? `openFrameView('${p.id}')` : `openPostView('${p.id}')`}">
                 ${mediaHtml}
                 <div class="grid-post-overlay">
                     <div class="flex items-center gap-1"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> <span class="js-like-count-${p.id}">${likeText}</span></div>
