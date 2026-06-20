@@ -198,7 +198,13 @@
             position: relative;
             z-index: 40;
             overflow: visible !important;
-            display: none; /* Hide by default (mobile) */
+        }
+
+        /* Hide sidebar on small screens by default */
+        @media (max-width: 1023px) {
+            #main-sidebar {
+                display: none;
+            }
         }
 
         @media (min-width:1024px) {
@@ -207,7 +213,7 @@
                 padding: 24px 20px;
                 position: absolute;
                 height: 100%;
-                display: flex; /* Show on desktop */
+                display: flex;
                 flex-direction: column;
             }
             
@@ -4808,9 +4814,9 @@
             </div>
         </aside>
     </div>
-    <div id="view-frame" class="fixed inset-0 z-30 bg-white hidden overflow-y-auto" style="scrollbar-width: none; -ms-overflow-style: none;">
+    <div id="view-frame" class="fixed inset-0 z-30 bg-white hidden" style="scrollbar-width: none; -ms-overflow-style: none;">
         <style>#view-frame::-webkit-scrollbar { display: none; }</style>
-        <div id="frame-container" class="min-h-full w-full flex items-start justify-center pt-12 pb-24"></div>
+        <div id="frame-container" class="min-h-full w-full flex items-start justify-center pt-12 pb-24 overflow-y-auto"></div>
     </div>
     <nav id="mobile-bottom-nav"
         class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
@@ -6102,10 +6108,20 @@
                 if (tp) tp.classList.add('hidden'); // Hide right sidebar
             } 
             
-            // Clean up frame keydown listener when leaving frame view
-            if (v !== 'frame' && window.frameKeydownHandler) {
-                document.removeEventListener('keydown', window.frameKeydownHandler);
-                window.frameKeydownHandler = null;
+            // Clean up frame keydown listener and stop videos when leaving frame view
+            if (v !== 'frame' && window.frameList) {
+                // Stop all frame videos
+                window.frameList.forEach((post) => {
+                    const video = document.getElementById(`frame-video-${post.id}`);
+                    if (video) {
+                        video.pause();
+                    }
+                });
+                
+                if (window.frameKeydownHandler) {
+                    document.removeEventListener('keydown', window.frameKeydownHandler);
+                    window.frameKeydownHandler = null;
+                }
             }
             
             if (window.innerWidth >= 1280 && v !== 'frame') tp.classList.remove('hidden'), tp.classList.add('xl:flex'); 
