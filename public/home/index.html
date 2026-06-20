@@ -4109,10 +4109,7 @@
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                     <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                 </svg>
-                <span class="sidebar-label hidden lg:block">Activity</span><span id="nav-notif-badge" class="nav-badge">0</span></a><a
-                href="#" onclick="switchView('saved');return false;" id="nav-saved" class="nav-item">
-                <i data-lucide="bookmark" class="w-7 h-7" id="nav-saved-icon"></i>
-                <span class="sidebar-label hidden lg:block">Favourite</span></a><a href="#"
+                <span class="sidebar-label hidden lg:block">Activity</span><span id="nav-notif-badge" class="nav-badge">0</span></a><a href="#"
                 onclick="showProfile(auth.currentUser?auth.currentUser.uid:null);return false;" id="nav-profile"
                 class="nav-item">
                 <div class="w-7 h-7 rounded-full overflow-hidden shrink-0 border border-gray-100">
@@ -4580,6 +4577,13 @@
                             <div class="flex flex-col justify-center">
                                 <div class="font-bold text-gray-900 text-[15px]">Archive Posts</div>
                                 <div class="text-[13px] text-gray-500 mt-0.5 leading-snug">See your hidden posts. Learn more on how Idem holds youyr archives. <a href="https://idembt.vercel.app/account" target="_blank" class="text-blue-600 font-medium hover:underline" onclick="event.stopPropagation()">Learn more</a></div>
+                            </div>
+                        </div>
+                        <div class="p-4 flex items-center gap-4 cursor-pointer hover:bg-gray-50 transition-colors" onclick="switchView('saved')">
+                            <i data-lucide="bookmark" class="w-6 h-6 text-gray-900 shrink-0"></i>
+                            <div class="flex flex-col justify-center">
+                                <div class="font-bold text-gray-900 text-[15px]">Favourite</div>
+                                <div class="text-[13px] text-gray-500 mt-0.5 leading-snug">View and manage your saved posts. <a href="https://idembt.vercel.app/account" target="_blank" class="text-blue-600 font-medium hover:underline" onclick="event.stopPropagation()">Learn more</a></div>
                             </div>
                         </div>
                     </div>
@@ -6272,17 +6276,31 @@
             const viewFrame = document.getElementById('view-frame');
             if (viewFrame) {
                 viewFrame.onwheel = (e) => {
-                    if (e.deltaY > 0) {
-                        // Scroll down - go to next
-                        if (window.currentFrameIndex < window.frameList.length - 1) {
-                            window.currentFrameIndex++;
-                            renderCurrentFramePost();
+                    // Check if we're scrolling inside the comments container
+                    let target = e.target;
+                    let isCommentsScroll = false;
+                    while (target) {
+                        if (target.id === 'frame-comments-list') {
+                            isCommentsScroll = true;
+                            break;
                         }
-                    } else if (e.deltaY < 0) {
-                        // Scroll up - go to previous
-                        if (window.currentFrameIndex > 0) {
-                            window.currentFrameIndex--;
-                            renderCurrentFramePost();
+                        target = target.parentElement;
+                    }
+                    
+                    if (!isCommentsScroll) {
+                        e.preventDefault();
+                        if (e.deltaY > 0) {
+                            // Scroll down - go to next
+                            if (window.currentFrameIndex < window.frameList.length - 1) {
+                                window.currentFrameIndex++;
+                                renderCurrentFramePost();
+                            }
+                        } else if (e.deltaY < 0) {
+                            // Scroll up - go to previous
+                            if (window.currentFrameIndex > 0) {
+                                window.currentFrameIndex--;
+                                renderCurrentFramePost();
+                            }
                         }
                     }
                 };
@@ -6376,12 +6394,12 @@
                     <div class="flex items-start gap-8">
                         <!-- Video Container (Vertical like Instagram Reels) -->
                         <div class="flex flex-col items-center">
-                            <div class="relative overflow-hidden" style="width: min(90vw, 400px); height: min(80vh, 700px); border-radius: 8px;">
+                            <div class="relative overflow-hidden" style="width: min(90vw, 450px); height: min(85vh, 780px); border-radius: 8px;">
                                 ${mediaHtml}
                             </div>
                             
                             <!-- Bottom Info: Author + Caption/Date -->
-                            <div class="mt-4 px-2" style="width: min(90vw, 400px);">
+                            <div class="mt-4 px-2" style="width: min(90vw, 450px);">
                                 <div class="flex items-start gap-3">
                                     <div class="img-placeholder rounded-full w-10 h-10 border border-gray-200 overflow-hidden shrink-0">
                                         <img src="${author.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
@@ -6447,28 +6465,28 @@
                         </div>
                         
                         <!-- Comments Panel -->
-                        <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 400px); height: min(80vh, 700px);">
-                            <div id="frame-comments-header" class="h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
+                        <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 450px); height: min(85vh, 780px);">
+                            <div id="frame-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
                                 <div class="flex items-center justify-between w-full">
-                                    <span class="font-bold text-lg text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
+                                    <span class="font-bold text-xl text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
                                     <div class="flex items-center gap-2">
-                                        <button class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                            <i data-lucide="search" class="w-4 h-4 text-gray-600"></i>
+                                        <button class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                            <i data-lucide="search" class="w-5 h-5 text-gray-600"></i>
                                         </button>
-                                        <button onclick="toggleFrameComments('${post.id}')" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                            <i data-lucide="x" class="w-4 h-4 text-gray-600"></i>
+                                        <button onclick="toggleFrameComments('${post.id}')" class="w-10 h-10 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                            <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
                                         </button>
                                     </div>
                                 </div>
                             </div>
-                            <div id="frame-comments-list" class="flex-1 overflow-y-auto px-4 py-2"></div>
-                            <div class="px-4 h-[64px] flex items-center border-t border-gray-100 bg-white shrink-0 rounded-b-[24px]">
+                            <div id="frame-comments-list" class="flex-1 overflow-y-auto px-6 py-3"></div>
+                            <div class="px-6 h-[72px] flex items-center border-t border-gray-100 bg-white shrink-0 rounded-b-[24px]">
                                 <div class="w-full">
-                                    <div class="flex items-center gap-2">
-                                        <img src="${currentUser.avatar}" class="w-7 h-7 rounded-full bg-gray-200 object-cover shrink-0">
-                                        <input type="text" id="frame-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-3 py-2 text-[13px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all">
-                                        <button onclick="addFrameComment('${post.id}')" class="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm">
-                                            <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                                    <div class="flex items-center gap-3">
+                                        <img src="${currentUser.avatar}" class="w-9 h-9 rounded-full bg-gray-200 object-cover shrink-0">
+                                        <input type="text" id="frame-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all">
+                                        <button onclick="addFrameComment('${post.id}')" class="w-11 h-11 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm">
+                                            <i data-lucide="arrow-up" class="w-5 h-5"></i>
                                         </button>
                                     </div>
                                 </div>
