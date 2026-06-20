@@ -4818,9 +4818,6 @@
                     d="M3 10.5L10.2 4.6C11.3 3.7 12.7 3.7 13.8 4.6L21 10.5C21.6 11 22 11.7 22 12.5V19C22 20.7 20.7 22 19 22H15C14.4 22 14 21.6 14 21V15C14 13.9 13.1 13 12 13C10.9 13 10 13.9 10 15V21C10 21.6 9.6 22 9 22H5C3.3 22 2 20.7 2 19V12.5C2 11.7 2.4 11 3 10.5Z" />
             </svg>
         </div>
-        <div class="mobile-nav-item" onclick="switchView('frame')" id="mobile-nav-frame">
-            <i data-lucide="clapperboard" class="custom-icon custom-icon-outline" id="mobile-frame-icon" style="stroke-width: 2;"></i>
-        </div>
         <div class="mobile-nav-item" onclick="switchView('explore')" id="mobile-nav-explore">
             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
                 class="custom-icon custom-icon-outline" id="mobile-explore-icon" style="stroke-width: 2;">
@@ -6274,6 +6271,7 @@
 
             // Add wheel scroll listener
             const viewFrame = document.getElementById('view-frame');
+            let isScrolling = false;
             if (viewFrame) {
                 viewFrame.onwheel = (e) => {
                     // Check if we're scrolling inside the comments container
@@ -6289,18 +6287,27 @@
                     
                     if (!isCommentsScroll) {
                         e.preventDefault();
-                        if (e.deltaY > 0) {
-                            // Scroll down - go to next
-                            if (window.currentFrameIndex < window.frameList.length - 1) {
-                                window.currentFrameIndex++;
-                                renderCurrentFramePost();
+                        
+                        if (!isScrolling) {
+                            isScrolling = true;
+                            
+                            if (e.deltaY > 0) {
+                                // Scroll down - go to next
+                                if (window.currentFrameIndex < window.frameList.length - 1) {
+                                    window.currentFrameIndex++;
+                                    renderCurrentFramePost();
+                                }
+                            } else if (e.deltaY < 0) {
+                                // Scroll up - go to previous
+                                if (window.currentFrameIndex > 0) {
+                                    window.currentFrameIndex--;
+                                    renderCurrentFramePost();
+                                }
                             }
-                        } else if (e.deltaY < 0) {
-                            // Scroll up - go to previous
-                            if (window.currentFrameIndex > 0) {
-                                window.currentFrameIndex--;
-                                renderCurrentFramePost();
-                            }
+                            
+                            setTimeout(() => {
+                                isScrolling = false;
+                            }, 600);
                         }
                     }
                 };
