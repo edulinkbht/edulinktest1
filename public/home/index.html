@@ -2716,6 +2716,32 @@
                 border-radius: 24px !important;
             }
         }
+
+        /* Frame comments styling */
+        #frame-comments-list .comment-item {
+            padding: 8px 0 !important;
+        }
+        #frame-comments-list .comment-item .img-placeholder {
+            width: 36px !important;
+            height: 36px !important;
+        }
+        #frame-comments-list .comment-item .text-gray-900 {
+            font-size: 13px !important;
+        }
+        #frame-comments-list .comment-item .text-gray-800 {
+            font-size: 12px !important;
+        }
+        #frame-comments-list .comment-item .text-gray-400 {
+            font-size: 11px !important;
+        }
+        #frame-comments-list .action-btn {
+            padding: 4px 8px !important;
+            font-size: 11px !important;
+        }
+        #frame-comments-list .action-btn i {
+            width: 14px !important;
+            height: 14px !important;
+        }
     </style>
 </head>
 
@@ -6285,12 +6311,15 @@
                 mediaHtml = `<video src="${firstMedia}" class="w-full h-full object-cover" autoplay playsinline muted loop></video>`;
             }
 
+            // We need to store the expansion state for the frame caption
+            if (!window.expandedTexts) window.expandedTexts = new Set();
+            
             document.getElementById('frame-container').innerHTML = `
-                <!-- Left Spacer for Sidebar -->
-                <div class="w-[88px] lg:w-[260px] flex-shrink-0"></div>
+                <!-- Left Spacer for Sidebar - make it a bit smaller to move video right -->
+                <div class="w-[80px] lg:w-[200px] flex-shrink-0"></div>
                 
                 <!-- Main Content -->
-                <div class="flex-1 h-full flex items-center justify-center pt-8">
+                <div class="flex-1 h-full flex items-center pt-8">
                     <!-- Center Content: Video + Bottom Info + Vertical Actions -->
                     <div class="flex items-start">
                         <!-- Video Container (Vertical like Instagram Reels) -->
@@ -6310,31 +6339,7 @@
                                             @${author.username || author.name}
                                         </div>
                                         <div class="text-sm text-gray-700">
-                                            <span id="frame-caption-text-${post.id}">
-                                                ${(post.content || '').length > 100 
-                                                    ? (post.content || '').substring(0, 100) + '...' 
-                                                    : (post.content || '')
-                                                }
-                                            </span>
-                                            ${(post.content || '').length > 100 ? `
-                                                <button 
-                                                    id="frame-caption-toggle-${post.id}" 
-                                                    class="text-xs font-bold text-gray-500 hover:text-gray-800 ml-1"
-                                                    onclick="
-                                                        const text = document.getElementById('frame-caption-text-${post.id}');
-                                                        const btn = document.getElementById('frame-caption-toggle-${post.id}');
-                                                        if (btn.textContent === ' see more') {
-                                                            text.textContent = '${(post.content || '').replace(/'/g, "\\'")}';
-                                                            btn.textContent = ' see less';
-                                                        } else {
-                                                            text.textContent = '${((post.content || '').substring(0, 100) + '...').replace(/'/g, "\\'")}';
-                                                            btn.textContent = ' see more';
-                                                        }
-                                                    "
-                                                >
-                                                     see more
-                                                </button>
-                                            ` : ''}
+                                            ${window.renderTextWithReadMore(post.content || '', `frame-caption-${post.id}`)}
                                         </div>
                                     </div>
                                 </div>
@@ -6345,7 +6350,7 @@
                         <div class="ml-8 self-end pb-24 flex flex-col gap-6">
                             <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); frameToggleLike('${post.id}')">
                                 <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                                    <i data-lucide="heart" class="${isLiked ? 'fill-red-500 text-red-500' : ''} w-6 h-6" id="frame-like-icon-${post.id}"></i>
+                                    <i data-lucide="heart" class="w-6 h-6" id="frame-like-icon-${post.id}"></i>
                                 </div>
                                 <span class="text-xs text-gray-700 font-semibold" id="frame-like-count-${post.id}">${post.likes?.length || 0}</span>
                             </button>
@@ -6365,7 +6370,7 @@
                             
                             <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); frameToggleSave('${post.id}')">
                                 <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                                    <i data-lucide="bookmark" class="${isSaved ? 'fill-current' : ''} w-6 h-6" id="frame-save-icon-${post.id}"></i>
+                                    <i data-lucide="bookmark" class="w-6 h-6" id="frame-save-icon-${post.id}"></i>
                                 </div>
                             </button>
                         </div>
@@ -6387,28 +6392,28 @@
                     </div>
                     
                     <!-- Comments Panel (Hidden by default) -->
-                    <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200 ml-8" style="width: 400px; height: 700px;">
-                        <div id="frame-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
+                    <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200 ml-8" style="width: 400px; height: 700px; margin-top: -40px;">
+                        <div id="frame-comments-header" class="h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
                             <div class="flex items-center justify-between w-full">
-                                <span class="font-bold text-xl text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
+                                <span class="font-bold text-lg text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
                                 <div class="flex items-center gap-2">
-                                    <button class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                        <i data-lucide="search" class="w-5 h-5 text-gray-600"></i>
+                                    <button class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                        <i data-lucide="search" class="w-4 h-4 text-gray-600"></i>
                                     </button>
-                                    <button onclick="toggleFrameComments('${post.id}')" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                        <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
+                                    <button onclick="toggleFrameComments('${post.id}')" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                        <i data-lucide="x" class="w-4 h-4 text-gray-600"></i>
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div id="frame-comments-list" class="flex-1 overflow-y-auto px-6"></div>
-                        <div class="px-6 h-[72px] flex items-center border-t border-gray-100 bg-white shrink-0 rounded-b-[24px]">
+                        <div id="frame-comments-list" class="flex-1 overflow-y-auto px-4 py-2"></div>
+                        <div class="px-4 h-[64px] flex items-center border-t border-gray-100 bg-white shrink-0 rounded-b-[24px]">
                             <div class="w-full">
                                 <div class="flex items-center gap-2">
-                                    <img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0">
-                                    <input type="text" id="frame-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-3 text-[15px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all">
-                                    <button onclick="addFrameComment('${post.id}')" class="w-10 h-10 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm">
-                                        <i data-lucide="arrow-up" class="w-5 h-5"></i>
+                                    <img src="${currentUser.avatar}" class="w-7 h-7 rounded-full bg-gray-200 object-cover shrink-0">
+                                    <input type="text" id="frame-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-3 py-2 text-[13px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all">
+                                    <button onclick="addFrameComment('${post.id}')" class="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm">
+                                        <i data-lucide="arrow-up" class="w-4 h-4"></i>
                                     </button>
                                 </div>
                             </div>
@@ -6416,6 +6421,21 @@
                     </div>
                 </div>
             `;
+            
+            // Initialize the like/save icons properly
+            const likeIcon = document.getElementById(`frame-like-icon-${post.id}`);
+            if (likeIcon) {
+                if (isLiked) {
+                    likeIcon.classList.add('fill-red-500', 'text-red-500');
+                }
+            }
+            const saveIcon = document.getElementById(`frame-save-icon-${post.id}`);
+            if (saveIcon) {
+                if (isSaved) {
+                    saveIcon.classList.add('fill-current');
+                }
+            }
+            refreshIcons();
             
             // Render comments using original comment functions!
             renderFrameComments(post.id);
@@ -6452,7 +6472,9 @@
             if (!post) return;
             if (!post.likes) post.likes = [];
             
-            if (post.likes.includes(currentUser.id)) {
+            const isCurrentlyLiked = post.likes.includes(currentUser.id);
+            
+            if (isCurrentlyLiked) {
                 post.likes = post.likes.filter(id => id !== currentUser.id);
             } else {
                 post.likes.push(currentUser.id);
@@ -6465,9 +6487,9 @@
             const likeCount = document.getElementById('frame-like-count-' + pid);
             
             if (likeIcon) {
-                if (post.likes.includes(currentUser.id)) {
+                if (!isCurrentlyLiked) { // Now liked after this click
                     likeIcon.classList.add('fill-red-500', 'text-red-500');
-                } else {
+                } else { // Now unliked
                     likeIcon.classList.remove('fill-red-500', 'text-red-500');
                 }
             }
