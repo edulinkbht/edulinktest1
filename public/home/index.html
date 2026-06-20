@@ -8307,25 +8307,19 @@
 
             let desktopHTML = '';
             if (isVideoPost) {
-                // Special video post layout for desktop with tabs!
+                // Special video post layout for desktop with toggleable side comments panel!
                 desktopHTML = `
                 <div class="desktop-split-view hidden md:flex w-full h-full flex-row overflow-hidden" style="max-width: 1200px;">
-                    <!-- Left Column: Video/Thumbnail & Post Info & Actions + Tabs -->
+                    <!-- Left Column: Video/Thumbnail & Post Info & Actions -->
                     <div class="flex flex-col h-full justify-center px-8" style="flex: 2;">
-                        <div class="flex items-center justify-center mb-4" id="video-tab-content">
+                        <div class="flex items-center justify-center mb-4">
                             <div class="relative overflow-hidden" style="width: 600px; height: 600px; border-radius: 24px;">
                                 ${mhDesktop}
                             </div>
                         </div>
 
-                        <!-- Tab Container -->
-                        <div class="flex items-center justify-center mb-4" id="video-post-tabs">
-                            <button onclick="switchVideoPostTab('video')" id="video-tab-btn" class="px-6 py-2 rounded-full font-bold text-black bg-white border border-gray-200 mr-2">Video</button>
-                            <button onclick="switchVideoPostTab('comments')" id="comments-tab-btn" class="px-6 py-2 rounded-full font-bold text-gray-600 bg-gray-100">Comments (${p.comments?.length || 0})</button>
-                        </div>
-
                         <!-- Post Info & Actions -->
-                        <div class="flex flex-col items-start gap-3" style="width: 600px;" id="post-info-section">
+                        <div class="flex flex-col items-start gap-3" style="width: 600px;">
                             <!-- Author & Text -->
                             <div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
                                 <div class="img-placeholder rounded-full w-12 h-12 border border-gray-100 overflow-hidden">
@@ -8342,7 +8336,7 @@
                                 <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''} !p-3 !rounded-full border border-gray-200 !w-12 !h-12" onclick="event.stopPropagation(); toggleLike('${p.id}')">
                                     <i data-lucide="heart" class="w-6 h-6"></i>
                                 </button>
-                                <button class="action-btn comment !p-3 !rounded-full border border-gray-200 !w-12 !h-12" onclick="event.stopPropagation(); switchVideoPostTab('comments')">
+                                <button class="action-btn comment !p-3 !rounded-full border border-gray-200 !w-12 !h-12" onclick="event.stopPropagation(); toggleVideoPostComments()">
                                     <i data-lucide="message-circle" class="w-6 h-6"></i>
                                 </button>
                                 <button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''} !p-3 !rounded-full border border-gray-200 !w-12 !h-12" onclick="event.stopPropagation(); toggleSave('${p.id}')">
@@ -8353,36 +8347,36 @@
                                 </button>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Comments Panel (Hidden by default, shown when tab is active) -->
-                        <div id="comments-tab-content" class="hidden flex flex-col" style="width: 600px; height: 600px; border-radius: 24px; overflow: hidden; background-color: white; border: 1px solid #e5e7eb;">
-                            <div id="post-view-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0">
-                                <div id="comment-header-default" class="flex items-center justify-between w-full">
-                                    <span class="font-bold text-xl text-gray-900">Comments (${p.comments?.length || 0})</span>
-                                    <div class="flex items-center gap-2">
-                                        <button onclick="toggleCommentSearch()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                            <i data-lucide="search" class="w-5 h-5 text-gray-600"></i>
-                                        </button>
-                                        <button onclick="closePostView()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                            <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div id="comment-header-search" class="hidden w-full flex items-center gap-2">
-                                    <div class="relative flex-1">
-                                        <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
-                                        <input type="text" id="comment-search-input-desktop" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search comments...">
-                                    </div>
-                                    <button onclick="toggleCommentSearch()" class="p-2 hover:bg-gray-100 rounded-full">
+                    <!-- Right Column: Comments (Initially hidden, toggleable) -->
+                    <div id="video-post-comments-panel" class="hidden flex flex-col h-full bg-white rounded-[24px] shadow-lg" style="flex: 1; min-width: 400px;">
+                        <div id="post-view-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
+                            <div id="comment-header-default" class="flex items-center justify-between w-full">
+                                <span class="font-bold text-xl text-gray-900">Comments (${p.comments?.length || 0})</span>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="toggleCommentSearch()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                        <i data-lucide="search" class="w-5 h-5 text-gray-600"></i>
+                                    </button>
+                                    <button onclick="toggleVideoPostComments()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
                                         <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
                                     </button>
                                 </div>
                             </div>
-                            <div id="post-view-comments" class="flex-1 overflow-y-auto px-6"></div>
-                            <div class="px-6 h-[72px] flex items-center border-t border-gray-100 bg-white shrink-0">
-                                <div class="w-full">
-                                    ${commentInputDesktop}
+                            <div id="comment-header-search" class="hidden w-full flex items-center gap-2">
+                                <div class="relative flex-1">
+                                    <i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                                    <input type="text" id="comment-search-input-desktop" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search comments...">
                                 </div>
+                                <button onclick="toggleCommentSearch()" class="p-2 hover:bg-gray-100 rounded-full">
+                                    <i data-lucide="x" class="w-5 h-5 text-gray-600"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="post-view-comments" class="flex-1 overflow-y-auto px-6"></div>
+                        <div class="px-6 h-[72px] flex items-center border-t border-gray-100 bg-white shrink-0 rounded-b-[24px]">
+                            <div class="w-full">
+                                ${commentInputDesktop}
                             </div>
                         </div>
                     </div>
@@ -8650,32 +8644,13 @@
             refreshIcons()
         };
         window.toggleCommentSearch = () => { window.isCommentSearchOpen = !window.isCommentSearchOpen; window.commentSearchTerm = ''; const dhd = document.getElementById('comment-header-default'), dhs = document.getElementById('comment-header-search'); if (dhd && dhs) { if (window.isCommentSearchOpen) { dhd.classList.add('hidden'); dhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-desktop')?.focus(), 100) } else { dhd.classList.remove('hidden'); dhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } const mhd = document.getElementById('mobile-comment-header-default'), mhs = document.getElementById('mobile-comment-header-search'); if (mhd && mhs) { if (window.isCommentSearchOpen) { mhd.classList.add('hidden'); mhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-mobile')?.focus(), 100) } else { mhd.classList.remove('hidden'); mhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } };
-        window.switchVideoPostTab = (tab) => {
-            const videoTabContent = document.getElementById('video-tab-content');
-            const commentsTabContent = document.getElementById('comments-tab-content');
-            const videoTabBtn = document.getElementById('video-tab-btn');
-            const commentsTabBtn = document.getElementById('comments-tab-btn');
-            const postInfoSection = document.getElementById('post-info-section');
-
-            if (tab === 'video') {
-                videoTabContent.classList.remove('hidden');
-                videoTabContent.classList.add('flex');
-                commentsTabContent.classList.add('hidden');
-                commentsTabContent.classList.remove('flex');
-                postInfoSection.classList.remove('hidden');
-
-                videoTabBtn.className = 'px-6 py-2 rounded-full font-bold text-black bg-white border border-gray-200 mr-2';
-                commentsTabBtn.className = 'px-6 py-2 rounded-full font-bold text-gray-600 bg-gray-100';
-            } else if (tab === 'comments') {
-                videoTabContent.classList.add('hidden');
-                videoTabContent.classList.remove('flex');
-                commentsTabContent.classList.remove('hidden');
-                commentsTabContent.classList.add('flex');
-                postInfoSection.classList.add('hidden');
-
-                videoTabBtn.className = 'px-6 py-2 rounded-full font-bold text-gray-600 bg-gray-100 mr-2';
-                commentsTabBtn.className = 'px-6 py-2 rounded-full font-bold text-black bg-white border border-gray-200';
-                renderCommentsInModal(window.currentViewingPostId);
+        window.toggleVideoPostComments = () => {
+            const commentsPanel = document.getElementById('video-post-comments-panel');
+            if (commentsPanel) {
+                commentsPanel.classList.toggle('hidden');
+                if (!commentsPanel.classList.contains('hidden')) {
+                    renderCommentsInModal(window.currentViewingPostId);
+                }
             }
         };
         window.handleCommentSearch = (val) => { window.commentSearchTerm = val.toLowerCase(); renderCommentsInModal(window.currentViewingPostId) };
