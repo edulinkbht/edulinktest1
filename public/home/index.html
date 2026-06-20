@@ -9841,6 +9841,7 @@
                         playsinline 
                         preload="metadata"
                         onclick="event.stopPropagation(); toggleVideoPlay('video-${uniqueId}')"
+                        onvolumechange="syncMuteButton('video-${uniqueId}')"
                     ></video>
                     <div class="custom-video-controls">
                         <button onclick="event.stopPropagation(); toggleVideoMute('video-${uniqueId}')" id="mute-btn-${uniqueId}">
@@ -9849,6 +9850,20 @@
                     </div>
                 </div>
             `;
+        };
+
+        // Sync mute button icon with video state
+        window.syncMuteButton = (videoId) => {
+            const video = document.getElementById(videoId);
+            const muteBtn = document.getElementById(`mute-btn-${videoId}`);
+            if (!video || !muteBtn) return;
+            
+            const iconContainer = muteBtn.querySelector('i');
+            if (iconContainer) {
+                const newIconName = video.muted ? 'volume-x' : 'volume-2';
+                iconContainer.setAttribute('data-lucide', newIconName);
+                lucide.createIcons({ elements: [iconContainer] });
+            }
         };
 
         // Toggle video play/pause
@@ -9871,10 +9886,13 @@
             video.muted = !video.muted;
             
             // Update the icon
-            const icon = muteBtn.querySelector('i');
-            if (icon) {
-                icon.setAttribute('data-lucide', video.muted ? 'volume-x' : 'volume-2');
-                lucide.createIcons();
+            const iconContainer = muteBtn.querySelector('i');
+            if (iconContainer) {
+                // Replace the icon with the new one
+                const newIconName = video.muted ? 'volume-x' : 'volume-2';
+                iconContainer.setAttribute('data-lucide', newIconName);
+                // Create the specific icon instead of all icons
+                lucide.createIcons({ elements: [iconContainer] });
             }
         };
 
