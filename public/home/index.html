@@ -6400,11 +6400,28 @@
                             <div class="flex items-start gap-8">
                                 <!-- Video Container (Vertical like Instagram Reels) -->
                                 <div class="flex flex-col items-center">
-                                    <div class="relative overflow-hidden border border-gray-200 cursor-pointer" style="width: min(90vw, 450px); height: min(85vh, 780px); border-radius: 8px;" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
-                                        ${mediaHtml}
+                                    <div id="frame-media-container-${post.id}" class="relative overflow-hidden border border-gray-200 bg-white cursor-pointer" style="width: min(90vw, 450px); height: min(85vh, 780px); border-radius: 8px;" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
+                                        <!-- Video Section -->
+                                        <div id="frame-video-section-${post.id}" class="absolute inset-0 flex items-center justify-center bg-black">
+                                            ${mediaHtml}
+                                        </div>
+                                        <!-- Caption Section -->
+                                        <div id="frame-caption-section-${post.id}" class="absolute inset-0 p-6 overflow-y-auto hidden">
+                                            <div class="flex flex-col gap-3">
+                                                <div class="font-bold text-gray-900 text-lg flex items-center gap-1">
+                                                    @${author.username || author.name}
+                                                </div>
+                                                <div class="text-gray-700" id="frame-full-caption-${post.id}">
+                                                    ${formatContent(post.content)}
+                                                </div>
+                                                <button class="mt-auto text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
+                                                    See less
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
                                     
-                                    <!-- Bottom Info: Author Username + Caption/Date -->
+                                    <!-- Bottom Info: Author Username + Short Caption -->
                                     <div class="mt-4 px-2" style="width: min(90vw, 450px);">
                                         <div class="flex flex-col">
                                             <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
@@ -6974,21 +6991,30 @@
             if (!window.expandedTexts) window.expandedTexts = new Set();
             const key = `frame-caption-${pid}`;
             
-            if (window.expandedTexts.has(key)) {
-                window.expandedTexts.delete(key);
-            } else {
-                window.expandedTexts.add(key);
-            }
-            
-            // Re-render only this specific caption instead of the whole frame
+            const videoSection = document.getElementById(`frame-video-section-${pid}`);
+            const captionSection = document.getElementById(`frame-caption-section-${pid}`);
+            const captionWrapper = document.getElementById(`frame-caption-wrapper-${pid}`);
             const post = window.frameList[index];
             if (!post) return;
             
+            if (window.expandedTexts.has(key)) {
+                // Show video again
+                window.expandedTexts.delete(key);
+                videoSection.classList.remove('hidden');
+                captionSection.classList.add('hidden');
+            } else {
+                // Show caption
+                window.expandedTexts.add(key);
+                videoSection.classList.add('hidden');
+                captionSection.classList.remove('hidden');
+            }
+            
+            // Also update the small bottom caption
             const hasCaption = post.content && post.content.trim() !== '';
             const words = hasCaption ? post.content.trim().split(/\s+/) : [];
-            const isExpanded = window.expandedTexts.has(`frame-caption-${pid}`);
-            
+            const isExpanded = window.expandedTexts.has(key);
             let captionHTML = '';
+            
             if (hasCaption) {
                 if (words.length <= 3 || isExpanded) {
                     captionHTML = `
@@ -7010,7 +7036,6 @@
                 }
             }
             
-            const captionWrapper = document.getElementById(`frame-caption-wrapper-${pid}`);
             if (captionWrapper) {
                 captionWrapper.innerHTML = captionHTML;
             }
