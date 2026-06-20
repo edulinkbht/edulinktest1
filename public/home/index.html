@@ -6368,7 +6368,7 @@
                 const isExpanded = window.expandedTexts?.has(`frame-caption-${post.id}`);
                 let captionHTML = '';
                 if (hasCaption) {
-                    if (words.length <= 7) {
+                    if (words.length <= 11) {
                         captionHTML = `
                             <span id="frame-caption-text-${post.id}">${formatContent(post.content)}</span>
                         `;
@@ -6441,7 +6441,7 @@
                                                 <img src="${author.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
                                             </div>
                                             <!-- Follow Button -->
-                                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-black flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors" onclick="event.stopPropagation(); toggleFollow('${author.id}')">
+                                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-black flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors border-2 border-white" onclick="event.stopPropagation(); toggleFollow('${author.id}')">
                                                 <i data-lucide="${currentUser.following.includes(author.id) ? 'check' : 'plus'}" class="w-4 h-4 text-white" id="frame-follow-icon-${author.id}-${index}"></i>
                                             </div>
                                         </div>
@@ -6482,10 +6482,7 @@
                                         <div class="flex items-center justify-between w-full">
                                             <span class="font-bold text-lg text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
                                             <div class="flex items-center gap-2">
-                                                <button class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                                    <i data-lucide="search" class="w-4 h-4 text-gray-600"></i>
-                                                </button>
-                                                <button onclick="toggleFrameComments('${post.id}', '${index}')" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                                <button onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
                                                     <i data-lucide="x" class="w-4 h-4 text-gray-600"></i>
                                                 </button>
                                             </div>
@@ -6522,6 +6519,7 @@
                         scroll-snap-type: y mandatory; 
                         overflow-y: scroll;
                         height: 100vh;
+                        overscroll-behavior: contain;
                     }
                     .frame-scroll-container::-webkit-scrollbar { display: none; }
                     .frame-slide { 
@@ -6565,6 +6563,14 @@
                 });
                 
                 window.currentFrameIndex = closestIndex;
+                
+                // Close all comment panels except current
+                window.frameList.forEach((post, index) => {
+                    const panel = document.getElementById(`frame-comments-panel-${post.id}`);
+                    if (panel && index !== closestIndex) {
+                        panel.classList.add('hidden');
+                    }
+                });
                 
                 // Show/hide up/down buttons (but keep both visible, just disabled maybe)
                 const upBtn = document.getElementById('frame-up-btn');
@@ -7011,8 +7017,8 @@
             const hasCaption = post.content && post.content.trim() !== '';
             const words = hasCaption ? post.content.trim().split(/\s+/) : [];
             
-            // Only toggle if caption is >7 words
-            if (words.length <= 7) return;
+            // Only toggle if caption is >11 words
+            if (words.length <= 11) return;
             
             if (window.expandedTexts.has(key)) {
                 // Show video again
@@ -7031,7 +7037,7 @@
             let captionHTML = '';
             
             if (hasCaption) {
-                if (words.length <= 7) {
+                if (words.length <= 11) {
                     captionHTML = `
                         <span id="frame-caption-text-${pid}">${formatContent(post.content)}</span>
                     `;
@@ -7083,6 +7089,54 @@
             const countEl = document.getElementById(`frame-comments-count-${postId}`);
             if (countEl) countEl.textContent = `Comments (${post.comments?.length || 0})`;
         }
+
+        window.toggleFrameComments = (postId, index) => {
+            const panel = document.getElementById(`frame-comments-panel-${postId}`);
+            if (!panel) return;
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                renderFrameComments(postId);
+            } else {
+                panel.classList.add('hidden');
+            }
+        };
+
+        window.frameToggleLike = (postId, index) => {
+            // Call the main toggleLike
+            window.toggleLike(postId);
+            
+            // Then update frame UI specifically
+            const likeIcon = document.getElementById(`frame-like-icon-${postId}-${index}`);
+            const likeCount = document.getElementById(`frame-like-count-${postId}-${index}`);
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            
+            const isLiked = post.likes?.includes(currentUser.id);
+            
+            if (likeIcon) {
+                if (isLiked) {
+                    likeIcon.classList.add('fill-red-500', 'text-red-500');
+                } else {
+                    likeIcon.classList.remove('fill-red-500', 'text-red-500');
+                }
+            }
+            if (likeCount) {
+                likeCount.textContent = post.likes?.length || 0;
+            }
+        };
+        
+        window.frameToggleSave = (postId, index) => {
+            window.toggleSave(postId);
+            const saveIcon = document.getElementById(`frame-save-icon-${postId}-${index}`);
+            const isSaved = savedPosts.includes(postId);
+            if (saveIcon) {
+                if (isSaved) {
+                    saveIcon.classList.add('fill-current');
+                } else {
+                    saveIcon.classList.remove('fill-current');
+                }
+            }
+        };
 
         window.addFrameComment = (postId) => {
             const input = document.getElementById(`frame-comment-input-${postId}`);
