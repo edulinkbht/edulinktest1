@@ -6341,13 +6341,23 @@
                     const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
                     if (embedInfo.type === 'video') {
                         // Don't autoplay initially - we'll control playback with updateActiveFrame
-                        mediaHtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" id="frame-embed-${post.id}"></iframe>`;
+                        mediaHtml = `
+                            <div class="w-full h-full flex items-center justify-center bg-gray-100 animate-pulse" id="frame-skeleton-${post.id}">
+                                <i data-lucide="video" class="w-16 h-16 text-gray-400"></i>
+                            </div>
+                            <iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0 hidden" allowfullscreen allow="autoplay; fullscreen" id="frame-embed-${post.id}" onload="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden');"></iframe>
+                        `;
                     }
                 } else if (post.media) {
                     const ma = Array.isArray(post.media) ? post.media : [post.media];
                     const firstMedia = ma[0];
                     // Don't autoplay initially - we'll control playback with updateActiveFrame
-                    mediaHtml = `<video src="${firstMedia}" class="w-full h-full object-cover" playsinline muted loop id="frame-video-${post.id}"></video>`;
+                    mediaHtml = `
+                        <div class="w-full h-full flex items-center justify-center bg-gray-100 animate-pulse" id="frame-skeleton-${post.id}">
+                            <i data-lucide="video" class="w-16 h-16 text-gray-400"></i>
+                        </div>
+                        <video src="${firstMedia}" class="w-full h-full object-cover hidden" playsinline muted loop id="frame-video-${post.id}" onloadeddata="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden');"></video>
+                    `;
                 }
                 
                 const hasCaption = post.content && post.content.trim() !== '';
