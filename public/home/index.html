@@ -9858,11 +9858,13 @@
             const muteBtn = document.getElementById(`mute-btn-${videoId}`);
             if (!video || !muteBtn) return;
             
-            const iconContainer = muteBtn.querySelector('i');
-            if (iconContainer) {
-                const newIconName = video.muted ? 'volume-x' : 'volume-2';
-                iconContainer.setAttribute('data-lucide', newIconName);
-                lucide.createIcons({ elements: [iconContainer] });
+            const newIconName = video.muted ? 'volume-x' : 'volume-2';
+            const newIcon = lucide.createElement(newIconName, { class: 'w-5 h-5' });
+            const oldIcon = muteBtn.querySelector('i, svg');
+            if (oldIcon) {
+                muteBtn.replaceChild(newIcon, oldIcon);
+            } else {
+                muteBtn.appendChild(newIcon);
             }
         };
 
@@ -9880,20 +9882,10 @@
         // Toggle video mute/unmute
         window.toggleVideoMute = (videoId) => {
             const video = document.getElementById(videoId);
-            const muteBtn = document.getElementById(`mute-btn-${videoId}`);
-            if (!video || !muteBtn) return;
+            if (!video) return;
             
             video.muted = !video.muted;
-            
-            // Update the icon
-            const iconContainer = muteBtn.querySelector('i');
-            if (iconContainer) {
-                // Replace the icon with the new one
-                const newIconName = video.muted ? 'volume-x' : 'volume-2';
-                iconContainer.setAttribute('data-lucide', newIconName);
-                // Create the specific icon instead of all icons
-                lucide.createIcons({ elements: [iconContainer] });
-            }
+            window.syncMuteButton(videoId);
         };
 
         // Keep old function for backwards compatibility
