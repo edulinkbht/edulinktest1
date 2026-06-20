@@ -6353,9 +6353,9 @@
                     mediaHtml = `
                         <div class="w-full h-full bg-black" id="frame-skeleton-${post.id}"></div>
                         <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black">
-                            <video src="${firstMedia}" class="w-full h-full object-contain hidden" playsinline muted loop id="frame-video-${post.id}" onloadeddata="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden');"></video>
+                            <video src="${firstMedia}" class="w-full h-full object-contain hidden" playsinline loop id="frame-video-${post.id}" onloadeddata="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden'); this.muted = window.globalVideoMuted;"></video>
                             <button onclick="event.stopPropagation(); toggleVideoMute('frame-video-${post.id}', 'frame-mute-btn-${post.id}')" class="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors" id="frame-mute-btn-${post.id}">
-                                <i data-lucide="volume-x" class="w-5 h-5 text-white"></i>
+                                <i data-lucide="${window.globalVideoMuted ? 'volume-x' : 'volume-2'}" class="w-5 h-5 text-white"></i>
                             </button>
                         </div>
                     `;
@@ -6368,7 +6368,11 @@
                 const isExpanded = window.expandedTexts?.has(`frame-caption-${post.id}`);
                 let captionHTML = '';
                 if (hasCaption) {
-                    if (words.length > 7) {
+                    if (words.length <= 7) {
+                        captionHTML = `
+                            <span id="frame-caption-text-${post.id}">${formatContent(post.content)}</span>
+                        `;
+                    } else {
                         captionHTML = `
                             <button class="text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}')">
                                 see more
@@ -6378,7 +6382,7 @@
                 }
                 
                 return `
-                    <div class="frame-slide w-full h-full flex-shrink-0 flex items-center justify-center" data-index="${index}" data-post-id="${post.id}">
+                    <div class="frame-slide w-full h-full flex-shrink-0 flex items-start justify-center pt-16" data-index="${index}" data-post-id="${post.id}">
                         <!-- Left Spacer for Sidebar -->
                         <div class="hidden lg:block lg:w-[260px] flex-shrink-0"></div>
                         <div class="w-[88px] lg:hidden flex-shrink-0"></div>
@@ -6428,7 +6432,7 @@
                                 </div>
                                 
                                 <!-- Vertical Action Buttons -->
-                                <div class="self-center flex flex-col gap-6">
+                                <div class="self-start pt-0 flex flex-col gap-6">
                                     <!-- Profile Avatar -->
                                     <div class="flex flex-col items-center gap-1">
                                         <div class="relative">
@@ -6890,15 +6894,30 @@
             }
         };
 
+        // Global mute state
+        window.globalVideoMuted = true;
+        
         window.toggleVideoMute = (videoId, btnId) => {
-            const video = document.getElementById(videoId);
-            const btn = document.getElementById(btnId);
-            if (video && btn) {
-                video.muted = !video.muted;
-                btn.innerHTML = `
-                    <i data-lucide="${video.muted ? 'volume-x' : 'volume-2'}" class="w-5 h-5 text-white"></i>
-                `;
-                refreshIcons();
+            // Toggle global state
+            window.globalVideoMuted = !window.globalVideoMuted;
+            
+            // Update ALL videos
+            if (window.frameList) {
+                window.frameList.forEach((post) => {
+                    const video = document.getElementById(`frame-video-${post.id}`);
+                    const btn = document.getElementById(`frame-mute-btn-${post.id}`);
+                    
+                    if (video) {
+                        video.muted = window.globalVideoMuted;
+                    }
+                    
+                    if (btn) {
+                        btn.innerHTML = `
+                            <i data-lucide="${window.globalVideoMuted ? 'volume-x' : 'volume-2'}" class="w-5 h-5 text-white"></i>
+                        `;
+                        refreshIcons();
+                    }
+                });
             }
         };
 
@@ -6986,6 +7005,12 @@
             const post = window.frameList[index];
             if (!post) return;
             
+            const hasCaption = post.content && post.content.trim() !== '';
+            const words = hasCaption ? post.content.trim().split(/\s+/) : [];
+            
+            // Only toggle if caption is >7 words
+            if (words.length <= 7) return;
+            
             if (window.expandedTexts.has(key)) {
                 // Show video again
                 window.expandedTexts.delete(key);
@@ -6999,13 +7024,15 @@
             }
             
             // Also update the small bottom caption
-            const hasCaption = post.content && post.content.trim() !== '';
-            const words = hasCaption ? post.content.trim().split(/\s+/) : [];
             const isExpanded = window.expandedTexts.has(key);
             let captionHTML = '';
             
             if (hasCaption) {
-                if (words.length > 7) {
+                if (words.length <= 7) {
+                    captionHTML = `
+                        <span id="frame-caption-text-${pid}">${formatContent(post.content)}</span>
+                    `;
+                } else {
                     captionHTML = `
                         <button class="text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${pid}', '${index}')">
                             ${isExpanded ? 'see less' : 'see more'}
