@@ -6364,6 +6364,19 @@
                 const hasCaption = post.content && post.content.trim() !== '';
                 const postDate = formatDate(post.timestamp || Date.now());
                 
+                const words = hasCaption ? post.content.trim().split(/\s+/) : [];
+                const isExpanded = window.expandedTexts?.has(`frame-caption-${post.id}`);
+                let captionHTML = '';
+                if (hasCaption) {
+                    if (words.length > 7) {
+                        captionHTML = `
+                            <button class="text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}')">
+                                see more
+                            </button>
+                        `;
+                    }
+                }
+                
                 return `
                     <div class="frame-slide w-full h-full flex-shrink-0 flex items-center justify-center" data-index="${index}" data-post-id="${post.id}">
                         <!-- Left Spacer for Sidebar -->
@@ -6394,6 +6407,22 @@
                                                     See less
                                                 </button>
                                             </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Bottom Info: Author Username + Short Caption -->
+                                    <div class="mt-4 px-2" style="width: min(90vw, 450px);">
+                                        <div class="flex flex-col">
+                                            <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
+                                                @${author.username || author.name}
+                                            </div>
+                                            ${hasCaption ? `
+                                                <div class="text-sm text-gray-700" id="frame-caption-wrapper-${post.id}">
+                                                    ${captionHTML}
+                                                </div>
+                                            ` : `
+                                                <div class="text-sm text-gray-500">${postDate}</div>
+                                            `}
                                         </div>
                                     </div>
                                 </div>
@@ -6953,6 +6982,9 @@
             
             const videoSection = document.getElementById(`frame-video-section-${pid}`);
             const captionSection = document.getElementById(`frame-caption-section-${pid}`);
+            const captionWrapper = document.getElementById(`frame-caption-wrapper-${pid}`);
+            const post = window.frameList[index];
+            if (!post) return;
             
             if (window.expandedTexts.has(key)) {
                 // Show video again
@@ -6964,6 +6996,26 @@
                 window.expandedTexts.add(key);
                 videoSection.classList.add('hidden');
                 captionSection.classList.remove('hidden');
+            }
+            
+            // Also update the small bottom caption
+            const hasCaption = post.content && post.content.trim() !== '';
+            const words = hasCaption ? post.content.trim().split(/\s+/) : [];
+            const isExpanded = window.expandedTexts.has(key);
+            let captionHTML = '';
+            
+            if (hasCaption) {
+                if (words.length > 7) {
+                    captionHTML = `
+                        <button class="text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${pid}', '${index}')">
+                            ${isExpanded ? 'see less' : 'see more'}
+                        </button>
+                    `;
+                }
+            }
+            
+            if (captionWrapper) {
+                captionWrapper.innerHTML = captionHTML;
             }
         };
 
