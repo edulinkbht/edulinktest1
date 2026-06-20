@@ -6099,6 +6099,12 @@
                 if (tp) tp.classList.add('hidden'); // Hide right sidebar
             } 
             
+            // Clean up frame keydown listener when leaving frame view
+            if (v !== 'frame' && window.frameKeydownHandler) {
+                document.removeEventListener('keydown', window.frameKeydownHandler);
+                window.frameKeydownHandler = null;
+            }
+            
             if (window.innerWidth >= 1280 && v !== 'frame') tp.classList.remove('hidden'), tp.classList.add('xl:flex'); 
             else if (v !== 'frame') tp.classList.add('hidden'), tp.classList.remove('xl:flex'); 
             
@@ -6297,18 +6303,12 @@
                 if (post.embedVideo) {
                     const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
                     if (embedInfo.type === 'video') {
-                        let autoplayUrl = embedInfo.url;
-                        if (autoplayUrl.includes('?')) {
-                            autoplayUrl += '&autoplay=1';
-                        } else {
-                            autoplayUrl += '?autoplay=1';
-                        }
-                        mediaHtml = `<iframe src="${autoplayUrl}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+                        mediaHtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" id="frame-embed-${post.id}"></iframe>`;
                     }
                 } else if (post.media) {
                     const ma = Array.isArray(post.media) ? post.media : [post.media];
                     const firstMedia = ma[0];
-                    mediaHtml = `<video src="${firstMedia}" class="w-full h-full object-cover" ${index === 0 ? 'autoplay' : ''} playsinline muted loop></video>`;
+                    mediaHtml = `<video src="${firstMedia}" class="w-full h-full object-cover" playsinline muted loop id="frame-video-${post.id}"></video>`;
                 }
                 
                 const hasCaption = post.content && post.content.trim() !== '';
@@ -6476,9 +6476,11 @@
                 </div>
             `;
             
-            // Add scroll listener to track current frame
+            // Add scroll listener to track current frame and control playback
             const scrollContainer = document.getElementById('frame-scroll-container');
-            scrollContainer.addEventListener('scroll', () => {
+            
+            // Function to handle video play/pause
+            function updateActiveFrame() {
                 const slides = document.querySelectorAll('.frame-slide');
                 let closestIndex = 0;
                 let closestDistance = Infinity;
@@ -6493,13 +6495,46 @@
                 });
                 
                 window.currentFrameIndex = closestIndex;
+                
+                // Pause all videos, then play the active one
+                window.frameList.forEach((post, index) => {
+                    const video = document.getElementById(`frame-video-${post.id}`);
+                    if (video) {
+                        if (index === closestIndex) {
+                            video.play().catch(() => {}); // Ignore autoplay errors
+                        } else {
+                            video.pause();
+                        }
+                    }
+                });
+            }
+            
+            scrollContainer.addEventListener('scroll', () => {
+                updateActiveFrame();
             });
+            
+            // Add keyboard navigation
+            function handleKeyDown(e) {
+                if (document.getElementById('view-frame').classList.contains('hidden')) return;
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    navigateFrame('down');
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    navigateFrame('up');
+                }
+            }
+            
+            document.addEventListener('keydown', handleKeyDown);
+            window.frameKeydownHandler = handleKeyDown;
             
             refreshIcons();
             
-            // Render comments for first post
+            // Render comments for first post and play first video
             if (window.frameList.length > 0) {
                 renderFrameComments(window.frameList[0].id);
+                updateActiveFrame();
             }
         };
 
