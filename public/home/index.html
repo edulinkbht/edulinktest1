@@ -4201,9 +4201,6 @@
                     </div>
                 </div>
             </div>
-            <div id="view-frame" class="flex-1 h-full overflow-hidden p-0 hidden bg-white">
-                <div id="frame-container" class="h-full w-full relative"></div>
-            </div>
             <div id="view-saved" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-16 md:pt-20">
                 <div class="px-4 pt-5 pb-3">
                     <div class="text-sm font-medium text-gray-700">Your saved posts</div>
@@ -4777,6 +4774,9 @@
                 </div>
             </div>
         </aside>
+    </div>
+    <div id="view-frame" class="fixed inset-0 z-40 bg-white hidden">
+        <div id="frame-container" class="h-full w-full relative"></div>
     </div>
     <nav id="mobile-bottom-nav"
         class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
@@ -6034,7 +6034,59 @@
             refreshIcons();
         };
         window.switchView = async (v, direction = 'none') => {
-            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications', 'settings', 'archived', 'notification-settings', 'mute-friends', 'create', 'frame'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); const tp = document.getElementById('trending-panel'), mh = document.getElementById('main-header'), mbn = document.getElementById('mobile-bottom-nav'), mnh = document.getElementById('mobile-notifications-header'), mp = document.getElementById('main-panel'); window.currentViewName = v; if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } if (mbn) mbn.classList.remove('hidden'); if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } if (v === 'profile' && mh) mh.classList.add('hidden'); if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create') && mh && window.innerWidth < 768) mh.classList.add('hidden'); if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); if (v === 'frame') { if (mh) mh.classList.add('hidden'); if (mbn) mbn.classList.add('hidden'); } if (window.innerWidth >= 1280 && v !== 'frame') tp.classList.remove('hidden'), tp.classList.add('xl:flex'); else tp.classList.add('hidden'), tp.classList.remove('xl:flex'); if (v !== 'ai') { const el = document.getElementById(`view-${v}`); if (el) { el.classList.remove('hidden'); if (direction === 'left') el.classList.add('slide-in-left'); if (direction === 'right') el.classList.add('slide-in-right') } } document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); if (nav) nav.classList.add('active'); 
+            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications', 'settings', 'archived', 'notification-settings', 'mute-friends', 'create', 'frame'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); 
+            
+            const ms = document.getElementById('main-sidebar'); // Left sidebar
+            const tp = document.getElementById('trending-panel'); // Right sidebar
+            const wl = document.getElementById('workspace-layout'); // The whole layout container
+            const mh = document.getElementById('main-header'), 
+                  mbn = document.getElementById('mobile-bottom-nav'), 
+                  mnh = document.getElementById('mobile-notifications-header'), 
+                  mp = document.getElementById('main-panel'); 
+            
+            window.currentViewName = v; 
+            
+            // Reset visibility for non-frame views
+            if (v !== 'frame') {
+                if (ms) ms.classList.remove('hidden');
+                if (wl) wl.classList.remove('hidden');
+                if (tp && window.innerWidth >= 1280) {
+                    tp.classList.remove('hidden');
+                    tp.classList.add('xl:flex');
+                }
+            }
+            
+            if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } 
+            if (mbn) mbn.classList.remove('hidden'); 
+            if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } 
+            if (v === 'profile' && mh) mh.classList.add('hidden'); 
+            if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create') && mh && window.innerWidth < 768) mh.classList.add('hidden'); 
+            if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } 
+            else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); 
+            
+            if (v === 'frame') { 
+                if (mh) mh.classList.add('hidden'); 
+                if (mbn) mbn.classList.add('hidden'); 
+                if (ms) ms.classList.add('hidden'); // Hide left sidebar
+                if (wl) wl.classList.add('hidden'); // Hide workspace (which contains main-panel & right sidebar)
+                if (tp) tp.classList.add('hidden'); // Hide right sidebar
+            } 
+            
+            if (window.innerWidth >= 1280 && v !== 'frame') tp.classList.remove('hidden'), tp.classList.add('xl:flex'); 
+            else if (v !== 'frame') tp.classList.add('hidden'), tp.classList.remove('xl:flex'); 
+            
+            if (v !== 'ai') { 
+                const el = document.getElementById(`view-${v}`); 
+                if (el) { 
+                    el.classList.remove('hidden'); 
+                    if (direction === 'left') el.classList.add('slide-in-left'); 
+                    if (direction === 'right') el.classList.add('slide-in-right'); 
+                } 
+            } 
+            
+            document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); 
+            const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); 
+            if (nav) nav.classList.add('active'); 
             
             if (v === 'frame') {
                 renderFrame();
