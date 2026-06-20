@@ -6270,23 +6270,19 @@
             if (post.embedVideo) {
                 const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
                 if (embedInfo.type === 'video') {
-                    if (embedInfo.thumbnail) {
-                        mediaHtml = `
-                            <img src="${embedInfo.thumbnail}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.thumbnail}'); this.classList.add('loaded')" onerror="this.style.display='none'">
-                            <div class="absolute inset-0 flex items-center justify-center bg-black/40 thumbnail-overlay" data-embed-id="${post.id}" data-embed-url="${embedInfo.url}">
-                                <div class="w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                                    <i data-lucide="play" class="w-10 h-10 text-white"></i>
-                                </div>
-                            </div>
-                        `;
+                    // Add autoplay to embedded video URL
+                    let autoplayUrl = embedInfo.url;
+                    if (autoplayUrl.includes('?')) {
+                        autoplayUrl += '&autoplay=1';
                     } else {
-                        mediaHtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+                        autoplayUrl += '?autoplay=1';
                     }
+                    mediaHtml = `<iframe src="${autoplayUrl}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
                 }
             } else if (post.media) {
                 const ma = Array.isArray(post.media) ? post.media : [post.media];
                 const firstMedia = ma[0];
-                mediaHtml = `<video src="${firstMedia}" class="w-full h-full object-cover" controls playsinline muted loop></video>`;
+                mediaHtml = `<video src="${firstMedia}" class="w-full h-full object-cover" autoplay playsinline muted loop></video>`;
             }
 
             document.getElementById('frame-container').innerHTML = `
@@ -6294,11 +6290,11 @@
                 <div class="w-[88px] lg:w-[260px] flex-shrink-0"></div>
                 
                 <!-- Main Content -->
-                <div class="flex-1 h-full flex items-center justify-center gap-0">
+                <div class="flex-1 h-full flex items-start justify-start pl-16 pt-8">
                     <!-- Center Content: Video + Bottom Info + Vertical Actions -->
-                    <div class="flex items-center h-full">
+                    <div class="flex items-start h-full">
                         <!-- Video Container (Vertical like Instagram Reels) -->
-                        <div class="flex flex-col items-center justify-center h-full">
+                        <div class="flex flex-col items-center">
                             <div class="relative overflow-hidden" style="width: 400px; height: 700px; border-radius: 8px;">
                                 ${mediaHtml}
                             </div>
@@ -6346,7 +6342,7 @@
                         </div>
                         
                         <!-- Vertical Action Buttons -->
-                        <div class="ml-8 flex flex-col gap-6">
+                        <div class="ml-8 mt-24 flex flex-col gap-6">
                             <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); frameToggleLike('${post.id}')">
                                 <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                                     <i data-lucide="heart" class="${isLiked ? 'fill-red-500 text-red-500' : ''} w-6 h-6"></i>
@@ -6375,7 +6371,7 @@
                         </div>
                         
                         <!-- Up/Down Navigation -->
-                        <div class="absolute right-16 flex flex-col gap-4">
+                        <div class="absolute right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4">
                             ${window.currentFrameIndex > 0 ? `
                                 <button onclick="navigateFrame('up')" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                                     <i data-lucide="chevron-up" class="w-7 h-7 text-gray-500"></i>
@@ -6391,7 +6387,7 @@
                     </div>
                     
                     <!-- Comments Panel (Hidden by default) -->
-                    <div id="frame-comments-panel" class="hidden flex flex-col h-full bg-white rounded-[24px] shadow-xl ml-8" style="width: 400px;">
+                    <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] shadow-xl ml-8" style="width: 400px; height: 700px;">
                         <div id="frame-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
                             <div class="flex items-center justify-between w-full">
                                 <span class="font-bold text-xl text-gray-900">Comments (${post.comments?.length || 0})</span>
