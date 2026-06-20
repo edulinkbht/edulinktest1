@@ -6111,25 +6111,30 @@
                 if (tp) tp.classList.add('hidden'); // Hide right sidebar
             } 
             
-            // Clean up frame keydown listener and stop ALL videos when leaving frame view
+            // Clean up frame keydown listener and COMPLETELY STOP ALL videos when leaving frame view
             if (v !== 'frame' && window.frameList) {
-                // Stop all videos (both HTML5 and embedded)
+                // First stop all videos
                 window.frameList.forEach((post) => {
                     // Stop HTML5 videos
                     const video = document.getElementById(`frame-video-${post.id}`);
                     if (video) {
                         video.pause();
                         video.currentTime = 0;
+                        video.src = ''; // Clear source to stop completely
                     }
                     
-                    // Stop embedded videos (reload iframe to stop playback)
+                    // Stop embedded videos (remove src completely)
                     const embed = document.getElementById(`frame-embed-${post.id}`);
-                    if (embed && embed.src) {
-                        const src = embed.src;
+                    if (embed) {
                         embed.src = '';
-                        embed.src = src;
                     }
                 });
+                
+                // Clear the entire frame container to remove all video elements
+                const frameContainer = document.getElementById('frame-container');
+                if (frameContainer) {
+                    frameContainer.innerHTML = '';
+                }
                 
                 if (window.frameKeydownHandler) {
                     document.removeEventListener('keydown', window.frameKeydownHandler);
@@ -6319,14 +6324,8 @@
                 return;
             }
 
-            // Render just the current frame
-            renderCurrentFramePost();
-            // Play the first video
-            const firstPost = window.frameList[0];
-            const firstVideo = document.getElementById(`frame-video-${firstPost.id}`);
-            if (firstVideo) {
-                firstVideo.play().catch(() => {});
-            }
+            // Render all videos in a scrollable container with snap points
+            renderAllFrames();
         };
         
         function renderAllFrames() {
@@ -6823,7 +6822,8 @@
         }
 
         window.navigateFrame = (direction) => {
-            if (!window.frameList || !window.currentFrameIndex) return;
+            const scrollContainer = document.getElementById('frame-scroll-container');
+            if (!scrollContainer || !window.frameList) return;
             
             let newIndex = window.currentFrameIndex;
             
@@ -6834,22 +6834,10 @@
             }
             
             if (newIndex !== window.currentFrameIndex) {
-                // First pause the current video
-                const currentPost = window.frameList[window.currentFrameIndex];
-                const currentVideo = document.getElementById(`frame-video-${currentPost.id}`);
-                if (currentVideo) {
-                    currentVideo.pause();
-                    currentVideo.currentTime = 0;
-                }
-                
                 window.currentFrameIndex = newIndex;
-                renderCurrentFramePost();
-                
-                // Now play the new video
-                const newPost = window.frameList[newIndex];
-                const newVideo = document.getElementById(`frame-video-${newPost.id}`);
-                if (newVideo) {
-                    newVideo.play().catch(() => {});
+                const targetSlide = scrollContainer.querySelector(`[data-index="${newIndex}"]`);
+                if (targetSlide) {
+                    targetSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             }
         };
