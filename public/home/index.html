@@ -6354,6 +6354,17 @@
                         <div class="w-full h-full bg-black" id="frame-skeleton-${post.id}"></div>
                         <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black">
                             <video src="${firstMedia}" class="w-full h-full object-contain hidden" playsinline loop id="frame-video-${post.id}" onloadeddata="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden'); this.muted = window.globalVideoMuted;"></video>
+                            <!-- Top buttons -->
+                            <div class="absolute top-4 left-4 flex gap-2 z-20">
+                                <button onclick="event.stopPropagation(); sharePost('${post.id}')" class="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors">
+                                    <i data-lucide="share-2" class="w-5 h-5 text-white"></i>
+                                </button>
+                            </div>
+                            <div class="absolute top-4 right-14 flex gap-2 z-20">
+                                <button onclick="event.stopPropagation(); showPostOptions(event,'${post.id}','${post.authorId}')" class="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors">
+                                    <i data-lucide="more-vertical" class="w-5 h-5 text-white"></i>
+                                </button>
+                            </div>
                             <button onclick="event.stopPropagation(); toggleVideoMute('frame-video-${post.id}', 'frame-mute-btn-${post.id}')" class="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors" id="frame-mute-btn-${post.id}">
                                 <i data-lucide="${window.globalVideoMuted ? 'volume-x' : 'volume-2'}" class="w-5 h-5 text-white"></i>
                             </button>
@@ -7158,8 +7169,42 @@
             post.comments.unshift(newComment);
             localStorage.setItem('edulink_posts', JSON.stringify(posts));
             
+            // Also update Firestore
+            updateDoc(doc(db, "posts", postId), { comments: post.comments });
+            
+            // Send notification to post author
+            if (post.authorId !== currentUser.id) sendNotification(post.authorId, 'comment', 'commented on your post', postId);
+            
             input.value = '';
             renderFrameComments(postId);
+        };
+        
+        window.openFrameView = (targetPostId) => {
+            // First switch to frame view
+            switchView('frame');
+            
+            // Wait a tiny bit for the DOM to update, then find and scroll to the target post
+            setTimeout(() => {
+                const scrollContainer = document.getElementById('frame-scroll-container');
+                if (!scrollContainer || !window.frameList) return;
+                
+                // Find the index of the target post
+                const targetIndex = window.frameList.findIndex(p => p.id === targetPostId);
+                if (targetIndex === -1) return;
+                
+                // Set current index
+                window.currentFrameIndex = targetIndex;
+                
+                // Find the slide element
+                const targetSlide = document.querySelector(`.frame-slide[data-index="${targetIndex}"]`);
+                if (targetSlide) {
+                    // Scroll to the slide (align to top)
+                    targetSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+                
+                // Call updateActiveFrame to make sure everything is synced
+                updateActiveFrame();
+            }, 100);
         };
         
 
@@ -7406,7 +7451,15 @@
         let touchStartX = 0, touchEndX = 0; window.handleTouchStart = e => touchStartX = e.changedTouches[0].screenX; window.handleTouchEnd = (e, pid, ov) => { touchEndX = e.changedTouches[0].screenX; const w = e.currentTarget.closest('.post-carousel'); if (w && Math.abs(touchStartX - touchEndX) > 50) moveCarousel(w.id, touchStartX > touchEndX ? 1 : -1) };
         function createPostElement(p, ctx = 'feed') {
             const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); d.id = `post-card-${ctx}-${p.id}`; d.className = "post-card group overflow-hidden w-full md:max-w-2xl md:mx-auto md:px-4 md:mb-4"; 
-            d.onclick = () => { openPostView(p.id); trackInteraction(p.id, 'view', 1) };
+            d.onclick = () => { 
+                // Check if this is a video/embed post
+                if (p.media || p.embedVideo) {
+                    openFrameView(p.id);
+                } else {
+                    openPostView(p.id); 
+                }
+                trackInteraction(p.id, 'view', 1); 
+            };
             // Observe for virtual list memory management
             if (ctx === 'feed' && window.postsInDOM && window.postsInDOM.set) {
                 window.postsInDOM.set(p.id, d);
