@@ -6205,7 +6205,7 @@
                 return;
             }
 
-            // Create vertical snap scrolling container
+            // Create vertical snap scrolling container with flex layout
             container.innerHTML = `
                 <div id="frame-scroll-container" class="h-full w-full overflow-y-scroll snap-y snap-mandatory">
                     ${videoPosts.map((post, index) => createFrameItem(post, index)).join('')}
@@ -6252,7 +6252,7 @@
                 if (embedInfo.type === 'video') {
                     if (embedInfo.thumbnail) {
                         mediaHtml = `
-                            <div class="relative w-full h-full flex items-center justify-center">
+                            <div class="relative w-full h-full flex items-center justify-center rounded-3xl overflow-hidden">
                                 <img src="${embedInfo.thumbnail}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.thumbnail}'); this.classList.add('loaded')">
                                 <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 cursor-pointer" id="play-${post.id}" onclick="event.stopPropagation(); this.style.display='none'; document.getElementById('iframe-${post.id}').src += '&autoplay=1';">
                                     <div class="w-16 h-16 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center">
@@ -6263,57 +6263,62 @@
                             </div>
                         `;
                     } else {
-                        mediaHtml = `<iframe src="${embedInfo.url}" class="w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+                        mediaHtml = `<iframe src="${embedInfo.url}" class="w-full h-full border-0 rounded-3xl" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
                     }
                 }
             } else if (post.media) {
                 const ma = Array.isArray(post.media) ? post.media : [post.media];
                 const firstMedia = ma[0];
-                mediaHtml = `<video id="video-${post.id}" src="${firstMedia}" class="w-full h-full object-cover" controls playsinline muted loop></video>`;
+                mediaHtml = `<video id="video-${post.id}" src="${firstMedia}" class="w-full h-full object-cover rounded-3xl" controls playsinline muted loop></video>`;
             }
 
             return `
-                <div class="frame-item h-full w-full snap-start relative bg-black" data-index="${index}">
-                    ${mediaHtml}
-                    
-                    <!-- Action buttons (right side) -->
-                    <div class="absolute right-4 bottom-32 flex flex-col gap-6 items-center z-10">
-                        <div class="flex flex-col items-center gap-1">
-                            <button class="w-12 h-12 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center text-white" onclick="event.stopPropagation(); toggleLike('${post.id}')">
-                                <i data-lucide="heart" class="${isLiked ? 'fill-red-500 text-red-500' : ''} w-7 h-7"></i>
-                            </button>
-                            <span class="text-white text-sm font-bold">${post.likes?.length || 0}</span>
-                        </div>
-                        
-                        <div class="flex flex-col items-center gap-1">
-                            <button class="w-12 h-12 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center text-white" onclick="event.stopPropagation(); openPostView('${post.id}')">
-                                <i data-lucide="message-circle" class="w-7 h-7"></i>
-                            </button>
-                            <span class="text-white text-sm font-bold">${post.comments?.length || 0}</span>
-                        </div>
-                        
-                        <div class="flex flex-col items-center gap-1">
-                            <button class="w-12 h-12 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center text-white" onclick="event.stopPropagation(); toggleSave('${post.id}')">
-                                <i data-lucide="bookmark" class="${isSaved ? 'fill-yellow-500 text-yellow-500' : ''} w-7 h-7"></i>
-                            </button>
-                        </div>
-                        
-                        <div class="flex flex-col items-center gap-1">
-                            <button class="w-12 h-12 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center text-white" onclick="event.stopPropagation(); sharePost('${post.id}')">
-                                <i data-lucide="repeat-2" class="w-7 h-7"></i>
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <!-- Bottom info (author and caption) -->
-                    <div class="absolute left-4 bottom-16 text-white max-w-[70%] z-10">
-                        <div class="flex items-center gap-3 mb-2">
-                            <div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
-                                <img src="${author.avatar}" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
+                <div class="frame-item h-full w-full snap-start relative bg-black flex items-center justify-center px-4 md:px-8" data-index="${index}">
+                    <div class="flex flex-col md:flex-row items-center gap-6 w-full max-w-6xl">
+                        <!-- Video Container -->
+                        <div class="w-full md:w-3/4 h-[60vh] md:h-[80vh]">
+                            ${mediaHtml}
+                            
+                            <!-- Bottom info (author and caption) -->
+                            <div class="mt-4 text-white">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-10 h-10 rounded-full overflow-hidden border border-gray-600">
+                                        <img src="${author.avatar}" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
+                                    </div>
+                                    <span class="font-bold text-lg">@${author.username || author.name}</span>
+                                </div>
+                                <p class="text-sm leading-relaxed">${post.content || ''}</p>
                             </div>
-                            <span class="font-bold text-lg">@${author.username || author.name}</span>
                         </div>
-                        <p class="text-sm leading-relaxed">${post.content || ''}</p>
+                        
+                        <!-- Action buttons (right side, outside video) -->
+                        <div class="flex md:flex-col gap-6 items-center">
+                            <div class="flex flex-col items-center gap-1">
+                                <button class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-white hover:bg-gray-700 transition-colors" onclick="event.stopPropagation(); toggleLike('${post.id}')">
+                                    <i data-lucide="heart" class="${isLiked ? 'fill-red-500 text-red-500' : ''} w-7 h-7"></i>
+                                </button>
+                                <span class="text-white text-sm font-bold">${post.likes?.length || 0}</span>
+                            </div>
+                            
+                            <div class="flex flex-col items-center gap-1">
+                                <button class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-white hover:bg-gray-700 transition-colors" onclick="event.stopPropagation(); openPostView('${post.id}')">
+                                    <i data-lucide="message-circle" class="w-7 h-7"></i>
+                                </button>
+                                <span class="text-white text-sm font-bold">${post.comments?.length || 0}</span>
+                            </div>
+                            
+                            <div class="flex flex-col items-center gap-1">
+                                <button class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-white hover:bg-gray-700 transition-colors" onclick="event.stopPropagation(); toggleSave('${post.id}')">
+                                    <i data-lucide="bookmark" class="${isSaved ? 'fill-yellow-500 text-yellow-500' : ''} w-7 h-7"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex flex-col items-center gap-1">
+                                <button class="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center text-white hover:bg-gray-700 transition-colors" onclick="event.stopPropagation(); sharePost('${post.id}')">
+                                    <i data-lucide="repeat-2" class="w-7 h-7"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
