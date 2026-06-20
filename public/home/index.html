@@ -4056,7 +4056,13 @@
                     <path
                         d="M3 10.5L10.2 4.6C11.3 3.7 12.7 3.7 13.8 4.6L21 10.5C21.6 11 22 11.7 22 12.5V19C22 20.7 20.7 22 19 22H15C14.4 22 14 21.6 14 21V15C14 13.9 13.1 13 12 13C10.9 13 10 13.9 10 15V21C10 21.6 9.6 22 9 22H5C3.3 22 2 20.7 2 19V12.5C2 11.7 2.4 11 3 10.5Z" />
                 </svg>
-                <span class="sidebar-label hidden lg:block">Home</span></a><a href="#" onclick="switchView('explore');return false;"
+                <span class="sidebar-label hidden lg:block">Home</span></a><a href="#" onclick="switchView('shorts');return false;"
+                id="nav-shorts" class="nav-item">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" class="custom-icon custom-icon-outline" id="nav-shorts-icon">
+                    <path d="M10 18V6l10 6-10 6Z" />
+                    <rect x="3" y="4" width="4" height="16" rx="1" />
+                </svg>
+                <span class="sidebar-label hidden lg:block">Shorts</span></a><a href="#" onclick="switchView('explore');return false;"
                 id="nav-explore" class="nav-item">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
                     class="custom-icon custom-icon-outline" id="nav-explore-icon">
@@ -4197,6 +4203,9 @@
                         <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                     </div>
                 </div>
+            </div>
+            <div id="view-shorts" class="flex-1 h-full overflow-y-hidden no-scrollbar p-0 hidden bg-black">
+                <div id="shorts-container" class="h-full w-full"></div>
             </div>
             <div id="view-saved" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-16 md:pt-20">
                 <div class="px-4 pt-5 pb-3">
@@ -4779,6 +4788,12 @@
                 class="custom-icon custom-icon-filled" id="mobile-feed-icon" style="stroke-width: 2;">
                 <path
                     d="M3 10.5L10.2 4.6C11.3 3.7 12.7 3.7 13.8 4.6L21 10.5C21.6 11 22 11.7 22 12.5V19C22 20.7 20.7 22 19 22H15C14.4 22 14 21.6 14 21V15C14 13.9 13.1 13 12 13C10.9 13 10 13.9 10 15V21C10 21.6 9.6 22 9 22H5C3.3 22 2 20.7 2 19V12.5C2 11.7 2.4 11 3 10.5Z" />
+            </svg>
+        </div>
+        <div class="mobile-nav-item" onclick="switchView('shorts')" id="mobile-nav-shorts">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" class="custom-icon custom-icon-outline" id="mobile-shorts-icon" style="stroke-width: 2;">
+                <path d="M10 18V6l10 6-10 6Z" />
+                <rect x="3" y="4" width="4" height="16" rx="1" />
             </svg>
         </div>
         <div class="mobile-nav-item" onclick="switchView('explore')" id="mobile-nav-explore">
@@ -6025,9 +6040,11 @@
             refreshIcons();
         };
         window.switchView = async (v, direction = 'none') => {
-            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications', 'settings', 'archived', 'notification-settings', 'mute-friends', 'create'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); const tp = document.getElementById('trending-panel'), mh = document.getElementById('main-header'), mbn = document.getElementById('mobile-bottom-nav'), mnh = document.getElementById('mobile-notifications-header'), mp = document.getElementById('main-panel'); window.currentViewName = v; if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } if (mbn) mbn.classList.remove('hidden'); if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } if (v === 'profile' && mh) mh.classList.add('hidden'); if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create') && mh && window.innerWidth < 768) mh.classList.add('hidden'); if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); if (window.innerWidth >= 1280) tp.classList.remove('hidden'), tp.classList.add('xl:flex'); if (v !== 'ai') { const el = document.getElementById(`view-${v}`); if (el) { el.classList.remove('hidden'); if (direction === 'left') el.classList.add('slide-in-left'); if (direction === 'right') el.classList.add('slide-in-right') } } document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); if (nav) nav.classList.add('active'); 
+            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications', 'settings', 'archived', 'notification-settings', 'mute-friends', 'create', 'shorts'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); const tp = document.getElementById('trending-panel'), mh = document.getElementById('main-header'), mbn = document.getElementById('mobile-bottom-nav'), mnh = document.getElementById('mobile-notifications-header'), mp = document.getElementById('main-panel'); window.currentViewName = v; if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } if (mbn) mbn.classList.remove('hidden'); if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } if (v === 'profile' && mh) mh.classList.add('hidden'); if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create') && mh && window.innerWidth < 768) mh.classList.add('hidden'); if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); if (v === 'shorts') { if (mh) mh.classList.add('hidden'); if (mbn) mbn.classList.add('hidden'); } if (window.innerWidth >= 1280) tp.classList.remove('hidden'), tp.classList.add('xl:flex'); if (v !== 'ai') { const el = document.getElementById(`view-${v}`); if (el) { el.classList.remove('hidden'); if (direction === 'left') el.classList.add('slide-in-left'); if (direction === 'right') el.classList.add('slide-in-right') } } document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); if (nav) nav.classList.add('active'); 
             
-            if (v === 'create' && !window.editingPostId) {
+            if (v === 'shorts') {
+                renderShorts();
+            } else if (v === 'create' && !window.editingPostId) {
                 // Only reset state if we're NOT editing a post
                 window.composeStep = 1;
                 window.composeImages = [null, null, null, null];
@@ -6160,6 +6177,152 @@
             }
             refreshIcons();
         };
+
+        window.renderShorts = () => {
+            const container = document.getElementById('shorts-container');
+            if (!container) return;
+
+            // Filter to only video posts
+            const allPosts = [...posts];
+            const videoPosts = allPosts.filter(post => {
+                if (post.embedVideo) {
+                    const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
+                    return embedInfo.type === 'video';
+                } else if (post.media) {
+                    const ma = Array.isArray(post.media) ? post.media : [post.media];
+                    const firstMedia = ma[0];
+                    return firstMedia && (firstMedia.includes('video') || firstMedia.endsWith('.mp4') || firstMedia.startsWith('data:video'));
+                }
+                return false;
+            });
+
+            window.shortsList = videoPosts;
+            window.currentShortIndex = 0;
+
+            if (videoPosts.length === 0) {
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-full text-white">
+                        <i data-lucide="video" class="w-16 h-16 mb-4 opacity-50"></i>
+                        <h3 class="text-xl font-bold mb-2">No shorts yet</h3>
+                        <p class="text-gray-300">Be the first to share a short!</p>
+                    </div>
+                `;
+                refreshIcons();
+                return;
+            }
+
+            // Create vertical snap scrolling container
+            container.innerHTML = `
+                <div id="shorts-scroll-container" class="h-full w-full overflow-y-scroll snap-y snap-mandatory">
+                    ${videoPosts.map((post, index) => createShortItem(post, index)).join('')}
+                </div>
+            `;
+
+            refreshIcons();
+
+            // Setup Intersection Observer to track current short and play/pause
+            const scrollContainer = document.getElementById('shorts-scroll-container');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const index = parseInt(entry.target.dataset.index);
+                        window.currentShortIndex = index;
+                        // Play video if present
+                        const video = entry.target.querySelector('video');
+                        if (video) {
+                            video.play().catch(() => {});
+                        }
+                    } else {
+                        // Pause video if not visible
+                        const video = entry.target.querySelector('video');
+                        if (video) {
+                            video.pause();
+                        }
+                    }
+                });
+            }, {
+                threshold: 0.5
+            });
+
+            document.querySelectorAll('.short-item').forEach(el => observer.observe(el));
+        };
+
+        function createShortItem(post, index) {
+            const author = users.find(u => u.id === post.authorId) || { name: 'Unknown', avatar: '', username: 'unknown' };
+            const isLiked = post.likes?.includes(currentUser.id);
+            const isSaved = savedPosts.includes(post.id);
+            let mediaHtml = '';
+            
+            if (post.embedVideo) {
+                const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
+                if (embedInfo.type === 'video') {
+                    if (embedInfo.thumbnail) {
+                        mediaHtml = `
+                            <div class="relative w-full h-full flex items-center justify-center">
+                                <img src="${embedInfo.thumbnail}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.thumbnail}'); this.classList.add('loaded')">
+                                <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 cursor-pointer" onclick="openPostView('${post.id}')">
+                                    <div class="w-16 h-16 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center">
+                                        <i data-lucide="play" class="w-10 h-10 text-white"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        mediaHtml = `<iframe src="${embedInfo.url}" class="w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+                    }
+                }
+            } else if (post.media) {
+                const ma = Array.isArray(post.media) ? post.media : [post.media];
+                const firstMedia = ma[0];
+                mediaHtml = `<video src="${firstMedia}" class="w-full h-full object-cover" controls playsinline muted loop></video>`;
+            }
+
+            return `
+                <div class="short-item h-full w-full snap-start relative bg-black" data-index="${index}">
+                    ${mediaHtml}
+                    
+                    <!-- Action buttons (right side) -->
+                    <div class="absolute right-4 bottom-32 flex flex-col gap-6 items-center">
+                        <div class="flex flex-col items-center gap-1">
+                            <button class="w-12 h-12 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center text-white" onclick="event.stopPropagation(); toggleLike('${post.id}')">
+                                <i data-lucide="heart" class="${isLiked ? 'fill-red-500 text-red-500' : ''} w-7 h-7"></i>
+                            </button>
+                            <span class="text-white text-sm font-bold">${post.likes?.length || 0}</span>
+                        </div>
+                        
+                        <div class="flex flex-col items-center gap-1">
+                            <button class="w-12 h-12 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center text-white" onclick="event.stopPropagation(); openPostView('${post.id}')">
+                                <i data-lucide="message-circle" class="w-7 h-7"></i>
+                            </button>
+                            <span class="text-white text-sm font-bold">${post.comments?.length || 0}</span>
+                        </div>
+                        
+                        <div class="flex flex-col items-center gap-1">
+                            <button class="w-12 h-12 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center text-white" onclick="event.stopPropagation(); toggleSave('${post.id}')">
+                                <i data-lucide="bookmark" class="${isSaved ? 'fill-yellow-500 text-yellow-500' : ''} w-7 h-7"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="flex flex-col items-center gap-1">
+                            <button class="w-12 h-12 rounded-full bg-white bg-opacity-20 backdrop-blur-sm flex items-center justify-center text-white" onclick="event.stopPropagation(); sharePost('${post.id}')">
+                                <i data-lucide="repeat-2" class="w-7 h-7"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Bottom info (author and caption) -->
+                    <div class="absolute left-4 bottom-16 text-white max-w-[70%]">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-10 h-10 rounded-full border-2 border-white overflow-hidden">
+                                <img src="${author.avatar}" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
+                            </div>
+                            <span class="font-bold text-lg">@${author.username || author.name}</span>
+                        </div>
+                        <p class="text-sm leading-relaxed">${post.content || ''}</p>
+                    </div>
+                </div>
+            `;
+        }
 
         window.goToCreateStep = (step) => {
             ['create-step-1', 'create-step-2', 'create-step-3', 'create-step-4'].forEach(id => {
