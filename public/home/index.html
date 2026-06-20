@@ -145,6 +145,141 @@
             background-image: none;
         }
 
+        /* Custom Video Styles */
+        .custom-video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: black;
+        }
+
+        .custom-video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Hide default video controls */
+        .custom-video-container video::-webkit-media-controls {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-enclosure {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-panel {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-play-button {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-start-playback-button {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-current-time-display {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-time-remaining-display {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-timeline {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-volume-slider {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-mute-button {
+            display: none !important;
+        }
+
+        .custom-video-container video::-webkit-media-controls-fullscreen-button {
+            display: none !important;
+        }
+
+        .video-controls {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .custom-video-container:hover .video-controls {
+            opacity: 1;
+        }
+
+        .video-control-btn {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            border: none;
+            color: white;
+            width: 44px;
+            height: 44px;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .video-control-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.1);
+        }
+
+        .video-volume-bar {
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(10px);
+            height: 44px;
+            padding: 0 12px;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .video-volume-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 80px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 3px;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .video-volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .video-volume-slider::-moz-range-thumb {
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+        }
+
         .fade-in {
             opacity: 1;
             transform: none;
@@ -6449,7 +6584,18 @@
                         if (s.includes('cloudinary.com')) {
                             poster = s.replace(/\.[^.]+$/, '.jpg');
                         }
-                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
+                        const videoId = `video-${ctx}-${p.id}`;
+                        videoHtml = `<div class="custom-video-container">
+                            <video id="${videoId}" src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full" playsinline preload="metadata" muted onclick="event.stopPropagation()"></video>
+                            <div class="video-controls">
+                                <div class="video-volume-bar">
+                                    <input type="range" class="video-volume-slider" min="0" max="1" step="0.1" value="0" data-video-id="${videoId}">
+                                </div>
+                                <button class="video-control-btn" onclick="event.stopPropagation(); window.toggleVideoMute('${videoId}')">
+                                    <i data-lucide="volume-x" class="w-5 h-5" id="${videoId}-mute-icon"></i>
+                                </button>
+                            </div>
+                        </div>`;
                     }
                     mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'} post-media-container" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
                 } else {
@@ -6467,7 +6613,18 @@
                             if (s.includes('cloudinary.com')) {
                                 poster = s.replace(/\.[^.]+$/, '.jpg');
                             }
-                            videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata"></video>`;
+                            const videoId = `carousel-video-${ctx}-${p.id}-${i}`;
+                            videoHtml = `<div class="custom-video-container w-full h-full">
+                                <video id="${videoId}" src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full" playsinline preload="metadata" muted></video>
+                                <div class="video-controls">
+                                    <div class="video-volume-bar">
+                                        <input type="range" class="video-volume-slider" min="0" max="1" step="0.1" value="0" data-video-id="${videoId}">
+                                    </div>
+                                    <button class="video-control-btn" onclick="event.stopPropagation(); window.toggleVideoMute('${videoId}')">
+                                        <i data-lucide="volume-x" class="w-5 h-5" id="${videoId}-mute-icon"></i>
+                                    </button>
+                                </div>
+                            </div>`;
                         }
                         sl += `<div class="post-carousel-item bg-transparent flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
                         dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="dot-${ctx}-${p.id}-${i}"></div>`
@@ -7203,7 +7360,8 @@
                     if (s.includes('cloudinary.com')) {
                         poster = s.replace(/\.[^.]+$/, '.jpg');
                     }
-                    videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover" controls playsinline preload="metadata"></video>`;
+                    const videoId = `carousel-${prefix}-video-${pid}-${i}`;
+                    videoHtml = `<div class="custom-video-container w-full h-full"><video id="${videoId}" src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full" playsinline preload="metadata" muted></video><div class="video-controls"><div class="video-volume-bar"><input type="range" class="video-volume-slider" min="0" max="1" step="0.1" value="0" data-video-id="${videoId}"></div><button class="video-control-btn" onclick="event.stopPropagation(); window.toggleVideoMute('${videoId}')"><i data-lucide="volume-x" class="w-5 h-5" id="${videoId}-mute-icon"></i></button></div></div>`;
                 }
                 sl += `<div class="post-carousel-item img-placeholder bg-gray-50 flex items-center justify-center">${iv ? videoHtml : `<img src="${s}" class="w-full h-full ${isOverlay ? 'object-contain' : 'object-cover'} ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')">`}</div>`;
                 dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="${prefix}-dot-${pid}-${i}"></div>`
@@ -8247,11 +8405,18 @@
                         if (s.includes('cloudinary.com')) {
                             poster = s.replace(/\.[^.]+$/, '.jpg');
                         }
-                        videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="stage-content rounded-none" controls playsinline preload="metadata"></video>`;
+                        const videoIdDesktop = `post-overlay-video-desktop-${p.id}`;
+                        const videoIdMobile = `post-overlay-video-mobile-${p.id}`;
+                        const videoHtmlDesktop = `<div class="custom-video-container w-full h-full"><video id="${videoIdDesktop}" src="${s}" ${poster ? `poster="${poster}"` : ''} class="stage-content rounded-none" playsinline preload="metadata" muted></video><div class="video-controls"><div class="video-volume-bar"><input type="range" class="video-volume-slider" min="0" max="1" step="0.1" value="0" data-video-id="${videoIdDesktop}"></div><button class="video-control-btn" onclick="event.stopPropagation(); window.toggleVideoMute('${videoIdDesktop}')"><i data-lucide="volume-x" class="w-5 h-5" id="${videoIdDesktop}-mute-icon"></i></button></div></div>`;
+                        const videoHtmlMobile = `<div class="custom-video-container w-full h-full"><video id="${videoIdMobile}" src="${s}" ${poster ? `poster="${poster}"` : ''} class="stage-content rounded-none" playsinline preload="metadata" muted></video><div class="video-controls"><div class="video-volume-bar"><input type="range" class="video-volume-slider" min="0" max="1" step="0.1" value="0" data-video-id="${videoIdMobile}"></div><button class="video-control-btn" onclick="event.stopPropagation(); window.toggleVideoMute('${videoIdMobile}')"><i data-lucide="volume-x" class="w-5 h-5" id="${videoIdMobile}-mute-icon"></i></button></div></div>`;
+                        videoHtml = videoHtmlDesktop;
+                        mhDesktop = videoHtmlDesktop;
+                        mhMobile = videoHtmlMobile;
+                    } else {
+                        const mhtml = `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`;
+                        mhDesktop = mhtml;
+                        mhMobile = mhtml;
                     }
-                    const mhtml = iv ? videoHtml : `<div class="img-placeholder rounded-none overflow-hidden"><img src="${s}" class="stage-content w-full h-full object-contain ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`;
-                    mhDesktop = mhtml;
-                    mhMobile = mhtml
                 } else {
                     mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id);
                     mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id)
@@ -8534,7 +8699,8 @@
                 </div>
             </div>`; c.innerHTML = desktopHTML + mobileHTML; 
             renderCommentsInModal(pid);
-            refreshIcons()
+            refreshIcons();
+            window.observeVideoContainers();
         };
         window.toggleCommentSearch = () => { window.isCommentSearchOpen = !window.isCommentSearchOpen; window.commentSearchTerm = ''; const dhd = document.getElementById('comment-header-default'), dhs = document.getElementById('comment-header-search'); if (dhd && dhs) { if (window.isCommentSearchOpen) { dhd.classList.add('hidden'); dhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-desktop')?.focus(), 100) } else { dhd.classList.remove('hidden'); dhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } const mhd = document.getElementById('mobile-comment-header-default'), mhs = document.getElementById('mobile-comment-header-search'); if (mhd && mhs) { if (window.isCommentSearchOpen) { mhd.classList.add('hidden'); mhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-mobile')?.focus(), 100) } else { mhd.classList.remove('hidden'); mhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } };
         window.handleCommentSearch = (val) => { window.commentSearchTerm = val.toLowerCase(); renderCommentsInModal(window.currentViewingPostId) };
@@ -9812,6 +9978,52 @@
                     container.dataset.observed = 'true';
                 }
             });
+            // Add event listeners to new volume sliders
+            document.querySelectorAll('.video-volume-slider:not([data-slider-observed])').forEach(slider => {
+                slider.dataset.sliderObserved = 'true';
+                slider.addEventListener('input', (e) => {
+                    const videoId = e.target.dataset.videoId;
+                    const video = document.getElementById(videoId);
+                    if (video) {
+                        video.volume = parseFloat(e.target.value);
+                        video.muted = parseFloat(e.target.value) === 0;
+                        window.updateVideoMuteIcon(videoId);
+                    }
+                });
+            });
+        };
+
+        window.toggleVideoMute = (videoId) => {
+            const video = document.getElementById(videoId);
+            if (!video) return;
+
+            if (video.muted) {
+                video.muted = false;
+                if (video.volume === 0) {
+                    video.volume = 0.5;
+                    const slider = document.querySelector(`.video-volume-slider[data-video-id="${videoId}"]`);
+                    if (slider) slider.value = 0.5;
+                }
+            } else {
+                video.muted = true;
+            }
+            window.updateVideoMuteIcon(videoId);
+        };
+
+        window.updateVideoMuteIcon = (videoId) => {
+            const video = document.getElementById(videoId);
+            const icon = document.getElementById(`${videoId}-mute-icon`);
+            if (!video || !icon) return;
+
+            let iconName = 'volume-x';
+            if (!video.muted && video.volume > 0.5) {
+                iconName = 'volume-2';
+            } else if (!video.muted && video.volume > 0) {
+                iconName = 'volume-1';
+            }
+
+            icon.setAttribute('data-lucide', iconName);
+            lucide.createIcons();
         };
 
         // Initial observation when the app is ready!
