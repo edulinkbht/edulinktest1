@@ -6268,6 +6268,26 @@
             window.frameList = videoPosts;
             window.currentFrameIndex = 0;
 
+            // Add wheel scroll listener
+            const viewFrame = document.getElementById('view-frame');
+            if (viewFrame) {
+                viewFrame.onwheel = (e) => {
+                    if (e.deltaY > 0) {
+                        // Scroll down - go to next
+                        if (window.currentFrameIndex < window.frameList.length - 1) {
+                            window.currentFrameIndex++;
+                            renderCurrentFramePost();
+                        }
+                    } else if (e.deltaY < 0) {
+                        // Scroll up - go to previous
+                        if (window.currentFrameIndex > 0) {
+                            window.currentFrameIndex--;
+                            renderCurrentFramePost();
+                        }
+                    }
+                };
+            }
+
             if (videoPosts.length === 0) {
                 document.getElementById('frame-container').innerHTML = `
                     <div class="flex flex-col items-center justify-center h-full text-gray-600">
@@ -6318,6 +6338,33 @@
             const hasCaption = post.content && post.content.trim() !== '';
             const postDate = formatDate(post.timestamp || Date.now());
             
+            // Custom caption with 3-word limit for frame
+            let captionHTML = '';
+            if (hasCaption) {
+                const words = post.content.trim().split(/\s+/);
+                const isExpanded = window.expandedTexts.has(`frame-caption-${post.id}`);
+                if (words.length <= 3 || isExpanded) {
+                    // Show full caption
+                    captionHTML = `
+                        <span id="frame-caption-text-${post.id}">${formatContent(post.content)}</span>
+                        ${words.length > 3 ? `
+                            <button class="text-xs font-bold text-gray-500 hover:text-gray-800 ml-1" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}')">
+                                see less
+                            </button>
+                        ` : ''}
+                    `;
+                } else {
+                    // Show first 3 words
+                    const firstThree = words.slice(0, 3).join(' ');
+                    captionHTML = `
+                        <span id="frame-caption-text-${post.id}">${formatContent(firstThree)}...</span>
+                        <button class="text-xs font-bold text-gray-500 hover:text-gray-800 ml-1" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}')">
+                            see more
+                        </button>
+                    `;
+                }
+            }
+            
             document.getElementById('frame-container').innerHTML = `
                 <!-- Left Spacer for Sidebar -->
                 <div class="hidden lg:block lg:w-[260px] flex-shrink-0"></div>
@@ -6325,16 +6372,16 @@
                 
                 <!-- Main Content -->
                 <div class="flex-1 flex items-start justify-center pt-4">
-                    <!-- Center Content: Video + Bottom Info + Vertical Actions -->
-                    <div class="flex items-start gap-0">
+                    <!-- Center Content: Video + Bottom Info + Vertical Actions + Comments -->
+                    <div class="flex items-start gap-8">
                         <!-- Video Container (Vertical like Instagram Reels) -->
                         <div class="flex flex-col items-center">
-                            <div class="relative overflow-hidden" style="width: 400px; height: 700px; border-radius: 8px;">
+                            <div class="relative overflow-hidden" style="width: min(90vw, 400px); height: min(80vh, 700px); border-radius: 8px;">
                                 ${mediaHtml}
                             </div>
                             
                             <!-- Bottom Info: Author + Caption/Date -->
-                            <div class="mt-4 px-2" style="width: 400px;">
+                            <div class="mt-4 px-2" style="width: min(90vw, 400px);">
                                 <div class="flex items-start gap-3">
                                     <div class="img-placeholder rounded-full w-10 h-10 border border-gray-200 overflow-hidden shrink-0">
                                         <img src="${author.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
@@ -6345,7 +6392,7 @@
                                         </div>
                                         ${hasCaption ? `
                                             <div class="text-sm text-gray-700">
-                                                ${window.renderTextWithReadMore(post.content, `frame-caption-${post.id}`)}
+                                                ${captionHTML}
                                             </div>
                                         ` : `
                                             <div class="text-sm text-gray-500">${postDate}</div>
@@ -6356,7 +6403,7 @@
                         </div>
                         
                         <!-- Vertical Action Buttons -->
-                        <div class="ml-8 self-end pb-24 flex flex-col gap-6">
+                        <div class="self-end pb-24 flex flex-col gap-6">
                             <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); frameToggleLike('${post.id}')">
                                 <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                                     <i data-lucide="heart" class="w-6 h-6" id="frame-like-icon-${post.id}"></i>
@@ -6385,7 +6432,7 @@
                         </div>
                         
                         <!-- Up/Down Navigation -->
-                        <div class="absolute right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4">
+                        <div class="absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4">
                             ${window.currentFrameIndex > 0 ? `
                                 <button onclick="navigateFrame('up')" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                                     <i data-lucide="chevron-up" class="w-7 h-7 text-gray-500"></i>
@@ -6398,32 +6445,32 @@
                                 </button>
                             ` : ''}
                         </div>
-                    </div>
-                    
-                    <!-- Comments Panel (Hidden by default) -->
-                    <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200 ml-8" style="width: 400px; height: 700px; margin-top: -40px;">
-                        <div id="frame-comments-header" class="h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
-                            <div class="flex items-center justify-between w-full">
-                                <span class="font-bold text-lg text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
-                                <div class="flex items-center gap-2">
-                                    <button class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                        <i data-lucide="search" class="w-4 h-4 text-gray-600"></i>
-                                    </button>
-                                    <button onclick="toggleFrameComments('${post.id}')" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                        <i data-lucide="x" class="w-4 h-4 text-gray-600"></i>
-                                    </button>
+                        
+                        <!-- Comments Panel -->
+                        <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 400px); height: min(80vh, 700px);">
+                            <div id="frame-comments-header" class="h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
+                                <div class="flex items-center justify-between w-full">
+                                    <span class="font-bold text-lg text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
+                                    <div class="flex items-center gap-2">
+                                        <button class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                            <i data-lucide="search" class="w-4 h-4 text-gray-600"></i>
+                                        </button>
+                                        <button onclick="toggleFrameComments('${post.id}')" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                                            <i data-lucide="x" class="w-4 h-4 text-gray-600"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div id="frame-comments-list" class="flex-1 overflow-y-auto px-4 py-2"></div>
-                        <div class="px-4 h-[64px] flex items-center border-t border-gray-100 bg-white shrink-0 rounded-b-[24px]">
-                            <div class="w-full">
-                                <div class="flex items-center gap-2">
-                                    <img src="${currentUser.avatar}" class="w-7 h-7 rounded-full bg-gray-200 object-cover shrink-0">
-                                    <input type="text" id="frame-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-3 py-2 text-[13px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all">
-                                    <button onclick="addFrameComment('${post.id}')" class="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm">
-                                        <i data-lucide="arrow-up" class="w-4 h-4"></i>
-                                    </button>
+                            <div id="frame-comments-list" class="flex-1 overflow-y-auto px-4 py-2"></div>
+                            <div class="px-4 h-[64px] flex items-center border-t border-gray-100 bg-white shrink-0 rounded-b-[24px]">
+                                <div class="w-full">
+                                    <div class="flex items-center gap-2">
+                                        <img src="${currentUser.avatar}" class="w-7 h-7 rounded-full bg-gray-200 object-cover shrink-0">
+                                        <input type="text" id="frame-comment-input" placeholder="Add a comment..." class="flex-1 bg-gray-100 border border-gray-200 rounded-[24px] px-3 py-2 text-[13px] outline-none text-gray-900 placeholder-gray-500 focus:bg-white focus:border-black transition-all">
+                                        <button onclick="addFrameComment('${post.id}')" class="w-9 h-9 bg-black rounded-full flex items-center justify-center text-white shrink-0 hover:bg-gray-800 transition-colors shadow-sm">
+                                            <i data-lucide="arrow-up" class="w-4 h-4"></i>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -6487,27 +6534,31 @@
         window.frameToggleLike = (pid) => {
             const post = posts.find(p => p.id === pid);
             if (!post) return;
-            if (!post.likes) post.likes = [];
+            if (!Array.isArray(post.likes)) post.likes = [];
             
-            const isCurrentlyLiked = post.likes.includes(currentUser.id);
-            
-            if (isCurrentlyLiked) {
+            // First update the data
+            let isNowLiked;
+            if (post.likes.includes(currentUser.id)) {
+                // Unlike it
                 post.likes = post.likes.filter(id => id !== currentUser.id);
+                isNowLiked = false;
             } else {
+                // Like it
                 post.likes.push(currentUser.id);
+                isNowLiked = true;
             }
             
             localStorage.setItem('edulink_posts', JSON.stringify(posts));
             
-            // Update UI without re-rendering whole page
+            // Then update the UI completely directly
             const likeIcon = document.getElementById('frame-like-icon-' + pid);
             const likeCount = document.getElementById('frame-like-count-' + pid);
             
             if (likeIcon) {
-                if (!isCurrentlyLiked) { // Now liked after this click
+                // Remove any existing color classes first, then add the right ones
+                likeIcon.classList.remove('fill-red-500', 'text-red-500');
+                if (isNowLiked) {
                     likeIcon.classList.add('fill-red-500', 'text-red-500');
-                } else { // Now unliked
-                    likeIcon.classList.remove('fill-red-500', 'text-red-500');
                 }
             }
             
@@ -6515,6 +6566,7 @@
                 likeCount.textContent = post.likes.length;
             }
             
+            // Call the original toggleLike too
             toggleLike(pid);
         };
 
@@ -6532,6 +6584,19 @@
                     saveIcon.classList.remove('fill-current');
                 }
             }
+        };
+        
+        window.toggleFrameCaption = (pid) => {
+            if (!window.expandedTexts) window.expandedTexts = new Set();
+            const key = `frame-caption-${pid}`;
+            
+            if (window.expandedTexts.has(key)) {
+                window.expandedTexts.delete(key);
+            } else {
+                window.expandedTexts.add(key);
+            }
+            
+            renderCurrentFramePost();
         };
 
         window.toggleFrameComments = (postId) => {
