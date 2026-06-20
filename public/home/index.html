@@ -4775,7 +4775,7 @@
             </div>
         </aside>
     </div>
-    <div id="view-frame" class="fixed inset-0 z-40 bg-white hidden">
+    <div id="view-frame" class="fixed inset-0 z-30 bg-white hidden">
         <div id="frame-container" class="h-full w-full flex"></div>
     </div>
     <nav id="mobile-bottom-nav"
@@ -6305,15 +6305,41 @@
                             
                             <!-- Bottom Info: Author + Caption -->
                             <div class="mt-4 px-2" style="width: 400px;">
-                                <div class="flex items-center gap-3">
-                                    <div class="img-placeholder rounded-full w-10 h-10 border border-gray-200 overflow-hidden">
+                                <div class="flex items-start gap-3">
+                                    <div class="img-placeholder rounded-full w-10 h-10 border border-gray-200 overflow-hidden shrink-0">
                                         <img src="${author.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
                                     </div>
                                     <div class="flex flex-col">
                                         <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
                                             @${author.username || author.name}
                                         </div>
-                                        <div class="text-sm text-gray-700">${post.content || ''}</div>
+                                        <div class="text-sm text-gray-700">
+                                            <span id="frame-caption-text-${post.id}">
+                                                ${(post.content || '').length > 100 
+                                                    ? (post.content || '').substring(0, 100) + '...' 
+                                                    : (post.content || '')
+                                                }
+                                            </span>
+                                            ${(post.content || '').length > 100 ? `
+                                                <button 
+                                                    id="frame-caption-toggle-${post.id}" 
+                                                    class="text-xs font-bold text-gray-500 hover:text-gray-800 ml-1"
+                                                    onclick="
+                                                        const text = document.getElementById('frame-caption-text-${post.id}');
+                                                        const btn = document.getElementById('frame-caption-toggle-${post.id}');
+                                                        if (btn.textContent === ' see more') {
+                                                            text.textContent = '${(post.content || '').replace(/'/g, "\\'")}';
+                                                            btn.textContent = ' see less';
+                                                        } else {
+                                                            text.textContent = '${((post.content || '').substring(0, 100) + '...').replace(/'/g, "\\'")}';
+                                                            btn.textContent = ' see more';
+                                                        }
+                                                    "
+                                                >
+                                                     see more
+                                                </button>
+                                            ` : ''}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
