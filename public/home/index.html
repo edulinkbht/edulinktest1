@@ -9831,66 +9831,24 @@
         // Create custom video HTML with mute/unmute control
         window.createCustomVideoHTML = (src, poster = '', videoId = '') => {
             const uniqueId = videoId || Math.random().toString(36).substr(2, 9);
-            const containerId = `video-container-${uniqueId}`;
-            
-            // Create the container first
-            const container = document.createElement('div');
-            container.id = containerId;
-            container.className = 'custom-video-container';
-            
-            // Create video element
-            const video = document.createElement('video');
-            video.id = `video-${uniqueId}`;
-            video.src = src;
-            if (poster) video.poster = poster;
-            video.className = 'w-full h-full object-contain';
-            video.setAttribute('playsinline', '');
-            video.setAttribute('preload', 'metadata');
-            video.onclick = (e) => {
-                e.stopPropagation();
-                toggleVideoPlay(`video-${uniqueId}`);
-            };
-            video.onvolumechange = () => {
-                syncMuteButton(`video-${uniqueId}`);
-            };
-            container.appendChild(video);
-            
-            // Create controls div
-            const controlsDiv = document.createElement('div');
-            controlsDiv.className = 'custom-video-controls';
-            
-            // Create mute button with initial icon
-            const muteBtn = document.createElement('button');
-            muteBtn.id = `mute-btn-${uniqueId}`;
-            muteBtn.onclick = (e) => {
-                e.stopPropagation();
-                toggleVideoMute(`video-${uniqueId}`);
-            };
-            
-            // Add initial volume icon
-            const initialIcon = lucide.createElement('volume-2', { class: 'w-5 h-5' });
-            muteBtn.appendChild(initialIcon);
-            controlsDiv.appendChild(muteBtn);
-            container.appendChild(controlsDiv);
-            
-            // Return outer HTML so we can use it in innerHTML
-            return container.outerHTML;
-        };
-
-        // Sync mute button icon with video state
-        window.syncMuteButton = (videoId) => {
-            const video = document.getElementById(videoId);
-            const muteBtn = document.getElementById(`mute-btn-${videoId}`);
-            if (!video || !muteBtn) return;
-            
-            const newIconName = video.muted ? 'volume-x' : 'volume-2';
-            const newIcon = lucide.createElement(newIconName, { class: 'w-5 h-5' });
-            const oldIcon = muteBtn.querySelector('i, svg');
-            if (oldIcon) {
-                muteBtn.replaceChild(newIcon, oldIcon);
-            } else {
-                muteBtn.appendChild(newIcon);
-            }
+            return `
+                <div class="custom-video-container" id="video-container-${uniqueId}">
+                    <video 
+                        id="video-${uniqueId}" 
+                        src="${src}" 
+                        ${poster ? `poster="${poster}"` : ''} 
+                        class="w-full h-full object-contain" 
+                        playsinline 
+                        preload="metadata"
+                        onclick="event.stopPropagation(); toggleVideoPlay('video-${uniqueId}')"
+                    ></video>
+                    <div class="custom-video-controls">
+                        <button onclick="event.stopPropagation(); toggleVideoMute('video-${uniqueId}')" id="mute-btn-${uniqueId}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                        </button>
+                    </div>
+                </div>
+            `;
         };
 
         // Toggle video play/pause
@@ -9907,10 +9865,17 @@
         // Toggle video mute/unmute
         window.toggleVideoMute = (videoId) => {
             const video = document.getElementById(videoId);
-            if (!video) return;
+            const muteBtn = document.getElementById(`mute-btn-${videoId}`);
+            if (!video || !muteBtn) return;
             
             video.muted = !video.muted;
-            window.syncMuteButton(videoId);
+            
+            // Update the icon by replacing innerHTML directly (fast!)
+            if (video.muted) {
+                muteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-x"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M17 9l4 4"/><path d="m21 9-4 4"/></svg>`;
+            } else {
+                muteBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-volume-2"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`;
+            }
         };
 
         // Keep old function for backwards compatibility
