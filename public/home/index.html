@@ -6340,17 +6340,13 @@
                 if (post.embedVideo) {
                     const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
                     if (embedInfo.type === 'video') {
-                        let autoplayUrl = embedInfo.url;
-                        if (autoplayUrl.includes('?')) {
-                            autoplayUrl += '&autoplay=1';
-                        } else {
-                            autoplayUrl += '?autoplay=1';
-                        }
-                        mediaHtml = `<iframe src="${autoplayUrl}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" id="frame-embed-${post.id}"></iframe>`;
+                        // Don't autoplay initially - we'll control playback with updateActiveFrame
+                        mediaHtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" id="frame-embed-${post.id}"></iframe>`;
                     }
                 } else if (post.media) {
                     const ma = Array.isArray(post.media) ? post.media : [post.media];
                     const firstMedia = ma[0];
+                    // Don't autoplay initially - we'll control playback with updateActiveFrame
                     mediaHtml = `<video src="${firstMedia}" class="w-full h-full object-cover" playsinline muted loop id="frame-video-${post.id}"></video>`;
                 }
                 
@@ -6516,11 +6512,15 @@
                         -ms-overflow-style: none; 
                         scroll-snap-type: y mandatory; 
                         overflow-y: scroll;
+                        height: 100vh;
                     }
                     .frame-scroll-container::-webkit-scrollbar { display: none; }
-                    .frame-slide { scroll-snap-align: start; }
+                    .frame-slide { 
+                        scroll-snap-align: start; 
+                        height: 100vh;
+                    }
                 </style>
-                <div class="frame-scroll-container w-full h-full flex flex-col" id="frame-scroll-container">
+                <div class="frame-scroll-container w-full" id="frame-scroll-container">
                     ${framesHtml}
                 </div>
             `;
@@ -6553,10 +6553,27 @@
                         if (video) {
                             video.play().catch(() => {}); // Ignore autoplay errors
                         }
-                        // If we wanted to control embedded videos, we could do it here
+                        if (embed && embed.src) {
+                            // Add autoplay to embed URL if not already there
+                            let url = embed.src;
+                            if (!url.includes('autoplay=1')) {
+                                if (url.includes('?')) {
+                                    url += '&autoplay=1';
+                                } else {
+                                    url += '?autoplay=1';
+                                }
+                                embed.src = url;
+                            }
+                        }
                     } else {
                         if (video) {
                             video.pause();
+                        }
+                        if (embed && embed.src) {
+                            // Remove autoplay from embed URL
+                            let url = embed.src;
+                            url = url.replace('?autoplay=1', '').replace('&autoplay=1', '');
+                            embed.src = url;
                         }
                     }
                 });
@@ -6823,7 +6840,7 @@
 
         window.navigateFrame = (direction) => {
             const scrollContainer = document.getElementById('frame-scroll-container');
-            if (!scrollContainer || !window.frameList) return;
+            if (!scrollContainer || !window.frameList || window.frameList.length === 0) return;
             
             let newIndex = window.currentFrameIndex;
             
