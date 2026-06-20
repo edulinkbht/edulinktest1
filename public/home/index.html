@@ -198,6 +198,7 @@
             position: relative;
             z-index: 40;
             overflow: visible !important;
+            display: none; /* Hide by default (mobile) */
         }
 
         @media (min-width:1024px) {
@@ -206,6 +207,8 @@
                 padding: 24px 20px;
                 position: absolute;
                 height: 100%;
+                display: flex; /* Show on desktop */
+                flex-direction: column;
             }
             
             #workspace-layout {
@@ -6287,8 +6290,14 @@
                 return;
             }
 
-            // Render all videos in a scrollable container with snap points
-            renderAllFrames();
+            // Render just the current frame
+            renderCurrentFramePost();
+            // Play the first video
+            const firstPost = window.frameList[0];
+            const firstVideo = document.getElementById(`frame-video-${firstPost.id}`);
+            if (firstVideo) {
+                firstVideo.play().catch(() => {});
+            }
         };
         
         function renderAllFrames() {
@@ -6583,7 +6592,7 @@
             } else if (post.media) {
                 const ma = Array.isArray(post.media) ? post.media : [post.media];
                 const firstMedia = ma[0];
-                mediaHtml = `<video src="${firstMedia}" class="w-full h-full object-cover" autoplay playsinline muted loop></video>`;
+                mediaHtml = `<video id="frame-video-${post.id}" src="${firstMedia}" class="w-full h-full object-cover" playsinline muted loop></video>`;
             }
 
             // We need to store the expansion state for the frame caption
@@ -6785,18 +6794,26 @@
         }
 
         window.navigateFrame = (direction) => {
-            const scrollContainer = document.getElementById('frame-scroll-container');
-            if (!scrollContainer) return;
+            if (!window.frameList || !window.currentFrameIndex) return;
             
             if (direction === 'up' && window.currentFrameIndex > 0) {
                 window.currentFrameIndex--;
+                renderCurrentFramePost();
+                // Play the new video
+                const post = window.frameList[window.currentFrameIndex];
+                const video = document.getElementById(`frame-video-${post.id}`);
+                if (video) {
+                    video.play().catch(() => {});
+                }
             } else if (direction === 'down' && window.currentFrameIndex < window.frameList.length - 1) {
                 window.currentFrameIndex++;
-            }
-            
-            const targetSlide = scrollContainer.querySelector(`[data-index="${window.currentFrameIndex}"]`);
-            if (targetSlide) {
-                targetSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                renderCurrentFramePost();
+                // Play the new video
+                const post = window.frameList[window.currentFrameIndex];
+                const video = document.getElementById(`frame-video-${post.id}`);
+                if (video) {
+                    video.play().catch(() => {});
+                }
             }
         };
 
