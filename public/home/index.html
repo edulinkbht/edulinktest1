@@ -7201,12 +7201,8 @@
                 // Set current index
                 window.currentFrameIndex = targetIndex;
                 
-                // Find the slide element
-                const targetSlide = document.querySelector(`.frame-slide[data-index="${targetIndex}"]`);
-                if (targetSlide) {
-                    // Scroll to the slide (align to top)
-                    targetSlide.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                // Set scrollTop directly for instant scroll (no smooth)
+                scrollContainer.scrollTop = targetIndex * scrollContainer.clientHeight;
                 
                 // Call updateActiveFrame to make sure everything is synced
                 updateActiveFrame();
@@ -8136,26 +8132,48 @@
         window.toggleLike = async (pid) => { 
             const isLiking = !document.querySelector(`.js-like-btn-${pid}`)?.classList.contains('active'); 
             document.querySelectorAll(`.js-like-btn-${pid}`).forEach(b => b.classList.toggle('active', isLiking)); 
-            document.querySelectorAll(`.js-like-count-${pid}`).forEach(el => { let t = el.innerText; let c = parseInt(t); if (isNaN(c)) c = 0; let nc = Math.max(0, c + (isLiking ? 1 : -1)); el.innerText = nc === 0 ? 'Like' : nc }); 
-            const ovBtn = document.getElementById('post-view-like-btn'); 
-            if (ovBtn) { if (isLiking) { ovBtn.classList.add('fill-red-500', 'text-red-500'); ovBtn.classList.remove('text-gray-700') } else { ovBtn.classList.remove('fill-red-500', 'text-red-500'); ovBtn.classList.add('text-gray-700') } } 
-            const movBtn = document.getElementById(`mobile-overlay-like-btn-${pid}`); 
-            if (movBtn) { if (isLiking) { movBtn.classList.add('fill-red-500', 'text-red-500'); movBtn.classList.remove('text-900') } else { movBtn.classList.remove('fill-red-500', 'text-red-500'); movBtn.classList.add('text-900') } } 
             const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid); 
-            if (p.likes && p.likes.includes(currentUser.id)) await updateDoc(r, { likes: arrayRemove(currentUser.id) }); 
-            else { await updateDoc(r, { likes: arrayUnion(currentUser.id) }); if (p.authorId !== currentUser.id) sendNotification(p.authorId, 'like', 'liked your post', pid); 
-            // Notify reposters
-            users.filter(u => u.reposts?.includes(pid)).forEach(rep => {
-                if (rep.id !== currentUser.id && rep.id !== p.authorId) {
-                    sendNotification(rep.id, 'repost_like', 'liked the post you reposted', pid);
+            if (!p.likes) p.likes = [];
+            const wasLiked = p.likes.includes(currentUser.id);
+            
+            if (wasLiked) {
+                p.likes = p.likes.filter(id => id !== currentUser.id);
+                await updateDoc(r, { likes: arrayRemove(currentUser.id) });
+            } else {
+                p.likes.push(currentUser.id);
+                await updateDoc(r, { likes: arrayUnion(currentUser.id) });
+                if (p.authorId !== currentUser.id) sendNotification(p.authorId, 'like', 'liked your post', pid); 
+                // Notify reposters
+                users.filter(u => u.reposts?.includes(pid)).forEach(rep => {
+                    if (rep.id !== currentUser.id && rep.id !== p.authorId) {
+                        sendNotification(rep.id, 'repost_like', 'liked the post you reposted', pid);
+                    }
+                });
+            }
+            
+            // Update all like counts
+            const newLikeCount = p.likes.length;
+            document.querySelectorAll(`.js-like-count-${pid}`).forEach(el => { let t = el.innerText; let c = parseInt(t); if (isNaN(c)) c = 0; el.innerText = newLikeCount === 0 ? 'Like' : newLikeCount }); 
+            
+            // Update overlay and mobile overlay like buttons
+            const ovBtn = document.getElementById('post-view-like-btn'); 
+            if (ovBtn) { if (!wasLiked) { ovBtn.classList.add('fill-red-500', 'text-red-500'); ovBtn.classList.remove('text-gray-700') } else { ovBtn.classList.remove('fill-red-500', 'text-red-500'); ovBtn.classList.add('text-gray-700') } } 
+            const movBtn = document.getElementById(`mobile-overlay-like-btn-${pid}`); 
+            if (movBtn) { if (!wasLiked) { movBtn.classList.add('fill-red-500', 'text-red-500'); movBtn.classList.remove('text-900') } else { movBtn.classList.remove('fill-red-500', 'text-red-500'); movBtn.classList.add('text-900') } } 
+            
+            if (!wasLiked) trackInteraction(pid, 'like', 2); 
+            
+            // Update frame UI - all frame like icons and counts
+            document.querySelectorAll(`[id^="frame-like-icon-${pid}-"]`).forEach(icon => {
+                if (!wasLiked) {
+                    icon.classList.add('fill-red-500', 'text-red-500');
+                } else {
+                    icon.classList.remove('fill-red-500', 'text-red-500');
                 }
             });
-        } 
-        if (isLiking) trackInteraction(pid, 'like', 2); 
-        // Update frame UI
-        if (window.currentViewName === 'frame' && window.currentFramePostId === pid) {
-            renderCurrentFrame();
-        }
+            document.querySelectorAll(`[id^="frame-like-count-${pid}-"]`).forEach(el => {
+                el.innerText = newLikeCount;
+            });
         };
         const toggleModalAnim = (oid, mid, s) => {
             const o = document.getElementById(oid), m = document.getElementById(mid);
@@ -8258,10 +8276,15 @@
             if (movBtn) { if (isSaving) { movBtn.classList.add('text-blue-600'); movBtn.classList.remove('fill-yellow-500', 'text-yellow-500', 'text-900') } else { movBtn.classList.remove('text-blue-600', 'fill-yellow-500', 'text-yellow-500'); movBtn.classList.add('text-900') } } 
             if (isSaving) savedPosts.push(pid); else savedPosts = savedPosts.filter(x => x !== pid); 
             await updateDoc(doc(db, "users", currentUser.id), { saved: isSaving ? arrayUnion(pid) : arrayRemove(pid) });
-            // Update frame UI
-            if (window.currentViewName === 'frame' && window.currentFramePostId === pid) {
-                renderCurrentFrame();
-            }
+            
+            // Update frame UI - all frame save icons
+            document.querySelectorAll(`[id^="frame-save-icon-${pid}-"]`).forEach(icon => {
+                if (isSaving) {
+                    icon.classList.add('fill-current');
+                } else {
+                    icon.classList.remove('fill-current');
+                }
+            });
         };
         window.toggleRepost = async (pid) => {
             if (!currentUser) return;
