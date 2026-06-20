@@ -6462,21 +6462,6 @@
                                     </button>
                                 </div>
                                 
-                                <!-- Up/Down Navigation -->
-                                <div class="absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4">
-                                    ${index > 0 ? `
-                                        <button onclick="navigateFrame('up')" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                                            <i data-lucide="chevron-up" class="w-7 h-7 text-gray-500"></i>
-                                        </button>
-                                    ` : ''}
-                                    
-                                    ${index < window.frameList.length - 1 ? `
-                                        <button onclick="navigateFrame('down')" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                                            <i data-lucide="chevron-down" class="w-7 h-7 text-gray-500"></i>
-                                        </button>
-                                    ` : ''}
-                                </div>
-                                
                                 <!-- Comments Panel - Same as Post Overlay Design -->
                                 <div id="frame-comments-panel-${post.id}" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 450px); height: min(85vh, 780px);">
                                     <div class="h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
@@ -6533,6 +6518,15 @@
                 <div class="frame-scroll-container w-full" id="frame-scroll-container">
                     ${framesHtml}
                 </div>
+                <!-- Single set of up/down navigation buttons -->
+                <div class="absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-10">
+                    <button onclick="navigateFrame('up')" id="frame-up-btn" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+                        <i data-lucide="chevron-up" class="w-7 h-7 text-gray-500"></i>
+                    </button>
+                    <button onclick="navigateFrame('down')" id="frame-down-btn" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
+                        <i data-lucide="chevron-down" class="w-7 h-7 text-gray-500"></i>
+                    </button>
+                </div>
             `;
             
             // Add scroll listener to track current frame and control playback
@@ -6554,6 +6548,16 @@
                 });
                 
                 window.currentFrameIndex = closestIndex;
+                
+                // Show/hide up/down buttons
+                const upBtn = document.getElementById('frame-up-btn');
+                const downBtn = document.getElementById('frame-down-btn');
+                if (upBtn) {
+                    upBtn.style.display = closestIndex > 0 ? 'flex' : 'none';
+                }
+                if (downBtn) {
+                    downBtn.style.display = closestIndex < window.frameList.length - 1 ? 'flex' : 'none';
+                }
                 
                 // Pause all videos, then play the active one
                 window.frameList.forEach((post, index) => {
