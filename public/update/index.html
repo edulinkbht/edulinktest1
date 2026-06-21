@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduLink Native Broadcast</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: #f4f4f9;
+    }
+    .card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .hidden { display: none; }
+    h1 { color: #333; }
+    button {
+      background-color: #4285F4;
+      color: white;
+      border: none;
+      padding: 10px 15px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover { background-color: #357ae8; }
+    #logoutBtn { background-color: #d9534f; }
+    #logoutBtn:hover { background-color: #c9302c; }
+    .admin-panel {
+      margin-top: 20px;
+      padding: 15px;
+      border: 2px solid #4285F4;
+      border-radius: 8px;
+      background-color: #eaf1fe;
+    }
+    textarea {
+      width: 100%;
+      padding: 10px;
+      margin-top: 10px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+      resize: vertical;
+    }
+    .status { margin-top: 15px; font-weight: bold; color: #2e7d32; }
+    .error { color: #c62828; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>EduLink System</h1>
+    <div id="userInfo" style="margin-bottom: 15px; font-weight: bold;"></div>
+    
+    <button id="loginBtn">Sign in with Google</button>
+    <button id="logoutBtn" class="hidden">Sign Out</button>
+
+    <div id="adminPanel" class="admin-panel hidden">
+      <h2>Admin Broadcast (No API Method)</h2>
+      <p>This will pull users from Firebase and open your device's mail application to send the blast.</p>
+      <textarea id="emailBody" rows="5" placeholder="Write your broadcast message here..."></textarea>
+      <button id="sendBtn">Open Mail Client</button>
+      <div id="statusMsg" class="status"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+    import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
+      authDomain: "edulinki.firebaseapp.com",
+      projectId: "edulinki",
+      storageBucket: "edulinki.firebasestorage.app",
+      messagingSenderId: "248886466474",
+      appId: "1:248886466474:web:160043201a6b28bafbbdd3",
+      measurementId: "G-MQBH12VL7N"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // Fixed Admin Email
+    const ADMIN_EMAIL = "ngawang.tphuentshok2024@academy.bt";
+
+    // UI Elements
+    const loginBtn = document.getElementById('loginBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const userInfo = document.getElementById('userInfo');
+    const adminPanel = document.getElementById('adminPanel');
+    const sendBtn = document.getElementById('sendBtn');
+    const emailBody = document.getElementById('emailBody');
+    const statusMsg = document.getElementById('statusMsg');
+
+    // Sign In handler
+    loginBtn.addEventListener('click', async () => {
+      try {
+        const result = await signInWithPopup(auth, provider);
+        const user = result.user;
+        
+        // Log user into database
+        await setDoc(doc(db, "users", user.uid), {
+          email: user.email,
+          name: user.displayName,
+          lastLogin: new Date()
+        }, { merge: true });
+        
+      } catch (error) {
+        console.error("Login Error:", error);
+      }
+    });
+
+    // Sign Out handler
+    logoutBtn.addEventListener('click', () => signOut(auth));
+
+    // Handle Auth States
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        loginBtn.classList.add('hidden');
+        logoutBtn.classList.remove('hidden');
+        userInfo.innerText = `Logged in as: ${user.email}`;
+
+        if (user.email === ADMIN_EMAIL) {
+          adminPanel.classList.remove('hidden');
+        } else {
+          adminPanel.classList.add('hidden');
+        }
+      } else {
+        loginBtn.classList.remove('hidden');
+        logoutBtn.classList.add('hidden');
+        adminPanel.classList.add('hidden');
+        userInfo.innerText = '';
+      }
+    });
+
+    // Trigger Native Email Client
+    sendBtn.addEventListener('click', async () => {
+      const message = emailBody.value.trim();
+      if (!message) {
+        alert("Please write a message first.");
+        return;
+      }
+
+      statusMsg.innerText = "Gathering database emails...";
+      statusMsg.className = "status";
+
+      try {
+        // Fetch users from Firestore
+        const querySnapshot = await getDocs(collection(db, "users"));
+        const userEmails = [];
+        
+        querySnapshot.forEach((doc) => {
+          if (doc.data().email) {
+            userEmails.push(doc.data().email);
+          }
+        });
+
+        if (userEmails.length === 0) {
+          statusMsg.innerText = "No registered users found in Firestore.";
+          statusMsg.className = "status error";
+          return;
+        }
+
+        // 1. Join all emails with commas for the BCC field
+        const bccString = userEmails.join(",");
+        
+        // 2. URL-encode text so spaces/linebreaks don't break the link
+        const subject = encodeURIComponent("EduLink");
+        const body = encodeURIComponent(message);
+
+        // 3. Construct the native mailto link
+        const mailtoUrl = `mailto:?bcc=${bccString}&subject=${subject}&body=${body}`;
+
+        // 4. Force browser to launch native email client
+        window.location.href = mailtoUrl;
+
+        statusMsg.innerText = "Mail client opened! Check your email application to send.";
+        emailBody.value = '';
+
+      } catch (error) {
+        console.error("Error generating email link:", error);
+        statusMsg.innerText = "Error retrieving mailing list.";
+        statusMsg.className = "status error";
+      }
+    });
+  </script>
+</body>
+</html>
