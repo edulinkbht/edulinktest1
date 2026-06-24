@@ -4728,7 +4728,7 @@
                                 class="bg-transparent border-none outline-none text-sm w-full" placeholder="Search..."
                                 oninput="handleSearch(this.value)"></div>
                     </div>
-                    <div class="tab-group mt-1">
+                    <div id="explore-tabs-mobile" class="tab-group mt-1">
                         <button id="tab-explore-top" onclick="switchExploreMainTab('top')" class="tab-btn active">
                             <i data-lucide="sparkles" class="w-6 h-6"></i>
                         </button>
@@ -4743,7 +4743,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="hidden md:block w-full bg-white z-10 border-b border-gray-100">
+                <div id="explore-tabs-desktop" class="hidden md:block w-full bg-white z-10 border-b border-gray-100">
                     <div class="max-w-5xl mx-auto tab-group border-b-0 px-0 justify-center mt-1">
                         <button id="tab-explore-top-d" onclick="switchExploreMainTab('top')"
                             class="tab-btn active max-w-[200px]">
@@ -7918,6 +7918,10 @@
             const v = document.getElementById('explore-results');
             if (!pl || !v) return;
 
+            // Get the tab containers
+            const tabsMobile = document.getElementById('explore-tabs-mobile');
+            const tabsDesktop = document.getElementById('explore-tabs-desktop');
+
             const scoreText = (text, term) => {
                 if (!term) return 0;
                 if (!text) return 0;
@@ -7931,44 +7935,24 @@
 
             const normalizeTag = (x) => (x || '').replace(/^#/, '').trim().toLowerCase();
 
-            if (window.activeExploreTab === 'top') {
+            if (t) {
+                // Hide tabs when search query is present
+                if (tabsMobile) tabsMobile.style.display = 'none';
+                if (tabsDesktop) tabsDesktop.style.display = 'none';
+
+                // Show search results
                 pl.classList.add('hidden');
                 pl.classList.remove('flex');
                 pl.innerHTML = '';
                 v.innerHTML = '';
 
-                if (!t) {
-                    v.innerHTML = '<div class="text-center py-20 text-gray-400"><p>Search for people, posts, or #tags.</p></div>';
-                    syncURLState(); refreshIcons(); return;
-                }
-
-                // People
+                // People first
                 const people = users
                     .map(u => ({ u, s: Math.max(scoreText(u.name, t), scoreText(u.username, t)) }))
                     .filter(x => x.s > 0)
-                    .sort((a, b) => b.s - a.s)
-                    .slice(0, 5);
+                    .sort((a, b) => b.s - a.s);
 
-                // Tags (from posts content)
-                const tagTerm = normalizeTag(t);
-                const tagCounts = new Map();
-                posts.forEach(p => {
-                    if (!p || !p.content) return;
-                    const matches = String(p.content).match(/#[\p{L}\p{N}_]+/gu);
-                    if (!matches) return;
-                    matches.forEach(ht => {
-                        const tag = normalizeTag(ht);
-                        if (!tag) return;
-                        if (tagTerm && !tag.includes(tagTerm)) return;
-                        tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
-                    });
-                });
-                const tags = Array.from(tagCounts.entries())
-                    .map(([tag, count]) => ({ tag, count, s: scoreText(tag, tagTerm) + Math.min(count, 50) }))
-                    .sort((a, b) => b.s - a.s)
-                    .slice(0, 6);
-
-                // Posts
+                // Then relevant posts
                 let fp = posts
                     .filter(p => p && p.content && p.content.toLowerCase().includes(t))
                     .filter(p => canSeePost(p))
@@ -7980,72 +7964,58 @@
                     .slice(0, 15)
                     .map(x => x.p);
 
-                const section = (title, inner) => `
-                    <div class="px-4 pt-4 pb-2">
-                        <div class="text-sm font-medium text-gray-700">${title}</div>
-                    </div>
-                    ${inner}
-                `;
+                let html = '';
 
-                const peopleHtml = people.length
-                    ? `<div class="flex flex-col">${people.map(({
-                        u
-                    }) => {
-                        const isF = currentUser.following.includes(u.id);
-                        const isFriend = window.isFriend(u.id);
-                        return `
-                        <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer" onclick="showProfile('${u.id}')">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="rounded-full w-12 h-12 shrink-0 overflow-hidden">
-                                    <img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
-                                </div>
-                                <div class="min-w-0">
-                                    <div class="font-bold text-[#1f1f1f] text-[15px] truncate flex items-center">
-                                        ${u.name || 'User'}
-                                        ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}
-                                    </div>
-                                    <div class="text-[13px] text-gray-500 font-medium truncate">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div>
-                                </div>
+                if (people.length) {
+                    html += `<h2 class="text-[16px] font-bold text-gray-400 mb-4 px-4 pt-4 uppercase tracking-wider">PEOPLE</h2>`;
+                    html += `<div class="flex flex-col">`;
+                    people.forEach(({ u }) => {
+                        html += `
+                        <div class="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer" onclick="showProfile('${u.id}')">
+                            <div class="rounded-full w-16 h-16 shrink-0 overflow-hidden">
+                                <img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
                             </div>
-                            <button onclick="event.stopPropagation(); toggleFollow('${u.id}')" 
-                                class="js-follow-btn-${u.id} shrink-0 text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90 min-w-[85px]">
-                                ${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}
-                            </button>
-                        </div>
-                    `
-                    }).join('')}</div>`
-                    : `<div class="py-4 text-xs text-gray-400 italic text-center">No people found</div>`;
-
-                const tagsHtml = tags.length
-                    ? `<div class="flex flex-col">${tags.map(x => `
-                        <div class="px-4 py-3 hover:bg-gray-50 cursor-pointer" onclick="window.searchTag('${x.tag}')">
-                            <div class="flex items-center gap-3">
-                                <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                                    <i data-lucide="hash" class="w-4 h-4 text-gray-500"></i>
+                            <div class="ml-4 min-w-0">
+                                <div class="font-bold text-gray-900 text-[22px] truncate flex items-center">
+                                    ${u.name || 'User'}
+                                    ${u.isOfficial ? '<i data-lucide="badge-check" class="w-5 h-5 official-badge ml-1"></i>' : ''}
                                 </div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="font-bold text-gray-900 text-[14px] truncate">#${x.tag}</div>
-                                    <div class="text-xs text-gray-500">${x.count} post${x.count === 1 ? '' : 's'}</div>
-                                </div>
+                                <div class="text-[18px] text-gray-500 truncate">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div>
                             </div>
                         </div>
-                    `).join('')}</div>`
-                    : `<div class="py-4 text-xs text-gray-400 italic text-center">No tags found</div>`;
+                        `;
+                    });
+                    html += `</div>`;
+                }
 
-                const postsHtml = fp.length
-                    ? `<div class="grid grid-cols-2 md:grid-cols-3 gap-2 px-2">${fp.map(p => renderGridPostItem(p)).join('')}</div>`
-                    : `<div class="px-4 pb-6 text-xs text-gray-400 italic">No posts found</div>`;
+                if (fp.length) {
+                    html += `<h2 class="text-[16px] font-bold text-gray-400 mb-4 px-4 pt-4 uppercase tracking-wider">RELEVANT POSTS</h2>`;
+                    html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-2 px-2 pb-20">`;
+                    fp.forEach(p => {
+                        html += renderGridPostItem(p);
+                    });
+                    html += `</div>`;
+                }
 
-                const sectionWithContainer = (title, inner) => `
-                    <h2 class="text-[16px] font-bold text-gray-900 mb-4 px-1">${title}</h2>
-                    <div class="px-4 mb-10">
-                        <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden">
-                            ${inner}
-                        </div>
-                    </div>
-                `;
+                if (!html) {
+                    html = `<div class="text-center py-20 text-gray-400"><p>No results found.</p></div>`;
+                }
 
-                v.innerHTML = sectionWithContainer('Top people', peopleHtml) + sectionWithContainer('Top tags', tagsHtml) + section('Top posts', postsHtml);
+                v.innerHTML = html;
+                syncURLState(); refreshIcons();
+                return;
+            }
+
+            // Show tabs when there's no search query
+            if (tabsMobile) tabsMobile.style.display = 'flex';
+            if (tabsDesktop) tabsDesktop.style.display = 'block';
+
+            if (window.activeExploreTab === 'top') {
+                pl.classList.add('hidden');
+                pl.classList.remove('flex');
+                pl.innerHTML = '';
+                v.innerHTML = '';
+                v.innerHTML = '<div class="text-center py-20 text-gray-400"><p>Search for people, posts, or #tags.</p></div>';
                 syncURLState(); refreshIcons(); return;
             }
 
