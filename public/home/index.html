@@ -7989,10 +7989,10 @@
                 }
 
                 if (fp.length) {
-                    html += `<h2 class="text-[16px] font-bold text-gray-400 mb-4 px-4 pt-4 uppercase tracking-wider">RELEVANT POSTS</h2>`;
-                    html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-2 px-2 pb-20">`;
+                    html += `<h2 class="text-[16px] font-bold text-gray-400 mb-2 px-4 pt-4 uppercase tracking-wider">RELEVANT POSTS</h2>`;
+                    html += `<div class="flex flex-col pb-20">`;
                     fp.forEach(p => {
-                        html += renderGridPostItem(p);
+                        html += renderSearchPostItem(p);
                     });
                     html += `</div>`;
                 }
@@ -9110,6 +9110,59 @@
                 <div class="grid-post-overlay">
                     <div class="flex items-center gap-1"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> <span class="js-like-count-${p.id}">${likeText}</span></div>
                     <div class="flex items-center gap-1"><i data-lucide="message-circle" class="w-5 h-5 fill-white"></i> <span class="js-comment-count-${p.id}">${commentText}</span></div>
+                </div>
+            </div>`;
+        }
+        
+        function renderSearchPostItem(p) {
+            const m = Array.isArray(p.media) ? p.media[0] : p.media;
+            const author = users.find(u => u.id === p.authorId) || { name: 'User', avatar: 'https://i.imghippo.com/files/dHv4045RXI.png' };
+            
+            // Check if this is a video post
+            const isVideoPost = () => {
+                if (p.embedVideo) {
+                    const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
+                    return embedInfo.type === 'video';
+                }
+                if (p.media) {
+                    const ma = Array.isArray(p.media) ? p.media : [p.media];
+                    return ma.some(media => media.includes('video') || media.endsWith('.mp4') || media.startsWith('data:video'));
+                }
+                return false;
+            };
+            
+            const isV = isVideoPost();
+            
+            let mediaHtml = "";
+            if (m) {
+                mediaHtml = `<div class="w-12 h-12 shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <img src="${m}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
+                </div>`;
+            } else if (p.embedVideo) {
+                const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
+                if (embedInfo.type === 'image') {
+                    mediaHtml = `<div class="w-12 h-12 shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                        <img src="${embedInfo.url}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
+                    </div>`;
+                } else {
+                    mediaHtml = `<div class="w-12 h-12 shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                        <i data-lucide="file-text" class="w-5 h-5 text-gray-400"></i>
+                    </div>`;
+                }
+            } else {
+                mediaHtml = `<div class="w-12 h-12 shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                    <i data-lucide="file-text" class="w-5 h-5 text-gray-400"></i>
+                </div>`;
+            }
+            
+            // Truncate content to show preview
+            const truncatedContent = p.content.length > 80 ? p.content.substring(0, 80) + "..." : p.content;
+            
+            return `<div class="flex items-center gap-4 px-4 py-3 hover:bg-gray-50 cursor-pointer" onclick="${isVideoPost() ? `openFrameView('${p.id}')` : `openPostView('${p.id}')`}">
+                ${mediaHtml}
+                <div class="flex-1 min-w-0">
+                    <div class="font-bold text-gray-900 text-[16px] truncate">${author.name}</div>
+                    <div class="text-[14px] text-gray-500 truncate leading-tight">${truncatedContent}</div>
                 </div>
             </div>`;
         }
