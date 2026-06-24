@@ -175,18 +175,6 @@
             #main-panel.profile-view {
                 border: 1px solid var(--outline);
             }
-            
-            #workspace-layout.feed-view {
-                gap: 0 !important;
-            }
-            
-            #main-panel.feed-view {
-                border-radius: 0 !important;
-            }
-            
-
-            
-
         }
 
         @media (max-width:768px) {
@@ -4761,24 +4749,29 @@
                 <div class="hidden md:block w-full bg-white z-10">
                     <div class="max-w-5xl mx-auto tab-group border-b-0 px-0 justify-center mt-1">
                         <button id="tab-explore-top-d" onclick="switchExploreMainTab('top')"
-                            class="tab-btn active max-w-[120px]">
+                            class="tab-btn active max-w-[200px]">
                             <i data-lucide="sparkles" class="w-5 h-5"></i>
+                            <span class="ml-2 font-bold text-sm">Top</span>
                         </button>
                         <button id="tab-explore-main-d" onclick="switchExploreMainTab('explore')"
-                            class="tab-btn max-w-[120px]">
+                            class="tab-btn max-w-[200px]">
                             <i data-lucide="grid-2x2-check" class="w-5 h-5"></i>
+                            <span class="ml-2 font-bold text-sm">Posts</span>
                         </button>
                         <button id="tab-explore-video-d" onclick="switchExploreMainTab('video')"
-                            class="tab-btn max-w-[120px]">
+                            class="tab-btn max-w-[200px]">
                             <i data-lucide="play" class="w-5 h-5"></i>
+                            <span class="ml-2 font-bold text-sm">Videos</span>
                         </button>
                         <button id="tab-explore-people-d" onclick="switchExploreMainTab('people')"
-                            class="tab-btn max-w-[120px]">
+                            class="tab-btn max-w-[200px]">
                             <i data-lucide="users" class="w-5 h-5"></i>
+                            <span class="ml-2 font-bold text-sm">People</span>
                         </button>
                         <button id="tab-explore-tags-d" onclick="switchExploreMainTab('tags')"
-                            class="tab-btn max-w-[120px]">
+                            class="tab-btn max-w-[200px]">
                             <i data-lucide="hash" class="w-5 h-5"></i>
+                            <span class="ml-2 font-bold text-sm">Tags</span>
                         </button>
                     </div>
                 </div>
@@ -6102,9 +6095,12 @@
                     ms.classList.remove('hidden');
                 }
                 if (wl) wl.classList.remove('hidden');
-                if (tp && window.innerWidth >= 1280) {
+                if (tp && window.innerWidth >= 1280 && v !== 'explore') {
                     tp.classList.remove('hidden');
                     tp.classList.add('xl:flex');
+                } else if (tp) {
+                    tp.classList.add('hidden');
+                    tp.classList.remove('xl:flex');
                 }
             }
             
@@ -6154,7 +6150,21 @@
                 }
             }
             
-            if (window.innerWidth >= 1280 && v !== 'frame') tp.classList.remove('hidden'), tp.classList.add('xl:flex'); 
+            // Adjust main-panel width and trending-panel visibility
+            if (mp && window.innerWidth >= 1024) {
+                if (v === 'explore') {
+                    mp.style.maxWidth = '900px';
+                    mp.style.width = '900px';
+                } else {
+                    mp.style.maxWidth = '';
+                    mp.style.width = '';
+                }
+            } else if (mp) {
+                mp.style.maxWidth = '';
+                mp.style.width = '';
+            }
+            
+            if (window.innerWidth >= 1280 && v !== 'frame' && v !== 'explore') tp.classList.remove('hidden'), tp.classList.add('xl:flex'); 
             else if (v !== 'frame') tp.classList.add('hidden'), tp.classList.remove('xl:flex'); 
             
             if (v !== 'ai') { 
@@ -6207,13 +6217,24 @@
             // Handle filter button and search container for explore view
             const filterBtn = document.getElementById('filter-button');
             const searchContainer = document.getElementById('global-search-container');
+            const globalSearchInput = document.getElementById('global-search');
             if (filterBtn && searchContainer && window.innerWidth >= 768) {
                 if (v === 'explore') {
                     filterBtn.style.display = 'none';
-                    searchContainer.style.paddingRight = '1rem'; // Add more space
+                    searchContainer.style.paddingRight = '0';
+                    searchContainer.style.flexGrow = '2';
+                    if (globalSearchInput) {
+                        globalSearchInput.style.paddingLeft = '3.5rem';
+                        globalSearchInput.style.paddingRight = '1.5rem';
+                    }
                 } else {
                     filterBtn.style.display = 'flex';
-                    searchContainer.style.paddingRight = '';
+                    searchContainer.style.paddingRight = '0.5rem';
+                    searchContainer.style.flexGrow = '';
+                    if (globalSearchInput) {
+                        globalSearchInput.style.paddingLeft = '';
+                        globalSearchInput.style.paddingRight = '';
+                    }
                 }
             }
             
@@ -6236,13 +6257,6 @@
                 } else {
                     mp.classList.remove('profile-view');
                 }
-                if (v === 'feed') {
-                    mp.classList.add('feed-view');
-                    if (wl) wl.classList.add('feed-view');
-                } else {
-                    mp.classList.remove('feed-view');
-                    if (wl) wl.classList.remove('feed-view');
-                }
             }
 
             // Desktop header search placeholder
@@ -6260,13 +6274,24 @@
             if (window.innerWidth >= 768) {
                 const filterBtn = document.getElementById('filter-button');
                 const globalSearchContainer = document.getElementById('global-search-container');
+                const globalSearchInput = document.getElementById('global-search');
                 if (filterBtn && globalSearchContainer) {
                     if (v === 'explore') {
                         filterBtn.style.display = 'none';
-                        globalSearchContainer.style.paddingRight = '1rem';
+                        globalSearchContainer.style.paddingRight = '0';
+                        globalSearchContainer.style.flexGrow = '2';
+                        if (globalSearchInput) {
+                            globalSearchInput.style.paddingLeft = '3.5rem';
+                            globalSearchInput.style.paddingRight = '1.5rem';
+                        }
                     } else {
                         filterBtn.style.display = 'flex';
                         globalSearchContainer.style.paddingRight = '0.5rem';
+                        globalSearchContainer.style.flexGrow = '';
+                        if (globalSearchInput) {
+                            globalSearchInput.style.paddingLeft = '';
+                            globalSearchInput.style.paddingRight = '';
+                        }
                     }
                 }
 
