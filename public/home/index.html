@@ -6256,7 +6256,24 @@
             if (v === 'archived') {
                 renderArchived();
             }
-            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('top'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
+            if (v === 'feed') { 
+                exitExploreSearch();
+                mnav[0]?.classList.add('active'); 
+                if (document.getElementById('feed-container').children.length === 0) renderFeed() 
+            } else if (v === 'explore') { 
+                // Exit search mode when entering explore view normally
+                exitExploreSearch();
+                mnav[1]?.classList.add('active'); 
+                if (!window.activeExploreTab) switchExploreMainTab('top'); 
+                else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } 
+            } else { 
+                // Exit search mode when switching to other views
+                exitExploreSearch();
+                if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } 
+                else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } 
+                else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } 
+                else if (v === 'profile') { mnav[4]?.classList.add('active') }
+            }
             if (mp) {
                 if (v === 'profile') {
                     mp.classList.add('profile-view');
@@ -7926,13 +7943,18 @@
                 if (backBtn) backBtn.classList.remove('hidden');
                 if (tabGroupMobile) tabGroupMobile.classList.add('hidden');
             } else {
+                const mainHeader = document.getElementById('main-header');
                 const exploreBackWrapper = document.getElementById('explore-back-wrapper');
                 const tabGroupDesktop = document.getElementById('explore-tab-group-desktop');
                 const searchContainer = document.getElementById('global-search-container');
                 const filterBtn = document.getElementById('filter-button');
                 const headerAvatar = document.querySelector('#main-header .img-placeholder');
                 const searchIcon = document.querySelector('#global-search-container [data-lucide="search"]');
+                const globalSearchInput = document.getElementById('global-search');
+                const leftPart = mainHeader.querySelector('.md\\:hidden');
                 
+                if (mainHeader) mainHeader.classList.replace('justify-between', 'justify-center');
+                if (leftPart) leftPart.style.display = 'none'; // Hide the logo part
                 if (exploreBackWrapper) {
                     exploreBackWrapper.classList.remove('hidden');
                     exploreBackWrapper.classList.add('flex');
@@ -7940,12 +7962,16 @@
                 if (tabGroupDesktop) tabGroupDesktop.classList.add('hidden');
                 if (searchContainer) {
                     searchContainer.classList.remove('flex-1');
-                    searchContainer.style.maxWidth = '400px'; // Make it shorter
+                    searchContainer.style.maxWidth = '500px'; // Make it a bit bigger
                     searchContainer.style.paddingLeft = '0.5rem';
                 }
                 if (filterBtn) filterBtn.style.display = 'none';
                 if (headerAvatar) headerAvatar.style.display = 'none';
-                if (searchIcon) searchIcon.classList.add('hidden');
+                if (searchIcon) searchIcon.classList.remove('hidden'); // Show search icon
+                if (globalSearchInput) {
+                    // Adjust padding to make space for the icon
+                    globalSearchInput.style.paddingLeft = '3rem';
+                }
             }
         };
 
@@ -7958,6 +7984,7 @@
                 if (tabGroupMobile) tabGroupMobile.classList.remove('hidden');
                 if (mobileSearch) mobileSearch.value = '';
             } else {
+                const mainHeader = document.getElementById('main-header');
                 const exploreBackWrapper = document.getElementById('explore-back-wrapper');
                 const tabGroupDesktop = document.getElementById('explore-tab-group-desktop');
                 const searchContainer = document.getElementById('global-search-container');
@@ -7965,7 +7992,10 @@
                 const headerAvatar = document.querySelector('#main-header .img-placeholder');
                 const searchIcon = document.querySelector('#global-search-container [data-lucide="search"]');
                 const desktopSearch = document.getElementById('global-search');
+                const leftPart = mainHeader?.querySelector('.md\\:hidden');
                 
+                if (mainHeader) mainHeader.classList.replace('justify-center', 'justify-between');
+                if (leftPart) leftPart.style.display = ''; // Show the logo part
                 if (exploreBackWrapper) {
                     exploreBackWrapper.classList.add('hidden');
                     exploreBackWrapper.classList.remove('flex');
@@ -7979,7 +8009,10 @@
                 if (filterBtn) filterBtn.style.display = 'flex';
                 if (headerAvatar) headerAvatar.style.display = 'block';
                 if (searchIcon) searchIcon.classList.remove('hidden');
-                if (desktopSearch) desktopSearch.value = '';
+                if (desktopSearch) {
+                    desktopSearch.value = '';
+                    desktopSearch.style.paddingLeft = ''; // Reset padding
+                }
             }
             
             // Reset search
