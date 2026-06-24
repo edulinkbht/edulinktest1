@@ -1635,13 +1635,6 @@
             to { transform: rotate(360deg); }
         }
 
-        #desktop-explore-back-btn {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        }
-
         .grid-post-text-preview {
             width: 100%;
             height: 100%;
@@ -4201,10 +4194,12 @@
                         src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
                     <h1 class="text-lg font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
                 </div>
-                <div class="flex-1 relative group hidden md:block pl-5 pr-2 transition-all duration-300" id="global-search-container">
-                    <button id="desktop-explore-back-btn" class="hidden absolute left-3 top-3.5 z-10" onclick="exitExploreSearch()">
-                        <i data-lucide="chevron-left" class="w-5 h-5 text-gray-900"></i>
+                <div id="explore-back-wrapper" class="hidden items-center">
+                    <button id="desktop-explore-back-btn" class="flex items-center justify-center p-2" onclick="exitExploreSearch()">
+                        <i data-lucide="chevron-left" class="w-6 h-6 text-gray-900"></i>
                     </button>
+                </div>
+                <div class="flex-1 relative group hidden md:block pl-5 pr-2 transition-all duration-300" id="global-search-container">
                     <i data-lucide="search"
                         class="absolute left-10 top-3.5 w-5 h-5 text-[#667085] group-focus-within:text-black transition-colors"></i>
                     <input
@@ -6225,39 +6220,26 @@
             const filterBtn = document.getElementById('filter-button');
             const searchContainer = document.getElementById('global-search-container');
             const globalSearchInput = document.getElementById('global-search');
-            const mainHeader = document.getElementById('main-header');
             if (filterBtn && searchContainer && window.innerWidth >= 768) {
                 if (v === 'explore') {
                     filterBtn.style.display = 'none';
-                    // Make search container smaller, not full flex-grow
-                    searchContainer.style.paddingRight = '0';
-                    searchContainer.style.paddingLeft = '0';
-                    searchContainer.style.flexGrow = '0';
-                    searchContainer.style.justifyContent = 'center';
+                    searchContainer.style.paddingRight = '0.5rem';
+                    searchContainer.style.flexGrow = '';
                     if (globalSearchInput) {
                         globalSearchInput.style.paddingLeft = '';
                         globalSearchInput.style.paddingRight = '';
                         globalSearchInput.style.paddingTop = '';
                         globalSearchInput.style.paddingBottom = '';
-                    }
-                    // Center the header content
-                    if (mainHeader) {
-                        mainHeader.style.justifyContent = 'center';
                     }
                 } else {
                     filterBtn.style.display = 'flex';
                     searchContainer.style.paddingRight = '0.5rem';
-                    searchContainer.style.paddingLeft = '5px';
                     searchContainer.style.flexGrow = '';
-                    searchContainer.style.justifyContent = '';
                     if (globalSearchInput) {
                         globalSearchInput.style.paddingLeft = '';
                         globalSearchInput.style.paddingRight = '';
                         globalSearchInput.style.paddingTop = '';
                         globalSearchInput.style.paddingBottom = '';
-                    }
-                    if (mainHeader) {
-                        mainHeader.style.justifyContent = '';
                     }
                 }
             }
@@ -7938,50 +7920,67 @@
         });
 
         window.enterExploreSearch = () => {
-            const backBtn = document.getElementById('explore-back-btn');
-            const desktopBackBtn = document.getElementById('desktop-explore-back-btn');
-            const tabGroupMobile = document.getElementById('explore-tab-group-mobile');
-            const tabGroupDesktop = document.getElementById('explore-tab-group-desktop');
-            const searchIcon = document.querySelector('#global-search-container [data-lucide="search"]');
-            const searchContainer = document.getElementById('global-search-container');
-            const globalSearchInput = document.getElementById('global-search');
-            
-            if (backBtn) backBtn.classList.remove('hidden');
-            if (desktopBackBtn) desktopBackBtn.classList.remove('hidden');
-            if (tabGroupMobile) tabGroupMobile.classList.add('hidden');
-            if (tabGroupDesktop) tabGroupDesktop.classList.add('hidden');
-            if (searchIcon) searchIcon.classList.add('hidden');
-            if (searchContainer && window.innerWidth >= 768) {
-                searchContainer.style.maxWidth = '400px';
-            }
-            if (globalSearchInput) {
-                globalSearchInput.style.paddingLeft = '2.5rem';
+            if (window.innerWidth < 768) {
+                const backBtn = document.getElementById('explore-back-btn');
+                const tabGroupMobile = document.getElementById('explore-tab-group-mobile');
+                if (backBtn) backBtn.classList.remove('hidden');
+                if (tabGroupMobile) tabGroupMobile.classList.add('hidden');
+            } else {
+                const exploreBackWrapper = document.getElementById('explore-back-wrapper');
+                const tabGroupDesktop = document.getElementById('explore-tab-group-desktop');
+                const searchContainer = document.getElementById('global-search-container');
+                const filterBtn = document.getElementById('filter-button');
+                const headerAvatar = document.querySelector('#main-header .img-placeholder');
+                const searchIcon = document.querySelector('#global-search-container [data-lucide="search"]');
+                
+                if (exploreBackWrapper) {
+                    exploreBackWrapper.classList.remove('hidden');
+                    exploreBackWrapper.classList.add('flex');
+                }
+                if (tabGroupDesktop) tabGroupDesktop.classList.add('hidden');
+                if (searchContainer) {
+                    searchContainer.classList.remove('flex-1');
+                    searchContainer.style.maxWidth = '400px'; // Make it shorter
+                    searchContainer.style.paddingLeft = '0.5rem';
+                }
+                if (filterBtn) filterBtn.style.display = 'none';
+                if (headerAvatar) headerAvatar.style.display = 'none';
+                if (searchIcon) searchIcon.classList.add('hidden');
             }
         };
 
         window.exitExploreSearch = () => {
-            const backBtn = document.getElementById('explore-back-btn');
-            const desktopBackBtn = document.getElementById('desktop-explore-back-btn');
-            const tabGroupMobile = document.getElementById('explore-tab-group-mobile');
-            const tabGroupDesktop = document.getElementById('explore-tab-group-desktop');
-            const mobileSearch = document.getElementById('mobile-explore-search');
-            const desktopSearch = document.getElementById('global-search');
-            const searchIcon = document.querySelector('#global-search-container [data-lucide="search"]');
-            const searchContainer = document.getElementById('global-search-container');
-            
-            if (backBtn) backBtn.classList.add('hidden');
-            if (desktopBackBtn) desktopBackBtn.classList.add('hidden');
-            if (tabGroupMobile) tabGroupMobile.classList.remove('hidden');
-            if (tabGroupDesktop) tabGroupDesktop.classList.remove('hidden');
-            if (searchIcon) searchIcon.classList.remove('hidden');
-            if (searchContainer && window.innerWidth >= 768) {
-                searchContainer.style.maxWidth = '';
+            if (window.innerWidth < 768) {
+                const backBtn = document.getElementById('explore-back-btn');
+                const tabGroupMobile = document.getElementById('explore-tab-group-mobile');
+                const mobileSearch = document.getElementById('mobile-explore-search');
+                if (backBtn) backBtn.classList.add('hidden');
+                if (tabGroupMobile) tabGroupMobile.classList.remove('hidden');
+                if (mobileSearch) mobileSearch.value = '';
+            } else {
+                const exploreBackWrapper = document.getElementById('explore-back-wrapper');
+                const tabGroupDesktop = document.getElementById('explore-tab-group-desktop');
+                const searchContainer = document.getElementById('global-search-container');
+                const filterBtn = document.getElementById('filter-button');
+                const headerAvatar = document.querySelector('#main-header .img-placeholder');
+                const searchIcon = document.querySelector('#global-search-container [data-lucide="search"]');
+                const desktopSearch = document.getElementById('global-search');
+                
+                if (exploreBackWrapper) {
+                    exploreBackWrapper.classList.add('hidden');
+                    exploreBackWrapper.classList.remove('flex');
+                }
+                if (tabGroupDesktop) tabGroupDesktop.classList.remove('hidden');
+                if (searchContainer) {
+                    searchContainer.classList.add('flex-1');
+                    searchContainer.style.maxWidth = '';
+                    searchContainer.style.paddingLeft = '';
+                }
+                if (filterBtn) filterBtn.style.display = 'flex';
+                if (headerAvatar) headerAvatar.style.display = 'block';
+                if (searchIcon) searchIcon.classList.remove('hidden');
+                if (desktopSearch) desktopSearch.value = '';
             }
-            if (desktopSearch) {
-                desktopSearch.style.paddingLeft = '';
-                desktopSearch.value = '';
-            }
-            if (mobileSearch) mobileSearch.value = '';
             
             // Reset search
             handleSearch('');
