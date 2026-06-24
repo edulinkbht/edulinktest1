@@ -4190,26 +4190,31 @@
         <main id="main-panel" class="app-panel min-w-0 relative w-full lg:w-[600px] lg:ml-12">
             <header id="main-header"
                 class="h-16 md:h-20 flex items-center justify-between px-4 md:px-0 shrink-0 z-20 absolute top-0 w-full bg-white transition-transform duration-300">
-                <div class="md:hidden flex items-center gap-3 cursor-pointer px-4" onclick="window.location.reload()"><img
-                        src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
-                    <h1 class="text-lg font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
+                <div id="header-left" class="flex items-center gap-3">
+                    <button id="header-back-btn" class="hidden md:flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100 transition-colors" onclick="closeSearch()">
+                        <i data-lucide="chevron-left" class="w-6 h-6"></i>
+                    </button>
+                    <div class="md:hidden flex items-center gap-3 cursor-pointer px-4" onclick="window.location.reload()"><img
+                            src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
+                        <h1 class="text-lg font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
+                    </div>
                 </div>
-                <div class="flex-1 relative group hidden md:block pl-5 pr-2 transition-all duration-300" id="global-search-container">
+                <div class="flex-1 relative group hidden md:block pl-2 pr-2 transition-all duration-300" id="global-search-container">
                     <i data-lucide="search"
-                        class="absolute left-10 top-3.5 w-5 h-5 text-[#667085] group-focus-within:text-black transition-colors"></i>
+                        class="absolute left-4 top-3.5 w-5 h-5 text-[#667085] group-focus-within:text-black transition-colors"></i>
                     <input
-                        type="text" placeholder="Search EduLink" id="global-search" oninput="handleGlobalSearchInput(this.value)"
-                        onfocus="handleGlobalSearchFocus(); expandSearchBar()"
-                        onblur="collapseSearchBar()"
+                        type="text" placeholder="Search" id="global-search" oninput="handleGlobalSearchInput(this.value)"
+                        onfocus="handleGlobalSearchFocus(); openSearch()"
+                        onblur="closeSearch()"
                         onkeydown="if(event.key==='Enter'){ handleSearch(this.value); document.getElementById('search-suggestions').classList.add('hidden'); }"
-                        class="w-full bg-[#f3f4f6] rounded-full py-3.5 pl-14 pr-6 outline-none focus:ring-1 focus:ring-gray-200 transition-all text-[#1f1f1f] text-[15px]">
+                        class="w-full bg-[#f3f4f6] rounded-full py-3.5 pl-12 pr-6 outline-none focus:ring-1 focus:ring-gray-200 transition-all text-[#1f1f1f] text-[15px]">
                     
                     <!-- Search Suggestions Dropdown -->
-                    <div id="search-suggestions" class="absolute top-full left-5 right-0 mt-3 bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-200 overflow-hidden hidden z-[100] max-h-[520px] flex flex-col transition-all duration-300 origin-top">
+                    <div id="search-suggestions" class="absolute top-full left-0 right-0 mt-3 bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-200 overflow-hidden hidden z-[100] max-h-[520px] flex flex-col transition-all duration-300 origin-top">
                         <div id="search-suggestions-content" class="overflow-y-auto py-3 no-scrollbar"></div>
                     </div>
                 </div>
-                <div class="flex items-center gap-2 pl-4 pr-4">
+                <div id="header-right" class="flex items-center gap-2 pl-4 pr-4">
                     <button id="filter-button"
                         class="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-all duration-300 opacity-100 scale-100"
                         onclick="openFeedFilter()">
@@ -7688,33 +7693,60 @@
             setTimeout(() => refreshIcons(), 50);
         };
         window.toggleExploreSearch = () => { const b = document.getElementById('explore-search-bar'); if (b) { b.classList.toggle('hidden'); if (!b.classList.contains('hidden')) document.getElementById('mobile-explore-search').focus() } };
+        window.openSearch = () => {
+            const backBtn = document.getElementById('header-back-btn');
+            const filterBtn = document.getElementById('filter-button');
+            const searchContainer = document.getElementById('global-search-container');
+            const headerRight = document.getElementById('header-right');
+            
+            if (backBtn) backBtn.classList.remove('hidden');
+            if (filterBtn) filterBtn.style.display = 'none';
+            if (headerRight) headerRight.style.display = 'none';
+            
+            // Show search suggestions
+            const val = document.getElementById('global-search').value;
+            if (val.trim()) {
+                window.renderSearchSuggestions(val);
+            } else {
+                // Show recent searches if available, or nothing
+                window.renderSearchSuggestions('');
+            }
+        };
+
+        window.closeSearch = () => {
+            const backBtn = document.getElementById('header-back-btn');
+            const filterBtn = document.getElementById('filter-button');
+            const searchContainer = document.getElementById('global-search-container');
+            const headerRight = document.getElementById('header-right');
+            const searchSuggestions = document.getElementById('search-suggestions');
+            
+            if (backBtn) backBtn.classList.add('hidden');
+            if (filterBtn && window.currentViewName !== 'explore') filterBtn.style.display = 'flex';
+            if (headerRight) headerRight.style.display = 'flex';
+            if (searchSuggestions) searchSuggestions.classList.add('hidden');
+            
+            // Clear search input
+            const searchInput = document.getElementById('global-search');
+            if (searchInput) searchInput.value = '';
+        };
+
         window.handleGlobalSearchFocus = () => {
             const val = document.getElementById('global-search').value;
-            if (val.trim() && window.currentViewName !== 'explore') {
+            if (val.trim()) {
                 window.renderSearchSuggestions(val);
+            } else {
+                window.renderSearchSuggestions('');
             }
         };
 
         window.expandSearchBar = () => {
-            if (window.innerWidth < 768) return;
-            const filterBtn = document.getElementById('filter-button');
-            const searchContainer = document.getElementById('global-search-container');
-            if (filterBtn && searchContainer && window.currentViewName !== 'explore') {
-                filterBtn.style.display = 'none';
-                searchContainer.style.paddingRight = '0';
-                searchContainer.classList.add('flex-grow');
-            }
+            // Keep for backwards compatibility, but use openSearch instead
+            window.openSearch();
         };
 
         window.collapseSearchBar = () => {
-            if (window.innerWidth < 768) return;
-            const filterBtn = document.getElementById('filter-button');
-            const searchContainer = document.getElementById('global-search-container');
-            if (filterBtn && searchContainer && window.currentViewName !== 'explore') {
-                filterBtn.style.display = 'flex';
-                searchContainer.style.paddingRight = '0.5rem';
-                searchContainer.classList.remove('flex-grow');
-            }
+            // Keep for backwards compatibility, but use closeSearch instead
+            window.closeSearch();
         };
 
         window.expandNotificationsSearchBar = () => {
@@ -7758,11 +7790,9 @@
         window.renderSearchSuggestions = (q) => {
             const suggestions = document.getElementById('search-suggestions');
             const content = document.getElementById('search-suggestions-content');
-            if (!q.trim()) {
-                suggestions.classList.add('hidden');
-                return;
-            }
-
+            
+            suggestions.classList.remove('hidden');
+            
             const t = q.toLowerCase().trim();
             
             // Score function (reusing logic from handleSearch)
@@ -7778,21 +7808,42 @@
             };
 
             // People suggestions
-            const people = users
-                .map(u => ({ u, s: Math.max(scoreText(u.name, t), scoreText(u.username, t)) }))
-                .filter(x => x.s > 0)
-                .sort((a, b) => b.s - a.s)
-                .slice(0, 5);
+            let people = [];
+            if (t) {
+                people = users
+                    .map(u => ({ u, s: Math.max(scoreText(u.name, t), scoreText(u.username, t)) }))
+                    .filter(x => x.s > 0)
+                    .sort((a, b) => b.s - a.s)
+                    .slice(0, 5);
+            } else {
+                // If no search term, show popular people (by follower count)
+                people = users
+                    .map(u => ({ u, s: u.followers?.length || 0 }))
+                    .sort((a, b) => b.s - a.s)
+                    .slice(0, 5);
+            }
 
-            // Related Posts suggestions (New)
-            const relatedPosts = posts
-                .filter(p => p && p.content && p.content.toLowerCase().includes(t))
-                .map(p => {
-                    const author = users.find(u => u.id === p.authorId) || { name: 'User' };
-                    return { p, author, s: scoreText(p.content, t) + (p.likes?.length || 0) };
-                })
-                .sort((a, b) => b.s - a.s)
-                .slice(0, 3);
+            // Related Posts suggestions
+            let relatedPosts = [];
+            if (t) {
+                relatedPosts = posts
+                    .filter(p => p && p.content && p.content.toLowerCase().includes(t))
+                    .map(p => {
+                        const author = users.find(u => u.id === p.authorId) || { name: 'User' };
+                        return { p, author, s: scoreText(p.content, t) + (p.likes?.length || 0) };
+                    })
+                    .sort((a, b) => b.s - a.s)
+                    .slice(0, 3);
+            } else {
+                // If no search term, show popular posts
+                relatedPosts = posts
+                    .map(p => {
+                        const author = users.find(u => u.id === p.authorId) || { name: 'User' };
+                        return { p, author, s: (p.likes?.length || 0) };
+                    })
+                    .sort((a, b) => b.s - a.s)
+                    .slice(0, 3);
+            }
 
             // Tag suggestions
             const normalizeTag = (x) => (x || '').replace(/^#/, '').trim().toLowerCase();
@@ -7805,14 +7856,14 @@
                 matches.forEach(ht => {
                     const tag = normalizeTag(ht);
                     if (!tag) return;
-                    if (tagTerm && !tag.includes(tagTerm)) return;
+                    if (t && !tag.includes(tagTerm)) return;
                     tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
                 });
             });
             const tags = Array.from(tagCounts.entries())
-                .map(([tag, count]) => ({ tag, count, s: scoreText(tag, tagTerm) + Math.min(count, 50) }))
+                .map(([tag, count]) => ({ tag, count, s: (t ? scoreText(tag, tagTerm) : 0) + Math.min(count, 50) }))
                 .sort((a, b) => b.s - a.s)
-                .slice(0, 3);
+                .slice(0, 5);
 
             if (people.length === 0 && tags.length === 0 && relatedPosts.length === 0) {
                 content.innerHTML = `<div class="px-6 py-12 text-center">
