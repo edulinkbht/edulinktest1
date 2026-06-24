@@ -4194,18 +4194,19 @@
                         src="https://i.imghippo.com/files/fRGt5603uII.png" class="w-8 h-8 object-contain">
                     <h1 class="text-lg font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
                 </div>
-                <div class="flex-1 relative group hidden md:block pl-5 pr-2 transition-all duration-300" id="global-search-container">
-                    <button id="desktop-explore-back-btn" class="hidden absolute left-3 top-3.5 z-10" onclick="exitExploreSearch()">
+                <div class="flex items-center gap-2 flex-1">
+                    <button id="desktop-explore-back-btn" class="hidden md:flex items-center justify-center w-10 h-10 rounded-full hover:bg-gray-100" onclick="exitExploreSearch()">
                         <i data-lucide="chevron-left" class="w-5 h-5 text-gray-900"></i>
                     </button>
-                    <i data-lucide="search"
-                        class="absolute left-10 top-3.5 w-5 h-5 text-[#667085] group-focus-within:text-black transition-colors"></i>
-                    <input
-                        type="text" placeholder="Search EduLink" id="global-search" oninput="handleGlobalSearchInput(this.value)"
-                        onfocus="handleGlobalSearchFocus(); if(window.currentViewName === 'explore') enterExploreSearch(); else expandSearchBar();"
-                        onblur="if(window.currentViewName !== 'explore') collapseSearchBar()"
-                        onkeydown="if(event.key==='Enter'){ handleSearch(this.value); document.getElementById('search-suggestions').classList.add('hidden'); }"
-                        class="w-full bg-[#f3f4f6] rounded-full py-3.5 pl-14 pr-6 outline-none focus:ring-1 focus:ring-gray-200 transition-all text-[#1f1f1f] text-[15px]">
+                    <div class="flex-1 relative group hidden md:block transition-all duration-300" id="global-search-container">
+                        <i data-lucide="search"
+                            class="absolute left-10 top-3.5 w-5 h-5 text-[#667085] group-focus-within:text-black transition-colors"></i>
+                        <input
+                            type="text" placeholder="Search EduLink" id="global-search" oninput="handleGlobalSearchInput(this.value)"
+                            onfocus="handleGlobalSearchFocus(); if(window.currentViewName === 'explore') enterExploreSearch(); else expandSearchBar();"
+                            onblur="if(window.currentViewName !== 'explore') collapseSearchBar()"
+                            onkeydown="if(event.key==='Enter'){ handleSearch(this.value); document.getElementById('search-suggestions').classList.add('hidden'); }"
+                            class="w-full bg-[#f3f4f6] rounded-full py-3.5 pl-14 pr-6 outline-none focus:ring-1 focus:ring-gray-200 transition-all text-[#1f1f1f] text-[15px]">
                     
                     <!-- Search Suggestions Dropdown -->
                     <div id="search-suggestions" class="absolute top-full left-5 right-0 mt-3 bg-white rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border border-gray-200 overflow-hidden hidden z-[100] max-h-[520px] flex flex-col transition-all duration-300 origin-top">
@@ -7922,13 +7923,11 @@
             const desktopBackBtn = document.getElementById('desktop-explore-back-btn');
             const tabGroupMobile = document.getElementById('explore-tab-group-mobile');
             const tabGroupDesktop = document.getElementById('explore-tab-group-desktop');
-            const searchIcon = document.querySelector('#global-search-container [data-lucide="search"]');
             
             if (backBtn) backBtn.classList.remove('hidden');
             if (desktopBackBtn) desktopBackBtn.classList.remove('hidden');
             if (tabGroupMobile) tabGroupMobile.classList.add('hidden');
             if (tabGroupDesktop) tabGroupDesktop.classList.add('hidden');
-            if (searchIcon) searchIcon.classList.add('hidden');
         };
 
         window.exitExploreSearch = () => {
@@ -7938,19 +7937,19 @@
             const tabGroupDesktop = document.getElementById('explore-tab-group-desktop');
             const mobileSearch = document.getElementById('mobile-explore-search');
             const desktopSearch = document.getElementById('global-search');
-            const searchIcon = document.querySelector('#global-search-container [data-lucide="search"]');
             
             if (backBtn) backBtn.classList.add('hidden');
             if (desktopBackBtn) desktopBackBtn.classList.add('hidden');
             if (tabGroupMobile) tabGroupMobile.classList.remove('hidden');
             if (tabGroupDesktop) tabGroupDesktop.classList.remove('hidden');
-            if (searchIcon) searchIcon.classList.remove('hidden');
             if (mobileSearch) mobileSearch.value = '';
             if (desktopSearch) desktopSearch.value = '';
             
             // Reset search
             handleSearch('');
         };
+
+
 
         window.handleSearch = q => {
             window.currentSearchQuery = q;
@@ -12115,9 +12114,10 @@
             });
         };
 
-        // Override switchView to include icon updates
+        // Override switchView to include icon updates and reset explore search
         const originalSwitchView = window.switchView;
         window.switchView = function (view) {
+            window.exitExploreSearch();
             if (originalSwitchView) originalSwitchView(view);
             updateNavIcons(view);
         };
