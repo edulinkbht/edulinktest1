@@ -4729,10 +4729,10 @@
                                 oninput="handleSearch(this.value)"></div>
                     </div>
                     <div id="explore-tabs-mobile" class="tab-group mt-1">
-                        <button id="tab-explore-top" onclick="switchExploreMainTab('top')" class="tab-btn active">
+                        <button id="tab-explore-top" onclick="switchExploreMainTab('top')" class="tab-btn">
                             <i data-lucide="sparkles" class="w-6 h-6"></i>
                         </button>
-                        <button id="tab-explore-main" onclick="switchExploreMainTab('explore')" class="tab-btn">
+                        <button id="tab-explore-posts" onclick="switchExploreMainTab('posts')" class="tab-btn active">
                             <i data-lucide="grid-2x2-check" class="w-6 h-6"></i>
                         </button>
                         <button id="tab-explore-people" onclick="switchExploreMainTab('people')" class="tab-btn">
@@ -4746,12 +4746,12 @@
                 <div id="explore-tabs-desktop" class="hidden lg:block w-full bg-white z-10 border-b border-gray-100">
                     <div class="max-w-5xl mx-auto tab-group border-b-0 px-0 justify-center mt-1">
                         <button id="tab-explore-top-d" onclick="switchExploreMainTab('top')"
-                            class="tab-btn active max-w-[200px]">
+                            class="tab-btn max-w-[200px]">
                             <i data-lucide="sparkles" class="w-5 h-5"></i>
                             <span class="ml-2 font-light text-sm">Top</span>
                         </button>
-                        <button id="tab-explore-main-d" onclick="switchExploreMainTab('explore')"
-                            class="tab-btn max-w-[200px]">
+                        <button id="tab-explore-posts-d" onclick="switchExploreMainTab('posts')"
+                            class="tab-btn active max-w-[200px]">
                             <i data-lucide="grid-2x2-check" class="w-5 h-5"></i>
                             <span class="ml-2 font-light text-sm">Posts</span>
                         </button>
@@ -6262,7 +6262,7 @@
             if (v === 'archived') {
                 renderArchived();
             }
-            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('top'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
+            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
             if (mp) {
                 if (v === 'profile') {
                     mp.classList.add('profile-view');
@@ -7699,13 +7699,12 @@
         window.moveCarousel = (cid, dir) => { const s = window.carouselStates[cid]; if (!s) return; let n = s.index + dir; if (n < 0) n = 0; if (n >= s.total) n = s.total - 1; s.index = n; const outer = document.getElementById(cid), inner = outer ? outer.querySelector('.post-carousel-inner') : null; if (inner) inner.style.transform = `translateX(-${n * 100}%)`; const dc = document.getElementById(cid).nextElementSibling; if (dc) dc.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === n)); const ctid = cid.replace('carousel-', 'counter-'), cnt = document.getElementById(ctid); if (cnt) cnt.innerText = n + 1 };
         window.switchExploreMainTab = t => {
             window.activeExploreTab = t;
-            const m = t === 'explore' ? 'main' : t;
-            const tabIds = ['top', 'main', 'people', 'tags'];
+            const tabIds = ['top', 'posts', 'people', 'tags'];
             tabIds.forEach(x => {
                 const el = document.getElementById(`tab-explore-${x}`),
                     ed = document.getElementById(`tab-explore-${x}-d`);
-                if (el) el.classList.toggle('active', x === m);
-                if (ed) ed.classList.toggle('active', x === m);
+                if (el) el.classList.toggle('active', x === t);
+                if (ed) ed.classList.toggle('active', x === t);
             });
             window.activeExploreCategory = 'For You';
             const sVal = (document.getElementById('mobile-explore-search')?.value || document.getElementById('global-search')?.value || '').trim();
