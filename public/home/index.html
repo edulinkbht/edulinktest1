@@ -6145,8 +6145,14 @@
             // Adjust main-panel width and trending-panel visibility
             if (mp && window.innerWidth >= 1024) {
                 if (v === 'explore') {
-                    mp.style.maxWidth = '700px';
-                    mp.style.width = '700px';
+                    const globalSearchInput = document.getElementById('global-search');
+                    if (globalSearchInput && globalSearchInput.value.trim()) {
+                        mp.style.maxWidth = '600px';
+                        mp.style.width = '600px';
+                    } else {
+                        mp.style.maxWidth = '700px';
+                        mp.style.width = '700px';
+                    }
                 } else {
                     mp.style.maxWidth = '';
                     mp.style.width = '';
@@ -7719,10 +7725,16 @@
             if (window.innerWidth < 768) return;
             const filterBtn = document.getElementById('filter-button');
             const searchContainer = document.getElementById('global-search-container');
+            const mp = document.getElementById('main-panel');
             if (filterBtn && searchContainer) {
                 filterBtn.style.display = 'none';
                 searchContainer.style.paddingRight = '0';
                 searchContainer.classList.add('flex-grow');
+            }
+            // Adjust main-panel width in explore view when expanded
+            if (window.currentViewName === 'explore' && mp && window.innerWidth >= 1024) {
+                mp.style.maxWidth = '600px';
+                mp.style.width = '600px';
             }
         };
 
@@ -7731,12 +7743,18 @@
             const filterBtn = document.getElementById('filter-button');
             const searchContainer = document.getElementById('global-search-container');
             const globalSearchInput = document.getElementById('global-search');
+            const mp = document.getElementById('main-panel');
             // Only collapse if there's no search content and we're not in explore view
             if (filterBtn && searchContainer) {
                 if (window.currentViewName === 'explore') {
                     if (!globalSearchInput?.value.trim()) {
                         // In explore view, no content - keep default (no flex grow, filter btn hidden)
                         searchContainer.classList.remove('flex-grow');
+                        // Revert to 700px width
+                        if (mp && window.innerWidth >= 1024) {
+                            mp.style.maxWidth = '700px';
+                            mp.style.width = '700px';
+                        }
                     }
                 } else {
                     if (!globalSearchInput?.value.trim()) {
@@ -7953,12 +7971,23 @@
             const t = termRaw.toLowerCase().trim();
             const pl = document.getElementById('explore-people-results');
             const v = document.getElementById('explore-results');
+            const mp = document.getElementById('main-panel');
             if (!pl || !v) return;
             
             if (t) {
                 window.expandSearchBar();
+                // Adjust main-panel width in explore view
+                if (mp && window.innerWidth >= 1024) {
+                    mp.style.maxWidth = '600px';
+                    mp.style.width = '600px';
+                }
             } else {
                 window.collapseSearchBar();
+                // Revert main-panel width in explore view
+                if (mp && window.innerWidth >= 1024) {
+                    mp.style.maxWidth = '700px';
+                    mp.style.width = '700px';
+                }
             }
 
             // Get the tab containers
