@@ -4730,16 +4730,7 @@
                     </div>
                     <div id="explore-tabs-mobile" class="tab-group mt-1">
                         <button id="tab-explore-posts" onclick="switchExploreMainTab('posts')" class="tab-btn active">
-                            <i data-lucide="grid-2x2-check" class="w-6 h-6"></i>
-                        </button>
-                        <button id="tab-explore-frame" onclick="switchExploreMainTab('frame')" class="tab-btn">
-                            <i data-lucide="clapperboard" class="w-6 h-6"></i>
-                        </button>
-                        <button id="tab-explore-people" onclick="switchExploreMainTab('people')" class="tab-btn">
-                            <i data-lucide="handshake" class="w-6 h-6"></i>
-                        </button>
-                        <button id="tab-explore-tags" onclick="switchExploreMainTab('tags')" class="tab-btn">
-                            <i data-lucide="hash" class="w-6 h-6"></i>
+                            <i data-lucide="grid-2x2-check" class="w-8 h-8"></i>
                         </button>
                     </div>
                 </div>
@@ -7707,6 +7698,13 @@
                 if (ed) ed.classList.toggle('active', x === t);
             });
             window.activeExploreCategory = 'For You';
+            
+            // Hide tabs whenever in explore view
+            const tabsMobile = document.getElementById('explore-tabs-mobile');
+            const tabsDesktop = document.getElementById('explore-tabs-desktop');
+            if (tabsMobile) tabsMobile.style.display = 'none';
+            if (tabsDesktop) tabsDesktop.style.display = 'none';
+            
             const sVal = (document.getElementById('mobile-explore-search')?.value || document.getElementById('global-search')?.value || '').trim();
             handleSearch(sVal);
             syncURLState();
@@ -7966,6 +7964,7 @@
         // Variables to track see more/see less state
         window.searchPeopleDisplayCount = 10;
         window.searchAllPeople = [];
+        window.isSearchBarFocused = false;
         
         window.handleSearch = q => {
             window.currentSearchQuery = q;
@@ -7997,6 +7996,10 @@
             const tabsMobile = document.getElementById('explore-tabs-mobile');
             const tabsDesktop = document.getElementById('explore-tabs-desktop');
 
+            // Hide tabs whenever in explore view (even without search query)
+            if (tabsMobile) tabsMobile.style.display = 'none';
+            if (tabsDesktop) tabsDesktop.style.display = 'none';
+
             const scoreText = (text, term) => {
                 if (!term) return 0;
                 if (!text) return 0;
@@ -8024,9 +8027,6 @@
             const normalizeTag = (x) => (x || '').replace(/^#/, '').trim().toLowerCase();
 
             if (t) {
-                // Hide tabs when search query is present
-                if (tabsMobile) tabsMobile.style.display = 'none';
-                if (tabsDesktop) tabsDesktop.style.display = 'none';
 
                 // Show search results
                 pl.classList.add('hidden');
