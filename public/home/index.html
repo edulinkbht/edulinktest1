@@ -6214,7 +6214,11 @@
                 if (v === 'explore') {
                     filterBtn.style.display = 'none';
                     searchContainer.style.paddingRight = '0.5rem';
-                    searchContainer.style.flexGrow = '';
+                    if (globalSearchInput && globalSearchInput.value.trim()) {
+                        searchContainer.classList.add('flex-grow');
+                    } else {
+                        searchContainer.classList.remove('flex-grow');
+                    }
                     if (globalSearchInput) {
                         globalSearchInput.style.paddingLeft = '';
                         globalSearchInput.style.paddingRight = '';
@@ -6222,9 +6226,15 @@
                         globalSearchInput.style.paddingBottom = '';
                     }
                 } else {
-                    filterBtn.style.display = 'flex';
-                    searchContainer.style.paddingRight = '0.5rem';
-                    searchContainer.style.flexGrow = '';
+                    if (globalSearchInput && globalSearchInput.value.trim()) {
+                        filterBtn.style.display = 'none';
+                        searchContainer.style.paddingRight = '0';
+                        searchContainer.classList.add('flex-grow');
+                    } else {
+                        filterBtn.style.display = 'flex';
+                        searchContainer.style.paddingRight = '0.5rem';
+                        searchContainer.classList.remove('flex-grow');
+                    }
                     if (globalSearchInput) {
                         globalSearchInput.style.paddingLeft = '';
                         globalSearchInput.style.paddingRight = '';
@@ -6275,7 +6285,11 @@
                     if (v === 'explore') {
                         filterBtn.style.display = 'none';
                         globalSearchContainer.style.paddingRight = '0.5rem';
-                        globalSearchContainer.style.flexGrow = '';
+                        if (globalSearchInput && globalSearchInput.value.trim()) {
+                            globalSearchContainer.classList.add('flex-grow');
+                        } else {
+                            globalSearchContainer.classList.remove('flex-grow');
+                        }
                         if (globalSearchInput) {
                             globalSearchInput.style.paddingLeft = '';
                             globalSearchInput.style.paddingRight = '';
@@ -6283,9 +6297,15 @@
                             globalSearchInput.style.paddingBottom = '';
                         }
                     } else {
-                        filterBtn.style.display = 'flex';
-                        globalSearchContainer.style.paddingRight = '0.5rem';
-                        globalSearchContainer.style.flexGrow = '';
+                        if (globalSearchInput && globalSearchInput.value.trim()) {
+                            filterBtn.style.display = 'none';
+                            globalSearchContainer.style.paddingRight = '0';
+                            globalSearchContainer.classList.add('flex-grow');
+                        } else {
+                            filterBtn.style.display = 'flex';
+                            globalSearchContainer.style.paddingRight = '0.5rem';
+                            globalSearchContainer.classList.remove('flex-grow');
+                        }
                         if (globalSearchInput) {
                             globalSearchInput.style.paddingLeft = '';
                             globalSearchInput.style.paddingRight = '';
@@ -7699,7 +7719,7 @@
             if (window.innerWidth < 768) return;
             const filterBtn = document.getElementById('filter-button');
             const searchContainer = document.getElementById('global-search-container');
-            if (filterBtn && searchContainer && window.currentViewName !== 'explore') {
+            if (filterBtn && searchContainer) {
                 filterBtn.style.display = 'none';
                 searchContainer.style.paddingRight = '0';
                 searchContainer.classList.add('flex-grow');
@@ -7710,10 +7730,21 @@
             if (window.innerWidth < 768) return;
             const filterBtn = document.getElementById('filter-button');
             const searchContainer = document.getElementById('global-search-container');
-            if (filterBtn && searchContainer && window.currentViewName !== 'explore') {
-                filterBtn.style.display = 'flex';
-                searchContainer.style.paddingRight = '0.5rem';
-                searchContainer.classList.remove('flex-grow');
+            const globalSearchInput = document.getElementById('global-search');
+            // Only collapse if there's no search content and we're not in explore view
+            if (filterBtn && searchContainer) {
+                if (window.currentViewName === 'explore') {
+                    if (!globalSearchInput?.value.trim()) {
+                        // In explore view, no content - keep default (no flex grow, filter btn hidden)
+                        searchContainer.classList.remove('flex-grow');
+                    }
+                } else {
+                    if (!globalSearchInput?.value.trim()) {
+                        filterBtn.style.display = 'flex';
+                        searchContainer.style.paddingRight = '0.5rem';
+                        searchContainer.classList.remove('flex-grow');
+                    }
+                }
             }
         };
 
@@ -7745,6 +7776,12 @@
                 // Also show suggestions if not in explore
                 window.renderSearchSuggestions(val);
                 return;
+            }
+            
+            if (val.trim()) {
+                window.expandSearchBar();
+            } else {
+                window.collapseSearchBar();
             }
             
             if (window.currentViewName === 'explore') {
@@ -7917,6 +7954,12 @@
             const pl = document.getElementById('explore-people-results');
             const v = document.getElementById('explore-results');
             if (!pl || !v) return;
+            
+            if (t) {
+                window.expandSearchBar();
+            } else {
+                window.collapseSearchBar();
+            }
 
             // Get the tab containers
             const tabsMobile = document.getElementById('explore-tabs-mobile');
