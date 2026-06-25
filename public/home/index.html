@@ -9135,22 +9135,38 @@
             
             let mediaHtml = "";
             if (m) {
-                mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
-                    <img src="${m}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
+                let posterUrl = m;
+                if (isV && m.includes('cloudinary.com')) {
+                    posterUrl = m.replace(/\.[^.]+$/, '.jpg');
+                }
+                mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center relative">
+                    <img src="${posterUrl}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
+                    ${isV ? `<div class="absolute inset-0 flex items-center justify-center bg-black/30"><i data-lucide="play" class="w-4 h-4 text-white"></i></div>` : ''}
                 </div>`;
             } else if (p.embedVideo) {
                 const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
                 if (embedInfo.type === 'image') {
-                    mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                    mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                         <img src="${embedInfo.url}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
                     </div>`;
+                } else if (embedInfo.type === 'video') {
+                    if (embedInfo.thumbnail) {
+                        mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center relative">
+                            <img src="${embedInfo.thumbnail}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30"><i data-lucide="play" class="w-4 h-4 text-white"></i></div>
+                        </div>`;
+                    } else {
+                        mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
+                            <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
+                        </div>`;
+                    }
                 } else {
-                    mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                    mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                         <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
                     </div>`;
                 }
             } else {
-                mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-xl overflow-hidden bg-gray-100 flex items-center justify-center">
+                mediaHtml = `<div class="w-10 h-10 shrink-0 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center">
                     <i data-lucide="file-text" class="w-4 h-4 text-gray-400"></i>
                 </div>`;
             }
