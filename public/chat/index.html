@@ -151,6 +151,16 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
 /* Hide the small like/reaction under messages */
 .msg-reaction { display: none !important; }
 
+/* Chat list skeleton while loading */
+.skeleton-list { padding: 8px; }
+.skeleton-row { display: flex; gap: 12px; align-items: center; padding: 10px; border-radius: 10px; }
+.skeleton-row .avatar { width: 44px; height: 44px; border-radius: 999px; background: linear-gradient(90deg,#eceef0,#f7f7f7,#eceef0); background-size: 200% 100%; animation: pulse-bg 1.2s linear infinite; }
+.skeleton-row .lines { flex: 1; }
+.skeleton-row .line { height: 10px; background: linear-gradient(90deg,#eceef0,#f7f7f7,#eceef0); background-size: 200% 100%; animation: pulse-bg 1.2s linear infinite; border-radius: 6px; margin-bottom: 8px; }
+.skeleton-row .line.short { width: 40%; }
+.skeleton-row .line.long { width: 70%; }
+@keyframes pulse-bg { 0% { background-position: 200% 0 } 100% { background-position: -200% 0 } }
+
 /* Reduce vertical gap between message bubbles */
 .message, .message-bubble, .msg { margin-bottom: 4px !important; }
 
@@ -404,7 +414,7 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
                             <div class="text-xs text-gray-500 leading-tight flex items-center gap-1.5" id="chat-header-status">
                                 Active now <span class="w-2 h-2 rounded-full bg-green-500 block"></span>
                             </div>
-                            <input id="header-under-search" type="text" placeholder="Search in chat" class="header-under-search mt-2 hidden md:block" oninput="handleChatSearch && handleChatSearch(this.value)">
+                            <input id="header-under-search" type="text" placeholder="Search in chat" class="header-under-search mt-2 block w-full md:w-56" oninput="handleChatSearch && handleChatSearch(this.value)">
                         </div>
                     </div>
                 </div>
@@ -893,7 +903,14 @@ function loadConversations() {
     if (unsubscribeConversations) unsubscribeConversations();
     
     const container = document.getElementById('chat-list-container');
-    container.innerHTML = '<div class="flex flex-col items-center justify-center h-40 opacity-50"><i data-lucide="loader-2" class="w-6 h-6 animate-spin text-gray-400"></i></div>';
+    container.innerHTML = `
+        <div class="skeleton-list">
+            <div class="skeleton-row"><div class="avatar"></div><div class="lines"><div class="line long"></div><div class="line short"></div></div></div>
+            <div class="skeleton-row"><div class="avatar"></div><div class="lines"><div class="line long"></div><div class="line short"></div></div></div>
+            <div class="skeleton-row"><div class="avatar"></div><div class="lines"><div class="line long"></div><div class="line short"></div></div></div>
+            <div class="skeleton-row"><div class="avatar"></div><div class="lines"><div class="line long"></div><div class="line short"></div></div></div>
+        </div>
+    `;
     
     const q = query(
         collection(db, "chats"), 
