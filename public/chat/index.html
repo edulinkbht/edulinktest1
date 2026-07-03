@@ -672,6 +672,94 @@ const servers = {
     iceCandidatePoolSize: 10,
 };
 
+// --- CLIENT-SIDE ROUTING FOR CLEAN URLS ---
+async function showProfileByUsername(username) {
+    if (!username) return;
+    try {
+        const q = query(collection(db, "users"), where("username", "==", username), limit(1));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+            const uDoc = snap.docs[0];
+            const u = { id: uDoc.id, ...uDoc.data() };
+            currentChatUser = u;
+            openChatDetails();
+        } else {
+            alert('Profile not found');
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function showPostById(postId) {
+    if (!postId) return;
+    try {
+        const postSnap = await getDoc(doc(db, "posts", postId));
+        if (postSnap.exists()) {
+            const post = { id: postSnap.id, ...postSnap.data() };
+            showPostModal(post);
+        } else {
+            alert('Post not found');
+        }
+    } catch (e) { console.error(e); }
+}
+
+function showPostModal(post) {
+    let modal = document.getElementById('post-view-modal');
+    if (!modal) return;
+    const content = modal.querySelector('#post-view-content');
+    const authorName = post.authorName || post.author || 'User';
+    const authorAvatar = post.authorAvatar || 'https://via.placeholder.com/150';
+    const img = post.image || (post.media && post.media[0]) || '';
+    content.innerHTML = `
+        <div class="max-w-2xl w-full bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-4 flex items-center gap-3 border-b border-gray-100">
+                <img src="${authorAvatar}" class="w-10 h-10 rounded-full object-cover">
+                <div>
+                    <div class="font-bold">${authorName}</div>
+                    <div class="text-xs text-gray-500">@${post.authorUsername || ''}</div>
+                </div>
+                <button onclick="history.back();" class="ml-auto text-sm text-gray-600">Close</button>
+            </div>
+            <div class="p-4">
+                ${img ? `<img src="${img}" class="w-full rounded-lg mb-4 object-cover">` : ''}
+                <div class="text-gray-900 font-medium">${post.content || ''}</div>
+            </div>
+        </div>
+    `;
+    modal.classList.remove('hidden');
+    setTimeout(() => modal.classList.remove('opacity-0'), 10);
+}
+
+window.closePostModal = () => {
+    const modal = document.getElementById('post-view-modal');
+    if (!modal) return;
+    modal.classList.add('opacity-0');
+    setTimeout(() => modal.classList.add('hidden'), 200);
+};
+
+window.route = async () => {
+    const parts = location.pathname.split('/').filter(Boolean);
+    if (parts.length === 0) return;
+    if (parts[0] === 'profile' && parts[1]) {
+        await showProfileByUsername(parts[1]);
+        return;
+    }
+    if (parts.length === 2) {
+        // username/postId
+        const postId = parts[1];
+        await showPostById(postId);
+        return;
+    }
+};
+
+window.onpopstate = () => {
+    // close post modal if open
+    const postModal = document.getElementById('post-view-modal');
+    if (postModal && !postModal.classList.contains('hidden')) {
+        closePostModal();
+    }
+    route();
+};
+
 onAuthStateChanged(auth, async (u) => {
     if (!u) {
         window.location.href = '/home'; 
@@ -1884,9 +1972,31 @@ function escapeHtml(text) {
   return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
 }
 
-window.handlePostClick = (postId) => {
+window.handlePostClick = (postId, authorId = '') => {
     if (postClickTimer) { clearTimeout(postClickTimer); postClickTimer = null; return; }
-    postClickTimer = setTimeout(() => { window.location.href = '/home?postId=' + postId; postClickTimer = null; }, 250); 
+    postClickTimer = setTimeout(async () => {
+        try {
+            let username = '';
+            if (authorId) {
+                const uSnap = await getDoc(doc(db, "users", authorId));
+                if (uSnap.exists()) username = uSnap.data().username || '';
+            }
+            if (!username) {
+                const pSnap = await getDoc(doc(db, "posts", postId));
+                if (pSnap.exists() && pSnap.data().authorId) {
+                    const uSnap = await getDoc(doc(db, "users", pSnap.data().authorId));
+                    if (uSnap.exists()) username = uSnap.data().username || '';
+                }
+            }
+            const path = username ? `/${username}/${postId}` : `/post/${postId}`;
+            history.pushState({}, '', path);
+            await showPostById(postId);
+        } catch (e) {
+            console.error(e);
+            window.location.href = '/home?postId=' + postId;
+        }
+        postClickTimer = null;
+    }, 250);
 };
 
 function renderPostCard(post, isSelf) {
@@ -1897,7 +2007,7 @@ function renderPostCard(post, isSelf) {
     const hasImage = img && !img.includes('video') && !img.endsWith('.mp4');
     const imgHtml = hasImage ? `<div class="cpc-img-container"><img src="${img}" class="cpc-img"></div>` : ``; 
     return `
-        <div class="chat-post-card" onclick="window.handlePostClick('${post.id}')">
+        <div class="chat-post-card" onclick="window.handlePostClick('${post.id}', '${post.authorId || ''}')">
             <div class="cpc-header">
                 <img src="${post.authorAvatar || 'https://via.placeholder.com/50'}" class="w-6 h-6 rounded-full border border-white/20 object-cover flex-shrink-0">
                 <span class="font-bold text-xs truncate flex-1">${post.authorName || 'User'}</span>
@@ -2035,7 +2145,15 @@ window.closeChatDetails = () => {
 
 window.viewProfileFromDetails = () => {
     closeChatDetails();
-    if (currentChatUser) window.location.href = `/home?profileId=${currentChatUser.id}`;
+    if (currentChatUser) {
+        const username = currentChatUser.username || '';
+        if (username) {
+            history.pushState({}, '', `/profile/${username}`);
+            showProfileByUsername(username);
+        } else {
+            window.location.href = `/home?profileId=${currentChatUser.id}`;
+        }
+    }
 };
 
 // --- Long Press Message Options Logic ---
@@ -2317,6 +2435,12 @@ function dragEnd(e) {
 }
 
 lucide.createIcons();
+route();
 </script>
+
+<!-- POST VIEW MODAL -->
+<div id="post-view-modal" class="fixed inset-0 z-60 hidden items-center justify-center bg-black/40 opacity-0 transition-opacity">
+    <div id="post-view-content" class="px-4 w-full max-w-2xl"></div>
+</div>
 </body>
 </html>
