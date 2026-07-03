@@ -3179,11 +3179,11 @@
         </div>
     </div>
     <div id="lightbox"
-        class="fixed inset-0 bg-black/95 z-[9999] flex justify-center items-center opacity-0 pointer-events-none transition-opacity duration-300"
+        class="fixed inset-0 bg-black z-[9999] flex justify-center items-center opacity-0 pointer-events-none transition-opacity duration-300"
         onclick="closeLightbox()"><button
-            class="absolute top-8 right-8 text-white/70 hover:text-white bg-white/10 rounded-full p-3 hover:bg-white/20"><i
+            class="absolute top-4 right-4 md:top-8 md:right-8 text-white/70 hover:text-white bg-white/10 rounded-lg md:rounded-full p-3 hover:bg-white/20"><i
                 data-lucide="x" class="w-8 h-8"></i></button>
-        <div id="lightbox-wrapper" class="w-full h-full flex justify-center items-center p-6"></div>
+        <div id="lightbox-wrapper" class="w-full h-full flex justify-center items-center p-0 md:p-6"></div>
     </div>
     <div id="likes-overlay"
         class="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
@@ -4210,9 +4210,6 @@
                     </div>
                 </div>
                 <div class="flex items-center gap-2 pl-4 pr-4">
-                    <button class="md:hidden icon-btn w-9 h-9 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="switchView('explore')">
-                        <i data-lucide="search" class="w-5 h-5 text-gray-600"></i>
-                    </button>
                     <button id="filter-button"
                         class="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-full hover:bg-gray-50 transition-all duration-300 opacity-100 scale-100"
                         onclick="openFeedFilter()">
@@ -4827,8 +4824,12 @@
                     d="M3 10.5L10.2 4.6C11.3 3.7 12.7 3.7 13.8 4.6L21 10.5C21.6 11 22 11.7 22 12.5V19C22 20.7 20.7 22 19 22H15C14.4 22 14 21.6 14 21V15C14 13.9 13.1 13 12 13C10.9 13 10 13.9 10 15V21C10 21.6 9.6 22 9 22H5C3.3 22 2 20.7 2 19V12.5C2 11.7 2.4 11 3 10.5Z" />
             </svg>
         </div>
-        <div class="mobile-nav-item" onclick="switchView('frame')" id="mobile-nav-frame">
-            <i data-lucide="clapperboard" class="custom-icon custom-icon-outline w-[26px] h-[26px]" id="mobile-frame-icon"></i>
+        <div class="mobile-nav-item" onclick="switchView('explore')" id="mobile-nav-explore">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
+                class="custom-icon custom-icon-outline" id="mobile-explore-icon" style="stroke-width: 2;">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+            </svg>
         </div>
         <div class="mobile-nav-item" onclick="switchView('create')" id="mobile-nav-create">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="ig-squircle w-7 h-7"
@@ -6101,6 +6102,7 @@
             if (v === 'profile' && mh) mh.classList.add('hidden'); 
             if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create') && mh && window.innerWidth < 768) mh.classList.add('hidden'); 
             if (v === 'notifications') { if (mh) mh.classList.add('hidden'); if (mnh) { mnh.classList.remove('hidden'); mnh.classList.add('flex') } } 
+            else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); 
             
             if (v === 'frame') { 
                 if (mh) mh.classList.add('hidden'); 
@@ -6173,9 +6175,8 @@
             } 
             
             document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); 
-            const nav = document.getElementById(`nav-${v}`), mnavItem = document.getElementById(`mobile-nav-${v}`); 
-            if (nav) nav.classList.add('active');
-            if (mnavItem) mnavItem.classList.add('active'); 
+            const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); 
+            if (nav) nav.classList.add('active'); 
             
             if (v === 'frame') {
                 renderFrame();
@@ -12180,7 +12181,33 @@
             t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 4000);
         };
-        window.openLightbox = (s, t = 'image') => { const w = document.getElementById('lightbox-wrapper'), l = document.getElementById('lightbox'); if (t === 'video' || s.includes('.mp4') || s.includes('data:video')) w.innerHTML = `<video src="${s}" controls autoplay class="max-w-full max-h-[90vh] rounded-lg shadow-2xl"></video>`; else w.innerHTML = `<img src="${s}" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain">`; l.classList.add('active'); l.classList.remove('pointer-events-none', 'opacity-0') }; window.closeLightbox = () => { const l = document.getElementById('lightbox'); l.classList.remove('active'); l.classList.add('pointer-events-none', 'opacity-0'); const v = l.querySelector('video'); if (v) v.pause() };
+        window.openLightbox = (s, t = 'image') => { 
+            const w = document.getElementById('lightbox-wrapper'), 
+                  l = document.getElementById('lightbox'); 
+            const isMobile = window.innerWidth < 768; // Check if mobile
+            if (t === 'video' || s.includes('.mp4') || s.includes('data:video')) { 
+                if (isMobile) {
+                    w.innerHTML = `<video src="${s}" controls autoplay class="w-full h-full object-contain"></video>`;
+                } else {
+                    w.innerHTML = `<video src="${s}" controls autoplay class="max-w-full max-h-[90vh] rounded-lg shadow-2xl"></video>`;
+                }
+            } else { 
+                if (isMobile) {
+                    w.innerHTML = `<img src="${s}" class="w-full h-full object-contain">`;
+                } else {
+                    w.innerHTML = `<img src="${s}" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain">`;
+                }
+            } 
+            l.classList.add('active'); 
+            l.classList.remove('pointer-events-none', 'opacity-0') 
+        }; 
+        window.closeLightbox = () => { 
+            const l = document.getElementById('lightbox'); 
+            l.classList.remove('active'); 
+            l.classList.add('pointer-events-none', 'opacity-0'); 
+            const v = l.querySelector('video'); 
+            if (v) v.pause() 
+        };
         window.openQR = uid => {
             manageHistory('qr-overlay');
             const id = uid || currentUser.id, u = users.find(x => x.id === id) || currentUser;
@@ -12275,7 +12302,6 @@
             // Desktop icons
             const desktopIcons = {
                 'feed': document.getElementById('nav-feed-icon'),
-                'frame': document.getElementById('nav-frame-icon'),
                 'explore': document.getElementById('nav-explore-icon'),
                 'notifications': document.getElementById('nav-notifications-icon'),
                 // Lucide replaces <i> with <svg>, so prefer querying the rendered svg
@@ -12285,7 +12311,7 @@
             // Mobile icons
             const mobileIcons = {
                 'feed': document.getElementById('mobile-feed-icon'),
-                'frame': document.getElementById('mobile-frame-icon'),
+                'explore': document.getElementById('mobile-explore-icon'),
                 'notifications': document.getElementById('mobile-notifications-icon')
             };
 
