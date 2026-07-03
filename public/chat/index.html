@@ -893,9 +893,10 @@ onAuthStateChanged(auth, async (u) => {
         window.location.href = '/home'; 
         return;
     }
-    const userDoc = await getDoc(doc(db, "users", u.uid));
-    currentUser = { id: u.uid, ...userDoc.data() };
-    document.getElementById('current-username').innerText = currentUser.username || currentUser.name;
+    const userDocSnapshot = await getDoc(doc(db, "users", u.uid));
+    const userData = userDocSnapshot.exists() ? userDocSnapshot.data() : {};
+    currentUser = { id: u.uid, ...userData };
+    document.getElementById('current-username').innerText = currentUser.username || currentUser.name || 'You';
     
     if (Notification.permission !== "granted" && Notification.permission !== "denied") {
         Notification.requestPermission();
@@ -931,83 +932,90 @@ function loadConversations() {
     unsubscribeConversations = onSnapshot(q, async (snapshot) => {
         const currentRenderId = ++conversationRenderId;
 
-        const chatsData = [];
-        snapshot.forEach(doc => chatsData.push({ id: doc.id, ...doc.data() }));
+        try {
+            const chatsData = [];
+            snapshot.forEach(doc => chatsData.push({ id: doc.id, ...doc.data() }));
 
-        let visibleChats = chatsData.filter(chat => {
-            if (!chat.clearedAt || !chat.clearedAt[currentUser.id]) return true;
-            const clearedTime = chat.clearedAt[currentUser.id];
-            const lastMessageTime = chat.lastMessageTimestamp ? chat.lastMessageTimestamp.toMillis() : 0;
-            return lastMessageTime > clearedTime.toMillis();
-        });
+            let visibleChats = chatsData.filter(chat => {
+                if (!chat.clearedAt || !chat.clearedAt[currentUser.id]) return true;
+                const clearedTime = chat.clearedAt[currentUser.id];
+                const lastMessageTime = chat.lastMessageTimestamp ? chat.lastMessageTimestamp.toMillis() : 0;
+                return lastMessageTime > clearedTime.toMillis();
+            });
 
-        if (visibleChats.length === 0 && chatsData.length > 0) {
-            visibleChats = chatsData;
-        }
-
-        if (visibleChats.length === 0) {
-            container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm mt-10">No messages yet.<br>Start a conversation!</div>';
-            return;
-        }
-
-        visibleChats.sort((a, b) => {
-            const tA = a.lastMessageTimestamp?.toMillis() || 0;
-            const tB = b.lastMessageTimestamp?.toMillis() || 0;
-            return tB - tA; 
-        });
-
-        const renderedItems = await Promise.all(visibleChats.map(async (chat) => {
-            const otherUserId = chat.participants.find(uid => uid !== currentUser.id);
-            if (!otherUserId) return '';
-
-            let otherUser = { name: 'User', avatar: 'https://via.placeholder.com/150' };
-            try {
-                const uSnap = await getDoc(doc(db, "users", otherUserId));
-                if (uSnap.exists()) otherUser = uSnap.data();
-            } catch (e) {}
-
-            const isUnread = !chat.readBy || !chat.readBy.includes(currentUser.id);
-            const isSelected = currentChatId === chat.id;
-            const timeStr = formatTime(chat.lastMessageTimestamp);
-            let lastMsg = chat.lastMessage || 'Start chatting';
-            
-            // Format Preview Text based on content
-            if (lastMsg.includes("Video chat ended")) lastMsg = "Video call ended";
-            if (lastMsg.includes("Missed video call")) lastMsg = "Missed call";
-            if (lastMsg.includes("Call declined")) lastMsg = "Call declined";
-            
-            let statusHtml = '';
-            if (isUnread) {
-                statusHtml = `<div class="w-2.5 h-2.5 bg-[#0095f6] rounded-full shrink-0"></div>`;
+            if (visibleChats.length === 0 && chatsData.length > 0) {
+                visibleChats = chatsData;
             }
 
-            const userJson = JSON.stringify(otherUser).replace(/"/g, '&quot;');
-            
-            return `
-            <div class="user-item ${isSelected ? 'active' : ''}" 
-                 onclick="openChat('${chat.id}', ${userJson}, '${otherUserId}')"
-                 oncontextmenu="handleChatContextMenu(event, '${chat.id}', '${otherUser.name}')">
-                <div class="relative shrink-0">
-                    <img src="${otherUser.avatar}" class="w-14 h-14 rounded-full border border-gray-100 object-cover">
-                </div>
-                <div class="flex-1 min-w-0">
-                    <div class="font-normal text-gray-900 text-[15px] truncate">${otherUser.name}</div>
-                    <div class="flex items-center gap-1 text-[13px] ${isUnread ? "font-bold text-gray-900" : "text-gray-500"}">
-                        <span class="truncate block max-w-[170px]">${lastMsg}</span>
-                        <span class="shrink-0 text-gray-400 font-normal">· ${timeStr}</span>
-                    </div>
-                </div>
-                ${statusHtml}
-                <button class="more-actions-btn w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500" 
-                        onclick="event.stopPropagation(); openSidebarOptions('${chat.id}', '${otherUser.name}')">
-                    <i data-lucide="more-vertical" class="w-5 h-5"></i>
-                </button>
-            </div>`;
-        }));
+            if (visibleChats.length === 0) {
+                container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm mt-10">No messages yet.<br>Start a conversation!</div>';
+                return;
+            }
 
-        if (currentRenderId !== conversationRenderId) return;
-        container.innerHTML = renderedItems.join('');
-        lucide.createIcons();
+            visibleChats.sort((a, b) => {
+                const tA = a.lastMessageTimestamp?.toMillis() || 0;
+                const tB = b.lastMessageTimestamp?.toMillis() || 0;
+                return tB - tA; 
+            });
+
+            const renderedItems = await Promise.all(visibleChats.map(async (chat) => {
+                const otherUserId = Array.isArray(chat.participants) ? chat.participants.find(uid => uid !== currentUser.id) : null;
+                if (!otherUserId) return '';
+
+                let otherUser = { name: 'User', avatar: 'https://via.placeholder.com/150' };
+                try {
+                    const uSnap = await getDoc(doc(db, "users", otherUserId));
+                    if (uSnap.exists()) otherUser = uSnap.data();
+                } catch (e) {
+                    console.error('Failed to load other user', otherUserId, e);
+                }
+
+                const isUnread = !chat.readBy || !chat.readBy.includes(currentUser.id);
+                const isSelected = currentChatId === chat.id;
+                const timeStr = formatTime(chat.lastMessageTimestamp);
+                let lastMsg = chat.lastMessage || 'Start chatting';
+                
+                if (lastMsg.includes("Video chat ended")) lastMsg = "Video call ended";
+                if (lastMsg.includes("Missed video call")) lastMsg = "Missed call";
+                if (lastMsg.includes("Call declined")) lastMsg = "Call declined";
+                
+                let statusHtml = '';
+                if (isUnread) {
+                    statusHtml = `<div class="w-2.5 h-2.5 bg-[#0095f6] rounded-full shrink-0"></div>`;
+                }
+
+                const safeName = (otherUser.name || 'User').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const userJson = JSON.stringify(otherUser).replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                
+                return `
+                <div class="user-item ${isSelected ? 'active' : ''}" 
+                     onclick="openChat('${chat.id}', ${userJson}, '${otherUserId}')"
+                     oncontextmenu="handleChatContextMenu(event, '${chat.id}', '${safeName}')">
+                    <div class="relative shrink-0">
+                        <img src="${otherUser.avatar}" class="w-14 h-14 rounded-full border border-gray-100 object-cover">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="font-normal text-gray-900 text-[15px] truncate">${otherUser.name}</div>
+                        <div class="flex items-center gap-1 text-[13px] ${isUnread ? "font-bold text-gray-900" : "text-gray-500"}">
+                            <span class="truncate block max-w-[170px]">${lastMsg}</span>
+                            <span class="shrink-0 text-gray-400 font-normal">· ${timeStr}</span>
+                        </div>
+                    </div>
+                    ${statusHtml}
+                    <button class="more-actions-btn w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200 text-gray-500" 
+                            onclick="event.stopPropagation(); openSidebarOptions('${chat.id}', '${safeName}')">
+                        <i data-lucide="more-vertical" class="w-5 h-5"></i>
+                    </button>
+                </div>`;
+            }));
+
+            if (currentRenderId !== conversationRenderId) return;
+            container.innerHTML = renderedItems.join('');
+            lucide.createIcons();
+        } catch (error) {
+            console.error('Chat list load failed:', error);
+            container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm mt-10">Unable to load chats. Please refresh.</div>';
+        }
     });
 }
 
