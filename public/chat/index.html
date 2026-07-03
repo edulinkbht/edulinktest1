@@ -1254,7 +1254,6 @@ function generateMessageHTML(msg, isSelf, showAvatar, showTail, isEmojiOnly, eff
 
     const interactHandlers = `
         ondblclick="toggleMessageLike('${msg.id}')"
-        onclick="handleMessageClick(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
         onmousedown="handlePressStart(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
         ontouchstart="handlePressStart(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson}')"
         onmouseup="handlePressEnd(event)"
@@ -1927,12 +1926,7 @@ function stopCallTimer() {
 
 // --- STANDARD CHAT HANDLERS (Same as original) ---
 window.handleMessageClick = (e, msgId, content, isSelf, type, reactions) => {
-    if (messageClickTimer) clearTimeout(messageClickTimer);
-    if(pressTimer !== null || activeSwipeEl !== null) return;
-    messageClickTimer = setTimeout(() => {
-        openMsgOptions(msgId, content, isSelf, type, reactions);
-        messageClickTimer = null;
-    }, 250);
+    // Disabled single-click open. Use long-press to open message options.
 };
 
 window.scrollToMessage = (msgId) => {
@@ -2223,7 +2217,6 @@ window.handlePressStart = (e, msgId, content, isSelf, type, reactions) => {
     pressStartX = e.touches ? e.touches[0].clientX : e.clientX;
     pressStartY = e.touches ? e.touches[0].clientY : e.clientY;
     pressTimer = setTimeout(() => {
-        if(messageClickTimer) { clearTimeout(messageClickTimer); messageClickTimer = null; }
         openMsgOptions(msgId, content, isSelf, type, reactions);
     }, 500); 
 };
@@ -2495,7 +2488,7 @@ function dragEnd(e) {
 }
 
 lucide.createIcons();
-route();
+setTimeout(() => route(), 100);
 </script>
 
 <!-- POST VIEW MODAL -->
