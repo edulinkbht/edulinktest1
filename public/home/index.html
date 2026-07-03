@@ -711,6 +711,10 @@
             padding: 1rem;
             transition: all 0.2s;
             cursor: pointer;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .settings-item:last-child {
+            border-bottom: none;
         }
         .settings-item:hover {
             background-color: #f3f4f6;
@@ -5741,7 +5745,18 @@
                 currentUser.joinedAt = updateData.joinedAt;
             }
             currentUser.following ||= []; currentUser.followers ||= []; currentUser.friends ||= []; currentUser.saved ||= []; currentUser.links ||= []; currentUser.settings ||= { privateNetwork: false }; window.currentUser = currentUser; savedPosts = currentUser.saved; if (!currentUser.username) document.getElementById('username-modal').classList.remove('hidden'); updateUserInterface(); initRealtimeListeners(); refreshIcons(); initBannerDrag(); window.checkProfileCompletion(); window.checkUserBirthday(); window.history.replaceState({ root: true }, ""); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } initializeStateFromURL(); });
-        window.onpopstate = e => { const modals = [{ id: 'thread-overlay', close: window.closeThread }, { id: 'comments-overlay', close: window.closeComments }, { id: 'post-view-overlay', close: window.closePostView }, { id: 'edit-profile-overlay', close: window.closeEditProfile }, { id: 'likes-overlay', close: window.closeLikes }, { id: 'user-list-overlay', close: window.closeUserList }, { id: 'feed-filter-overlay', close: window.closeFeedFilter }, { id: 'compose-overlay', close: window.attemptCloseCompose }, { id: 'share-overlay', close: window.closeShareMenu }, { id: 'post-options-overlay', close: window.hidePostMenu }, { id: 'settings-overlay', close: window.closeSettings }, { id: 'notif-options-overlay', close: window.closeNotifOptions }, { id: 'qr-overlay', close: window.closeQR }, { id: 'privacy-overlay', close: window.closePrivacySettings }, { id: 'profile-filter-overlay', close: window.closeProfileFilter }, { id: 'download-select-overlay', close: window.closeDownloadSelect }, { id: 'comment-options-overlay', close: window.closeCommentOptions }, { id: 'create-menu-overlay', close: window.closeCreateMenu }, { id: 'announcement-overlay', close: window.closeAnnouncement }, { id: 'profile-preview-overlay', close: window.closeProfilePreview }, { id: 'comment-filter-overlay', close: window.closeCommentFilter }, { id: 'claim-link-overlay', close: window.closeClaimOverlay }, { id: 'view-profile', close: () => window.switchView('feed') }]; let closedAny = false; if (e.state && e.state.modal) { } else { for (let m of modals) { const el = document.getElementById(m.id); if (el && !el.classList.contains('hidden') && !el.classList.contains('opacity-0')) { if (m.id === 'view-profile') { if (window.currentViewingProfileId) { window.switchView('feed'); window.currentViewingProfileId = null; closedAny = true } } else if (m.id === 'compose-overlay') { window.closeCompose(); closedAny = true } else if (m.id === 'create-menu-overlay') { window.closeCreateMenu(); closedAny = true } else { m.close(); closedAny = true } if (closedAny) break } } } if (!closedAny) { if (history.length > 1) { history.back(); } else { if (exitAttempt) { } else { window.history.pushState({ root: true }, ""); exitAttempt = true; showToast("Press back again to exit"); setTimeout(() => { exitAttempt = false }, 2000) } } } };
+        window.onpopstate = e => { 
+            // Clear search inputs when navigating back
+            const globalSearch = document.getElementById('global-search');
+            const mobileExploreSearch = document.getElementById('mobile-explore-search');
+            if (globalSearch) globalSearch.value = '';
+            if (mobileExploreSearch) mobileExploreSearch.value = '';
+            // Reset search results
+            if (window.currentViewName === 'explore') {
+                handleSearch('');
+            }
+            
+            const modals = [{ id: 'thread-overlay', close: window.closeThread }, { id: 'comments-overlay', close: window.closeComments }, { id: 'post-view-overlay', close: window.closePostView }, { id: 'edit-profile-overlay', close: window.closeEditProfile }, { id: 'likes-overlay', close: window.closeLikes }, { id: 'user-list-overlay', close: window.closeUserList }, { id: 'feed-filter-overlay', close: window.closeFeedFilter }, { id: 'compose-overlay', close: window.attemptCloseCompose }, { id: 'share-overlay', close: window.closeShareMenu }, { id: 'post-options-overlay', close: window.hidePostMenu }, { id: 'settings-overlay', close: window.closeSettings }, { id: 'notif-options-overlay', close: window.closeNotifOptions }, { id: 'qr-overlay', close: window.closeQR }, { id: 'privacy-overlay', close: window.closePrivacySettings }, { id: 'profile-filter-overlay', close: window.closeProfileFilter }, { id: 'download-select-overlay', close: window.closeDownloadSelect }, { id: 'comment-options-overlay', close: window.closeCommentOptions }, { id: 'create-menu-overlay', close: window.closeCreateMenu }, { id: 'announcement-overlay', close: window.closeAnnouncement }, { id: 'profile-preview-overlay', close: window.closeProfilePreview }, { id: 'comment-filter-overlay', close: window.closeCommentFilter }, { id: 'claim-link-overlay', close: window.closeClaimOverlay }, { id: 'view-profile', close: () => window.switchView('feed') }]; let closedAny = false; if (e.state && e.state.modal) { } else { for (let m of modals) { const el = document.getElementById(m.id); if (el && !el.classList.contains('hidden') && !el.classList.contains('opacity-0')) { if (m.id === 'view-profile') { if (window.currentViewingProfileId) { window.switchView('feed'); window.currentViewingProfileId = null; closedAny = true } } else if (m.id === 'compose-overlay') { window.closeCompose(); closedAny = true } else if (m.id === 'create-menu-overlay') { window.closeCreateMenu(); closedAny = true } else { m.close(); closedAny = true } if (closedAny) break } } } if (!closedAny) { if (history.length > 1) { history.back(); } else { if (exitAttempt) { } else { window.history.pushState({ root: true }, ""); exitAttempt = true; showToast("Press back again to exit"); setTimeout(() => { exitAttempt = false }, 2000) } } } };
         window.checkUsername = e => { const v = e.value.trim().toLowerCase(), l = v.length; document.getElementById('username-counter').innerText = `${l}/20`; if (l < 3) { document.getElementById('username-error').classList.add('hidden'); return } const t = users.some(u => u.username === v && u.id !== currentUser.id); const err = document.getElementById('username-error'); if (t) { err.innerText = "Username taken"; err.classList.remove('hidden') } else err.classList.add('hidden') };
         window.saveUsername = async () => { const v = document.getElementById('new-username-input').value.trim().toLowerCase(); if (v.length < 3 || v.length > 20 || /\s/.test(v) || !/^[a-z0-9_.]+$/.test(v)) return showToast("Invalid username", true); if (!(await getDocs(query(collection(db, "users"), where("username", "==", v)))).empty) return showToast("Taken", true); await updateDoc(doc(db, "users", currentUser.id), { username: v }); currentUser.username = v; document.getElementById('username-modal').classList.add('hidden'); showToast("Username set!") };
         function initRealtimeListeners() {
@@ -8138,7 +8153,7 @@
 
                 if (fp.length) {
                     html += `<h2 class="text-[14px] font-bold text-gray-400 mb-1 px-4 pt-3 uppercase tracking-wider">RELEVANT POSTS</h2>`;
-                    html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-2 px-2 pb-20">${fp.map(p => renderGridPostItem(p)).join('')}</div>`;
+                    html += `<div class="grid grid-cols-2 gap-[2px] pb-20">${fp.map(p => renderGridPostItem(p)).join('')}</div>`;
                 }
 
                 if (!html) {
@@ -8204,7 +8219,7 @@
                 fp = fp.filter(p => window.canSeePost(p));
                 if (!fp.length) v.innerHTML = '<div class="text-center py-20 text-gray-400"><p>No posts found.</p></div>';
                 else {
-                    v.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-3 gap-2 px-2">${fp.map(p => renderGridPostItem(p)).join('')}</div>`;
+                    v.innerHTML = `<div class="grid grid-cols-2 gap-[2px]">${fp.map(p => renderGridPostItem(p)).join('')}</div>`;
                 }
             }
             syncURLState();
@@ -9350,17 +9365,17 @@
                     if (m && m.includes('cloudinary.com')) {
                         poster = m.replace(/\.[^.]+$/, '.jpg');
                     }
-                    mediaHtml = `<div class="w-full h-full relative"><video src="${m}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover pointer-events-none" preload="metadata"></video><div class="absolute top-2 right-2"><i data-lucide="clapperboard" class="w-4 h-4 text-white drop-shadow-md"></i></div></div>`;
+                    mediaHtml = `<div class="w-full h-full relative"><video src="${m}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-cover pointer-events-none" preload="metadata" playsinline></video><div class="absolute top-2 right-2"><i data-lucide="clapperboard" class="w-4 h-4 text-white drop-shadow-md"></i></div></div>`;
                 } else {
-                    mediaHtml = `<div class="img-placeholder w-full h-full relative"><img src="${m}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>` + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2"><i data-lucide="images" class="w-4 h-4 text-white drop-shadow-md"></i></div>` : '');
+                    mediaHtml = `<div class="img-placeholder w-full h-full relative"><img src="${m}" loading="lazy" decoding="async" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>` + (Array.isArray(p.media) && p.media.length > 1 ? `<div class="absolute top-2 right-2"><i data-lucide="images" class="w-4 h-4 text-white drop-shadow-md"></i></div>` : '');
                 }
             } else if (p.embedVideo) {
                 const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
                 if (embedInfo.type === 'image') {
-                    mediaHtml = `<div class="img-placeholder w-full h-full"><img src="${embedInfo.url}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>`;
+                    mediaHtml = `<div class="img-placeholder w-full h-full"><img src="${embedInfo.url}" loading="lazy" decoding="async" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>`;
                 } else if (embedInfo.type === 'video') {
                     if (embedInfo.thumbnail) {
-                        mediaHtml = `<div class="img-placeholder w-full h-full relative"><img src="${embedInfo.thumbnail}" loading="lazy" class="w-full h-full object-cover" onload="this.classList.add('loaded')"><div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30"><i data-lucide="clapperboard" class="w-8 h-8 text-white"></i></div></div>`;
+                        mediaHtml = `<div class="img-placeholder w-full h-full relative"><img src="${embedInfo.thumbnail}" loading="lazy" decoding="async" class="w-full h-full object-cover" onload="this.classList.add('loaded')"><div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30"><i data-lucide="clapperboard" class="w-8 h-8 text-white"></i></div></div>`;
                     } else {
                         mediaHtml = `<div class="w-full h-full flex items-center justify-center bg-gray-100"><i data-lucide="clapperboard" class="w-8 h-8 text-gray-400"></i></div>`;
                     }
