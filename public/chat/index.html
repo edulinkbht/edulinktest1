@@ -123,8 +123,16 @@ body.chat-active .chat-window { transform: translateX(0); }
 
 /* Input */
 .chat-input-area { padding: 16px; display: flex; align-items: center; gap: 12px; background: #fff; }
-.chat-input { background: #efefef; border-radius: 22px; padding: 11px 16px; flex: 1; outline: none; border: 1px solid transparent; font-size: 15px; max-height: 100px; resize: none; transition: border 0.2s; }
-.chat-input:focus { border-color: #dbdbdb; }
+.chat-input { background: #f5f7fa; border-radius: 28px; padding: 12px 16px 12px 16px; flex: 1; outline: none; border: 1px solid #e6e9ee; font-size: 15px; max-height: 120px; resize: none; transition: box-shadow 0.15s, border 0.15s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+.chat-input:focus { border-color: #d3d9e6; box-shadow: 0 6px 18px rgba(16,24,40,0.06); }
+
+.send-btn-circle { width: 44px; height: 44px; border-radius: 999px; display: inline-flex; align-items: center; justify-content: center; background: linear-gradient(135deg,#0095f6,#0066d6); color: white; box-shadow: 0 6px 18px rgba(3,102,214,0.18); border: none; }
+.send-btn-circle:active { transform: translateY(1px) scale(0.99); }
+
+.mobile-search { background: #f3f4f6; border-radius: 12px; padding: 8px 12px; border: 1px solid #eef0f3; }
+.sidebar-header { padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #eef0f3; }
+.sidebar-title { font-weight: 700; font-size: 18px; color: #0f172a; }
+.sidebar-newchat { color: #0066d6; font-weight: 700; }
 
 /* User List */
 .user-item { padding: 10px 16px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.2s; position: relative; }
@@ -309,19 +317,14 @@ body.chat-active .chat-window { transform: translateX(0); }
             </div>
 
             <!-- Mobile Search / Header -->
-            <div class="px-4 py-3 border-b border-gray-100 md:hidden">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="font-bold text-[16px] text-gray-900">Messages</div>
-                    <button onclick="openNewChatModal()" class="text-sm font-semibold text-[#0095f6]">New Chat</button>
+            <div class="px-4 py-3 border-b border-gray-100">
+                <div class="sidebar-header">
+                    <div class="sidebar-title">Messages</div>
+                    <button onclick="openNewChatModal()" class="sidebar-newchat">New Chat</button>
                 </div>
-                <div class="relative">
-                    <input id="mobile-search" type="text" placeholder="Search" class="w-full py-2 pl-3 pr-10 rounded-lg border border-gray-200 text-sm outline-none">
-                    <i data-lucide="search" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <div class="mt-3">
+                    <input id="sidebar-search" type="text" placeholder="Search" class="mobile-search w-full" oninput="handleSidebarSearch(this.value)">
                 </div>
-            </div>
-        
-            <div class="px-4 py-3 border-b border-gray-100 hidden md:block">
-                <div class="font-bold text-[16px] text-gray-900">Messages</div>
             </div>
 
         <div class="flex-1 overflow-y-auto overflow-x-hidden" id="chat-list-container">
@@ -394,8 +397,8 @@ body.chat-active .chat-window { transform: translateX(0); }
                 
                 <div class="flex-1 relative">
                     <input type="text" id="message-input" class="chat-input w-full pr-12" placeholder="Message..." onkeydown="handleTyping(event)" autocomplete="off">
-                    <button id="send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 text-[#0095f6] font-bold hidden" onclick="sendMessage()">
-                        <i data-lucide="send" class="w-6 h-6 fill-current"></i>
+                    <button id="send-btn" class="send-btn-circle hidden absolute right-2 top-1/2 -translate-y-1/2" onclick="sendMessage()">
+                        <i data-lucide="send" class="w-4 h-4"></i>
                     </button>
                     <button id="like-btn" class="absolute right-10 top-1/2 -translate-y-1/2 hover:bg-gray-100 rounded-full transition-colors" onclick="sendHeart()">
                         <i data-lucide="heart" class="w-6 h-6 text-gray-800"></i>
@@ -2415,6 +2418,16 @@ window.handleUserSearch = async (val) => {
     });
     if (!found) list.innerHTML = '<div class="p-4 text-center text-gray-500 text-sm">No users found.</div>';
     lucide.createIcons();
+};
+
+window.handleSidebarSearch = (val) => {
+    const q = val.toLowerCase().trim();
+    const items = document.querySelectorAll('#chat-list-container .user-item');
+    items.forEach(item => {
+        const name = (item.querySelector('.font-normal')?.innerText || '').toLowerCase();
+        if (!q || name.includes(q)) item.style.display = '';
+        else item.style.display = 'none';
+    });
 };
 
 function renderSearchUserItem(user, container) {
