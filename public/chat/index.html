@@ -1180,10 +1180,11 @@ function loadMessages(chatId) {
             renderSeenStatus(lastMessageFromSelf.id);
         }
 
-        if (didAddMessage || isAtBottom) {
-             setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
-        }
-        lucide.createIcons();
+           if (didAddMessage || isAtBottom) {
+               setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+           }
+           lucide.createIcons();
+           setTimeout(() => processInternalPostLinks(container), 50);
     });
 }
 
@@ -1272,7 +1273,7 @@ function generateMessageHTML(msg, isSelf, showAvatar, showTail, isEmojiOnly, eff
     const interactHandlers = `
         ondblclick="toggleMessageLike('${msg.id}')"
         onmousedown="handlePressStart(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
-        ontouchstart="handlePressStart(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson}')"
+        ontouchstart="handlePressStart(event, '${msg.id}', '${escapeHtml(rawContent)}', ${isSelf}, '${msg.type}', ${reactionsJson})"
         onmouseup="handlePressEnd(event)"
         ontouchend="handlePressEnd(event)"
         onmousemove="handlePressMove(event)"
@@ -2050,7 +2051,7 @@ window.handlePostClick = (postId, authorId = '') => {
             if (username && authorIdResolved) {
                 const idx = await getPostIndexForAuthor(authorIdResolved, postId);
                 if (idx) {
-                    const path = `/${username}/${idx}`;
+                    const path = `/${username}/post/${idx}`;
                     history.pushState({}, '', path);
                     await showPostByAuthorIndex(username, idx);
                     postClickTimer = null;
@@ -2092,7 +2093,56 @@ function renderPostCard(post, isSelf) {
 function linkify(text) {
     if(!text) return '';
     const urlRegex = /(https?:\/\/[^\s]+)/g;
-    return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" class="underline hover:opacity-80 break-all">${url}</a>`);
+    return text.replace(urlRegex, (url) => {
+        try {
+            const u = new URL(url);
+            const host = u.hostname;
+            const path = u.pathname.replace(/\/$/, '');
+            // match /username/post/number or /username/number
+            const parts = path.split('/').filter(Boolean);
+            if ((host.includes('edulinkbht.vercel.app') || host === location.hostname) && parts.length >= 2) {
+                // /username/post/3 or /username/3
+                if ((parts.length === 3 && parts[1] === 'post' && /^\d+$/.test(parts[2])) || (parts.length === 2 && /^\d+$/.test(parts[1]))) {
+                    const username = parts[0];
+                    const index = parts.length === 3 ? parseInt(parts[2], 10) : parseInt(parts[1], 10);
+                    return `<a href="${u.pathname}" class="internal-post-link" data-username="${username}" data-index="${index}">${url}</a>`;
+                }
+            }
+        } catch (e) {}
+        return `<a href="${url}" target="_blank" class="underline hover:opacity-80 break-all">${url}</a>`;
+    });
+}
+
+async function processInternalPostLinks(scope = document) {
+    const anchors = Array.from(scope.querySelectorAll('a.internal-post-link'));
+    for (const a of anchors) {
+        if (a.dataset.processed) continue;
+        a.dataset.processed = '1';
+        const username = a.dataset.username;
+        const index = parseInt(a.dataset.index, 10);
+        try {
+            const uQ = query(collection(db, 'users'), where('username','==', username), limit(1));
+            const uSnap = await getDocs(uQ);
+            if (uSnap.empty) continue;
+            const userDoc = uSnap.docs[0];
+            const authorId = userDoc.id;
+            const pQ = query(collection(db, 'posts'), where('authorId','==', authorId), orderBy('timestamp','asc'), limit(index));
+            const pSnap = await getDocs(pQ);
+            if (pSnap.empty || pSnap.docs.length < index) continue;
+            const postDoc = pSnap.docs[pSnap.docs.length - 1];
+            const post = { id: postDoc.id, ...postDoc.data() };
+            const previewHtml = renderPostCard(post, false);
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = previewHtml;
+            // clicking preview should open route
+            wrapper.firstElementChild.addEventListener('click', (e) => {
+                e.stopPropagation();
+                history.pushState({}, '', `/${username}/post/${index}`);
+                showPostByAuthorIndex(username, index);
+            });
+            a.replaceWith(wrapper.firstElementChild);
+        } catch (e) { console.error('processInternalPostLinks', e); }
+    }
 }
 
 function formatTime(timestamp) {
