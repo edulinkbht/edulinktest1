@@ -133,10 +133,10 @@ body.chat-active .chat-window { transform: translateX(0); }
 /* Mobile header & search layout fixes */
 header, .top-header, .app-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 8px 12px; }
 .header-right, .top-header .actions { display: flex; gap: 8px; align-items: center; }
-.mobile-search { flex: 1 1 auto; max-width: none; min-width: 120px; margin-left: 8px; }
+.mobile-search { flex: 1 1 auto; max-width: 100% !important; min-width: 120px; margin-left: 0 !important; }
 @media (max-width: 768px) {
     .sidebar-header, .sidebar .header { display: none !important; }
-    .mobile-search { max-width: 68%; }
+    .mobile-search { max-width: 100%; }
 }
 
 /* Remove visible border around input and make it sleeker */
@@ -189,7 +189,7 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
 .send-btn-oval:active { transform: translateY(0) scale(0.995); }
 
 .mobile-search { background: #f3f4f6; border-radius: 12px; padding: 8px 12px; border: 1px solid #eef0f3; }
-.sidebar-header { padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #eef0f3; }
+.sidebar-header { padding: 14px 16px; display: flex; align-items: center; gap: 12px; border-bottom: none; }
 .sidebar-title { font-weight: 700; font-size: 18px; color: #0f172a; }
 .sidebar-newchat { color: #0066d6; font-weight: 700; }
 
@@ -374,7 +374,7 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
             <div class="px-4 py-3 md:hidden">
                 <div class="relative">
                     <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                    <input id="sidebar-top-search" type="text" placeholder="Search" class="mobile-search w-full pl-10 bg-[#f3f4f6] border-none" oninput="handleSidebarSearch(this.value)">
+                    <input id="sidebar-top-search" type="text" placeholder="Search" class="mobile-search w-full pl-11 bg-[#f3f4f6] border-none" oninput="handleSidebarSearch(this.value)">
                 </div>
             </div>
 
@@ -386,7 +386,7 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
                 <div class="mt-3">
                     <div class="relative">
                         <i data-lucide="search" class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2"></i>
-                        <input id="sidebar-search" type="text" placeholder="Search" class="mobile-search w-full pl-10 bg-[#f3f4f6] border-none" oninput="handleSidebarSearch(this.value)">
+                        <input id="sidebar-search" type="text" placeholder="Search" class="mobile-search w-full pl-11 bg-[#f3f4f6] border-none" oninput="handleSidebarSearch(this.value)">
                     </div>
                 </div>
             </div>
@@ -921,6 +921,7 @@ function loadConversations() {
             <div class="skeleton-row"><div class="avatar"></div><div class="lines"><div class="line long"></div><div class="line short"></div></div></div>
         </div>
     `;
+    lucide.createIcons();
     
     const q = query(
         collection(db, "chats"), 
@@ -933,12 +934,16 @@ function loadConversations() {
         const chatsData = [];
         snapshot.forEach(doc => chatsData.push({ id: doc.id, ...doc.data() }));
 
-        const visibleChats = chatsData.filter(chat => {
+        let visibleChats = chatsData.filter(chat => {
             if (!chat.clearedAt || !chat.clearedAt[currentUser.id]) return true;
             const clearedTime = chat.clearedAt[currentUser.id];
-            if (!chat.lastMessageTimestamp) return false;
-            return chat.lastMessageTimestamp.toMillis() > clearedTime.toMillis();
+            const lastMessageTime = chat.lastMessageTimestamp ? chat.lastMessageTimestamp.toMillis() : 0;
+            return lastMessageTime > clearedTime.toMillis();
         });
+
+        if (visibleChats.length === 0 && chatsData.length > 0) {
+            visibleChats = chatsData;
+        }
 
         if (visibleChats.length === 0) {
             container.innerHTML = '<div class="p-6 text-center text-gray-500 text-sm mt-10">No messages yet.<br>Start a conversation!</div>';
