@@ -117,9 +117,9 @@ body.chat-active .chat-window { transform: translateX(0); }
 .heart-fixed:active { transform: scale(0.9); }
 
 /* Message Reaction */
-.msg-reaction { position: static; display: inline-flex; margin-top: 6px; background: white; border-radius: 999px; padding: 6px; box-shadow: none; border: 1px solid #f0f0f0; align-items: center; justify-content: center; width: auto; height: auto; z-index: 2; }
-.msg-self .msg-reaction { margin-left: auto; }
-.msg-other .msg-reaction { margin-right: auto; }
+.msg-reaction { position: absolute; bottom: -10px; right: 0; background: white; border-radius: 999px; padding: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); border: 1px solid #f0f0f0; display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; z-index: 10; }
+.msg-self .msg-reaction { right: 0; }
+.msg-other .msg-reaction { left: 0; right: auto; }
 
 /* Input */
 .chat-input-area { padding: 16px; display: flex; align-items: center; gap: 12px; background: #fff; }
@@ -143,12 +143,13 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
 .chat-input { background: #f5f7fa; border-radius: 28px; padding: 14px 18px; flex: 1; outline: none; border: 1px solid #e6e9ee; font-size: 15px; max-height: 140px; resize: none; transition: box-shadow 0.15s, border 0.15s; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); height:48px; }
 .chat-input:focus { border-color: #d3d9e6; box-shadow: 0 8px 20px rgba(16,24,40,0.06); }
 
-/* Chat search under header */
-.chat-search { background: #f3f4f6; border: 1px solid #eef0f3; border-radius: 12px; box-shadow: none; outline: none; }
-.chat-search:focus { outline: none; box-shadow: none; border-color: #eef0f3; }
+/* Header adjustments: remove border and add under-search styling */
+.chat-window header { border-bottom: none !important; }
+.header-under-search { display: block; width: 220px; max-width: 46vw; background: #f3f4f6; border-radius: 12px; padding: 6px 10px; border: 1px solid #f3f4f6; color: #536471; font-size: 13px; outline: none; box-shadow: none; }
+.header-under-search:focus { box-shadow: none !important; border-color: #f3f4f6 !important; }
 
-/* Header without border */
-.no-border-header { border-bottom: none !important; }
+/* Hide the small like/reaction under messages */
+.msg-reaction { display: none !important; }
 
 /* Reduce vertical gap between message bubbles */
 .message, .message-bubble, .msg { margin-bottom: 4px !important; }
@@ -391,7 +392,7 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
 
         <!-- Chat Interface -->
         <div id="active-chat-interface" class="w-full h-full flex flex-col hidden bg-white relative">
-            <header class="h-16 px-4 flex items-center justify-between shrink-0 bg-white/95 backdrop-blur z-20 no-border-header">
+            <header class="h-20 px-4 flex items-center justify-between shrink-0 bg-white/95 backdrop-blur z-20">
                 <div class="flex items-center gap-3">
                     <button onclick="closeChat()" class="md:hidden w-8 h-8 -ml-2 flex items-center justify-center hover:bg-gray-50 rounded-full">
                         <i data-lucide="arrow-left" class="w-6 h-6 text-gray-800"></i>
@@ -403,11 +404,20 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
                             <div class="text-xs text-gray-500 leading-tight flex items-center gap-1.5" id="chat-header-status">
                                 Active now <span class="w-2 h-2 rounded-full bg-green-500 block"></span>
                             </div>
+                            <input id="header-under-search" type="text" placeholder="Search in chat" class="header-under-search mt-2 hidden md:block" oninput="handleChatSearch && handleChatSearch(this.value)">
                         </div>
                     </div>
                 </div>
-                <div class="flex items-center gap-3">
-                    <!-- header icons removed as requested -->
+                <div class="flex items-center gap-2">
+                    <button class="icon-btn" onclick="startVoiceCallInitiation()" aria-label="Voice call">
+                        <i data-lucide="phone" class="w-6 h-6 text-gray-800"></i>
+                    </button>
+                    <button class="icon-btn" onclick="startVideoCallInitiation()" aria-label="Video call">
+                        <i data-lucide="video" class="w-6 h-6 text-gray-800"></i>
+                    </button>
+                    <button class="icon-btn" onclick="openChatDetails()" aria-label="Details">
+                        <i data-lucide="info" class="w-6 h-6 text-gray-800"></i>
+                    </button>
                 </div>
             </header>
 
@@ -422,10 +432,6 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
                 <button onclick="cancelReply()" class="p-2"><i data-lucide="x" class="w-5 h-5 text-gray-500"></i></button>
             </div>
 
-            <div class="chat-search-bar px-4 py-2 bg-white border-b border-transparent">
-                <input id="chat-search" type="text" placeholder="Search in chat" class="chat-search w-full bg-gray-100 text-gray-700 rounded-xl px-4 py-2" oninput="/* no-op */">
-            </div>
-
             <div class="chat-input-area">
                 <button class="shrink-0 camera-circle transition-colors" onclick="document.getElementById('img-upload').click()">
                     <i data-lucide="camera" class="w-5 h-5 text-gray-800"></i>
@@ -437,7 +443,9 @@ header, .top-header, .app-header { display: flex; align-items: center; justify-c
                     <button id="send-btn" class="send-btn-oval hidden absolute right-2 top-1/2 -translate-y-1/2" onclick="sendMessage()">
                         <i data-lucide="send" class="w-4 h-4"></i>
                     </button>
-                    <!-- like button moved to message actions; removed from input -->
+                    <button id="like-btn" class="absolute right-10 top-1/2 -translate-y-1/2 hover:bg-gray-100 rounded-full transition-colors" onclick="sendHeart()">
+                        <i data-lucide="heart" class="w-6 h-6 text-gray-800"></i>
+                    </button>
                 </div>
             </div>
         </div>
