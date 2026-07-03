@@ -295,21 +295,34 @@ body.chat-active .chat-window { transform: translateX(0); }
     <!-- LEFT SIDEBAR -->
     <aside class="sidebar" id="sidebar-panel">
         <div class="h-16 flex items-center justify-between px-5 border-b border-gray-100 shrink-0">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='/home'">
-                <i data-lucide="chevron-left" class="w-6 h-6 md:hidden"></i>
-                <h1 class="text-xl font-bold text-gray-900 google-font flex items-center gap-1">
-                    <span id="current-username">Loading...</span>
-                    <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500"></i>
-                </h1>
+                <div class="flex items-center gap-2 cursor-pointer" onclick="window.location.href='/home'">
+                    <i data-lucide="chevron-left" class="w-6 h-6 md:hidden"></i>
+                    <h1 class="text-xl font-bold text-gray-900 google-font flex items-center gap-1">
+                        <span id="current-username" class="hidden md:inline">Loading...</span>
+                        <span class="md:hidden">Messages</span>
+                        <i data-lucide="chevron-down" class="w-4 h-4 text-gray-500 hidden md:inline"></i>
+                    </h1>
+                </div>
+                <button onclick="openNewChatModal()" class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
+                    <i data-lucide="square-pen" class="w-6 h-6 text-gray-800"></i>
+                </button>
             </div>
-            <button onclick="openNewChatModal()" class="w-10 h-10 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
-                <i data-lucide="square-pen" class="w-6 h-6 text-gray-800"></i>
-            </button>
-        </div>
+
+            <!-- Mobile Search / Header -->
+            <div class="px-4 py-3 border-b border-gray-100 md:hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="font-bold text-[16px] text-gray-900">Messages</div>
+                    <button onclick="openNewChatModal()" class="text-sm font-semibold text-[#0095f6]">New Chat</button>
+                </div>
+                <div class="relative">
+                    <input id="mobile-search" type="text" placeholder="Search" class="w-full py-2 pl-3 pr-10 rounded-lg border border-gray-200 text-sm outline-none">
+                    <i data-lucide="search" class="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                </div>
+            </div>
         
-        <div class="px-4 py-3 border-b border-gray-100 hidden md:block">
-            <div class="font-bold text-[16px] text-gray-900">Messages</div>
-        </div>
+            <div class="px-4 py-3 border-b border-gray-100 hidden md:block">
+                <div class="font-bold text-[16px] text-gray-900">Messages</div>
+            </div>
 
         <div class="flex-1 overflow-y-auto overflow-x-hidden" id="chat-list-container">
             <div class="flex flex-col items-center justify-center h-40 opacity-50">
@@ -380,15 +393,14 @@ body.chat-active .chat-window { transform: translateX(0); }
                 <input type="file" id="img-upload" class="hidden" accept="image/*" onchange="handleImageUpload(event)">
                 
                 <div class="flex-1 relative">
-                    <input type="text" id="message-input" class="chat-input w-full" placeholder="Message..." onkeydown="handleTyping(event)" autocomplete="off">
+                    <input type="text" id="message-input" class="chat-input w-full pr-12" placeholder="Message..." onkeydown="handleTyping(event)" autocomplete="off">
+                    <button id="send-btn" class="absolute right-2 top-1/2 -translate-y-1/2 text-[#0095f6] font-bold hidden" onclick="sendMessage()">
+                        <i data-lucide="send" class="w-6 h-6 fill-current"></i>
+                    </button>
+                    <button id="like-btn" class="absolute right-10 top-1/2 -translate-y-1/2 hover:bg-gray-100 rounded-full transition-colors" onclick="sendHeart()">
+                        <i data-lucide="heart" class="w-6 h-6 text-gray-800"></i>
+                    </button>
                 </div>
-                
-                <button id="send-btn" class="shrink-0 p-2 text-[#0095f6] font-bold hidden hover:text-blue-700 transition-colors" onclick="sendMessage()">
-                    <i data-lucide="send" class="w-7 h-7 fill-current"></i>
-                </button>
-                <button id="like-btn" class="shrink-0 p-2 hover:bg-gray-100 rounded-full transition-colors" onclick="sendHeart()">
-                    <i data-lucide="heart" class="w-7 h-7 text-gray-800"></i>
-                </button>
             </div>
         </div>
     </main>
@@ -786,6 +798,11 @@ window.route = async () => {
         const slug = parts[1];
         if (/^\d+$/.test(slug)) {
             const idx = parseInt(slug, 10);
+            await showPostByAuthorIndex(username, idx);
+            return;
+        } else if (slug === 'post' && parts[2] && /^\d+$/.test(parts[2])) {
+            // handle /username/post/3
+            const idx = parseInt(parts[2], 10);
             await showPostByAuthorIndex(username, idx);
             return;
         } else {
@@ -2225,7 +2242,8 @@ window.handlePressMove = (e) => {
     if(!pressTimer) return;
     const x = e.touches ? e.touches[0].clientX : e.clientX;
     const y = e.touches ? e.touches[0].clientY : e.clientY;
-    if(Math.abs(x - pressStartX) > 20 || Math.abs(y - pressStartY) > 20) { clearTimeout(pressTimer); pressTimer = null; }
+    const threshold = e.touches ? 40 : 20; // allow more movement on touch devices
+    if(Math.abs(x - pressStartX) > threshold || Math.abs(y - pressStartY) > threshold) { clearTimeout(pressTimer); pressTimer = null; }
 };
 
 window.handlePressEnd = (e) => { if(pressTimer) { clearTimeout(pressTimer); pressTimer = null; } };
