@@ -4798,6 +4798,7 @@
                     </div>
                 </div>
                 <div id="explore-content-wrapper" class="pb-32 max-w-5xl mx-auto py-6">
+                    <div id="explore-people-results" class="hidden"></div>
                     <div id="explore-results" class="space-y-0 pt-0"></div>
                 </div>
             </div>
@@ -5619,7 +5620,7 @@
                 }
             }
         };
-        const canSeePost = (p) => { 
+        window.canSeePost = (p) => { 
             if (!p || !currentUser) return false; 
             if (p.archived && p.authorId !== currentUser.id) return false;
             if (p.authorId === currentUser.id) return true; 
@@ -8071,7 +8072,7 @@
                 // Then relevant posts
                 let fp = posts
                     .filter(p => p && p.content && p.content.toLowerCase().includes(t))
-                    .filter(p => canSeePost(p))
+                    .filter(p => window.canSeePost(p))
                     .map(p => ({
                         p,
                         s: scoreText(p.content, t) + (p.likes?.length || 0)
@@ -8175,7 +8176,7 @@
                 });
                 if (t) fp = fp.filter(p => p.content.toLowerCase().includes(t));
                 else if (window.activeExploreTab !== 'tags') fp.sort(() => .5 - Math.random());
-                fp = fp.filter(p => canSeePost(p));
+                fp = fp.filter(p => window.canSeePost(p));
                 if (!fp.length) v.innerHTML = '<div class="text-center py-20 text-gray-400"><p>No posts found.</p></div>';
                 else {
                     v.innerHTML = `<div class="grid grid-cols-2 md:grid-cols-3 gap-2 px-2">${fp.map(p => renderGridPostItem(p)).join('')}</div>`;
