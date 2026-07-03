@@ -702,6 +702,43 @@ async function showPostById(postId) {
     } catch (e) { console.error(e); }
 }
 
+async function getPostIndexForAuthor(authorId, postId) {
+    if (!authorId || !postId) return null;
+    try {
+        // Order ascending so index 1 = earliest (first) post
+        const q = query(collection(db, "posts"), where("authorId", "==", authorId), orderBy("timestamp", "asc"));
+        const snap = await getDocs(q);
+        let idx = 0;
+        for (const d of snap.docs) {
+            idx++;
+            if (d.id === postId) return idx; // 1-based index (1 = earliest)
+        }
+        return null;
+    } catch (e) { console.error(e); return null; }
+}
+
+async function showPostByAuthorIndex(username, index) {
+    if (!username || !index || index < 1) return alert('Invalid post number');
+    try {
+        const uQ = query(collection(db, "users"), where("username", "==", username), limit(1));
+        const uSnap = await getDocs(uQ);
+        if (uSnap.empty) return alert('Author not found');
+        const userDoc = uSnap.docs[0];
+        const authorId = userDoc.id;
+
+        // Order ascending so index 1 = earliest (first) post
+        const pQ = query(collection(db, "posts"), where("authorId", "==", authorId), orderBy("timestamp", "asc"), limit(index));
+        const pSnap = await getDocs(pQ);
+        if (!pSnap.empty && pSnap.docs.length >= index) {
+            const postDoc = pSnap.docs[pSnap.docs.length - 1];
+            const post = { id: postDoc.id, ...postDoc.data() };
+            showPostModal(post);
+        } else {
+            alert('Post not found');
+        }
+    } catch (e) { console.error(e); alert('Error loading post'); }
+}
+
 function showPostModal(post) {
     let modal = document.getElementById('post-view-modal');
     if (!modal) return;
@@ -744,10 +781,18 @@ window.route = async () => {
         return;
     }
     if (parts.length === 2) {
-        // username/postId
-        const postId = parts[1];
-        await showPostById(postId);
-        return;
+        // username/postNumber OR username/postId
+        const username = parts[0];
+        const slug = parts[1];
+        if (/^\d+$/.test(slug)) {
+            const idx = parseInt(slug, 10);
+            await showPostByAuthorIndex(username, idx);
+            return;
+        } else {
+            // fallback: treat as postId
+            await showPostById(slug);
+            return;
+        }
     }
 };
 
@@ -1977,17 +2022,32 @@ window.handlePostClick = (postId, authorId = '') => {
     postClickTimer = setTimeout(async () => {
         try {
             let username = '';
-            if (authorId) {
-                const uSnap = await getDoc(doc(db, "users", authorId));
+            let authorIdResolved = authorId || '';
+            if (authorIdResolved) {
+                const uSnap = await getDoc(doc(db, "users", authorIdResolved));
                 if (uSnap.exists()) username = uSnap.data().username || '';
             }
             if (!username) {
                 const pSnap = await getDoc(doc(db, "posts", postId));
                 if (pSnap.exists() && pSnap.data().authorId) {
-                    const uSnap = await getDoc(doc(db, "users", pSnap.data().authorId));
+                    authorIdResolved = pSnap.data().authorId;
+                    const uSnap = await getDoc(doc(db, "users", authorIdResolved));
                     if (uSnap.exists()) username = uSnap.data().username || '';
                 }
             }
+
+            if (username && authorIdResolved) {
+                const idx = await getPostIndexForAuthor(authorIdResolved, postId);
+                if (idx) {
+                    const path = `/${username}/${idx}`;
+                    history.pushState({}, '', path);
+                    await showPostByAuthorIndex(username, idx);
+                    postClickTimer = null;
+                    return;
+                }
+            }
+
+            // Fallback: open by post id
             const path = username ? `/${username}/${postId}` : `/post/${postId}`;
             history.pushState({}, '', path);
             await showPostById(postId);
