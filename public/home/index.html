@@ -650,6 +650,18 @@
             width: 24px;
             height: 24px
         }
+        
+        #view-blog .action-btn {
+            padding: 8px 16px;
+            height: 40px;
+            font-size: 14px;
+        }
+        
+        #view-blog .action-btn i,
+        #view-blog .action-btn svg {
+            width: 28px;
+            height: 28px;
+        }
 
         #more-menu {
             display: none;
@@ -4228,12 +4240,7 @@
                 </div>
                 <div id="saved-container"></div>
             </div>
-            <div id="view-archived" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-16 md:pt-20">
-                <div class="px-4 pt-5 pb-3">
-                    <div class="text-sm font-medium text-gray-700">Your archived posts</div>
-                </div>
-                <div id="archived-container"></div>
-            </div>
+
             <div id="view-network"
                 class="flex-1 h-full overflow-y-auto no-scrollbar p-0 md:p-6 hidden bg-[#f9fafb] md:bg-[#fff] pt-16 md:pt-6">
                 <h2 class="text-2xl font-bold mb-6 px-4 md:px-0">My Network</h2>
@@ -4603,16 +4610,7 @@
                             </div>
                             <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
                         </div>
-                        <div class="px-4 md:px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors" onclick="switchView('archived')">
-                            <div class="flex items-center gap-4">
-                                <i data-lucide="folder" class="w-6 h-6 text-gray-900 shrink-0"></i>
-                                <div class="flex flex-col justify-center">
-                                    <div class="font-semibold text-gray-900 text-[15px]">Archive Posts</div>
-                                    <div class="text-[13px] text-gray-500 mt-0.5 leading-snug hidden md:block">See your hidden posts. Learn more on how Idem holds youyr archives. <a href="https://idembt.vercel.app/account" target="_blank" class="text-blue-600 font-medium hover:underline" onclick="event.stopPropagation()">Learn more</a></div>
-                                </div>
-                            </div>
-                            <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
-                        </div>
+
                         <div class="px-4 md:px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors" onclick="switchView('saved')">
                             <div class="flex items-center gap-4">
                                 <i data-lucide="bookmark" class="w-6 h-6 text-gray-900 shrink-0"></i>
@@ -4793,7 +4791,7 @@
                     <div id="explore-results" class="space-y-0 pt-0"></div>
                 </div>
             </div>
-            <div id="view-blog" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 md:pt-20 hidden bg-white">
+            <div id="view-blog" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 pt-16 md:pt-20 hidden bg-white">
                 <div id="blog-content-wrapper" class="pb-32 pt-6">
                     <div id="blog-results" class="space-y-0 pt-0"></div>
                 </div>
@@ -5254,8 +5252,9 @@
         };
         window.commentSearchTerm = ''; window.isCommentSearchOpen = false;
         window.currentClaimLink = null;
-        const feedView = document.getElementById('view-feed'), exploreView = document.getElementById('view-explore'), ptrSpinner = document.getElementById('ptr-spinner'), refreshIcons = () => window.lucide?.createIcons();
+        const feedView = document.getElementById('view-feed'), exploreView = document.getElementById('view-explore'), blogView = document.getElementById('view-blog'), ptrSpinner = document.getElementById('ptr-spinner'), refreshIcons = () => window.lucide?.createIcons();
         if (feedView) { feedView.addEventListener('touchstart', e => { if (!feedView.scrollTop && !isRefreshing) { ptrStartY = e.touches[0].pageY; isPtr = true; ptrSpinner.style.transition = 'none' } }, { passive: true }); feedView.addEventListener('touchmove', e => { if (!isPtr || isRefreshing) return; const d = e.touches[0].pageY - ptrStartY; if (d > 0 && !feedView.scrollTop) { if (e.cancelable) e.preventDefault(); ptrDist = d; const y = Math.min(d * .4, 80); Object.assign(ptrSpinner.style, { transform: `translateX(-50%) translateY(${y}px) rotate(${y * 3}deg)`, opacity: Math.min(y / 40, 1) }) } else { isPtr = false; ptrSpinner.style.opacity = '0'; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)' } }, { passive: false }); feedView.addEventListener('touchend', async () => { if (!isPtr || isRefreshing) return; isPtr = false; ptrSpinner.style.transition = 'all .3s'; if (ptrDist > 100) { isRefreshing = true; Object.assign(ptrSpinner.style, { transform: 'translateX(-50%) translateY(50px)', opacity: '1' }); ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; refreshIcons(); await new Promise(r => setTimeout(r, 1000)); renderFeed(); showToast("Feed updated"); isRefreshing = false; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0'; setTimeout(() => { ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; refreshIcons() }, 300) } else { ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0' } ptrDist = 0 }); feedView.addEventListener('scroll', () => { const c = feedView.scrollTop, h = document.getElementById('main-header'); h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastScrollTop = Math.max(0, c) }, { passive: true }) }
+        if (blogView) blogView.addEventListener('scroll', () => { const c = blogView.scrollTop, h = document.getElementById('main-header'); h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastScrollTop = Math.max(0, c) }, { passive: true });
         if (exploreView) exploreView.addEventListener('scroll', () => { const c = exploreView.scrollTop, h = document.getElementById('explore-header-container'); h.style.transform = c > lastExploreScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastExploreScrollTop = Math.max(0, c) }, { passive: true });
         const formatDate = t => { if (!t) return ''; const d = t.toDate ? t.toDate() : new Date(t); if (isNaN(d.getTime())) return ''; const now = new Date(), s = (now - d) / 1000; if (s < 60) return 'Now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; if (s < 604800) return Math.floor(s / 86400) + 'd ago'; return d.toLocaleDateString() };
         
@@ -6109,7 +6108,7 @@
             refreshIcons();
         };
         window.switchView = async (v, direction = 'none') => {
-            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'blog', 'notifications', 'settings', 'archived', 'notification-settings', 'mute-friends', 'create', 'frame'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); 
+            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'blog', 'notifications', 'settings', 'notification-settings', 'mute-friends', 'create', 'frame'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); 
             
             const ms = document.getElementById('main-sidebar'); // Left sidebar
             const tp = document.getElementById('trending-panel'); // Right sidebar
@@ -6314,9 +6313,7 @@
             if (v === 'mute-friends') {
                 renderMuteFriendsList();
             }
-            if (v === 'archived') {
-                renderArchived();
-            }
+
             if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'blog') { mnav[1]?.classList.add('active'); renderBlog(); } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
             if (mp) {
                 if (v === 'profile') {
@@ -11221,11 +11218,6 @@
                             <span class="font-bold text-[15px]">Edit Post</span>
                           </button>`;
                 }
-                const isArchived = p.archived === true;
-                h += `<button onclick="toggleArchive('${pid}'); hidePostMenu()" class="${btnClass}">
-                        <div class="${iconClass}"><i data-lucide="${isArchived ? 'archive-restore' : 'archive'}" class="w-5 h-5 text-gray-600"></i></div>
-                        <span class="font-bold text-[15px]">${isArchived ? 'Unarchive' : 'Archive'} Post</span>
-                      </button>`;
                 h += `<button onclick="showEngagementMetrics('${pid}'); hidePostMenu()" class="${btnClass}">
                         <div class="${iconClass}"><i data-lucide="bar-chart-2" class="w-5 h-5 text-gray-600"></i></div>
                         <span class="font-bold text-[15px]">Engagement</span>
