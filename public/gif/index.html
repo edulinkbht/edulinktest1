@@ -3,283 +3,270 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modern GIF Picker (Powered by KLIPY)</title>
+    <title>My Social App</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        /* Custom scrollbar configurations */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 9999px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4 antialiased">
+<body class="bg-gray-50 min-h-screen font-sans antialiased text-gray-900">
 
-    <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl flex flex-col h-[550px] overflow-hidden relative">
-        
-        <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-900/50 backdrop-blur">
-            <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                <span class="inline-block w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
-                GIF Picker
-            </h1>
-            <span class="text-[10px] font-bold px-2 py-0.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 rounded-full tracking-wider uppercase">KLIPY API Enabled</span>
-        </div>
-
-        <div class="p-3 bg-slate-900 border-b border-slate-800/60 sticky top-0 z-10">
-            <div class="relative">
-                <input 
-                    type="text" 
-                    id="search-input" 
-                    placeholder="Search KLIPY..." 
-                    class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 text-slate-200 placeholder-slate-500 rounded-xl pl-10 pr-9 py-2 text-sm transition-all outline-none"
-                >
-                <div class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
-                    </svg>
+    <div id="auth-screen" class="hidden flex-col items-center justify-center min-h-screen p-4">
+        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-100">
+            <div class="text-center mb-6">
+                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-4">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
                 </div>
-                <button id="clear-btn" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
+                <h1 id="auth-title" class="text-2xl font-bold text-gray-900">Welcome Back</h1>
+                <p class="text-gray-500 text-sm mt-1">Sign in to see what's happening.</p>
+            </div>
+            
+            <div id="auth-error" class="hidden mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm text-center"></div>
+
+            <form id="auth-form" onsubmit="handleEmailAuth(event)" class="space-y-4">
+                <div id="name-field" style="display: none;">
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Display Name</label>
+                    <input type="text" id="name" placeholder="John Doe" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
+                    <input type="email" id="email" required placeholder="you@example.com" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+                    <input type="password" id="password" required minlength="8" placeholder="••••••••" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none">
+                </div>
+                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-200">
+                    Sign In
+                </button>
+            </form>
+
+            <div class="mt-5 text-center">
+                <button type="button" onclick="toggleAuthMode()" id="auth-toggle-link" class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
+                    Don't have an account? Sign Up
                 </button>
             </div>
-        </div>
 
-        <div id="gif-container" class="flex-1 overflow-y-auto custom-scrollbar p-3 grid grid-cols-2 gap-2 content-start">
+            <div class="flex items-center my-6">
+                <div class="flex-grow border-t border-gray-200"></div>
+                <span class="mx-4 text-xs font-semibold text-gray-400 uppercase">Or</span>
+                <div class="flex-grow border-t border-gray-200"></div>
             </div>
 
-        <div id="skeleton-loader" class="hidden grid grid-cols-2 gap-2 p-3 absolute inset-x-0 bottom-10 top-28 bg-slate-900 pointer-events-none z-20 overflow-hidden">
-            <div class="bg-slate-800/40 rounded-xl animate-pulse h-32"></div>
-            <div class="bg-slate-800/40 rounded-xl animate-pulse h-32"></div>
-            <div class="bg-slate-800/40 rounded-xl animate-pulse h-32"></div>
-            <div class="bg-slate-800/40 rounded-xl animate-pulse h-32"></div>
+            <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-100 text-gray-700 font-bold py-2.5 px-4 rounded-xl hover:bg-gray-50 hover:border-gray-200 active:scale-[0.98] transition-all">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google Logo">
+                Continue with Google
+            </button>
         </div>
+    </div>
 
-        <div class="p-2.5 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-500 font-medium px-4">
-            <div>Click any image to copy its source link</div>
-            <div class="flex items-center gap-1 opacity-70">
-                <span>Powered by</span>
-                <span class="font-black tracking-widest text-slate-300">KLIPY</span>
+    <div id="app-screen" class="hidden max-w-2xl mx-auto p-4 sm:p-6 pb-24">
+        <nav class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
+            <div class="font-black text-xl text-blue-600 tracking-tight">SocialApp</div>
+            <div class="flex items-center gap-4">
+                <span id="user-name" class="font-semibold text-gray-600 text-sm hidden sm:block"></span>
+                <button onclick="logout()" class="text-sm bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-700 px-4 py-2 rounded-xl font-bold transition-colors">
+                    Sign Out
+                </button>
             </div>
+        </nav>
+
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-8">
+            <form id="post-form" onsubmit="createPost(event)">
+                <textarea id="postContent" required placeholder="What's on your mind right now?" rows="3" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"></textarea>
+                <div class="flex justify-end mt-3">
+                    <button type="submit" id="post-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md shadow-blue-200 active:scale-[0.97] transition-all">
+                        Post
+                    </button>
+                </div>
+            </form>
         </div>
 
-        <div id="toast" class="absolute bottom-14 left-1/2 -translate-x-1/2 px-4 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-full shadow-xl opacity-0 pointer-events-none transition-all duration-300 translate-y-2 z-30">
-            Copied link to clipboard! 🚀
+        <div>
+            <h2 class="text-lg font-bold mb-4 text-gray-800 px-1">Latest Updates</h2>
+            <div id="posts-container" class="space-y-4">
+                <p class="text-gray-500 text-center py-8 font-medium">Fetching feed...</p>
+            </div>
         </div>
     </div>
 
     <script>
-        // Injected Key configurations
-        const API_KEY = 'oSbUXvrwkPMlofREhdZqXvaE3acHBX1zpMeS3vm2a1pYsIDPItqo3URrn8tHt75t';
-        const BASE_URL = `https://api.klipy.com/api/v1/${API_KEY}/gifs`;
-        
-        // Context state machines
-        let currentQuery = '';
-        let currentPage = 1;
-        let isLoading = false;
-        let hasMore = true;
+        // --- YOUR APPWRITE CONFIGURATION ---
+        const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1"; 
+        const APPWRITE_PROJECT_ID = "6a2e4a110007f2358f48";     
+        const DATABASE_ID = "6a4928f30008f6f3aab8";           
+        const COLLECTION_ID = "posts";       
 
-        // UI Handlers Cache
-        const gifContainer = document.getElementById('gif-container');
-        const searchInput = document.getElementById('search-input');
-        const clearBtn = document.getElementById('clear-btn');
-        const skeletonLoader = document.getElementById('skeleton-loader');
-        const toast = document.getElementById('toast');
+        // Initialize Appwrite
+        const client = new Appwrite.Client()
+            .setEndpoint(APPWRITE_ENDPOINT)
+            .setProject(APPWRITE_PROJECT_ID);
 
-        // Extracting standard/high quality full-frame URLs securely
-        function getGifUrl(item) {
-            if (item.files) {
-                const resolutionPriority = ['md', 'hd', 'sm', 'xs'];
-                for (const res of resolutionPriority) {
-                    if (item.files[res]) {
-                        if (typeof item.files[res] === 'string') return item.files[res];
-                        if (item.files[res].url) return item.files[res].url;
-                        if (item.files[res].gif) return item.files[res].gif;
-                    }
-                }
-            }
-            if (item.media?.tinygif?.url) return item.media.tinygif.url;
-            if (item.url) return item.url;
-            return '';
-        }
+        const account = new Appwrite.Account(client);
+        const databases = new Appwrite.Databases(client);
 
-        // Resolving low-overhead asset pointers for responsive previews
-        function getPreviewUrl(item) {
-            if (item.files) {
-                const lightweightPriority = ['sm', 'xs', 'md', 'hd'];
-                for (const res of lightweightPriority) {
-                    if (item.files[res]) {
-                        if (typeof item.files[res] === 'string') return item.files[res];
-                        if (item.files[res].url) return item.files[res].url;
-                        if (item.files[res].gif) return item.files[res].gif;
-                    }
-                }
-            }
-            if (item.media?.nanogif?.url) return item.media.nanogif.url;
-            return getGifUrl(item);
-        }
+        let currentUser = null;
+        let isSignUp = false;
 
-        // Network pipeline executor
-        async function loadGifs(isNewQuery = false) {
-            if (isLoading) return;
-            isLoading = true;
-
-            if (isNewQuery) {
-                currentPage = 1;
-                gifContainer.innerHTML = '';
-                skeletonLoader.classList.remove('hidden');
-                hasMore = true;
-            }
-
+        // Check login status on page load
+        window.addEventListener('DOMContentLoaded', async () => {
             try {
-                const endpoint = currentQuery ? 'search' : 'trending';
-                const queryParameters = new URLSearchParams({
-                    per_page: 20,
-                    page: currentPage
-                });
-                
-                if (currentQuery) {
-                    queryParameters.append('q', currentQuery);
-                }
-
-                const endpointResponse = await fetch(`${BASE_URL}/${endpoint}?${queryParameters.toString()}`);
-                if (!endpointResponse.ok) throw new Error('API processing communication error.');
-
-                const dataPayload = await endpointResponse.json();
-                const items = dataPayload.results || [];
-
-                if (items.length === 0) {
-                    if (isNewQuery) {
-                        gifContainer.innerHTML = `
-                            <div class="col-span-2 text-center py-16 text-slate-500 text-xs tracking-wide">
-                                No content discovered matching "${currentQuery}"
-                            </div>
-                        `;
-                    }
-                    hasMore = false;
-                } else {
-                    renderGifs(items);
-                    currentPage++;
-                }
+                currentUser = await account.get();
+                showAppLayout();
+                loadPosts();
             } catch (error) {
-                console.error('Fatal API compilation runtime failure:', error);
-                if (isNewQuery) {
-                    gifContainer.innerHTML = `
-                        <div class="col-span-2 text-center py-16 text-rose-400/80 text-xs">
-                            Engine failed to compile content feed. Check Key configuration or network connection.
+                showLoginLayout();
+            }
+        });
+
+        // Toggle UI between Login and Register
+        function toggleAuthMode() {
+            isSignUp = !isSignUp;
+            document.getElementById('name-field').style.display = isSignUp ? 'block' : 'none';
+            document.getElementById('auth-submit-btn').innerText = isSignUp ? 'Create Account' : 'Sign In';
+            document.getElementById('auth-toggle-link').innerText = isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up";
+            document.getElementById('auth-title').innerText = isSignUp ? 'Join the Community' : 'Welcome Back';
+        }
+
+        // Handle Email/Password Login & Registration
+        async function handleEmailAuth(event) {
+            event.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value;
+            const errorBox = document.getElementById('auth-error');
+            const btn = document.getElementById('auth-submit-btn');
+            
+            errorBox.classList.add('hidden');
+            btn.innerText = 'Processing...';
+            btn.disabled = true;
+            
+            try {
+                if (isSignUp) {
+                    // Create account first if in Sign Up mode
+                    await account.create(Appwrite.ID.unique(), email, password, name || 'Anonymous');
+                }
+                // Establish session
+                await account.createEmailPasswordSession(email, password);
+                // Reload page to trigger authenticated view
+                window.location.reload();
+            } catch (error) {
+                errorBox.innerText = error.message;
+                errorBox.classList.remove('hidden');
+                btn.innerText = isSignUp ? 'Create Account' : 'Sign In';
+                btn.disabled = false;
+            }
+        }
+
+        // Trigger Google Login Flow
+        function loginWithGoogle() {
+            // This safely creates the redirect URL dynamically based on where you are hosting the file
+            const redirectUrl = window.location.origin + window.location.pathname;
+            account.createOAuth2Session('google', redirectUrl, redirectUrl);
+        }
+
+        // Sign Out
+        async function logout() {
+            try {
+                await account.deleteSession('current');
+                window.location.reload();
+            } catch (error) {
+                console.error("Logout failed:", error);
+            }
+        }
+
+        // Fetch Posts from Database
+        async function loadPosts() {
+            const container = document.getElementById('posts-container');
+            try {
+                const response = await databases.listDocuments(
+                    DATABASE_ID,
+                    COLLECTION_ID,
+                    [Appwrite.Query.orderDesc('$createdAt')] // Show newest posts first
+                );
+                
+                if (response.documents.length === 0) {
+                    container.innerHTML = `
+                        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
+                            <span class="text-4xl block mb-2">👋</span>
+                            <p class="text-gray-500 font-medium">It's quiet in here. Be the first to post!</p>
+                        </div>`;
+                    return;
+                }
+
+                container.innerHTML = response.documents.map(post => {
+                    const date = new Date(post.$createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                    const displayName = escapeHtml(post.userName || 'Anonymous User');
+                    const initial = displayName.charAt(0).toUpperCase();
+
+                    return `
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-black text-sm">
+                                        ${initial}
+                                    </div>
+                                    <span class="font-bold text-gray-900">${displayName}</span>
+                                </div>
+                                <span class="text-xs font-semibold text-gray-400 bg-gray-50 py-1 px-2 rounded-lg">${date}</span>
+                            </div>
+                            <p class="text-gray-700 whitespace-pre-wrap leading-relaxed mt-2 text-[15px]">${escapeHtml(post.content)}</p>
                         </div>
                     `;
-                }
+                }).join('');
+            } catch (error) {
+                container.innerHTML = `<p class="text-red-500 bg-red-50 border border-red-100 p-4 rounded-xl text-center">Failed to load feed data: ${error.message}</p>`;
+            }
+        }
+
+        // Send Post to Database
+        async function createPost(event) {
+            event.preventDefault();
+            const textarea = document.getElementById('postContent');
+            const btn = document.getElementById('post-submit-btn');
+            const content = textarea.value.trim();
+            if (!content) return;
+
+            btn.innerText = 'Posting...';
+            btn.disabled = true;
+
+            try {
+                await databases.createDocument(
+                    DATABASE_ID,
+                    COLLECTION_ID,
+                    Appwrite.ID.unique(),
+                    {
+                        content: content,
+                        userName: currentUser.name || currentUser.email || "Anonymous User"
+                    }
+                );
+                textarea.value = '';
+                loadPosts(); // Refresh UI instantly
+            } catch (error) {
+                alert("Error sending update: " + error.message);
             } finally {
-                isLoading = false;
-                skeletonLoader.classList.add('hidden');
+                btn.innerText = 'Post';
+                btn.disabled = false;
             }
         }
 
-        // UI rendering engine
-        function renderGifs(items) {
-            items.forEach(item => {
-                const targetLink = getGifUrl(item);
-                const visualSource = getPreviewUrl(item);
-                const descriptor = item.title || 'Klipy Expressive Stream';
-
-                if (!targetLink) return;
-
-                const wrapperNode = document.createElement('div');
-                wrapperNode.className = 'relative overflow-hidden rounded-xl bg-slate-950 border border-slate-800/60 cursor-pointer group hover:border-indigo-500/50 transition-all duration-300 h-28 bg-cover bg-center';
-                
-                wrapperNode.innerHTML = `
-                    <img 
-                        src="${visualSource}" 
-                        alt="${descriptor}" 
-                        loading="lazy"
-                        class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onerror="this.style.display='none';"
-                    >
-                    <div class="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-2">
-                        <span class="text-[9px] text-slate-300 font-medium truncate w-full tracking-wide">${descriptor}</span>
-                    </div>
-                `;
-
-                // Clipboard Event
-                wrapperNode.addEventListener('click', () => {
-                    navigator.clipboard.writeText(targetLink).then(() => {
-                        triggerNotificationBadge();
-                    }).catch(error => {
-                        console.error('System Clipboard access denied:', error);
-                    });
-                });
-
-                gifContainer.appendChild(wrapperNode);
-            });
+        // Layout Helpers
+        function showAppLayout() {
+            document.getElementById('auth-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('flex');
+            document.getElementById('app-screen').classList.remove('hidden');
+            document.getElementById('user-name').innerText = currentUser.name || currentUser.email || 'Welcome';
         }
 
-        // Animation badge popups
-        function triggerNotificationBadge() {
-            toast.classList.remove('opacity-0', 'pointer-events-none', 'translate-y-2');
-            toast.classList.add('opacity-100', 'translate-y-0');
-            
-            setTimeout(() => {
-                toast.classList.remove('opacity-100', 'translate-y-0');
-                toast.classList.add('opacity-0', 'pointer-events-none', 'translate-y-2');
-            }, 1800);
+        function showLoginLayout() {
+            document.getElementById('app-screen').classList.add('hidden');
+            document.getElementById('auth-screen').classList.remove('hidden');
+            document.getElementById('auth-screen').classList.add('flex');
         }
 
-        // Input monitoring with typing delay (Debounce)
-        let keystrokeThrottleTimer;
-        searchInput.addEventListener('input', (event) => {
-            const rawStringValue = event.target.value.trim();
-            
-            if (rawStringValue) {
-                clearBtn.classList.remove('hidden');
-            } else {
-                clearBtn.classList.add('hidden');
-            }
-
-            clearTimeout(keystrokeThrottleTimer);
-            keystrokeThrottleTimer = setTimeout(() => {
-                if (rawStringValue !== currentQuery) {
-                    currentQuery = rawStringValue;
-                    loadGifs(true);
-                }
-            }, 450); 
-        });
-
-        // Reset click handling
-        clearBtn.addEventListener('click', () => {
-            searchInput.value = '';
-            clearBtn.classList.add('hidden');
-            if (currentQuery !== '') {
-                currentQuery = '';
-                loadGifs(true);
-            }
-            searchInput.focus();
-        });
-
-        // Smart Infinite Scrolling Observer Setup
-        gifContainer.addEventListener('scroll', () => {
-            if (!hasMore || isLoading) return;
-            
-            // Fires download pipeline slightly before user triggers zero-bound base bottom boundary
-            if (gifContainer.scrollTop + gifContainer.clientHeight >= gifContainer.scrollHeight - 65) {
-                loadGifs();
-            }
-        });
-
-        // Core Document Loop Initialization
-        document.addEventListener('DOMContentLoaded', () => {
-            loadGifs(true);
-        });
+        // Security Utility to prevent XSS attacks when displaying user input
+        function escapeHtml(str) {
+            if (!str) return "";
+            return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
     </script>
 </body>
 </html>
