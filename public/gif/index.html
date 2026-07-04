@@ -3,96 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Social App</title>
+    <title>Instagram Clone</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/appwrite@14.0.1"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom scrollbar matching modern web views */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-thumb { background: #dbdbdb; border-radius: 10px; }
+    </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans antialiased text-gray-900">
+<body class="bg-white min-h-screen font-sans antialiased text-gray-900 selection:bg-gray-200">
 
-    <div id="auth-screen" class="hidden flex-col items-center justify-center min-h-screen p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full border border-gray-100">
-            <div class="text-center mb-6">
-                <div class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-blue-100 text-blue-600 mb-4">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z"></path></svg>
-                </div>
-                <h1 id="auth-title" class="text-2xl font-bold text-gray-900">Welcome Back</h1>
-                <p class="text-gray-500 text-sm mt-1">Sign in to see what's happening.</p>
-            </div>
+    <div id="auth-screen" class="hidden flex-col items-center justify-center min-h-screen p-4 bg-gray-50">
+        <div class="bg-white p-10 rounded-sm border border-gray-300 max-w-sm w-full text-center">
+            <h1 class="text-4xl font-serif italic font-bold tracking-wide my-6 text-gray-900">Instagram</h1>
             
-            <div id="auth-error" class="hidden mb-4 p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm text-center"></div>
+            <div id="auth-error" class="hidden mb-4 p-3 bg-red-50 text-red-600 border border-red-200 text-xs rounded font-medium"></div>
 
-            <form id="auth-form" onsubmit="handleEmailAuth(event)" class="space-y-4">
+            <form id="auth-form" onsubmit="handleEmailAuth(event)" class="space-y-2 mt-4">
                 <div id="name-field" style="display: none;">
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Display Name</label>
-                    <input type="text" id="name" placeholder="John Doe" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none">
+                    <input type="text" id="name" placeholder="Full Name" class="w-full p-2 text-xs bg-gray-50 border border-gray-300 rounded focus:border-gray-500 outline-none transition-all">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Email Address</label>
-                    <input type="email" id="email" required placeholder="you@example.com" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none">
+                    <input type="email" id="email" required placeholder="Phone number, username, or email" class="w-full p-2 text-xs bg-gray-50 border border-gray-300 rounded focus:border-gray-500 outline-none transition-all">
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-1">Password</label>
-                    <input type="password" id="password" required minlength="8" placeholder="••••••••" class="w-full p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none">
+                    <input type="password" id="password" required minlength="8" placeholder="Password" class="w-full p-2 text-xs bg-gray-50 border border-gray-300 rounded focus:border-gray-500 outline-none transition-all">
                 </div>
-                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 active:scale-[0.98] transition-all shadow-md shadow-blue-200">
-                    Sign In
+                <button type="submit" id="auth-submit-btn" class="w-full bg-blue-500 text-white font-semibold py-1.5 px-4 rounded text-sm hover:bg-blue-600 transition-all mt-2 disabled:opacity-50">
+                    Log In
                 </button>
             </form>
 
-            <div class="mt-5 text-center">
-                <button type="button" onclick="toggleAuthMode()" id="auth-toggle-link" class="text-sm font-medium text-blue-600 hover:text-blue-800 transition-colors">
-                    Don't have an account? Sign Up
-                </button>
-            </div>
-
-            <div class="flex items-center my-6">
+            <div class="flex items-center my-5">
                 <div class="flex-grow border-t border-gray-200"></div>
-                <span class="mx-4 text-xs font-semibold text-gray-400 uppercase">Or</span>
+                <span class="mx-4 text-xs font-semibold text-gray-400 uppercase tracking-wider">Or</span>
                 <div class="flex-grow border-t border-gray-200"></div>
             </div>
 
-            <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-3 bg-white border-2 border-gray-100 text-gray-700 font-bold py-2.5 px-4 rounded-xl hover:bg-gray-50 hover:border-gray-200 active:scale-[0.98] transition-all">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" class="w-5 h-5" alt="Google Logo">
-                Continue with Google
+            <button onclick="loginWithGoogle()" class="w-full flex items-center justify-center gap-2 text-blue-900 font-semibold text-sm hover:opacity-80 transition-all">
+                <i class="fab fa-google"></i> Log in with Google
+            </button>
+        </div>
+
+        <div class="bg-white p-5 rounded-sm border border-gray-300 max-w-sm w-full text-center mt-3">
+            <button type="button" onclick="toggleAuthMode()" id="auth-toggle-link" class="text-sm font-medium text-blue-500 hover:text-blue-700 transition-colors">
+                Don't have an account? <span class="font-semibold">Sign Up</span>
             </button>
         </div>
     </div>
 
-    <div id="app-screen" class="hidden max-w-2xl mx-auto p-4 sm:p-6 pb-24">
-        <nav class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100 mb-6">
-            <div class="font-black text-xl text-blue-600 tracking-tight">SocialApp</div>
-            <div class="flex items-center gap-4">
-                <span id="user-name" class="font-semibold text-gray-600 text-sm hidden sm:block"></span>
-                <button onclick="logout()" class="text-sm bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-700 px-4 py-2 rounded-xl font-bold transition-colors">
-                    Sign Out
+
+    <div id="app-screen" class="hidden min-h-screen bg-white">
+        
+        <nav class="sticky top-0 bg-white border-b border-gray-200 z-50 h-14 flex items-center justify-between px-4 max-w-4xl mx-auto w-full">
+            <div class="text-2xl font-serif italic font-bold tracking-wide text-gray-900 cursor-pointer" onclick="switchTab('feed')">Instagram</div>
+            <div class="flex items-center gap-5 text-xl">
+                <button onclick="switchTab('feed')" class="hover:scale-110 transition-transform"><i class="fas fa-home"></i></button>
+                <button onclick="switchTab('create')" class="hover:scale-110 transition-transform"><i class="far fa-plus-square"></i></button>
+                <button onclick="switchTab('profile')" class="w-6 h-6 rounded-full overflow-hidden border border-gray-300 flex items-center justify-center">
+                    <img id="nav-avatar" src="https://via.placeholder.com/150" class="w-full h-full object-cover hidden">
+                    <i id="nav-avatar-icon" class="fas fa-user-circle text-gray-400 text-lg"></i>
                 </button>
+                <button onclick="logout()" class="text-sm text-red-500 font-semibold"><i class="fas fa-sign-out-alt text-lg"></i></button>
             </div>
         </nav>
 
-        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-8">
-            <form id="post-form" onsubmit="createPost(event)">
-                <textarea id="postContent" required placeholder="What's on your mind right now?" rows="3" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"></textarea>
-                
-                <div class="flex justify-between items-center mt-3">
-                    <label class="cursor-pointer text-gray-500 hover:text-blue-600 flex items-center gap-2 text-sm font-medium transition-colors">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                        <span>Attach Media</span>
-                        <input type="file" id="mediaUpload" accept="image/*,video/*" class="hidden" onchange="updateFileName()">
-                    </label>
-                    <span id="file-name" class="text-xs text-gray-400 mr-auto ml-3 overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]"></span>
-
-                    <button type="submit" id="post-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md shadow-blue-200 active:scale-[0.97] transition-all">
-                        Post
-                    </button>
+        <main class="max-w-2xl mx-auto p-0 sm:p-4 pb-20 pt-2">
+            
+            <div id="view-feed" class="tab-view space-y-6">
+                <div id="posts-container" class="divide-y divide-gray-200 sm:space-y-6 sm:divide-y-0">
+                    <p class="text-gray-400 text-center py-12 text-sm">Loading your feed...</p>
                 </div>
-            </form>
-        </div>
-
-        <div>
-            <h2 class="text-lg font-bold mb-4 text-gray-800 px-1">Latest Updates</h2>
-            <div id="posts-container" class="space-y-4">
-                <p class="text-gray-500 text-center py-8 font-medium">Fetching feed...</p>
             </div>
+
+            <div id="view-create" class="tab-view hidden p-4">
+                <div class="border border-gray-200 rounded p-6 bg-white max-w-md mx-auto shadow-sm">
+                    <h2 class="text-lg font-semibold mb-4 text-center">Create New Post</h2>
+                    <form id="post-form" onsubmit="createPost(event)" class="space-y-4">
+                        <textarea id="postContent" required placeholder="Write a caption..." rows="4" class="w-full border-0 focus:ring-0 p-2 text-sm resize-none outline-none border-b border-gray-100"></textarea>
+                        
+                        <div class="flex flex-col items-center justify-center border-2 border-dashed border-gray-200 rounded-lg p-6 bg-gray-50 hover:bg-gray-100 transition-colors cursor-pointer relative">
+                            <input type="file" id="mediaUpload" accept="image/*,video/*" class="absolute inset-0 opacity-0 cursor-pointer" onchange="updateFileName()">
+                            <i class="far fa-images text-3xl text-gray-400 mb-2"></i>
+                            <span id="file-name" class="text-xs text-gray-500 font-medium text-center px-2">Select photos or videos from your device</span>
+                        </div>
+
+                        <button type="submit" id="post-submit-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded text-sm transition-all disabled:opacity-50">
+                            Share Post
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="view-profile" class="tab-view hidden p-4 sm:p-0">
+                <div class="flex flex-col sm:flex-row items-center gap-6 sm:gap-12 pb-8 border-b border-gray-200 mb-6">
+                    <div class="relative group cursor-pointer w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border border-gray-200 bg-gray-50 flex items-center justify-center">
+                        <img id="profile-avatar" src="https://via.placeholder.com/150" class="w-full h-full object-cover hidden">
+                        <i id="profile-avatar-icon" class="fas fa-user text-gray-300 text-5xl"></i>
+                        
+                        <label class="absolute inset-0 bg-black bg-opacity-40 flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                            <i class="fas fa-camera text-xl"></i>
+                            <span class="text-[10px] mt-1 font-semibold">Update Picture</span>
+                            <input type="file" id="avatarUpload" accept="image/*" class="hidden" onchange="uploadProfilePicture()">
+                        </label>
+                    </div>
+
+                    <div class="text-center sm:text-left flex-1 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                            <h2 id="profile-username" class="text-xl font-light text-gray-900">Username</h2>
+                            <span id="profile-email" class="text-xs text-gray-400 font-mono">user@email.com</span>
+                        </div>
+                        <div class="flex justify-center sm:justify-start gap-6 text-sm text-gray-700">
+                            <div><span id="profile-post-count" class="font-semibold text-gray-900">0</span> posts</div>
+                            <div><span class="font-semibold text-gray-900">1.2k</span> followers</div>
+                            <div><span class="font-semibold text-gray-900">480</span> following</div>
+                        </div>
+                        <div class="text-sm font-semibold" id="profile-display-name">Anonymous User</div>
+                    </div>
+                </div>
+
+                <div id="profile-posts-grid" class="grid grid-cols-3 gap-1 sm:gap-4">
+                    </div>
+            </div>
+
+        </main>
+
+        <div class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 h-12 flex items-center justify-around text-xl text-gray-700 sm:hidden z-50">
+            <button onclick="switchTab('feed')"><i class="fas fa-home"></i></button>
+            <button onclick="switchTab('create')"><i class="far fa-plus-square"></i></button>
+            <button onclick="switchTab('profile')"><i class="far fa-user"></i></button>
         </div>
     </div>
 
@@ -102,38 +143,36 @@
         const APPWRITE_PROJECT_ID = "6a2e4a110007f2358f48";     
         const DATABASE_ID = "6a4928f30008f6f3aab8";           
         const COLLECTION_ID = "posts";       
-        const BUCKET_ID = "6a494107003e1b16b976"; // Added your bucket ID
+        const BUCKET_ID = "6a494107003e1b16b976"; 
 
-        // Initialize Appwrite
-        const client = new Appwrite.Client()
-            .setEndpoint(APPWRITE_ENDPOINT)
-            .setProject(APPWRITE_PROJECT_ID);
-
+        // Initialize Appwrite Clients
+        const client = new Appwrite.Client().setEndpoint(APPWRITE_ENDPOINT).setProject(APPWRITE_PROJECT_ID);
         const account = new Appwrite.Account(client);
         const databases = new Appwrite.Databases(client);
-        const storage = new Appwrite.Storage(client); // Initialized Storage
+        const storage = new Appwrite.Storage(client);
 
         let currentUser = null;
         let isSignUp = false;
+        let globalPostsCache = [];
 
-        // Check login status on page load
+        // Check verification states inside DOM lifecycle
         window.addEventListener('DOMContentLoaded', async () => {
             try {
                 currentUser = await account.get();
                 showAppLayout();
+                updateUserAvatarViews();
                 loadPosts();
             } catch (error) {
                 showLoginLayout();
             }
         });
 
-        // Toggle UI between Login and Register
+        // Toggle UI modes between Sign In vs Register Account screens
         function toggleAuthMode() {
             isSignUp = !isSignUp;
             document.getElementById('name-field').style.display = isSignUp ? 'block' : 'none';
-            document.getElementById('auth-submit-btn').innerText = isSignUp ? 'Create Account' : 'Sign In';
-            document.getElementById('auth-toggle-link').innerText = isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up";
-            document.getElementById('auth-title').innerText = isSignUp ? 'Join the Community' : 'Welcome Back';
+            document.getElementById('auth-submit-btn').innerText = isSignUp ? 'Sign Up' : 'Log In';
+            document.getElementById('auth-toggle-link').innerHTML = isSignUp ? "Have an account? <span class='font-semibold'>Log In</span>" : "Don't have an account? <span class='font-semibold'>Sign Up</span>";
         }
 
         async function handleEmailAuth(event) {
@@ -157,7 +196,7 @@
             } catch (error) {
                 errorBox.innerText = error.message;
                 errorBox.classList.remove('hidden');
-                btn.innerText = isSignUp ? 'Create Account' : 'Sign In';
+                btn.innerText = isSignUp ? 'Sign Up' : 'Log In';
                 btn.disabled = false;
             }
         }
@@ -176,17 +215,74 @@
             }
         }
 
+        // Tab views system routing switches
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-view').forEach(view => view.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            
+            if (tabId === 'profile') {
+                renderProfileView();
+            }
+        }
+
         function updateFileName() {
             const fileInput = document.getElementById('mediaUpload');
             const fileNameDisplay = document.getElementById('file-name');
             if (fileInput.files.length > 0) {
-                fileNameDisplay.innerText = fileInput.files[0].name;
-            } else {
-                fileNameDisplay.innerText = '';
+                fileNameDisplay.innerText = `Selected: ${fileInput.files[0].name}`;
             }
         }
 
-        // Fetch Posts from Database
+        // Universal Profile Picture Sync Layer
+        function getUserAvatarUrl(userObject) {
+            // Evaluates preferences metadata tags for assigned profile pictures
+            if (userObject && userObject.prefs && userObject.prefs.avatarId) {
+                return storage.getFileView(BUCKET_ID, userObject.prefs.avatarId);
+            }
+            return null;
+        }
+
+        function updateUserAvatarViews() {
+            const avatarUrl = getUserAvatarUrl(currentUser);
+            const navAvatar = document.getElementById('nav-avatar');
+            const navIcon = document.getElementById('nav-avatar-icon');
+            const profileAvatar = document.getElementById('profile-avatar');
+            const profileIcon = document.getElementById('profile-avatar-icon');
+
+            if (avatarUrl) {
+                if (navAvatar) { navAvatar.src = avatarUrl; navAvatar.classList.remove('hidden'); }
+                if (navIcon) navIcon.classList.add('hidden');
+                
+                if (profileAvatar) { profileAvatar.src = avatarUrl; profileAvatar.classList.remove('hidden'); }
+                if (profileIcon) profileIcon.classList.add('hidden');
+            }
+        }
+
+        // Update User Profile Images Engine File Uploader
+        async function uploadProfilePicture() {
+            const fileInput = document.getElementById('avatarUpload');
+            if (fileInput.files.length === 0) return;
+
+            const file = fileInput.files[0];
+            try {
+                // Upload avatar layout directly onto appwrite cloud storage buckets
+                const uploadedFile = await storage.createFile(BUCKET_ID, Appwrite.ID.unique(), file);
+                
+                // Save avatar metadata references straight onto the preferences parameters mapping table
+                const currentPrefs = currentUser.prefs || {};
+                await account.updatePrefs({ ...currentPrefs, avatarId: uploadedFile.$id });
+                
+                // Refresh local session configuration cache
+                currentUser = await account.get();
+                updateUserAvatarViews();
+                loadPosts(); // Re-render feeds with structural identity shifts
+                alert("Profile image updated successfully!");
+            } catch (error) {
+                alert("Failed to change profile asset: " + error.message);
+            }
+        }
+
+        // Fetch updates from active structural application documents
         async function loadPosts() {
             const container = document.getElementById('posts-container');
             try {
@@ -196,120 +292,176 @@
                     [Appwrite.Query.orderDesc('$createdAt')]
                 );
                 
-                if (response.documents.length === 0) {
+                globalPostsCache = response.documents;
+                
+                if (globalPostsCache.length === 0) {
                     container.innerHTML = `
-                        <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100 text-center">
-                            <span class="text-4xl block mb-2">👋</span>
-                            <p class="text-gray-500 font-medium">It's quiet in here. Be the first to post!</p>
+                        <div class="text-center py-20 bg-white border border-gray-200 rounded sm:p-12">
+                            <i class="far fa-image text-5xl text-gray-300 mb-3"></i>
+                            <p class="text-gray-500 font-medium text-sm">No Posts Yet</p>
                         </div>`;
                     return;
                 }
 
-                container.innerHTML = response.documents.map(post => {
-                    const date = new Date(post.$createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                container.innerHTML = globalPostsCache.map(post => {
+                    const date = new Date(post.$createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
                     const displayName = escapeHtml(post.userName || 'Anonymous User');
-                    const initial = displayName.charAt(0).toUpperCase();
+                    
+                    // Handle Post Avatar Verification Layouts
+                    let avatarMarkup = `<i class="fas fa-user-circle text-gray-300 text-3xl"></i>`;
+                    // If your collection tracks avatarId per post, pull it from post attributes
+                    if (post.avatarId) {
+                        avatarMarkup = `<img src="${storage.getFileView(BUCKET_ID, post.avatarId)}" class="w-full h-full object-cover">`;
+                    } else if (post.userId === currentUser.$id && getUserAvatarUrl(currentUser)) {
+                        avatarMarkup = `<img src="${getUserAvatarUrl(currentUser)}" class="w-full h-full object-cover">`;
+                    }
 
-                    // Handle Media Rendering
                     let mediaHTML = '';
                     if (post.mediaId) {
-                        // Generate the public view URL for the file
                         const fileUrl = storage.getFileView(BUCKET_ID, post.mediaId);
-                        
                         if (post.mediaType === 'video') {
-                            mediaHTML = `<video controls class="w-full mt-3 rounded-xl border border-gray-100 max-h-[400px] object-cover bg-black" src="${fileUrl}"></video>`;
+                            mediaHTML = `<div class="bg-black w-full flex items-center justify-center"><video controls class="w-full max-h-[500px] object-contain" src="${fileUrl}"></video></div>`;
                         } else {
-                            mediaHTML = `<img class="w-full mt-3 rounded-xl border border-gray-100 max-h-[400px] object-cover" src="${fileUrl}" alt="Post attachment">`;
+                            mediaHTML = `<div class="bg-gray-50 w-full flex items-center justify-center"><img class="w-full max-h-[600px] object-contain" src="${fileUrl}" alt="Post image"></div>`;
                         }
                     }
 
                     return `
-                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-                            <div class="flex items-center justify-between mb-3">
+                        <article class="bg-white border-b sm:border border-gray-200 sm:rounded-sm overflow-hidden max-w-lg mx-auto">
+                            <div class="flex items-center justify-between p-3">
                                 <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-black text-sm">
-                                        ${initial}
+                                    <div class="w-8 h-8 rounded-full overflow-hidden border border-gray-200 flex items-center justify-center bg-gray-50">
+                                        ${avatarMarkup}
                                     </div>
-                                    <span class="font-bold text-gray-900">${displayName}</span>
+                                    <span class="font-semibold text-sm text-gray-900">${displayName}</span>
                                 </div>
-                                <span class="text-xs font-semibold text-gray-400 bg-gray-50 py-1 px-2 rounded-lg">${date}</span>
+                                <span class="text-[11px] font-semibold text-gray-400 uppercase">${date}</span>
                             </div>
-                            <p class="text-gray-700 whitespace-pre-wrap leading-relaxed mt-2 text-[15px]">${escapeHtml(post.content)}</p>
+
                             ${mediaHTML}
-                        </div>
+
+                            <div class="p-3 space-y-2">
+                                <div class="flex items-center gap-4 text-xl text-gray-800">
+                                    <button class="hover:text-red-500 transition-colors"><i class="far fa-heart"></i></button>
+                                    <button class="hover:text-gray-500 transition-colors"><i class="far fa-comment"></i></button>
+                                    <button class="hover:text-blue-500 transition-colors"><i class="far fa-paper-plane"></i></button>
+                                </div>
+                                <p class="text-sm text-gray-800 leading-relaxed">
+                                    <span class="font-semibold mr-2">${displayName}</span>${escapeHtml(post.content)}
+                                </p>
+                            </div>
+                        </article>
                     `;
                 }).join('');
             } catch (error) {
-                container.innerHTML = `<p class="text-red-500 bg-red-50 border border-red-100 p-4 rounded-xl text-center">Failed to load feed data: ${error.message}</p>`;
+                container.innerHTML = `<p class="text-red-500 p-4 text-center text-xs">Failed to load feed: ${error.message}</p>`;
             }
         }
 
-        // Send Post to Database
+        // Profile Dashboard Page Controller Viewport Architecture Mapping Layer
+        function renderProfileView() {
+            document.getElementById('profile-username').innerText = currentUser.email.split('@')[0];
+            document.getElementById('profile-email').innerText = currentUser.email;
+            document.getElementById('profile-display-name').innerText = currentUser.name || "Anonymous User";
+
+            // Filters global dataset rows matching user identities directly
+            const myPosts = globalPostsCache.filter(post => post.userId === currentUser.$id || post.userName === currentUser.name || post.userName === currentUser.email);
+            document.getElementById('profile-post-count').innerText = myPosts.length;
+
+            const gridContainer = document.getElementById('profile-posts-grid');
+            if (myPosts.length === 0) {
+                gridContainer.className = "block text-center py-12 text-gray-400 text-sm border-t border-gray-100";
+                gridContainer.innerHTML = `<i class="fas fa-camera text-4xl mb-2 text-gray-200"></i><p>No Posts Formed Yet</p>`;
+                return;
+            }
+
+            // Standardize responsive 3x3 layout formats layout configurations configurations
+            gridContainer.className = "grid grid-cols-3 gap-1 sm:gap-4";
+            gridContainer.innerHTML = myPosts.map(post => {
+                if (!post.mediaId) {
+                    return `
+                        <div onclick="switchTab('feed')" class="aspect-square bg-gray-100 p-3 flex items-center justify-center text-xs font-medium text-gray-500 overflow-hidden border border-gray-200 cursor-pointer hover:opacity-90">
+                           <p class="line-clamp-3">${escapeHtml(post.content)}</p>
+                        </div>
+                    `;
+                }
+
+                const assetUrl = storage.getFileView(BUCKET_ID, post.mediaId);
+                if (post.mediaType === 'video') {
+                    return `
+                        <div onclick="switchTab('feed')" class="aspect-square bg-gray-50 relative overflow-hidden cursor-pointer hover:opacity-90 border border-gray-100">
+                            <video src="${assetUrl}" class="w-full h-full object-cover"></video>
+                            <div class="absolute top-2 right-2 text-white drop-shadow"><i class="fas fa-video text-xs"></i></div>
+                        </div>
+                    `;
+                }
+
+                return `
+                    <div onclick="switchTab('feed')" class="aspect-square bg-gray-50 overflow-hidden cursor-pointer hover:opacity-90 border border-gray-100">
+                        <img src="${assetUrl}" class="w-full h-full object-cover" alt="Grid preview">
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Post Creation Actions Submission Dispatcher
         async function createPost(event) {
             event.preventDefault();
             const textarea = document.getElementById('postContent');
             const fileInput = document.getElementById('mediaUpload');
-            const fileNameDisplay = document.getElementById('file-name');
             const btn = document.getElementById('post-submit-btn');
             
             const content = textarea.value.trim();
             const file = fileInput.files[0];
 
-            if (!content && !file) return; // Stop if completely empty
+            if (!content && !file) return;
 
-            btn.innerText = 'Posting...';
+            btn.innerText = 'Sharing...';
             btn.disabled = true;
 
             try {
                 let mediaId = null;
                 let mediaType = null;
 
-                // 1. Upload File (if one is selected)
                 if (file) {
-                    btn.innerText = 'Uploading Media...';
-                    const uploadedFile = await storage.createFile(
-                        BUCKET_ID,
-                        Appwrite.ID.unique(),
-                        file
-                    );
+                    const uploadedFile = await storage.createFile(BUCKET_ID, Appwrite.ID.unique(), file);
                     mediaId = uploadedFile.$id;
-                    // Determine if it's an image or video based on file type
                     mediaType = file.type.startsWith('video') ? 'video' : 'image';
                 }
 
-                // 2. Save Document to Database
-                btn.innerText = 'Saving Post...';
+                // Append your custom current user profile state parameters inside data rows
                 await databases.createDocument(
                     DATABASE_ID,
                     COLLECTION_ID,
                     Appwrite.ID.unique(),
                     {
                         content: content,
-                        userName: currentUser.name || currentUser.email || "Anonymous User",
+                        userName: currentUser.name || currentUser.email,
                         mediaId: mediaId,
-                        mediaType: mediaType
+                        mediaType: mediaType,
+                        userId: currentUser.$id,
+                        avatarId: currentUser.prefs ? currentUser.prefs.avatarId : null // optional fallback tracker property field mapping
                     }
                 );
                 
-                // Clear form
                 textarea.value = '';
                 fileInput.value = '';
-                fileNameDisplay.innerText = '';
-                loadPosts(); 
+                document.getElementById('file-name').innerText = 'Select photos or videos from your device';
+                
+                await loadPosts(); 
+                switchTab('feed');
             } catch (error) {
-                alert("Error sending update: " + error.message);
+                alert("Error making post: " + error.message);
             } finally {
-                btn.innerText = 'Post';
+                btn.innerText = 'Share Post';
                 btn.disabled = false;
             }
         }
 
-        // Layout Helpers
+        // Authentication Screen Visual Switch Layout Handlers
         function showAppLayout() {
             document.getElementById('auth-screen').classList.add('hidden');
-            document.getElementById('auth-screen').classList.remove('flex');
             document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('user-name').innerText = currentUser.name || currentUser.email || 'Welcome';
         }
 
         function showLoginLayout() {
