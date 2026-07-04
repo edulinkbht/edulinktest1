@@ -72,7 +72,15 @@
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 mb-8">
             <form id="post-form" onsubmit="createPost(event)">
                 <textarea id="postContent" required placeholder="What's on your mind right now?" rows="3" class="w-full bg-gray-50 border border-gray-100 rounded-xl p-4 text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"></textarea>
-                <div class="flex justify-end mt-3">
+                
+                <div class="flex justify-between items-center mt-3">
+                    <label class="cursor-pointer text-gray-500 hover:text-blue-600 flex items-center gap-2 text-sm font-medium transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span>Attach Media</span>
+                        <input type="file" id="mediaUpload" accept="image/*,video/*" class="hidden" onchange="updateFileName()">
+                    </label>
+                    <span id="file-name" class="text-xs text-gray-400 mr-auto ml-3 overflow-hidden text-ellipsis whitespace-nowrap max-w-[150px]"></span>
+
                     <button type="submit" id="post-submit-btn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-xl shadow-md shadow-blue-200 active:scale-[0.97] transition-all">
                         Post
                     </button>
@@ -89,11 +97,12 @@
     </div>
 
     <script>
-        // --- YOUR APPWRITE CONFIGURATION ---
+        // --- APPWRITE CONFIGURATION ---
         const APPWRITE_ENDPOINT = "https://sgp.cloud.appwrite.io/v1"; 
         const APPWRITE_PROJECT_ID = "6a2e4a110007f2358f48";     
         const DATABASE_ID = "6a4928f30008f6f3aab8";           
         const COLLECTION_ID = "posts";       
+        const BUCKET_ID = "6a494107003e1b16b976"; // Added your bucket ID
 
         // Initialize Appwrite
         const client = new Appwrite.Client()
@@ -102,6 +111,7 @@
 
         const account = new Appwrite.Account(client);
         const databases = new Appwrite.Databases(client);
+        const storage = new Appwrite.Storage(client); // Initialized Storage
 
         let currentUser = null;
         let isSignUp = false;
@@ -126,7 +136,6 @@
             document.getElementById('auth-title').innerText = isSignUp ? 'Join the Community' : 'Welcome Back';
         }
 
-        // Handle Email/Password Login & Registration
         async function handleEmailAuth(event) {
             event.preventDefault();
             const email = document.getElementById('email').value;
@@ -141,12 +150,9 @@
             
             try {
                 if (isSignUp) {
-                    // Create account first if in Sign Up mode
                     await account.create(Appwrite.ID.unique(), email, password, name || 'Anonymous');
                 }
-                // Establish session
                 await account.createEmailPasswordSession(email, password);
-                // Reload page to trigger authenticated view
                 window.location.reload();
             } catch (error) {
                 errorBox.innerText = error.message;
@@ -156,20 +162,27 @@
             }
         }
 
-        // Trigger Google Login Flow
         function loginWithGoogle() {
-            // This safely creates the redirect URL dynamically based on where you are hosting the file
             const redirectUrl = window.location.origin + window.location.pathname;
             account.createOAuth2Session('google', redirectUrl, redirectUrl);
         }
 
-        // Sign Out
         async function logout() {
             try {
                 await account.deleteSession('current');
                 window.location.reload();
             } catch (error) {
                 console.error("Logout failed:", error);
+            }
+        }
+
+        function updateFileName() {
+            const fileInput = document.getElementById('mediaUpload');
+            const fileNameDisplay = document.getElementById('file-name');
+            if (fileInput.files.length > 0) {
+                fileNameDisplay.innerText = fileInput.files[0].name;
+            } else {
+                fileNameDisplay.innerText = '';
             }
         }
 
@@ -180,7 +193,7 @@
                 const response = await databases.listDocuments(
                     DATABASE_ID,
                     COLLECTION_ID,
-                    [Appwrite.Query.orderDesc('$createdAt')] // Show newest posts first
+                    [Appwrite.Query.orderDesc('$createdAt')]
                 );
                 
                 if (response.documents.length === 0) {
@@ -197,6 +210,19 @@
                     const displayName = escapeHtml(post.userName || 'Anonymous User');
                     const initial = displayName.charAt(0).toUpperCase();
 
+                    // Handle Media Rendering
+                    let mediaHTML = '';
+                    if (post.mediaId) {
+                        // Generate the public view URL for the file
+                        const fileUrl = storage.getFileView(BUCKET_ID, post.mediaId);
+                        
+                        if (post.mediaType === 'video') {
+                            mediaHTML = `<video controls class="w-full mt-3 rounded-xl border border-gray-100 max-h-[400px] object-cover bg-black" src="${fileUrl}"></video>`;
+                        } else {
+                            mediaHTML = `<img class="w-full mt-3 rounded-xl border border-gray-100 max-h-[400px] object-cover" src="${fileUrl}" alt="Post attachment">`;
+                        }
+                    }
+
                     return `
                         <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
                             <div class="flex items-center justify-between mb-3">
@@ -209,6 +235,7 @@
                                 <span class="text-xs font-semibold text-gray-400 bg-gray-50 py-1 px-2 rounded-lg">${date}</span>
                             </div>
                             <p class="text-gray-700 whitespace-pre-wrap leading-relaxed mt-2 text-[15px]">${escapeHtml(post.content)}</p>
+                            ${mediaHTML}
                         </div>
                     `;
                 }).join('');
@@ -221,25 +248,54 @@
         async function createPost(event) {
             event.preventDefault();
             const textarea = document.getElementById('postContent');
+            const fileInput = document.getElementById('mediaUpload');
+            const fileNameDisplay = document.getElementById('file-name');
             const btn = document.getElementById('post-submit-btn');
+            
             const content = textarea.value.trim();
-            if (!content) return;
+            const file = fileInput.files[0];
+
+            if (!content && !file) return; // Stop if completely empty
 
             btn.innerText = 'Posting...';
             btn.disabled = true;
 
             try {
+                let mediaId = null;
+                let mediaType = null;
+
+                // 1. Upload File (if one is selected)
+                if (file) {
+                    btn.innerText = 'Uploading Media...';
+                    const uploadedFile = await storage.createFile(
+                        BUCKET_ID,
+                        Appwrite.ID.unique(),
+                        file
+                    );
+                    mediaId = uploadedFile.$id;
+                    // Determine if it's an image or video based on file type
+                    mediaType = file.type.startsWith('video') ? 'video' : 'image';
+                }
+
+                // 2. Save Document to Database
+                btn.innerText = 'Saving Post...';
                 await databases.createDocument(
                     DATABASE_ID,
                     COLLECTION_ID,
                     Appwrite.ID.unique(),
                     {
                         content: content,
-                        userName: currentUser.name || currentUser.email || "Anonymous User"
+                        userName: currentUser.name || currentUser.email || "Anonymous User",
+                        mediaId: mediaId,
+                        mediaType: mediaType
                     }
                 );
+                
+                // Clear form
                 textarea.value = '';
-                loadPosts(); // Refresh UI instantly
+                fileInput.value = '';
+                fileNameDisplay.innerText = '';
+                loadPosts(); 
             } catch (error) {
                 alert("Error sending update: " + error.message);
             } finally {
@@ -262,7 +318,6 @@
             document.getElementById('auth-screen').classList.add('flex');
         }
 
-        // Security Utility to prevent XSS attacks when displaying user input
         function escapeHtml(str) {
             if (!str) return "";
             return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
