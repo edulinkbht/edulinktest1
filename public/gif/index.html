@@ -241,8 +241,8 @@
             const composerAvatar = document.getElementById('composer-avatar');
             
             if (userPrefs && userPrefs.profilePicId) {
-                // ADDED .href HERE to fix broken images
-                const avatarUrl = storage.getFilePreview(BUCKET_ID, userPrefs.profilePicId, 150, 150, 'center', 90).href;
+                // FIXED: Simplified URL generation to ensure it embeds correctly
+                const avatarUrl = storage.getFilePreview(BUCKET_ID, userPrefs.profilePicId).href;
                 const imgTag = `<img src="${avatarUrl}" class="w-full h-full object-cover">`;
                 navAvatar.innerHTML = imgTag;
                 composerAvatar.innerHTML = imgTag;
@@ -324,28 +324,25 @@
                 }
 
                 container.innerHTML = response.documents.map(post => {
-                    // Time formatting (e.g. "2 HOURS AGO")
                     const dateObj = new Date(post.$createdAt);
                     const timeAgo = Math.floor((new Date() - dateObj) / 1000 / 60 / 60);
                     const dateText = timeAgo < 24 && timeAgo > 0 ? `${timeAgo} HOURS AGO` : dateObj.toLocaleDateString().toUpperCase();
-                    
                     const displayName = escapeHtml(post.userName).toLowerCase();
                     
-                    // Avatar Rendering (Fixed .href)
+                    // FIXED: Simplified URL generation for the embedded links
                     let avatarHTML = `<div class="w-8 h-8 rounded-full bg-gray-200 border border-gray-300 flex items-center justify-center text-xs font-bold text-gray-500">${displayName.charAt(0).toUpperCase()}</div>`;
                     if (post.userProfilePic) {
-                        const avatarUrl = storage.getFilePreview(BUCKET_ID, post.userProfilePic, 150, 150, 'center', 90).href;
+                        const avatarUrl = storage.getFilePreview(BUCKET_ID, post.userProfilePic).href;
                         avatarHTML = `<img src="${avatarUrl}" class="w-8 h-8 rounded-full object-cover border border-gray-200">`;
                     }
 
-                    // Media Rendering (Fixed .href & Instagram Edge-to-Edge styling)
                     let mediaHTML = '';
                     if (post.mediaId) {
                         if (post.mediaType === 'video') {
                             const videoUrl = storage.getFileView(BUCKET_ID, post.mediaId).href;
                             mediaHTML = `<video controls class="w-full max-h-[600px] object-contain bg-black" src="${videoUrl}"></video>`;
                         } else {
-                            const imageUrl = storage.getFilePreview(BUCKET_ID, post.mediaId, 1080, 0, 'center', 90).href;
+                            const imageUrl = storage.getFilePreview(BUCKET_ID, post.mediaId).href;
                             mediaHTML = `<img class="w-full h-auto object-cover max-h-[600px] bg-gray-100" src="${imageUrl}" loading="lazy">`;
                         }
                     }
