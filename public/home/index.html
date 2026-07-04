@@ -4163,7 +4163,7 @@
     <div id="workspace-layout" class="flex-1 flex min-w-0 gap-2 relative overflow-hidden transition-all duration-300">
         <main id="main-panel" class="app-panel min-w-0 relative w-full lg:w-[600px] lg:ml-12">
             <header id="main-header"
-                class="h-16 md:h-20 flex items-center justify-between px-4 md:px-0 shrink-0 z-20 absolute top-0 w-full bg-white transition-transform duration-300">
+                class="h-12 md:h-14 flex items-center justify-between px-4 md:px-0 shrink-0 z-20 absolute top-0 w-full bg-white transition-transform duration-300">
                 <!-- Mobile Left: Menu Icon -->
                 <div class="md:hidden flex items-center">
                     <button onclick="toggleMoreMenu()" class="w-10 h-10 flex items-center justify-center">
@@ -4172,8 +4172,8 @@
                 </div>
                 
                 <!-- Center: "EduLink" (mobile only, bigger) -->
-                <div class="md:hidden absolute left-1/2 -translate-x-1/2 bottom-3">
-                    <h1 class="text-2xl font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
+                <div class="md:hidden absolute left-1/2 -translate-x-1/2 top-1/2 -translate-y-1/2">
+                    <h1 class="text-xl font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
                 </div>
                 
                 <div class="flex-1 relative group hidden md:block pl-5 pr-2 transition-all duration-300" id="global-search-container">
@@ -4214,7 +4214,7 @@
                 </div>
             </header>
             <div id="ptr-spinner"><i data-lucide="arrow-down" class="w-5 h-5"></i></div>
-            <div id="view-feed" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20">
+            <div id="view-feed" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-12 md:pt-14">
                 <div id="feed-container"></div>
                 <div id="feed-sentinel" class="h-10 flex items-center justify-center">
                     <div id="feed-loader" class="hidden">
@@ -4222,13 +4222,21 @@
                     </div>
                 </div>
             </div>
-            <div id="view-saved" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-16 md:pt-20">
+            <div id="view-text" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-12 md:pt-14">
+                <div id="text-container"></div>
+                <div id="text-sentinel" class="h-10 flex items-center justify-center">
+                    <div id="text-loader" class="hidden">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="view-saved" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-12 md:pt-14">
                 <div class="px-4 pt-5 pb-3">
                     <div class="text-sm font-medium text-gray-700">Your saved posts</div>
                 </div>
                 <div id="saved-container"></div>
             </div>
-            <div id="view-archived" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-16 md:pt-20">
+            <div id="view-archived" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-12 md:pt-14">
                 <div class="px-4 pt-5 pb-3">
                     <div class="text-sm font-medium text-gray-700">Your archived posts</div>
                 </div>
@@ -4294,7 +4302,7 @@
                 </div>
                 <div id="notification-list" class="flex flex-col w-full pb-10 md:pb-0"></div>
             </div>
-            <div id="view-create" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-16 md:pt-20">
+            <div id="view-create" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 hidden bg-white pt-12 md:pt-14">
                 <div id="create-view-container" class="max-w-2xl mx-auto px-4 py-8">
                     <!-- Step 1: Media -->
                     <div id="create-step-1">
@@ -4852,6 +4860,15 @@
                 <path d="M21 21l-4.35-4.35" />
             </svg>
         </div>
+        <div class="mobile-nav-item" onclick="switchView('text')" id="mobile-nav-text">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
+                class="custom-icon custom-icon-outline" id="mobile-text-icon" style="stroke-width: 2; transform: scaleX(-1);">
+                <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-2 2z" />
+                <path d="M18 14h-8" />
+                <path d="M15 18h-5" />
+                <path d="M10 6h8v4h-8V6Z" />
+            </svg>
+        </div>
         <div class="mobile-nav-item" onclick="switchView('create')" id="mobile-nav-create">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="ig-squircle w-7 h-7"
                 id="mobile-create-icon">
@@ -4926,6 +4943,19 @@
 
         const sentinel = document.getElementById('feed-sentinel');
         if (sentinel) feedObserver.observe(sentinel);
+
+        // Text view observer
+        const textObserver = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting && window.textPagination.hasMore && !window.textPagination.loading && window.currentViewName === 'text') {
+                window.loadNextTextBatch();
+            }
+        }, { 
+            root: document.getElementById('view-text'),
+            rootMargin: '1000px' 
+        });
+
+        const textSentinel = document.getElementById('text-sentinel');
+        if (textSentinel) textObserver.observe(textSentinel);
 
         // Virtual List Memory Management: Post Observer to track visibility
         window.postsInDOM = new Map();
@@ -6101,7 +6131,7 @@
             refreshIcons();
         };
         window.switchView = async (v, direction = 'none') => {
-            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications', 'settings', 'archived', 'notification-settings', 'mute-friends', 'create', 'frame'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); 
+            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'notifications', 'settings', 'archived', 'notification-settings', 'mute-friends', 'create', 'frame', 'text'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); 
             
             const ms = document.getElementById('main-sidebar'); // Left sidebar
             const tp = document.getElementById('trending-panel'); // Right sidebar
@@ -6309,7 +6339,7 @@
             if (v === 'archived') {
                 renderArchived();
             }
-            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
+            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'text') { mnav[2]?.classList.add('active'); if (document.getElementById('text-container').children.length === 0) renderText() } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[4]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[5]?.classList.add('active') }
             if (mp) {
                 if (v === 'profile') {
                     mp.classList.add('profile-view');
@@ -6409,6 +6439,98 @@
                 window.loadNextFeedBatch();
             }
             refreshIcons();
+        };
+
+        // Initialize text view pagination
+        if (!window.textPagination) {
+            window.textPagination = {
+                cursor: 0,
+                hasMore: true,
+                loading: false,
+                allCandidates: [],
+                limit: 10
+            };
+        }
+
+        window.renderText = async (t) => {
+            const c = document.getElementById('text-container');
+            if (!c) return;
+
+            // Reset pagination for new load
+            window.textPagination.cursor = 0;
+            window.textPagination.hasMore = true;
+            window.textPagination.loading = false;
+            c.innerHTML = "";
+            document.getElementById('text-loader')?.classList.add('hidden');
+
+            const context = window.hydrateUserContext();
+            if (!context) return;
+
+            const candidates = await window.sourceCandidates(context, t);
+            const ranked = window.scoreAndRankCandidates(candidates, context);
+            const allCandidates = window.filterAndPolish(ranked, context);
+            
+            // Filter to only text-only posts (no media, no embed videos)
+            window.textPagination.allCandidates = allCandidates.filter(post => {
+                const hasMedia = post.media && (Array.isArray(post.media) ? post.media.length > 0 : true);
+                const hasEmbedVideo = post.embedVideo;
+                return !hasMedia && !hasEmbedVideo && post.content && post.content.trim().length > 0;
+            });
+            window.currentViewingPostList = window.textPagination.allCandidates; // Store candidates for navigation
+
+            if (window.textPagination.allCandidates.length === 0) {
+                c.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-center"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400"><i data-lucide="newspaper" class="w-8 h-8"></i></div><h3 class="text-gray-900 font-bold text-lg">No text posts yet</h3><p class="text-gray-500 text-sm mt-1 max-w-xs">Be the first to share a text-only post!</p></div>`;
+                window.textPagination.hasMore = false;
+            } else {
+                window.loadNextTextBatch();
+            }
+            refreshIcons();
+        };
+
+        window.loadNextTextBatch = () => {
+            if (window.textPagination.loading || !window.textPagination.hasMore) return;
+
+            const c = document.getElementById('text-container');
+            const loader = document.getElementById('text-loader');
+            if (!c) return;
+
+            window.textPagination.loading = true;
+            loader?.classList.remove('hidden');
+
+            const start = window.textPagination.cursor;
+            const end = start + window.textPagination.limit;
+            const batch = window.textPagination.allCandidates.slice(start, end);
+
+            if (batch.length === 0) {
+                window.textPagination.hasMore = false;
+                window.textPagination.loading = false;
+                loader?.classList.add('hidden');
+                return;
+            }
+
+            batch.forEach((p, index) => {
+                c.appendChild(createPostElement(p, 'text'));
+                window.sessionSeenPosts.add(p.id);
+            });
+
+            window.textPagination.cursor = end;
+            if (window.textPagination.cursor >= window.textPagination.allCandidates.length) {
+                window.textPagination.hasMore = false;
+            }
+
+            window.textPagination.loading = false;
+            loader?.classList.add('hidden');
+            refreshIcons();
+            
+            // If we are still intersecting, trigger next batch
+            if (window.textPagination.hasMore) {
+                const sentinel = document.getElementById('text-sentinel');
+                if (sentinel && sentinel.getBoundingClientRect().top < window.innerHeight + 800) {
+                    setTimeout(() => {
+                        if (window.currentViewName === 'text') window.loadNextTextBatch();
+                    }, 100);
+                }
+            }
         };
 
         window.renderFrame = () => {
