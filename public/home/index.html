@@ -8680,38 +8680,12 @@
             // Observe new video containers
             window.observeVideoContainers(); 
         };
-        window.renderBlog = async () => {
+        window.renderBlog = () => {
             const c = document.getElementById('blog-results'); 
             if (!c) return;
             c.innerHTML = ''; 
             
-            try {
-                const context = window.hydrateUserContext();
-                if (context) {
-                    const candidates = await Promise.race([
-                        window.sourceCandidates(context),
-                        new Promise((resolve) => setTimeout(() => resolve(null), 1000))
-                    ]);
-                    
-                    if (candidates) {
-                        const textCandidates = candidates.filter(p => !p.media && !p.embedVideo);
-                        const ranked = window.scoreAndRankCandidates(textCandidates, context);
-                        const polished = window.filterAndPolish(ranked, context);
-                        window.currentViewingPostList = polished;
-                        
-                        if (polished.length) {
-                            polished.forEach(p => c.appendChild(createPostElement(p, 'blog'))); 
-                            refreshIcons();
-                            window.observeVideoContainers();
-                            return;
-                        }
-                    }
-                }
-            } catch (e) {
-                console.error("Blog algorithm failed, using fallback", e);
-            }
-            
-            // Fallback: simple version
+            // Simple, fast version
             const textPosts = posts.filter(p => !p.media && !p.embedVideo).sort((a,b) => {
                 const ta = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp || 0).getTime();
                 const tb = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp || 0).getTime();
