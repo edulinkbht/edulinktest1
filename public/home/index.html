@@ -663,6 +663,17 @@
                 width: 24px !important;
                 height: 24px !important;
             }
+            
+            .comment-item .post-actions .action-btn {
+                padding: 4px 8px !important;
+                font-size: 12px !important;
+            }
+            
+            .comment-item .post-actions .action-btn i,
+            .comment-item .post-actions .action-btn svg {
+                width: 16px !important;
+                height: 16px !important;
+            }
         }
 
         #more-menu {
@@ -4793,9 +4804,12 @@
                     <div id="explore-results" class="space-y-0 pt-0"></div>
                 </div>
             </div>
-            <div id="view-blog" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 pt-16 md:pt-20 hidden bg-white">
-                <div id="blog-content-wrapper" class="pb-32 pt-6">
-                    <div id="blog-results" class="space-y-0 pt-0"></div>
+            <div id="view-blog" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20 hidden">
+                <div id="blog-results"></div>
+                <div id="blog-sentinel" class="h-10 flex items-center justify-center">
+                    <div id="blog-loader" class="hidden">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -5256,7 +5270,7 @@
         window.currentClaimLink = null;
         const feedView = document.getElementById('view-feed'), exploreView = document.getElementById('view-explore'), blogView = document.getElementById('view-blog'), ptrSpinner = document.getElementById('ptr-spinner'), refreshIcons = () => window.lucide?.createIcons();
         if (feedView) { feedView.addEventListener('touchstart', e => { if (!feedView.scrollTop && !isRefreshing) { ptrStartY = e.touches[0].pageY; isPtr = true; ptrSpinner.style.transition = 'none' } }, { passive: true }); feedView.addEventListener('touchmove', e => { if (!isPtr || isRefreshing) return; const d = e.touches[0].pageY - ptrStartY; if (d > 0 && !feedView.scrollTop) { if (e.cancelable) e.preventDefault(); ptrDist = d; const y = Math.min(d * .4, 80); Object.assign(ptrSpinner.style, { transform: `translateX(-50%) translateY(${y}px) rotate(${y * 3}deg)`, opacity: Math.min(y / 40, 1) }) } else { isPtr = false; ptrSpinner.style.opacity = '0'; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)' } }, { passive: false }); feedView.addEventListener('touchend', async () => { if (!isPtr || isRefreshing) return; isPtr = false; ptrSpinner.style.transition = 'all .3s'; if (ptrDist > 100) { isRefreshing = true; Object.assign(ptrSpinner.style, { transform: 'translateX(-50%) translateY(50px)', opacity: '1' }); ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; refreshIcons(); await new Promise(r => setTimeout(r, 1000)); renderFeed(); showToast("Feed updated"); isRefreshing = false; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0'; setTimeout(() => { ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; refreshIcons() }, 300) } else { ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0' } ptrDist = 0 }); feedView.addEventListener('scroll', () => { const c = feedView.scrollTop, h = document.getElementById('main-header'); h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastScrollTop = Math.max(0, c) }, { passive: true }) }
-        if (blogView) blogView.addEventListener('scroll', () => { const c = blogView.scrollTop, h = document.getElementById('main-header'); h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastScrollTop = Math.max(0, c) }, { passive: true });
+        if (blogView) { blogView.addEventListener('touchstart', e => { if (!blogView.scrollTop && !isRefreshing) { ptrStartY = e.touches[0].pageY; isPtr = true; ptrSpinner.style.transition = 'none' } }, { passive: true }); blogView.addEventListener('touchmove', e => { if (!isPtr || isRefreshing) return; const d = e.touches[0].pageY - ptrStartY; if (d > 0 && !blogView.scrollTop) { if (e.cancelable) e.preventDefault(); ptrDist = d; const y = Math.min(d * .4, 80); Object.assign(ptrSpinner.style, { transform: `translateX(-50%) translateY(${y}px) rotate(${y * 3}deg)`, opacity: Math.min(y / 40, 1) }) } else { isPtr = false; ptrSpinner.style.opacity = '0'; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)' } }, { passive: false }); blogView.addEventListener('touchend', async () => { if (!isPtr || isRefreshing) return; isPtr = false; ptrSpinner.style.transition = 'all .3s'; if (ptrDist > 100) { isRefreshing = true; Object.assign(ptrSpinner.style, { transform: 'translateX(-50%) translateY(50px)', opacity: '1' }); ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; refreshIcons(); await new Promise(r => setTimeout(r, 1000)); renderBlog(); showToast("Blog updated"); isRefreshing = false; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0'; setTimeout(() => { ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; refreshIcons() }, 300) } else { ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0' } ptrDist = 0 }); blogView.addEventListener('scroll', () => { const c = blogView.scrollTop, h = document.getElementById('main-header'); h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastScrollTop = Math.max(0, c) }, { passive: true }) }
         if (exploreView) exploreView.addEventListener('scroll', () => { const c = exploreView.scrollTop, h = document.getElementById('explore-header-container'); h.style.transform = c > lastExploreScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastExploreScrollTop = Math.max(0, c) }, { passive: true });
         const formatDate = t => { if (!t) return ''; const d = t.toDate ? t.toDate() : new Date(t); if (isNaN(d.getTime())) return ''; const now = new Date(), s = (now - d) / 1000; if (s < 60) return 'Now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; if (s < 604800) return Math.floor(s / 86400) + 'd ago'; return d.toLocaleDateString() };
         
