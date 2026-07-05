@@ -3776,6 +3776,21 @@
         </div>
     </div>
 
+    <!-- Profile Details Overlay -->
+    <div class="details-overlay" id="profile-details-overlay">
+        <div class="details-modal">
+            <div class="details-step active">
+                <div class="details-image-container">
+                    <button class="details-top-back-btn" onclick="closeProfileDetailsOverlay()">
+                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <div class="details-content-body" id="profile-details-content">
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div id="compose-overlay"
         class="fixed inset-0 z-[55] flex items-end md:items-center justify-center bg-[#000]/40 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-200"
         onclick="attemptCloseCompose()">
@@ -9262,7 +9277,7 @@
             const joinedDateHtml = u.joinedAt || u.timestamp ? `<div class="text-[13px] text-gray-500 mt-2 flex items-center gap-1"><i data-lucide="calendar" class="w-4 h-4"></i>${formatJoinedDate(u.joinedAt || u.timestamp)}</div>` : '';
             c.innerHTML = `<header class="sticky top-0 bg-white z-20 h-16 flex items-center justify-between px-4 shrink-0 md:hidden">
                                 <button onclick="${me ? 'openSettings()' : 'window.history.back()'}" class="w-10 h-10 flex items-center justify-center">
-                                    <i data-lucide="${me ? 'menu' : 'chevron-left'}" class="w-6 h-6 text-gray-900"></i>
+                                    <i data-lucide="${me ? 'menu' : 'arrow-left'}" class="w-6 h-6 text-gray-900"></i>
                                 </button>
                                 <div class="absolute left-1/2 -translate-x-1/2 bottom-3 flex items-center gap-1">
                                     <h1 class="text-xl font-bold text-gray-900">@${u.username || 'user'}</h1>
@@ -9272,12 +9287,65 @@
                                     <i data-lucide="search" class="w-6 h-6 text-gray-900"></i>
                                 </button>
                             </header>
-                            <div class="profile-banner-container md:pt-20 px-4 md:px-0 bg-white"><img src="${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'}" class="profile-banner-img md:rounded-none rounded-xl" style="object-position:center ${u.bannerPos || 50}%" onload="this.classList.add('loaded')"></div><div class="bg-white md:rounded-t-[30px] relative z-10 pt-6 px-4 md:px-6 min-h-[calc(100%-140px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"><div class="flex justify-between items-end -mt-14 mb-4 px-2"><div class="flex items-end gap-3"><div class="rounded-full border-4 border-white bg-gray-100 w-20 h-20 md:w-24 md:h-24 shrink-0 flex items-center justify-center overflow-hidden" id="profile-avatar-wrap"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover cursor-pointer" onclick="openLightbox('${u.avatar}')" onload="this.classList.add('loaded')" onerror="this.style.display='none';this.parentElement.innerHTML='<i data-lucide=\'user-round\' class=\'w-12 h-12 text-gray-400\'></i>';refreshIcons()"></div><div class="hidden md:block">${mutualFriendsHtml}</div></div>${ab}</div><div class="mb-3"><h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}${u.banned ? '<i data-lucide="ban" class="text-red-600 w-6 h-6"></i>' : ''}</h1>
-                    <div class="flex items-center gap-2 text-sm text-gray-500 mt-0.5">
+                            <div class="profile-banner-container md:pt-20 px-4 md:px-0 bg-white"><img src="${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'}" class="profile-banner-img md:rounded-none rounded-xl" style="object-position:center ${u.bannerPos || 50}%" onload="this.classList.add('loaded')"></div><div class="bg-white md:rounded-t-[30px] relative z-10 pt-6 px-4 md:px-6 min-h-[calc(100%-140px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"><div class="flex justify-between items-end -mt-14 mb-4 px-2"><div class="flex items-end gap-3"><div class="rounded-full border-4 border-white bg-gray-100 w-20 h-20 md:w-24 md:h-24 shrink-0 flex items-center justify-center overflow-hidden" id="profile-avatar-wrap"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover cursor-pointer" onclick="openLightbox('${u.avatar}')" onload="this.classList.add('loaded')" onerror="this.style.display='none';this.parentElement.innerHTML='<i data-lucide=\'user-round\' class=\'w-12 h-12 text-gray-400\'></i>';refreshIcons()"></div><div class="hidden md:block">${mutualFriendsHtml}</div></div></div><div class="mb-3"><h1 class="text-2xl font-bold text-gray-900 flex items-center gap-2">${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}${u.banned ? '<i data-lucide="ban" class="text-red-600 w-6 h-6"></i>' : ''}</h1>
+                    <div class="flex items-center gap-2 text-sm text-gray-500 mt-0.5 md:flex">
                         ${u.dob ? `<span>${window.calculateAge(u.dob)} years old</span>` : ''}
+                        ${u.location ? `<span class="md:inline">• ${u.location}</span>` : ''}
+                    </div>
+                    ${bioHtml}
+                    <div class="flex gap-2 text-sm text-gray-500 mt-2 items-center cursor-pointer hover:opacity-80" onclick="openProfileDetailsOverlay('${uid}')">
+                        <i data-lucide="calendar" class="w-4 h-4"></i>
+                        <span>Joined ${formatJoinedDate(u.joinedAt || u.timestamp)}</span>
                         ${u.location ? `<span>• ${u.location}</span>` : ''}
                     </div>
-                    ${bioHtml}${joinedDateHtml}${stats}</div><div class="-mx-4 md:-mx-6"><div class="tab-group mb-0">${tabs}</div><div id="profile-content-area" class="pb-20 md:pb-0"></div></div></div>`; switchView('profile'); renderProfileContent(uid, tab); syncURLState(); refreshIcons(); window.updateMobileFooterProfile();
+                    ${stats}
+                    <div class="flex gap-2 mt-3">
+                        ${me ? `<button onclick="openEditProfile()" class="flex-1 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-2 rounded-xl font-bold hover:bg-gray-50 transition-all">Edit Profile</button>` : `<button id="profile-follow-btn" onclick="toggleFollow('${uid}')" class="js-follow-btn-${uid} flex-1 ${fol ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#3D7EEB] text-white'} text-[13px] px-5 py-2 rounded-xl font-bold hover:opacity-90 transition-all">${fol ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? 'Request' : 'Follow')}</button>`}
+                        <button onclick="shareProfile('${uid}')" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-xl hover:bg-gray-50 transition-all"><i data-lucide="share" class="w-5 h-5"></i></button>
+                        <button onclick="openQR('${uid}')" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-xl hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5"></i></button>
+                    </div>
+                    </div><div class="-mx-4 md:-mx-6"><div class="tab-group mb-0">${tabs}</div><div id="profile-content-area" class="pb-20 md:pb-0"></div></div></div>`; switchView('profile'); renderProfileContent(uid, tab); syncURLState(); refreshIcons(); window.updateMobileFooterProfile();
+        };
+        window.openProfileDetailsOverlay = (uid) => {
+            const u = users.find(x => x.id === uid);
+            if (!u) return;
+            const content = document.getElementById('profile-details-content');
+            const overlay = document.getElementById('profile-details-overlay');
+            content.innerHTML = `
+                <h2>${u.name}'s Profile</h2>
+                <div class="flex flex-col gap-4 text-left w-full">
+                    ${u.dob ? `<div class="flex items-center gap-3"><i data-lucide="cake" class="w-5 h-5 text-gray-500"></i><div><div class="font-bold text-gray-900">Age</div><div class="text-sm text-gray-500">${window.calculateAge(u.dob)} years old</div></div></div>` : ''}
+                    ${u.location ? `<div class="flex items-center gap-3"><i data-lucide="map-pin" class="w-5 h-5 text-gray-500"></i><div><div class="font-bold text-gray-900">Location</div><div class="text-sm text-gray-500">${u.location}</div></div></div>` : ''}
+                    ${(u.joinedAt || u.timestamp) ? `<div class="flex items-center gap-3"><i data-lucide="calendar" class="w-5 h-5 text-gray-500"></i><div><div class="font-bold text-gray-900">Joined</div><div class="text-sm text-gray-500">${formatJoinedDate(u.joinedAt || u.timestamp)}</div></div></div>` : ''}
+                </div>
+                <div class="mt-auto pt-5">
+                    <button class="details-btn" onclick="closeProfileDetailsOverlay()">Close</button>
+                </div>
+            `;
+            overlay.style.display = 'flex';
+            refreshIcons();
+        };
+        window.closeProfileDetailsOverlay = () => {
+            document.getElementById('profile-details-overlay').style.display = 'none';
+        };
+        window.shareProfile = async (uid) => {
+            const u = users.find(x => x.id === uid);
+            if (!u) return;
+            const shareData = {
+                title: `${u.name}'s Profile`,
+                text: `Check out ${u.name}'s profile on EduLink!`,
+                url: window.location.href
+            };
+            try {
+                if (navigator.share) {
+                    await navigator.share(shareData);
+                } else {
+                    await navigator.clipboard.writeText(window.location.href);
+                    showToast('Profile link copied to clipboard!');
+                }
+            } catch (err) {
+                console.error('Error sharing:', err);
+            }
         };
         window.switchProfileTab = t => {
             if (t === 'posts' && window.currentProfileTab === 'posts') { openProfileFilter(); return }
