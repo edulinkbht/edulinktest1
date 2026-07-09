@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-    <meta name="description" content="A Social media platform that helps young minds find their inner TER(Treasure)">
     <title>EduLink</title>
     <link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -6565,6 +6564,8 @@
                 
                 const hasCaption = post.content && post.content.trim() !== '';
                 const postDate = formatDate(post.timestamp || Date.now());
+                const isMobile = window.innerWidth < 1024;
+                const mobileCaptionText = hasCaption ? (post.content.trim().length > 120 ? `${post.content.trim().slice(0, 120)}...` : post.content.trim()) : postDate;
                 
                 const words = hasCaption ? post.content.trim().split(/\s+/) : [];
                 const isExpanded = window.expandedTexts?.has(`frame-caption-${post.id}`);
@@ -6601,8 +6602,14 @@
                                         <div id="frame-video-section-${post.id}" class="absolute inset-0 flex items-center justify-center bg-black">
                                             ${mediaHtml}
                                         </div>
+                                        ${hasCaption ? `
+                                            <div id="frame-mobile-caption-${post.id}" class="absolute inset-x-0 bottom-0 p-4 pb-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white lg:hidden">
+                                                <div class="font-semibold text-sm">@${author.username || author.name}</div>
+                                                <div class="text-sm leading-5 mt-1">${mobileCaptionText}</div>
+                                            </div>
+                                        ` : ''}
                                         <!-- Caption Section -->
-                                        <div id="frame-caption-section-${post.id}" class="absolute inset-0 p-6 overflow-y-auto hidden">
+                                        <div id="frame-caption-section-${post.id}" class="absolute inset-0 p-6 overflow-y-auto hidden lg:block">
                                             <div class="flex flex-col gap-3">
                                                 <div class="font-bold text-gray-900 text-lg flex items-center gap-1">
                                                     @${author.username || author.name}
@@ -6618,7 +6625,7 @@
                                     </div>
                                     
                                     <!-- Bottom Info: Author Username + Short Caption -->
-                                    <div class="mt-4 px-2" style="width: min(90vw, 450px);">
+                                    <div class="mt-4 px-2 frame-bottom-info" style="width: min(90vw, 450px);">
                                         <div class="flex flex-col">
                                             <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
                                                 @${author.username || author.name}
@@ -6635,7 +6642,7 @@
                                 </div>
                                 
                                 <!-- Right Column: Action Buttons (aligned to video) -->
-                                <div class="flex flex-col justify-end gap-6" style="height: min(85vh, 780px);">
+                                <div class="hidden lg:flex flex-col justify-end gap-6" style="height: min(85vh, 780px);">
                                     <!-- Profile Avatar -->
                                     <div class="flex flex-col items-center gap-1">
                                         <div class="relative">
@@ -6678,8 +6685,35 @@
                                     </button>
                                 </div>
                                 
+                                <div class="lg:hidden absolute bottom-4 right-4 z-20 flex flex-col items-center gap-3">
+                                    <button class="flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')">
+                                        <div class="w-11 h-11 rounded-full bg-black/35 border border-white/20 backdrop-blur flex items-center justify-center">
+                                            <i data-lucide="heart" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}" id="frame-like-icon-mobile-${post.id}-${index}"></i>
+                                        </div>
+                                        <span class="text-[11px] font-semibold text-white" id="frame-like-count-mobile-${post.id}-${index}">${post.likes?.length || 0}</span>
+                                    </button>
+                                    <button class="flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')">
+                                        <div class="w-11 h-11 rounded-full bg-black/35 border border-white/20 backdrop-blur flex items-center justify-center">
+                                            <i data-lucide="message-circle" class="w-5 h-5"></i>
+                                        </div>
+                                        <span class="text-[11px] font-semibold text-white">${post.comments?.length || 0}</span>
+                                    </button>
+                                    <button class="flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); sharePost('${post.id}')">
+                                        <div class="w-11 h-11 rounded-full bg-black/35 border border-white/20 backdrop-blur flex items-center justify-center">
+                                            <i data-lucide="redo-2" class="w-5 h-5"></i>
+                                        </div>
+                                        <span class="text-[11px] font-semibold text-white">Share</span>
+                                    </button>
+                                    <button class="flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')">
+                                        <div class="w-11 h-11 rounded-full bg-black/35 border border-white/20 backdrop-blur flex items-center justify-center">
+                                            <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-current' : ''}" id="frame-save-icon-mobile-${post.id}-${index}"></i>
+                                        </div>
+                                        <span class="text-[11px] font-semibold text-white">Save</span>
+                                    </button>
+                                </div>
+                                
                                 <!-- Comments Panel - Same as Post Overlay Design -->
-                                <div id="frame-comments-panel-${post.id}" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 450px); height: min(85vh, 780px);">
+                                <div id="frame-comments-panel-${post.id}" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200 mobile-frame-comments-overlay" style="width: min(90vw, 450px); height: min(85vh, 780px);">
                                     <div class="h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
                                         <div class="flex items-center justify-between w-full">
                                             <span class="font-bold text-lg text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
@@ -6730,12 +6764,31 @@
                         scroll-snap-align: start; 
                         height: 100vh;
                     }
+                    .mobile-frame-comments-overlay {
+                        width: 100%;
+                        height: 100%;
+                        border-radius: 0;
+                        position: fixed;
+                        inset: 0;
+                        z-index: 60;
+                    }
+                    @media (max-width: 767px) {
+                        #frame-nav-controls {
+                            display: none !important;
+                        }
+                        .frame-bottom-info {
+                            display: none !important;
+                        }
+                        .frame-slide {
+                            height: 100dvh;
+                        }
+                    }
                 </style>
                 <div class="frame-scroll-container w-full" id="frame-scroll-container">
                     ${framesHtml}
                 </div>
                 <!-- Single set of up/down navigation buttons -->
-                <div class="absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-10">
+                <div class="absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-10" id="frame-nav-controls">
                     <button onclick="navigateFrame('up')" id="frame-up-btn" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                         <i data-lucide="chevron-up" class="w-7 h-7 text-gray-500"></i>
                     </button>
@@ -7211,6 +7264,7 @@
         };
         
         window.toggleFrameCaption = (pid, index) => {
+            if (window.innerWidth < 1024) return;
             if (!window.expandedTexts) window.expandedTexts = new Set();
             const key = `frame-caption-${pid}`;
             
@@ -7299,11 +7353,18 @@
         window.toggleFrameComments = (postId, index) => {
             const panel = document.getElementById(`frame-comments-panel-${postId}`);
             if (!panel) return;
-            if (panel.classList.contains('hidden')) {
+            const isHidden = panel.classList.contains('hidden');
+            if (isHidden) {
                 panel.classList.remove('hidden');
+                if (window.innerWidth < 1024) {
+                    document.body.style.overflow = 'hidden';
+                }
                 renderFrameComments(postId);
             } else {
                 panel.classList.add('hidden');
+                if (window.innerWidth < 1024) {
+                    document.body.style.overflow = '';
+                }
             }
         };
 
