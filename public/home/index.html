@@ -6478,10 +6478,9 @@
             refreshIcons();
         };
 
-        window.renderFrame = () => {
-            // Filter to only video posts
+        window.renderFrame = async () => {
             const allPosts = [...posts];
-            const videoPosts = allPosts.filter(post => {
+            const isVideoPost = (post) => {
                 if (post.embedVideo) {
                     const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
                     return embedInfo.type === 'video';
@@ -6491,9 +6490,28 @@
                     return firstMedia && (firstMedia.includes('video') || firstMedia.endsWith('.mp4') || firstMedia.startsWith('data:video'));
                 }
                 return false;
-            });
+            };
+
+            const context = window.hydrateUserContext();
+            let videoPosts = allPosts.filter(isVideoPost);
+
+            if (context) {
+                try {
+                    const candidates = await window.sourceCandidates(context, '');
+                    const ranked = window.scoreAndRankCandidates(candidates, context);
+                    const rankedVideos = window.filterAndPolish(ranked, context).filter(isVideoPost);
+                    if (rankedVideos.length > 0) {
+                        videoPosts = rankedVideos;
+                    }
+                } catch (e) {
+                    console.warn('Frame ranking failed', e);
+                }
+            }
 
             window.frameList = videoPosts;
+            window.frameBatchSize = 6;
+            window.frameRenderedCount = Math.min(window.frameBatchSize, videoPosts.length);
+            window.frameVisiblePosts = videoPosts.slice(0, window.frameRenderedCount);
             window.currentFrameIndex = 0;
 
             if (videoPosts.length === 0) {
@@ -6508,14 +6526,17 @@
                 return;
             }
 
-            // Render all videos in a scrollable container with snap points
             renderAllFrames();
         };
         
         function renderAllFrames() {
             const frameContainer = document.getElementById('frame-container');
-            
-            const framesHtml = window.frameList.map((post, index) => {
+            if (!frameContainer) return;
+
+            const list = Array.isArray(window.frameList) ? window.frameList : [];
+            if (list.length === 0) return;
+
+            const buildFrameSlideHtml = (post, globalIndex) => {
                 const author = users.find(u => u.id === post.authorId) || { name: 'Unknown', avatar: '', username: 'unknown' };
                 const isLiked = post.likes?.includes(currentUser.id);
                 const isSaved = savedPosts.includes(post.id);
@@ -6524,11 +6545,9 @@
                 if (post.embedVideo) {
                     const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
                     if (embedInfo.type === 'video') {
-                        // Don't autoplay initially - we'll control playback with updateActiveFrame
                         mediaHtml = `
                             <div class="w-full h-full bg-black" id="frame-skeleton-${post.id}"></div>
                             <iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0 hidden" allowfullscreen allow="autoplay; fullscreen" id="frame-embed-${post.id}" onload="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden');"></iframe>
-                            <!-- Top buttons - only more options for embedded -->
                             <div class="absolute top-4 right-4 flex gap-2 z-20">
                                 <button onclick="event.stopPropagation(); showPostOptions(event,'${post.id}','${post.authorId}')" class="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors">
                                     <i data-lucide="more-vertical" class="w-5 h-5 text-white"></i>
@@ -6539,12 +6558,10 @@
                 } else if (post.media) {
                     const ma = Array.isArray(post.media) ? post.media : [post.media];
                     const firstMedia = ma[0];
-                    // Don't autoplay initially - we'll control playback with updateActiveFrame
                     mediaHtml = `
                         <div class="w-full h-full bg-black" id="frame-skeleton-${post.id}"></div>
                         <div class="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black">
-                            <video src="${firstMedia}" class="w-full h-full object-contain hidden" playsinline loop id="frame-video-${post.id}" onloadeddata="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden'); this.muted = window.globalVideoMuted;"></video>
-                            <!-- Top buttons -->
+                            <video src="${firstMedia}" class="w-full h-full object-cover hidden" playsinline loop id="frame-video-${post.id}" onloadeddata="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden'); this.muted = window.globalVideoMuted;"></video>
                             <div class="absolute top-4 left-4 flex gap-2 z-20">
                                 <button onclick="event.stopPropagation(); sharePost('${post.id}')" class="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors">
                                     <i data-lucide="share-2" class="w-5 h-5 text-white"></i>
@@ -6564,175 +6581,71 @@
                 
                 const hasCaption = post.content && post.content.trim() !== '';
                 const postDate = formatDate(post.timestamp || Date.now());
-                const isMobile = window.innerWidth < 1024;
                 const mobileCaptionText = hasCaption ? (post.content.trim().length > 120 ? `${post.content.trim().slice(0, 120)}...` : post.content.trim()) : postDate;
-                
                 const words = hasCaption ? post.content.trim().split(/\s+/) : [];
-                const isExpanded = window.expandedTexts?.has(`frame-caption-${post.id}`);
                 let captionHTML = '';
                 if (hasCaption) {
                     if (words.length <= 11) {
-                        captionHTML = `
-                            <span id="frame-caption-text-${post.id}">${formatContent(post.content)}</span>
-                        `;
+                        captionHTML = `<span id="frame-caption-text-${post.id}">${formatContent(post.content)}</span>`;
                     } else {
-                        captionHTML = `
-                            <button class="text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}')">
-                                see more
-                            </button>
-                        `;
+                        captionHTML = `<button class="text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${globalIndex}')">see more</button>`;
                     }
                 }
                 
                 return `
-                    <div class="frame-slide w-full h-full flex-shrink-0 flex items-center justify-center pt-0" data-index="${index}" data-post-id="${post.id}">
-                        <!-- Left Spacer for Sidebar -->
+                    <div class="frame-slide w-full h-full flex-shrink-0 flex items-center justify-center pt-0 px-0" data-index="${globalIndex}" data-post-id="${post.id}">
                         <div class="hidden lg:block lg:w-[260px] flex-shrink-0"></div>
-                        <div class="w-[88px] lg:hidden flex-shrink-0"></div>
                         
-                        <!-- Main Content -->
-                        <div class="flex-1 flex items-center justify-center">
-                            <!-- Center Content: Video + Bottom Info + Vertical Actions + Comments -->
-                            <div class="flex gap-8">
-                                <!-- Left Column: Video + Caption -->
-                                <div class="flex flex-col items-center">
-                                    <!-- Video Container (Vertical like Instagram Reels) -->
-                                    <div id="frame-media-container-${post.id}" class="relative overflow-hidden border border-gray-200 bg-white cursor-pointer" style="width: min(90vw, 450px); height: min(85vh, 780px); border-radius: 8px;" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
-                                        <!-- Video Section -->
+                        <div class="flex-1 flex items-center justify-center w-full">
+                            <div class="flex gap-0 lg:gap-8 w-full justify-center">
+                                <div class="flex flex-col items-center w-full lg:w-auto">
+                                    <div id="frame-media-container-${post.id}" class="relative overflow-hidden border border-gray-200 bg-white cursor-pointer frame-video-shell" style="width: 100vw; height: 100dvh; border-radius: 0; border: 0;" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${globalIndex}');">
                                         <div id="frame-video-section-${post.id}" class="absolute inset-0 flex items-center justify-center bg-black">
                                             ${mediaHtml}
                                         </div>
                                         ${hasCaption ? `
-                                            <div id="frame-mobile-caption-${post.id}" class="absolute inset-x-0 bottom-0 p-4 pb-24 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white lg:hidden">
+                                            <div id="frame-mobile-caption-${post.id}" class="absolute inset-x-0 bottom-0 p-4 pb-24 bg-gradient-to-t from-[#0f0f0f] via-[#0f0f0f]/70 to-transparent text-white lg:hidden">
                                                 <div class="font-semibold text-sm">@${author.username || author.name}</div>
                                                 <div class="text-sm leading-5 mt-1">${mobileCaptionText}</div>
                                             </div>
                                         ` : ''}
-                                        <!-- Caption Section -->
                                         <div id="frame-caption-section-${post.id}" class="absolute inset-0 p-6 overflow-y-auto hidden lg:block">
                                             <div class="flex flex-col gap-3">
-                                                <div class="font-bold text-gray-900 text-lg flex items-center gap-1">
-                                                    @${author.username || author.name}
+                                                <div class="font-bold text-gray-900 text-lg flex items-center gap-1">@${author.username || author.name}</div>
+                                                <div class="text-gray-700" id="frame-full-caption-${post.id}">${formatContent(post.content)}</div>
+                                                <button class="mt-auto text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${globalIndex}');">See less</button>
+                                            </div>
+                                        </div>
+                                        <div class="lg:hidden absolute inset-x-0 bottom-0 z-20 frame-mobile-footer px-4 pb-4 pt-16">
+                                            <div class="flex items-end justify-between gap-3">
+                                                <div class="min-w-0 flex-1">
+                                                    <div class="font-semibold text-sm text-white">@${author.username || author.name}</div>
+                                                    <div class="text-xs text-white/80 mt-1 leading-5">${mobileCaptionText}</div>
                                                 </div>
-                                                <div class="text-gray-700" id="frame-full-caption-${post.id}">
-                                                    ${formatContent(post.content)}
-                                                </div>
-                                                <button class="mt-auto text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
-                                                    See less
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Bottom Info: Author Username + Short Caption -->
-                                    <div class="mt-4 px-2 frame-bottom-info" style="width: min(90vw, 450px);">
-                                        <div class="flex flex-col">
-                                            <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
-                                                @${author.username || author.name}
-                                            </div>
-                                            ${hasCaption ? `
-                                                <div class="text-sm text-gray-700" id="frame-caption-wrapper-${post.id}">
-                                                    ${captionHTML}
-                                                </div>
-                                            ` : `
-                                                <div class="text-sm text-gray-500">${postDate}</div>
-                                            `}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <!-- Right Column: Action Buttons (aligned to video) -->
-                                <div class="hidden lg:flex flex-col justify-end gap-6" style="height: min(85vh, 780px);">
-                                    <!-- Profile Avatar -->
-                                    <div class="flex flex-col items-center gap-1">
-                                        <div class="relative">
-                                            <div class="img-placeholder rounded-full w-12 h-12 border border-gray-200 overflow-hidden shrink-0 cursor-pointer hover:opacity-80 transition-opacity" onclick="event.stopPropagation(); showProfile('${author.id}')">
-                                                <img src="${author.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
-                                            </div>
-                                            <!-- Follow Button -->
-                                            <div class="absolute -bottom-1 left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-black flex items-center justify-center cursor-pointer hover:bg-gray-800 transition-colors border-2 border-white" onclick="event.stopPropagation(); toggleFollow('${author.id}')">
-                                                <i data-lucide="${currentUser.following.includes(author.id) ? 'check' : 'plus'}" class="w-4 h-4 text-white" id="frame-follow-icon-${author.id}-${index}"></i>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')">
-                                        <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                                            <i data-lucide="heart" class="w-6 h-6 ${isLiked ? 'fill-red-500 text-red-500' : ''}" id="frame-like-icon-${post.id}-${index}"></i>
-                                        </div>
-                                        <span class="text-xs text-gray-700 font-semibold" id="frame-like-count-${post.id}-${index}">${post.likes?.length || 0}</span>
-                                    </button>
-                                    
-                                    <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')">
-                                        <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                                            <i data-lucide="message-circle" class="w-6 h-6"></i>
-                                        </div>
-                                        <span class="text-xs text-gray-700 font-semibold">${post.comments?.length || 0}</span>
-                                    </button>
-                                    
-                                    <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); sharePost('${post.id}')">
-                                        <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                                            <i data-lucide="redo-2" class="w-6 h-6"></i>
-                                        </div>
-                                        <span class="text-xs text-gray-700 font-semibold">Share</span>
-                                    </button>
-                                    
-                                    <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')">
-                                        <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
-                                            <i data-lucide="bookmark" class="w-6 h-6 ${isSaved ? 'fill-current' : ''}" id="frame-save-icon-${post.id}-${index}"></i>
-                                        </div>
-                                        <span class="text-xs text-gray-700 font-semibold">Save</span>
-                                    </button>
-                                </div>
-                                
-                                <div class="lg:hidden absolute bottom-4 right-4 z-20 flex flex-col items-center gap-3">
-                                    <button class="flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')">
-                                        <div class="w-11 h-11 rounded-full bg-black/35 border border-white/20 backdrop-blur flex items-center justify-center">
-                                            <i data-lucide="heart" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}" id="frame-like-icon-mobile-${post.id}-${index}"></i>
-                                        </div>
-                                        <span class="text-[11px] font-semibold text-white" id="frame-like-count-mobile-${post.id}-${index}">${post.likes?.length || 0}</span>
-                                    </button>
-                                    <button class="flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')">
-                                        <div class="w-11 h-11 rounded-full bg-black/35 border border-white/20 backdrop-blur flex items-center justify-center">
-                                            <i data-lucide="message-circle" class="w-5 h-5"></i>
-                                        </div>
-                                        <span class="text-[11px] font-semibold text-white">${post.comments?.length || 0}</span>
-                                    </button>
-                                    <button class="flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); sharePost('${post.id}')">
-                                        <div class="w-11 h-11 rounded-full bg-black/35 border border-white/20 backdrop-blur flex items-center justify-center">
-                                            <i data-lucide="redo-2" class="w-5 h-5"></i>
-                                        </div>
-                                        <span class="text-[11px] font-semibold text-white">Share</span>
-                                    </button>
-                                    <button class="flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')">
-                                        <div class="w-11 h-11 rounded-full bg-black/35 border border-white/20 backdrop-blur flex items-center justify-center">
-                                            <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-current' : ''}" id="frame-save-icon-mobile-${post.id}-${index}"></i>
-                                        </div>
-                                        <span class="text-[11px] font-semibold text-white">Save</span>
-                                    </button>
-                                </div>
-                                
-                                <!-- Comments Panel - Same as Post Overlay Design -->
-                                <div id="frame-comments-panel-${post.id}" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200 mobile-frame-comments-overlay" style="width: min(90vw, 450px); height: min(85vh, 780px);">
-                                    <div class="h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
-                                        <div class="flex items-center justify-between w-full">
-                                            <span class="font-bold text-lg text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
-                                            <div class="flex items-center gap-2">
-                                                <button onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                                    <i data-lucide="x" class="w-4 h-4 text-gray-600"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div id="frame-comments-list-${post.id}" class="flex-1 overflow-y-auto"></div>
-                                    <div class="px-4 h-[64px] flex items-center bg-white shrink-0 rounded-b-[24px]">
-                                        <div class="w-full">
-                                            <div class="flex items-center gap-2">
-                                                <img src="${currentUser.avatar}" class="w-7 h-7 rounded-full bg-gray-200 object-cover shrink-0">
-                                                <div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-3 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all">
-                                                    <input type="text" id="frame-comment-input-${post.id}" placeholder="Add a comment..." class="flex-1 bg-transparent text-[13px] outline-none text-gray-900 placeholder-gray-500">
-                                                    <button onclick="addFrameComment('${post.id}')" class="px-4 py-2 bg-[#3D7EEB] rounded-xl flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm">
-                                                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                                <div class="flex items-center gap-3">
+                                                    <button class="frame-action-btn flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${globalIndex}')">
+                                                        <div class="icon-shell w-10 h-10 rounded-full flex items-center justify-center bg-white/10 border border-white/15 backdrop-blur-sm">
+                                                            <i data-lucide="heart" class="w-4.5 h-4.5 ${isLiked ? 'fill-red-500 text-red-500' : ''}" id="frame-like-icon-mobile-${post.id}-${globalIndex}"></i>
+                                                        </div>
+                                                        <span class="text-[11px] font-semibold text-white" id="frame-like-count-mobile-${post.id}-${globalIndex}">${post.likes?.length || 0}</span>
+                                                    </button>
+                                                    <button class="frame-action-btn flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${globalIndex}')">
+                                                        <div class="icon-shell w-10 h-10 rounded-full flex items-center justify-center bg-white/10 border border-white/15 backdrop-blur-sm">
+                                                            <i data-lucide="message-circle" class="w-4.5 h-4.5"></i>
+                                                        </div>
+                                                        <span class="text-[11px] font-semibold text-white">${post.comments?.length || 0}</span>
+                                                    </button>
+                                                    <button class="frame-action-btn flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); sharePost('${post.id}')">
+                                                        <div class="icon-shell w-10 h-10 rounded-full flex items-center justify-center bg-white/10 border border-white/15 backdrop-blur-sm">
+                                                            <i data-lucide="redo-2" class="w-4.5 h-4.5"></i>
+                                                        </div>
+                                                        <span class="text-[11px] font-semibold text-white">Share</span>
+                                                    </button>
+                                                    <button class="frame-action-btn flex flex-col items-center gap-1 text-white" onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${globalIndex}')">
+                                                        <div class="icon-shell w-10 h-10 rounded-full flex items-center justify-center bg-white/10 border border-white/15 backdrop-blur-sm">
+                                                            <i data-lucide="bookmark" class="w-4.5 h-4.5 ${isSaved ? 'fill-current' : ''}" id="frame-save-icon-mobile-${post.id}-${globalIndex}"></i>
+                                                        </div>
+                                                        <span class="text-[11px] font-semibold text-white">Save</span>
                                                     </button>
                                                 </div>
                                             </div>
@@ -6742,52 +6655,30 @@
                             </div>
                         </div>
                         
-                        <!-- Extra Right Spacer for balance -->
                         <div class="hidden lg:block lg:w-[260px] flex-shrink-0"></div>
-                        <div class="w-[88px] lg:hidden flex-shrink-0"></div>
                     </div>
                 `;
-            }).join('');
+            };
+
+            const framesHtml = window.frameVisiblePosts.map(post => buildFrameSlideHtml(post, list.findIndex(p => p.id === post.id))).join('');
             
             frameContainer.innerHTML = `
                 <style>
-                    .frame-scroll-container { 
-                        scrollbar-width: none; 
-                        -ms-overflow-style: none; 
-                        scroll-snap-type: y mandatory; 
-                        overflow-y: scroll;
-                        height: 100vh;
-                        overscroll-behavior: contain;
-                    }
+                    .frame-scroll-container { scrollbar-width: none; -ms-overflow-style: none; scroll-snap-type: y mandatory; overflow-y: scroll; height: 100vh; overscroll-behavior: contain; }
                     .frame-scroll-container::-webkit-scrollbar { display: none; }
-                    .frame-slide { 
-                        scroll-snap-align: start; 
-                        height: 100vh;
-                    }
-                    .mobile-frame-comments-overlay {
-                        width: 100%;
-                        height: 100%;
-                        border-radius: 0;
-                        position: fixed;
-                        inset: 0;
-                        z-index: 60;
-                    }
+                    .frame-slide { scroll-snap-align: start; height: 100vh; }
+                    .frame-mobile-footer { background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(15,15,15,0.98) 100%); }
+                    .frame-action-btn .icon-shell { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.16); }
                     @media (max-width: 767px) {
-                        #frame-nav-controls {
-                            display: none !important;
-                        }
-                        .frame-bottom-info {
-                            display: none !important;
-                        }
-                        .frame-slide {
-                            height: 100dvh;
-                        }
+                        #frame-nav-controls { display: none !important; }
+                        .frame-slide { height: 100dvh; padding: 0; }
+                        .frame-video-shell { width: 100vw !important; height: 100dvh !important; max-width: 100vw !important; margin-left: calc(50% - 50vw); border-radius: 0 !important; border: 0 !important; }
+                        .frame-video-shell video, .frame-video-shell iframe { width: 100%; height: 100%; object-fit: cover; }
                     }
                 </style>
                 <div class="frame-scroll-container w-full" id="frame-scroll-container">
                     ${framesHtml}
                 </div>
-                <!-- Single set of up/down navigation buttons -->
                 <div class="absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-10" id="frame-nav-controls">
                     <button onclick="navigateFrame('up')" id="frame-up-btn" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                         <i data-lucide="chevron-up" class="w-7 h-7 text-gray-500"></i>
@@ -6798,13 +6689,10 @@
                 </div>
             `;
             
-            // Add scroll listener to track current frame and control playback
             const scrollContainer = document.getElementById('frame-scroll-container');
-            
-            // Scroll to the very top of the scroll container
+            if (!scrollContainer) return;
             scrollContainer.scrollTop = 0;
             
-            // Function to handle video play/pause
             function updateActiveFrame() {
                 const slides = document.querySelectorAll('.frame-slide');
                 let closestIndex = 0;
@@ -6820,16 +6708,6 @@
                 });
                 
                 window.currentFrameIndex = closestIndex;
-                
-                // Close all comment panels except current
-                window.frameList.forEach((post, index) => {
-                    const panel = document.getElementById(`frame-comments-panel-${post.id}`);
-                    if (panel && index !== closestIndex) {
-                        panel.classList.add('hidden');
-                    }
-                });
-                
-                // Show/hide up/down buttons (but keep both visible, just disabled maybe)
                 const upBtn = document.getElementById('frame-up-btn');
                 const downBtn = document.getElementById('frame-down-btn');
                 if (upBtn) {
@@ -6843,71 +6721,69 @@
                     downBtn.style.cursor = closestIndex < window.frameList.length - 1 ? 'pointer' : 'not-allowed';
                 }
                 
-                // Pause all videos, then play the active one
                 window.frameList.forEach((post, index) => {
                     const video = document.getElementById(`frame-video-${post.id}`);
                     const embed = document.getElementById(`frame-embed-${post.id}`);
                     if (index === closestIndex) {
-                        if (video) {
-                            video.play().catch(() => {}); // Ignore autoplay errors
-                        }
+                        if (video) video.play().catch(() => {});
                         if (embed && embed.src) {
-                            // Add autoplay to embed URL if not already there
                             let url = embed.src;
                             if (!url.includes('autoplay=1')) {
-                                if (url.includes('?')) {
-                                    url += '&autoplay=1';
-                                } else {
-                                    url += '?autoplay=1';
-                                }
+                                url += url.includes('?') ? '&autoplay=1' : '?autoplay=1';
                                 embed.src = url;
                             }
                         }
                     } else {
-                        if (video) {
-                            video.pause();
-                        }
+                        if (video) video.pause();
                         if (embed && embed.src) {
-                            // Remove autoplay from embed URL
-                            let url = embed.src;
-                            url = url.replace('?autoplay=1', '').replace('&autoplay=1', '');
-                            embed.src = url;
+                            embed.src = embed.src.replace('?autoplay=1', '').replace('&autoplay=1', '');
                         }
                     }
                 });
             }
-            
-            // Debounce scroll updates
+
             let scrollTimeout;
-            scrollContainer.addEventListener('scroll', () => {
+            const handleFrameScroll = () => {
                 clearTimeout(scrollTimeout);
-                scrollTimeout = setTimeout(updateActiveFrame, 100);
-            });
+                scrollTimeout = setTimeout(() => {
+                    updateActiveFrame();
+                    const nearBottom = scrollContainer.scrollTop + scrollContainer.clientHeight >= scrollContainer.scrollHeight - 700;
+                    if (nearBottom) appendMoreFrames();
+                }, 100);
+            };
+            scrollContainer.addEventListener('scroll', handleFrameScroll, { passive: true });
+            window.frameScrollHandler = handleFrameScroll;
             
-            // Add keyboard navigation
+            function appendMoreFrames() {
+                if (window.frameLoading || window.frameRenderedCount >= window.frameList.length) return;
+                window.frameLoading = true;
+                const nextCount = Math.min(window.frameRenderedCount + window.frameBatchSize, window.frameList.length);
+                const nextPosts = window.frameList.slice(window.frameRenderedCount, nextCount);
+                if (nextPosts.length > 0) {
+                    const html = nextPosts.map(post => buildFrameSlideHtml(post, list.findIndex(p => p.id === post.id))).join('');
+                    scrollContainer.insertAdjacentHTML('beforeend', html);
+                    window.frameRenderedCount = nextCount;
+                    window.frameVisiblePosts = window.frameList.slice(0, window.frameRenderedCount);
+                }
+                window.frameLoading = false;
+                refreshIcons();
+            }
+            
             function handleKeyDown(e) {
                 if (document.getElementById('view-frame').classList.contains('hidden')) return;
-                
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    navigateFrame('down');
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    navigateFrame('up');
-                }
+                if (e.key === 'ArrowDown') { e.preventDefault(); navigateFrame('down'); }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); navigateFrame('up'); }
             }
             
             document.addEventListener('keydown', handleKeyDown);
             window.frameKeydownHandler = handleKeyDown;
-            
             refreshIcons();
             
-            // Render comments for first post and play first video
             if (window.frameList.length > 0) {
                 renderFrameComments(window.frameList[0].id);
                 updateActiveFrame();
             }
-        };
+        }
 
         function renderCurrentFramePost() {
             const post = window.frameList[window.currentFrameIndex];
@@ -7316,11 +7192,13 @@
         };
 
         window.toggleFrameComments = (postId, index) => {
+            if (window.innerWidth < 1024) {
+                window.openComments(postId);
+                return;
+            }
             const panel = document.getElementById(`frame-comments-panel-${postId}`);
             if (!panel) return;
-            
             const isHidden = panel.classList.contains('hidden');
-            
             if (isHidden) {
                 panel.classList.remove('hidden');
                 renderFrameComments(postId);
