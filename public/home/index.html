@@ -9581,13 +9581,15 @@
         window.buildProfileOverlayPostList = function(clickedPostId) {
             const base = Array.isArray(window.currentProfileOverlayPostList) ? window.currentProfileOverlayPostList : [];
             if (!base.length) return null;
-            const list = base.slice();
-            const index = list.findIndex(post => post.id === clickedPostId);
-            if (index > -1) {
-                const [clickedPost] = list.splice(index, 1);
-                list.unshift(clickedPost);
-            }
-            return list;
+
+            const clickedPost = base.find(post => post && post.id === clickedPostId);
+            if (!clickedPost) return base.slice();
+
+            const others = base
+                .filter(post => post && post.id !== clickedPostId)
+                .sort((a, b) => b.timestamp - a.timestamp);
+
+            return [clickedPost, ...others];
         };
 
         window.renderGridPostItem = function(p) {
@@ -10072,21 +10074,15 @@
             if (useProfileOverlay) {
                 desktopHTML = `
                 <div class="hidden md:flex w-full h-full bg-white flex-col overflow-hidden">
-                    <div class="h-16 px-4 flex items-center justify-between shrink-0 border-b border-gray-100 bg-white">
-                        <div class="flex items-center gap-3">
-                            <button onclick="closePostView()" class="w-10 h-10 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                <i data-lucide="arrow-left" class="w-5 h-5 text-gray-700"></i>
-                            </button>
-                            <div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
-                                <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden">
-                                    <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
-                                </div>
-                                <div>
-                                    <div class="font-bold text-gray-900 text-sm">${a.name}${badge}</div>
-                                    <div class="text-[11px] text-gray-500">@${a.username || a.name}</div>
-                                </div>
-                            </div>
+                    <div class="h-16 px-4 flex items-center justify-between shrink-0 border-b border-gray-100 bg-white relative">
+                        <button onclick="closePostView()" class="w-10 h-10 flex items-center justify-center">
+                            <i data-lucide="arrow-left" class="w-6 h-6 text-gray-900"></i>
+                        </button>
+                        <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
+                            <span class="text-[15px] font-bold text-gray-900">@${a.username || 'user'}</span>
+                            ${a.isOfficial ? '<i data-lucide="badge-check" class="official-badge"></i>' : ''}
                         </div>
+                        <div class="w-10 h-10"></div>
                     </div>
                     <div class="flex-1 overflow-y-auto">
                         <div class="flex h-full flex-col xl:flex-row">
@@ -10108,21 +10104,15 @@
                 </div>`;
                 const mobileTopBarProfile = `
                 <div class="mobile-fixed-header border-b border-gray-100 bg-white shrink-0">
-                    <div class="flex items-center justify-between px-4 h-16 w-full">
-                        <div class="flex items-center gap-3">
-                            <button onclick="closePostView()" class="w-10 h-10 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                <i data-lucide="arrow-left" class="w-5 h-5 text-gray-700"></i>
-                            </button>
-                            <div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
-                                <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden">
-                                    <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
-                                </div>
-                                <div>
-                                    <div class="font-bold text-gray-900 text-sm">${a.name}${badge}</div>
-                                    <div class="text-[11px] text-gray-500">@${a.username || a.name}</div>
-                                </div>
-                            </div>
+                    <div class="flex items-center justify-between px-4 h-16 w-full relative">
+                        <button onclick="closePostView()" class="w-10 h-10 flex items-center justify-center">
+                            <i data-lucide="arrow-left" class="w-6 h-6 text-gray-900"></i>
+                        </button>
+                        <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
+                            <span class="text-[15px] font-bold text-gray-900">@${a.username || 'user'}</span>
+                            ${a.isOfficial ? '<i data-lucide="badge-check" class="official-badge"></i>' : ''}
                         </div>
+                        <div class="w-10 h-10"></div>
                     </div>
                 </div>`;
                 mobileHTML = `<div class="mobile-overlay-layout md:hidden">
