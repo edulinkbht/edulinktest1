@@ -5003,7 +5003,7 @@
         const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), storage = getStorage(app); window.auth = auth; window.db = db; window.increment = increment;
         window.APP_CONFIG = config; // Store globally for other functions
         let currentUser = null, users = [], posts = [], notifications = [], savedPosts = [], activeNotifTab = 'all', activeNetworkTab = 'people';
-        window.replyingToCommentId = null; window.currentViewingProfileId = null; window.activeExploreTab = 'top'; window.activeExploreCategory = 'For You'; window.currentProfileTab = 'posts'; window.currentProfileOverlayPostList = [];
+        window.replyingToCommentId = null; window.currentViewingProfileId = null; window.activeExploreTab = 'top'; window.activeExploreCategory = 'For You'; window.currentProfileTab = 'posts';
         window.postViewStartTime = null; window.viewedPostsInSession = new Set();
         window.addEventListener('beforeunload', () => {
             if (window.postViewStartTime && window.currentViewingPostId) {
@@ -9516,8 +9516,6 @@
                 }
                 tp = tp.filter(p => canSeePost(p));
             }
-            window.currentProfileOverlayPostList = tp.slice().sort((a, b) => a.timestamp - b.timestamp);
-
             if (t === 'reposts' || t === 'liked') {
                 if (tp.length === 0) {
                     if (t === 'reposts') {
@@ -9559,7 +9557,6 @@
             const limit = window.currentProfileVisibleCount || 9;
             const visiblePosts = tp.slice(0, limit);
             const hasMore = tp.length > limit;
-            window.currentProfileOverlayPostList = tp.slice().sort((a, b) => a.timestamp - b.timestamp);
 
             c.innerHTML = `<div class="grid-post-container" id="profile-grid-container">${visiblePosts.map(p => renderGridPostItem(p)).join('')}</div>
                 <div id="profile-load-more-trigger" class="flex flex-col items-center justify-center pt-8 pb-20 ${hasMore ? '' : 'hidden'}">
@@ -9576,20 +9573,6 @@
             refreshIcons();
             // Observe new video containers
             window.observeVideoContainers();
-        };
-
-        window.buildProfileOverlayPostList = function(clickedPostId) {
-            const base = Array.isArray(window.currentProfileOverlayPostList) ? window.currentProfileOverlayPostList : [];
-            if (!base.length) return null;
-
-            const clickedPost = base.find(post => post && post.id === clickedPostId);
-            if (!clickedPost) return base.slice();
-
-            const others = base
-                .filter(post => post && post.id !== clickedPostId)
-                .sort((a, b) => b.timestamp - a.timestamp);
-
-            return [clickedPost, ...others];
         };
 
         window.renderGridPostItem = function(p) {
@@ -9640,9 +9623,7 @@
                 mediaHtml = `<div class="grid-post-text-preview !bg-transparent">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`;
             }
 
-            const overlayClick = isVideoPost() ? `openFrameView('${p.id}')` : `openPostView('${p.id}', false, window.buildProfileOverlayPostList('${p.id}'), true)`;
-
-            return `<div class="grid-post-item group ${!m && !p.embedVideo ? 'border border-gray-100' : ''}" onclick="${overlayClick}">
+            return `<div class="grid-post-item group ${!m && !p.embedVideo ? 'border border-gray-100' : ''}" onclick="${isVideoPost() ? `openFrameView('${p.id}')` : `openPostView('${p.id}')`}">
                 ${mediaHtml}
                 <div class="grid-post-overlay">
                     <div class="flex items-center gap-1"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> <span class="js-like-count-${p.id}">${likeText}</span></div>
@@ -9876,7 +9857,7 @@
             const i = window.currentViewingPostList.findIndex(x => x.id === window.currentViewingPostId);
             if (i !== -1 && i < window.currentViewingPostList.length - 1) {
                 const nextId = window.currentViewingPostList[i + 1].id;
-                window.openPostView(nextId, false, window.currentViewingPostList, !!window.isProfilePostOverlay);
+                window.openPostView(nextId);
             }
         };
         window.navigateToPreviousPost = (e) => {
@@ -9885,11 +9866,11 @@
             const i = window.currentViewingPostList.findIndex(x => x.id === window.currentViewingPostId);
             if (i > 0) {
                 const prevId = window.currentViewingPostList[i - 1].id;
-                window.openPostView(prevId, false, window.currentViewingPostList, !!window.isProfilePostOverlay);
+                window.openPostView(prevId);
             }
         };
 
-        window.openPostView = (pid, fromNotifications = false, postList = null, isProfileOverlay = false) => {
+        window.openPostView = (pid, fromNotifications = false, postList = null) => {
             const p = posts.find(x => x.id === pid); if (!p) return; 
             const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '' }, 
             isMe = p.authorId === currentUser.id, 
@@ -9915,8 +9896,6 @@
             manageHistory('post-view-overlay'); 
             const o = document.getElementById('post-view-overlay'), c = document.getElementById('post-view-container'); 
             window.currentViewingPostId = pid; 
-            const useProfileOverlay = !!isProfileOverlay || !!window.isProfilePostOverlay;
-            window.isProfilePostOverlay = useProfileOverlay;
             
             // Set current post list for navigation
             if (postList) {
@@ -10070,64 +10049,7 @@
             }
 
             let desktopHTML = '';
-            let mobileHTML = '';
-            if (useProfileOverlay) {
-                desktopHTML = `
-                <div class="hidden md:flex w-full h-full bg-white flex-col overflow-hidden">
-                    <div class="h-16 px-4 flex items-center justify-between shrink-0 border-b border-gray-100 bg-white relative">
-                        <button onclick="closePostView()" class="w-10 h-10 flex items-center justify-center">
-                            <i data-lucide="arrow-left" class="w-6 h-6 text-gray-900"></i>
-                        </button>
-                        <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
-                            <span class="text-[15px] font-bold text-gray-900">@${a.username || 'user'}</span>
-                            ${a.isOfficial ? '<i data-lucide="badge-check" class="official-badge"></i>' : ''}
-                        </div>
-                        <div class="w-10 h-10"></div>
-                    </div>
-                    <div class="flex-1 overflow-y-auto">
-                        <div class="flex h-full flex-col xl:flex-row">
-                            <div class="flex-1 flex items-center justify-center bg-gray-50/70 p-4 md:p-8">
-                                ${mhDesktop}
-                            </div>
-                            <div class="w-full xl:w-[380px] border-t xl:border-t-0 xl:border-l border-gray-100 bg-white flex flex-col">
-                                <div class="flex-1 overflow-y-auto p-5">
-                                    <div class="text-[15px] leading-relaxed text-gray-800 break-words js-post-body-${p.id}">${postBodyHtml}</div>
-                                    ${previewHtmlD}
-                                </div>
-                                <div class="px-5 pb-4 border-t border-gray-100">
-                                    ${commentInputDesktop}
-                                </div>
-                                <div id="post-view-comments" class="flex-1 overflow-y-auto px-5 pb-5"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>`;
-                const mobileTopBarProfile = `
-                <div class="mobile-fixed-header border-b border-gray-100 bg-white shrink-0">
-                    <div class="flex items-center justify-between px-4 h-16 w-full relative">
-                        <button onclick="closePostView()" class="w-10 h-10 flex items-center justify-center">
-                            <i data-lucide="arrow-left" class="w-6 h-6 text-gray-900"></i>
-                        </button>
-                        <div class="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
-                            <span class="text-[15px] font-bold text-gray-900">@${a.username || 'user'}</span>
-                            ${a.isOfficial ? '<i data-lucide="badge-check" class="official-badge"></i>' : ''}
-                        </div>
-                        <div class="w-10 h-10"></div>
-                    </div>
-                </div>`;
-                mobileHTML = `<div class="mobile-overlay-layout md:hidden">
-                    ${mobileTopBarProfile}
-                    <div class="mobile-scroll-content">
-                        <div class="px-4 py-3 text-[15px] leading-relaxed text-gray-800 whitespace-pre-wrap js-post-body-${p.id}">${postBodyHtml}</div>
-                        <div class="px-4">${previewHtmlM}</div>
-                        <div class="w-full mt-3">${mhMobile}</div>
-                        <div class="px-4 py-4">
-                            ${commentInputMobile}
-                        </div>
-                        <div id="post-view-comments" class="px-4 pb-4"></div>
-                    </div>
-                </div>`;
-            } else if (isVideoPost) {
+            if (isVideoPost) {
                 // Special video post layout for desktop with toggleable side comments panel!
                 desktopHTML = `
                 <div class="desktop-split-view hidden md:flex w-full h-full flex-row overflow-hidden" style="max-width: 1200px;">
@@ -10404,66 +10326,63 @@
                         </div>
                     </div>
                 </div>`;
-            if (!useProfileOverlay) {
-                mobileHTML = `<div class="mobile-overlay-layout md:hidden">
-                    ${mobileTopBar}
-                    <div class="mobile-scroll-content">
-                        <div class="flex items-center justify-between p-4 pb-2">
-                            <div class="flex items-center gap-3">
-                                <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden cursor-pointer" onclick="event.stopPropagation();openProfilePreview('${a.id}')">
-                                    <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
-                                </div>
-                                <div onclick="closePostView();showProfile('${a.id}')">
-                                    <div class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-                                        ${a.username || 'user'}${badge}
-                                    </div>
-                                    <div class="text-xs text-gray-500">${formatDate(p.timestamp)}</div>
-                                </div>
+            const mobileHTML = `<div class="mobile-overlay-layout md:hidden">
+                ${mobileTopBar}
+                <div class="mobile-scroll-content">
+                    <div class="flex items-center justify-between p-4 pb-2">
+                        <div class="flex items-center gap-3">
+                            <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden cursor-pointer" onclick="event.stopPropagation();openProfilePreview('${a.id}')">
+                                <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
                             </div>
-                            <div class="flex items-center gap-1">
-                                ${!isMe ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} ${isFollowing ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} text-[13px] px-4 py-1.5 rounded-lg font-bold hover:opacity-90 transition-all">${isFollowing ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : ''}
-                                <button onclick="showPostOptions(event, '${p.id}', '${p.authorId}')" class="w-9 h-9 flex items-center justify-center text-black hover:bg-gray-50 rounded-full transition-colors">
-                                    <i data-lucide="more-vertical" class="w-6 h-6"></i>
-                                </button>
+                            <div onclick="closePostView();showProfile('${a.id}')">
+                                <div class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                                    ${a.username || 'user'}${badge}
+                                </div>
+                                <div class="text-xs text-gray-500">${formatDate(p.timestamp)}</div>
                             </div>
                         </div>
-                        <div class="px-4 py-2 text-[15px] leading-relaxed text-gray-800 whitespace-pre-wrap js-post-body-${p.id}">${postBodyHtml}</div>
-                        <div class="px-4">${previewHtmlM}</div>
-                        <div class="w-full mt-3">${mhMobile}</div>
-                        <div class="px-4">
-                            <div class="post-actions py-4">
-                                <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="toggleLike('${p.id}')">
-                                    <i data-lucide="heart" id="mobile-overlay-like-btn-${p.id}" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}"></i>
-                                    <span class="js-like-count-${p.id} font-bold text-sm text-gray-700">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
-                                </button>
-                                <button class="action-btn comment" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
-                                    <i data-lucide="message-circle" class="w-5 h-5 text-gray-600"></i>
-                                    <span class="js-comment-count-${p.id} font-bold text-sm text-gray-700">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
-                                </button>
-                                <button class="action-btn share-btn" onclick="sharePost('${p.id}')">
-                                    <i data-lucide="redo-2" class="w-5 h-5 text-gray-600"></i>
-                                    <span class="font-bold text-sm text-gray-700">Share</span>
-                                </button>
-                                <div class="flex-1"></div>
-                                <button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')">
-                                    <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}"></i>
-                                </button>
-                            </div>
+                        <div class="flex items-center gap-1">
+                            ${!isMe ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} ${isFollowing ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} text-[13px] px-4 py-1.5 rounded-lg font-bold hover:opacity-90 transition-all">${isFollowing ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : ''}
+                            <button onclick="showPostOptions(event, '${p.id}', '${p.authorId}')" class="w-9 h-9 flex items-center justify-center text-black hover:bg-gray-50 rounded-full transition-colors">
+                                <i data-lucide="more-vertical" class="w-6 h-6"></i>
+                            </button>
                         </div>
-                        <div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
-                        ${lh}
                     </div>
-                    <div class="mobile-fixed-footer bg-white border-t border-gray-100 h-16 flex items-center justify-between px-6">
-                        <button id="mobile-nav-prev" onclick="navigateToPreviousPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
-                            <i data-lucide="arrow-left" class="w-7 h-7 text-gray-700"></i>
-                        </button>
-                        <button id="mobile-nav-next" onclick="navigateToNextPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
-                            <i data-lucide="chevron-right" class="w-7 h-7 text-gray-700"></i>
-                        </button>
+                    <div class="px-4 py-2 text-[15px] leading-relaxed text-gray-800 whitespace-pre-wrap js-post-body-${p.id}">${postBodyHtml}</div>
+                    <div class="px-4">${previewHtmlM}</div>
+                    <div class="w-full mt-3">${mhMobile}</div>
+                    <div class="px-4">
+                        <div class="post-actions py-4">
+                            <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="toggleLike('${p.id}')">
+                                <i data-lucide="heart" id="mobile-overlay-like-btn-${p.id}" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}"></i>
+                                <span class="js-like-count-${p.id} font-bold text-sm text-gray-700">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
+                            </button>
+                            <button class="action-btn comment" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
+                                <i data-lucide="message-circle" class="w-5 h-5 text-gray-600"></i>
+                                <span class="js-comment-count-${p.id} font-bold text-sm text-gray-700">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
+                            </button>
+                            <button class="action-btn share-btn" onclick="sharePost('${p.id}')">
+                                <i data-lucide="redo-2" class="w-5 h-5 text-gray-600"></i>
+                                <span class="font-bold text-sm text-gray-700">Share</span>
+                            </button>
+                            <div class="flex-1"></div>
+                            <button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')">
+                                <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}"></i>
+                            </button>
+                        </div>
                     </div>
-                </div>`;
-            }
-            c.innerHTML = desktopHTML + mobileHTML; 
+                    <div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
+                    ${lh}
+                </div>
+                <div class="mobile-fixed-footer bg-white border-t border-gray-100 h-16 flex items-center justify-between px-6">
+                    <button id="mobile-nav-prev" onclick="navigateToPreviousPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+                        <i data-lucide="arrow-left" class="w-7 h-7 text-gray-700"></i>
+                    </button>
+                    <button id="mobile-nav-next" onclick="navigateToNextPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+                        <i data-lucide="chevron-right" class="w-7 h-7 text-gray-700"></i>
+                    </button>
+                </div>
+            </div>`; c.innerHTML = desktopHTML + mobileHTML; 
             renderCommentsInModal(pid);
             refreshIcons()
         };
@@ -10502,7 +10421,7 @@
                 iframe.src = src;
             });
 
-            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null; window.isProfilePostOverlay = false;
+            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null;
         };
         window.doLogout = async () => { 
             await auth.signOut(); 
