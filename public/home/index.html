@@ -377,7 +377,45 @@
             transition: background-color .2s ease;
             margin-bottom: 0;
             box-shadow: none;
-            overflow: visible
+            overflow: visible;
+            position: relative;
+            touch-action: manipulation;
+        }
+
+        .post-double-tap-heart {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            z-index: 30;
+            opacity: 0;
+            transform: scale(0.6);
+            transition: opacity 0.2s ease, transform 0.25s ease;
+        }
+
+        .post-double-tap-heart.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .post-double-tap-heart svg {
+            width: 88px;
+            height: 88px;
+            color: #ff4d67;
+            filter: drop-shadow(0 16px 24px rgba(255, 77, 103, 0.25));
+            animation: post-double-tap-bounce 0.35s ease;
+        }
+
+        .post-double-tap-heart svg path {
+            fill: currentColor;
+        }
+
+        @keyframes post-double-tap-bounce {
+            0% { transform: scale(0.2); opacity: 0.2; }
+            50% { transform: scale(1.12); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
         }
 
         @media (min-width: 768px) {
@@ -7652,7 +7690,36 @@
                 return false;
             };
             
-            d.onclick = () => { 
+            d.onclick = (e) => {
+                const isMobileTap = window.innerWidth < 768;
+                const interactiveTarget = e.target.closest('button, a, input, textarea, select, [onclick], .post-avatar, .post-author-name, .post-actions, .post-header');
+
+                if (isMobileTap) {
+                    if (interactiveTarget) return;
+
+                    const now = Date.now();
+                    if (d.dataset.lastTapTime && now - Number(d.dataset.lastTapTime) < 280) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        d.dataset.lastTapTime = '0';
+
+                        const heartOverlay = document.createElement('div');
+                        heartOverlay.className = 'post-double-tap-heart';
+                        heartOverlay.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>';
+                        d.appendChild(heartOverlay);
+                        requestAnimationFrame(() => heartOverlay.classList.add('show'));
+                        setTimeout(() => heartOverlay.remove(), 650);
+
+                        window.toggleLike(p.id);
+                        return;
+                    }
+
+                    d.dataset.lastTapTime = String(now);
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                }
+
                 if (isVideoPost()) {
                     openFrameView(p.id);
                 } else {
