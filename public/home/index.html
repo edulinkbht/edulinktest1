@@ -384,7 +384,7 @@
             .post-card {
                 border: none;
                 border-radius: 16px;
-                margin-bottom: 16px;
+                margin-bottom: 8px;
             }
             
             #view-profile .post-card,
@@ -593,6 +593,57 @@
             cursor: pointer;
             height: 34px;
             white-space: nowrap
+            flex-shrink: 0;
+        }
+
+        .action-btn.comment {
+            min-width: 48px;
+            min-height: 34px;
+            padding: 6px 10px;
+        }
+
+        .action-btn.comment .comment-avatar-stack {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+            position: relative;
+            margin-right: 6px;
+        }
+
+        .action-btn.comment .comment-avatar-stack .comment-avatar {
+            width: 16px;
+            height: 16px;
+            border-radius: 9999px;
+            object-fit: cover;
+            border: 2px solid white;
+            background: #f3f4f6;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+
+        .action-btn.comment .comment-avatar-stack .comment-avatar + .comment-avatar {
+            margin-left: -6px;
+        }
+
+        .action-btn.comment .comment-avatar-badge {
+            position: absolute;
+            right: -2px;
+            bottom: -2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 9999px;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.14);
+            color: #ef4444;
+        }
+
+        .action-btn.comment .comment-avatar-badge i,
+        .action-btn.comment .comment-avatar-badge svg {
+            width: 6px;
+            height: 6px;
+            stroke-width: 2.2;
         }
 
         @media (max-width: 768px) {
@@ -7870,8 +7921,13 @@
         const renderCommentButtonContent = (p, commentText, st) => {
             const previewUsers = getFriendCommentPreviewUsers(p);
             if (previewUsers.length > 0) {
-                const avatars = previewUsers.map(u => `<img src="${u.avatar || ''}" class="w-5 h-5 rounded-full border-2 border-white object-cover" alt="${u.name || 'Friend'}" onload="this.classList.add('loaded')">`).join('');
-                return `<div class="flex items-center -space-x-2 mr-1.5 shrink-0">${avatars}</div><span class="js-comment-count-${p.id} text-[13px] font-semibold">${commentText}</span>`;
+                const avatars = previewUsers.map((u, index) => `
+                    <div class="relative">
+                        <img src="${u.avatar || ''}" class="comment-avatar" alt="${u.name || 'Friend'}" onload="this.classList.add('loaded')">
+                        ${index === 0 ? '<span class="comment-avatar-badge"><i data-lucide="message-circle"></i></span>' : ''}
+                    </div>
+                `).join('');
+                return `<div class="comment-avatar-stack">${avatars}</div><span class="js-comment-count-${p.id} text-[13px] font-semibold">${commentText}</span>`;
             }
             return `<i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}" class="w-4 h-4"></i><span class="js-comment-count-${p.id}">${commentText}</span>`;
         };
