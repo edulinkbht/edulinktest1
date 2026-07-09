@@ -392,7 +392,7 @@
             z-index: 30;
             opacity: 0;
             transform: scale(0.6);
-            transition: opacity 0.2s ease, transform 0.25s ease;
+            transition: opacity 0.12s ease-out, transform 0.16s ease-out;
         }
 
         .post-double-tap-heart.show {
@@ -404,8 +404,7 @@
             width: 88px;
             height: 88px;
             color: #ff4d67;
-            filter: drop-shadow(0 16px 24px rgba(255, 77, 103, 0.25));
-            animation: post-double-tap-bounce 0.35s ease;
+            animation: post-double-tap-bounce 0.2s cubic-bezier(.22,1,.36,1);
         }
 
         .post-double-tap-heart svg path {
@@ -414,7 +413,6 @@
 
         @keyframes post-double-tap-bounce {
             0% { transform: scale(0.2); opacity: 0.2; }
-            50% { transform: scale(1.12); opacity: 1; }
             100% { transform: scale(1); opacity: 1; }
         }
 
@@ -7726,9 +7724,9 @@
                     heartOverlay.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>';
                     d.appendChild(heartOverlay);
                     requestAnimationFrame(() => heartOverlay.classList.add('show'));
-                    setTimeout(() => heartOverlay.remove(), 650);
+                    setTimeout(() => heartOverlay.remove(), 220);
 
-                    window.toggleLike(p.id);
+                    window.toggleLike(p.id, true);
                 } else {
                     lastTapTime = now;
                 }
@@ -7744,7 +7742,7 @@
             if (p.embedVideo) {
                 const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
                 if (embedInfo.type === 'image') {
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden flex items-center justify-center bg-gray-50 cursor-pointer post-media-container" onclick="event.stopPropagation(); openLightbox('${embedInfo.url}','image')"><div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${embedInfo.url}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.url}'); this.classList.add('loaded')"></div></div>`;
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden flex items-center justify-center bg-gray-50 post-media-container"><div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${embedInfo.url}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.url}'); this.classList.add('loaded')"></div></div>`;
                 } else if (embedInfo.type === 'video') {
                     // For YouTube videos with thumbnail, show thumbnail first
                     if (embedInfo.thumbnail) {
@@ -7779,7 +7777,7 @@
                         }
                         videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
                     }
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : 'cursor-pointer'} post-media-container" onclick="event.stopPropagation();${iv ? '' : `openLightbox('${s}','image')`}">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : ''} post-media-container">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
                 } else {
                     const cid = `carousel-${ctx}-${p.id}`,
                         iid = `inner-${ctx}-${p.id}`,
@@ -8546,12 +8544,24 @@
             toggleModalAnim('user-list-overlay', 'user-list-modal', !0);
             refreshIcons()
         }; window.closeUserList = () => toggleModalAnim('user-list-overlay', 'user-list-modal', !1);
-        window.toggleLike = async (pid) => { 
-            const isLiking = !document.querySelector(`.js-like-btn-${pid}`)?.classList.contains('active'); 
-            document.querySelectorAll(`.js-like-btn-${pid}`).forEach(b => b.classList.toggle('active', isLiking)); 
+        window.toggleLike = async (pid, forceLike = false) => { 
             const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid); 
+            if (!p) return;
             if (!p.likes) p.likes = [];
             const wasLiked = p.likes.includes(currentUser.id);
+
+            if (forceLike && wasLiked) {
+                const likeBtn = document.querySelector(`.js-like-btn-${pid}`);
+                if (likeBtn) likeBtn.classList.add('active');
+                const ovBtn = document.getElementById('post-view-like-btn');
+                if (ovBtn) { ovBtn.classList.add('fill-red-500', 'text-red-500'); ovBtn.classList.remove('text-gray-700'); }
+                const movBtn = document.getElementById(`mobile-overlay-like-btn-${pid}`);
+                if (movBtn) { movBtn.classList.add('fill-red-500', 'text-red-500'); movBtn.classList.remove('text-gray-600'); }
+                return;
+            }
+
+            const isLiking = !wasLiked;
+            document.querySelectorAll(`.js-like-btn-${pid}`).forEach(b => b.classList.toggle('active', isLiking)); 
             
             if (wasLiked) {
                 p.likes = p.likes.filter(id => id !== currentUser.id);
