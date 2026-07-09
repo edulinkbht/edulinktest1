@@ -9874,7 +9874,7 @@
             const i = window.currentViewingPostList.findIndex(x => x.id === window.currentViewingPostId);
             if (i !== -1 && i < window.currentViewingPostList.length - 1) {
                 const nextId = window.currentViewingPostList[i + 1].id;
-                window.openPostView(nextId);
+                window.openPostView(nextId, false, window.currentViewingPostList, !!window.isProfilePostOverlay);
             }
         };
         window.navigateToPreviousPost = (e) => {
@@ -9883,7 +9883,7 @@
             const i = window.currentViewingPostList.findIndex(x => x.id === window.currentViewingPostId);
             if (i > 0) {
                 const prevId = window.currentViewingPostList[i - 1].id;
-                window.openPostView(prevId);
+                window.openPostView(prevId, false, window.currentViewingPostList, !!window.isProfilePostOverlay);
             }
         };
 
@@ -9913,7 +9913,8 @@
             manageHistory('post-view-overlay'); 
             const o = document.getElementById('post-view-overlay'), c = document.getElementById('post-view-container'); 
             window.currentViewingPostId = pid; 
-            window.isProfilePostOverlay = !!isProfileOverlay;
+            const useProfileOverlay = !!isProfileOverlay || !!window.isProfilePostOverlay;
+            window.isProfilePostOverlay = useProfileOverlay;
             
             // Set current post list for navigation
             if (postList) {
@@ -10068,7 +10069,7 @@
 
             let desktopHTML = '';
             let mobileHTML = '';
-            if (isProfileOverlay) {
+            if (useProfileOverlay) {
                 desktopHTML = `
                 <div class="hidden md:flex w-full h-full bg-white flex-col overflow-hidden">
                     <div class="h-16 px-4 flex items-center justify-between shrink-0 border-b border-gray-100 bg-white">
@@ -10413,63 +10414,66 @@
                         </div>
                     </div>
                 </div>`;
-            mobileHTML = `<div class="mobile-overlay-layout md:hidden">
-                ${mobileTopBar}
-                <div class="mobile-scroll-content">
-                    <div class="flex items-center justify-between p-4 pb-2">
-                        <div class="flex items-center gap-3">
-                            <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden cursor-pointer" onclick="event.stopPropagation();openProfilePreview('${a.id}')">
-                                <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
-                            </div>
-                            <div onclick="closePostView();showProfile('${a.id}')">
-                                <div class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-                                    ${a.username || 'user'}${badge}
+            if (!useProfileOverlay) {
+                mobileHTML = `<div class="mobile-overlay-layout md:hidden">
+                    ${mobileTopBar}
+                    <div class="mobile-scroll-content">
+                        <div class="flex items-center justify-between p-4 pb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden cursor-pointer" onclick="event.stopPropagation();openProfilePreview('${a.id}')">
+                                    <img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
                                 </div>
-                                <div class="text-xs text-gray-500">${formatDate(p.timestamp)}</div>
+                                <div onclick="closePostView();showProfile('${a.id}')">
+                                    <div class="font-bold text-gray-900 text-sm flex items-center gap-1.5">
+                                        ${a.username || 'user'}${badge}
+                                    </div>
+                                    <div class="text-xs text-gray-500">${formatDate(p.timestamp)}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1">
+                                ${!isMe ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} ${isFollowing ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} text-[13px] px-4 py-1.5 rounded-lg font-bold hover:opacity-90 transition-all">${isFollowing ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : ''}
+                                <button onclick="showPostOptions(event, '${p.id}', '${p.authorId}')" class="w-9 h-9 flex items-center justify-center text-black hover:bg-gray-50 rounded-full transition-colors">
+                                    <i data-lucide="more-vertical" class="w-6 h-6"></i>
+                                </button>
                             </div>
                         </div>
-                        <div class="flex items-center gap-1">
-                            ${!isMe ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} ${isFollowing ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} text-[13px] px-4 py-1.5 rounded-lg font-bold hover:opacity-90 transition-all">${isFollowing ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : ''}
-                            <button onclick="showPostOptions(event, '${p.id}', '${p.authorId}')" class="w-9 h-9 flex items-center justify-center text-black hover:bg-gray-50 rounded-full transition-colors">
-                                <i data-lucide="more-vertical" class="w-6 h-6"></i>
-                            </button>
+                        <div class="px-4 py-2 text-[15px] leading-relaxed text-gray-800 whitespace-pre-wrap js-post-body-${p.id}">${postBodyHtml}</div>
+                        <div class="px-4">${previewHtmlM}</div>
+                        <div class="w-full mt-3">${mhMobile}</div>
+                        <div class="px-4">
+                            <div class="post-actions py-4">
+                                <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="toggleLike('${p.id}')">
+                                    <i data-lucide="heart" id="mobile-overlay-like-btn-${p.id}" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}"></i>
+                                    <span class="js-like-count-${p.id} font-bold text-sm text-gray-700">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
+                                </button>
+                                <button class="action-btn comment" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
+                                    <i data-lucide="message-circle" class="w-5 h-5 text-gray-600"></i>
+                                    <span class="js-comment-count-${p.id} font-bold text-sm text-gray-700">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
+                                </button>
+                                <button class="action-btn share-btn" onclick="sharePost('${p.id}')">
+                                    <i data-lucide="redo-2" class="w-5 h-5 text-gray-600"></i>
+                                    <span class="font-bold text-sm text-gray-700">Share</span>
+                                </button>
+                                <div class="flex-1"></div>
+                                <button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')">
+                                    <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}"></i>
+                                </button>
+                            </div>
                         </div>
+                        <div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
+                        ${lh}
                     </div>
-                    <div class="px-4 py-2 text-[15px] leading-relaxed text-gray-800 whitespace-pre-wrap js-post-body-${p.id}">${postBodyHtml}</div>
-                    <div class="px-4">${previewHtmlM}</div>
-                    <div class="w-full mt-3">${mhMobile}</div>
-                    <div class="px-4">
-                        <div class="post-actions py-4">
-                            <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="toggleLike('${p.id}')">
-                                <i data-lucide="heart" id="mobile-overlay-like-btn-${p.id}" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : 'text-gray-600'}"></i>
-                                <span class="js-like-count-${p.id} font-bold text-sm text-gray-700">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
-                            </button>
-                            <button class="action-btn comment" onclick="${allowComments ? 'openComments(\'' + p.id + '\')' : ''}">
-                                <i data-lucide="message-circle" class="w-5 h-5 text-gray-600"></i>
-                                <span class="js-comment-count-${p.id} font-bold text-sm text-gray-700">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
-                            </button>
-                            <button class="action-btn share-btn" onclick="sharePost('${p.id}')">
-                                <i data-lucide="redo-2" class="w-5 h-5 text-gray-600"></i>
-                                <span class="font-bold text-sm text-gray-700">Share</span>
-                            </button>
-                            <div class="flex-1"></div>
-                            <button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')">
-                                <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-blue-500 text-blue-500' : 'text-gray-600'}"></i>
-                            </button>
-                        </div>
+                    <div class="mobile-fixed-footer bg-white border-t border-gray-100 h-16 flex items-center justify-between px-6">
+                        <button id="mobile-nav-prev" onclick="navigateToPreviousPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+                            <i data-lucide="arrow-left" class="w-7 h-7 text-gray-700"></i>
+                        </button>
+                        <button id="mobile-nav-next" onclick="navigateToNextPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
+                            <i data-lucide="chevron-right" class="w-7 h-7 text-gray-700"></i>
+                        </button>
                     </div>
-                    <div class="px-4 py-2 font-bold text-sm text-gray-900 mb-2 hidden" id="mobile-overlay-like-count-${p.id}">${(p.likes?.length > 0) ? p.likes.length + ' likes' : '0 likes'}</div>
-                    ${lh}
-                </div>
-                <div class="mobile-fixed-footer bg-white border-t border-gray-100 h-16 flex items-center justify-between px-6">
-                    <button id="mobile-nav-prev" onclick="navigateToPreviousPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
-                        <i data-lucide="arrow-left" class="w-7 h-7 text-gray-700"></i>
-                    </button>
-                    <button id="mobile-nav-next" onclick="navigateToNextPost(event)" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-all active:scale-95 shadow-sm">
-                        <i data-lucide="chevron-right" class="w-7 h-7 text-gray-700"></i>
-                    </button>
-                </div>
-            </div>`; c.innerHTML = desktopHTML + mobileHTML; 
+                </div>`;
+            }
+            c.innerHTML = desktopHTML + mobileHTML; 
             renderCommentsInModal(pid);
             refreshIcons()
         };
