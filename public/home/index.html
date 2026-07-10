@@ -24,6 +24,41 @@
             --primary: #000000
         }
 
+        /* Frame mobile theme: dark header & footer for frame tab on small screens */
+        .frame-mobile-theme #main-header,
+        .frame-mobile-theme #mobile-bottom-nav {
+            background: #111827 !important;
+            color: #ffffff !important;
+            border-color: transparent !important;
+        }
+        .frame-mobile-theme #main-header i,
+        .frame-mobile-theme #mobile-bottom-nav i,
+        .frame-mobile-theme #mobile-bottom-nav svg,
+        .frame-mobile-theme #mobile-bottom-nav [data-lucide] {
+            color: #ffffff !important;
+            stroke: #ffffff !important;
+            fill: #ffffff !important;
+        }
+        .frame-mobile-theme #mobile-bottom-nav .mobile-nav-item {
+            color: #fff !important;
+        }
+        /* Make videos full-bleed on small screen frame mode */
+        @media (max-width: 767px) {
+            .frame-mobile-theme #frame-container .frame-slide .frame-media-container,
+            .frame-mobile-theme [id^="frame-media-container-"] {
+                width: 100vw !important;
+                height: 100vh !important;
+                border-radius: 0 !important;
+                background: black !important;
+            }
+            .frame-mobile-theme .frame-slide {
+                height: 100vh !important;
+            }
+            .frame-mobile-theme #frame-container {
+                padding-top: 0 !important;
+            }
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: var(--background);
@@ -4909,12 +4944,8 @@
                     d="M3 10.5L10.2 4.6C11.3 3.7 12.7 3.7 13.8 4.6L21 10.5C21.6 11 22 11.7 22 12.5V19C22 20.7 20.7 22 19 22H15C14.4 22 14 21.6 14 21V15C14 13.9 13.1 13 12 13C10.9 13 10 13.9 10 15V21C10 21.6 9.6 22 9 22H5C3.3 22 2 20.7 2 19V12.5C2 11.7 2.4 11 3 10.5Z" />
             </svg>
         </div>
-        <div class="mobile-nav-item" onclick="switchView('blog')" id="mobile-nav-blog">
-            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
-                class="custom-icon custom-icon-outline" id="mobile-blog-icon" style="stroke-width: 2;">
-                <path d="M19 20H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2z"/>
-                <path d="M7 14h6M7 10h10M7 6h4"/>
-            </svg>
+        <div class="mobile-nav-item" onclick="switchView('frame')" id="mobile-nav-frame">
+            <i data-lucide="clapperboard" class="custom-icon custom-icon-outline" id="mobile-frame-icon" style="width:26px;height:26px;"></i>
         </div>
         <div class="mobile-nav-item" onclick="switchView('create')" id="mobile-nav-create">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="ig-squircle w-7 h-7"
@@ -6230,8 +6261,7 @@
             if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends') && mbn && window.innerWidth < 768) mbn.classList.add('hidden'); 
             
             if (v === 'frame') { 
-                if (mh) mh.classList.add('hidden'); 
-                if (mbn) mbn.classList.add('hidden'); 
+                // Keep header and mobile footer visible on small screens for frame mode
                 if (wl) wl.classList.add('hidden'); // Hide workspace (which contains main-panel & right sidebar)
                 if (tp) tp.classList.add('hidden'); // Hide right sidebar
             } 
@@ -6385,7 +6415,7 @@
                 renderMuteFriendsList();
             }
 
-            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'blog') { mnav[1]?.classList.add('active'); renderBlog(); } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
+            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'frame') { mnav[1]?.classList.add('active'); renderFrame(); } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
             if (mp) {
                 if (v === 'profile') {
                     mp.classList.add('profile-view');
@@ -6452,6 +6482,12 @@
                 }
             }
 
+            // Toggle mobile-only frame theme (dark header/footer) when in frame view
+            if (v === 'frame' && window.innerWidth < 768) {
+                document.body.classList.add('frame-mobile-theme');
+            } else {
+                document.body.classList.remove('frame-mobile-theme');
+            }
             syncURLState(); setTimeout(() => refreshIcons(), 10); window.updateMobileFooterProfile();
         };
         window.switchNetworkTab = t => { activeNetworkTab = t; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(`net-tab-${t}`)?.classList.add('active'); renderNetwork(); syncURLState() };
@@ -6608,6 +6644,27 @@
                                         <!-- Video Section -->
                                         <div id="frame-video-section-${post.id}" class="absolute inset-0 flex items-center justify-center bg-black">
                                             ${mediaHtml}
+                                            <!-- Mobile overlay: action buttons inside the video -->
+                                            <div class="md:hidden absolute right-3 bottom-20 flex flex-col gap-3 z-30">
+                                                <button onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')" class="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/75 transition-colors">
+                                                    <i data-lucide="heart" class="w-5 h-5 text-white ${isLiked ? 'fill-red-500 text-red-500' : ''}"></i>
+                                                </button>
+                                                <button onclick="event.stopPropagation(); openPostView('${post.id}')" class="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/75 transition-colors">
+                                                    <i data-lucide="message-circle" class="w-5 h-5 text-white"></i>
+                                                </button>
+                                                <button onclick="event.stopPropagation(); sharePost('${post.id}')" class="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/75 transition-colors">
+                                                    <i data-lucide="redo-2" class="w-5 h-5 text-white"></i>
+                                                </button>
+                                                <button onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')" class="w-10 h-10 rounded-full bg-black/60 flex items-center justify-center hover:bg-black/75 transition-colors">
+                                                    <i data-lucide="bookmark" class="w-5 h-5 text-white ${isSaved ? 'fill-current' : ''}"></i>
+                                                </button>
+                                            </div>
+                                            <!-- Mobile caption overlay -->
+                                            ${hasCaption ? `
+                                                <div class="md:hidden absolute left-4 bottom-6 text-white text-sm z-30 max-w-[70%]">
+                                                    ${formatContent(post.content.split(/\s+/).slice(0,12).join(' '))}${post.content.trim().split(/\s+/).length > 12 ? '...' : ''}
+                                                </div>
+                                            ` : ''}
                                         </div>
                                         <!-- Caption Section -->
                                         <div id="frame-caption-section-${post.id}" class="absolute inset-0 p-6 overflow-y-auto hidden">
@@ -6642,8 +6699,8 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Right Column: Action Buttons (aligned to video) -->
-                                <div class="flex flex-col justify-end gap-6" style="height: min(85vh, 780px);">
+                                <!-- Right Column: Action Buttons (aligned to video) - hidden on small screens -->
+                                <div class="hidden md:flex flex-col justify-end gap-6" style="height: min(85vh, 780px);">
                                     <!-- Profile Avatar -->
                                     <div class="flex flex-col items-center gap-1">
                                         <div class="relative">
@@ -6664,7 +6721,7 @@
                                         <span class="text-xs text-gray-700 font-semibold" id="frame-like-count-${post.id}-${index}">${post.likes?.length || 0}</span>
                                     </button>
                                     
-                                    <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')">
+                                    <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); openPostView('${post.id}')">
                                         <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                                             <i data-lucide="message-circle" class="w-6 h-6"></i>
                                         </div>
@@ -6742,8 +6799,8 @@
                 <div class="frame-scroll-container w-full" id="frame-scroll-container">
                     ${framesHtml}
                 </div>
-                <!-- Single set of up/down navigation buttons -->
-                <div class="absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-10">
+                <!-- Single set of up/down navigation buttons (desktop/tablet only) -->
+                <div class="hidden md:flex absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-10">
                     <button onclick="navigateFrame('up')" id="frame-up-btn" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                         <i data-lucide="chevron-up" class="w-7 h-7 text-gray-500"></i>
                     </button>
@@ -6958,8 +7015,8 @@
                             </div>
                         </div>
                         
-                        <!-- Vertical Action Buttons -->
-                        <div class="self-end pb-24 flex flex-col gap-6">
+                        <!-- Vertical Action Buttons (hidden on small screens) -->
+                        <div class="hidden md:flex self-end pb-24 flex flex-col gap-6">
                             <!-- Profile Avatar -->
                             <div class="flex flex-col items-center gap-1">
                                 <div class="relative">
@@ -6980,7 +7037,7 @@
                                 <span class="text-xs text-gray-700 font-semibold" id="frame-like-count-${post.id}">${post.likes?.length || 0}</span>
                             </button>
                             
-                            <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); toggleFrameComments('${post.id}')">
+                            <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); openPostView('${post.id}')">
                                 <div class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                                     <i data-lucide="message-circle" class="w-6 h-6"></i>
                                 </div>
@@ -7000,8 +7057,8 @@
                             </button>
                         </div>
                         
-                        <!-- Up/Down Navigation -->
-                        <div class="absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4">
+                        <!-- Up/Down Navigation (desktop/tablet only) -->
+                        <div class="hidden md:flex absolute right-4 lg:right-16 top-1/2 -translate-y-1/2 flex flex-col gap-4">
                             ${window.currentFrameIndex > 0 ? `
                                 <button onclick="navigateFrame('up')" class="w-12 h-12 rounded-full border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors">
                                     <i data-lucide="chevron-up" class="w-7 h-7 text-gray-500"></i>
@@ -12637,7 +12694,7 @@
             const mobileIcons = {
                 'feed': document.getElementById('mobile-feed-icon'),
                 'explore': document.getElementById('mobile-explore-icon'),
-                'blog': document.getElementById('mobile-blog-icon'),
+                'frame': document.getElementById('mobile-frame-icon'),
                 'notifications': document.getElementById('mobile-notifications-icon')
             };
 
