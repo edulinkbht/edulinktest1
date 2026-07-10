@@ -2212,13 +2212,36 @@
             width: 100%;
             overflow: hidden;
             background-color: #f6f7f8;
-            aspect-ratio: 4/5;
+            min-height: 320px;
+            max-height: 80vh;
             touch-action: pan-y pinch-zoom
         }
 
         /* For single media posts */
         .post-media-container {
             position: relative;
+        }
+
+        .embed-container {
+            position: relative;
+            width: 100%;
+            max-width: 100%;
+            height: min(max(56vh, 520px), 86vh);
+            min-height: 40vh;
+            max-height: 86vh;
+            overflow: hidden;
+            background: #000;
+        }
+
+        .embed-container iframe,
+        .embed-container video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            border: 0;
         }
 
         .post-media-blur-bg {
@@ -6604,7 +6627,7 @@
                                 <!-- Left Column: Video + Caption -->
                                 <div class="flex flex-col items-center">
                                     <!-- Video Container (Vertical like Instagram Reels) -->
-                                    <div id="frame-media-container-${post.id}" class="relative overflow-hidden border border-gray-200 bg-white cursor-pointer" style="width: min(90vw, 450px); height: min(85vh, 780px); border-radius: 8px;" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
+                                    <div id="frame-media-container-${post.id}" class="relative overflow-hidden border border-gray-200 bg-white cursor-pointer" style="width: min(98vw, 980px); max-width: 100%; min-height: 70vh; height: min(90vh, 860px); border-radius: 8px;" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
                                         <!-- Video Section -->
                                         <div id="frame-video-section-${post.id}" class="absolute inset-0 flex items-center justify-center bg-black">
                                             ${mediaHtml}
@@ -6626,7 +6649,7 @@
                                     </div>
                                     
                                     <!-- Bottom Info: Author Username + Short Caption -->
-                                    <div class="mt-4 px-2" style="width: min(90vw, 450px);">
+                                    <div class="mt-4 px-2" style="width: min(96vw, 920px);">
                                         <div class="flex flex-col">
                                             <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
                                                 @${author.username || author.name}
@@ -6643,7 +6666,7 @@
                                 </div>
                                 
                                 <!-- Right Column: Action Buttons (aligned to video) -->
-                                <div class="flex flex-col justify-end gap-6" style="height: min(85vh, 780px);">
+                                <div class="flex flex-col justify-end gap-6" style="height: min(92vh, 860px); max-height: 860px;">
                                     <!-- Profile Avatar -->
                                     <div class="flex flex-col items-center gap-1">
                                         <div class="relative">
@@ -6687,7 +6710,7 @@
                                 </div>
                                 
                                 <!-- Comments Panel - Same as Post Overlay Design -->
-                                <div id="frame-comments-panel-${post.id}" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 450px); height: min(85vh, 780px);">
+                                <div id="frame-comments-panel-${post.id}" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(96vw, 920px); height: min(90vh, 860px);">
                                     <div class="h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
                                         <div class="flex items-center justify-between w-full">
                                             <span class="font-bold text-lg text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
@@ -6937,12 +6960,12 @@
                     <div class="flex items-start gap-8">
                         <!-- Video Container (Vertical like Instagram Reels) -->
                         <div class="flex flex-col items-center">
-                            <div class="relative overflow-hidden" style="width: min(90vw, 450px); height: min(85vh, 780px); border-radius: 8px;">
+                            <div class="relative overflow-hidden" style="width: min(98vw, 980px); height: min(90vh, 860px); border-radius: 8px;">
                                 ${mediaHtml}
                             </div>
                             
                             <!-- Bottom Info: Author Username + Caption/Date -->
-                            <div class="mt-4 px-2" style="width: min(90vw, 450px);">
+                            <div class="mt-4 px-2" style="width: min(96vw, 920px);">
                                 <div class="flex flex-col">
                                     <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
                                         @${author.username || author.name}
@@ -7016,7 +7039,7 @@
                         </div>
                         
                         <!-- Comments Panel -->
-                        <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 450px); height: min(85vh, 780px);">
+                        <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(96vw, 920px); height: min(90vh, 860px);">
                             <div id="frame-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
                                 <div class="flex items-center justify-between w-full">
                                     <span class="font-bold text-xl text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
@@ -7702,10 +7725,10 @@
                 if (embedInfo.type === 'image') {
                     mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden flex items-center justify-center bg-gray-50 post-media-container"><div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${embedInfo.url}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.url}'); this.classList.add('loaded')"></div></div>`;
                 } else if (embedInfo.type === 'video') {
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" allow="autoplay" loading="lazy"></iframe></div>`;
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden embed-container"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" loading="lazy"></iframe></div>`;
                 } else {
                     // If unknown type, just try as video
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden embed-container"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" loading="lazy"></iframe></div>`;
                 }
             } else if (p.media) {
                 const ma = Array.isArray(p.media) ? p.media : [p.media];
@@ -7722,7 +7745,7 @@
                         }
                         videoHtml = `<video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" controls playsinline preload="metadata" onclick="event.stopPropagation()"></video>`;
                     }
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : ''} post-media-container">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : ''} post-media-container">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
                 } else {
                     const cid = `carousel-${ctx}-${p.id}`,
                         iid = `inner-${ctx}-${p.id}`,
@@ -7743,7 +7766,7 @@
                         sl += `<div class="post-carousel-item bg-transparent flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
                         dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="dot-${ctx}-${p.id}-${i}"></div>`
                     });
-                    mh = `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel touch-pan-y max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
+                    mh = `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel touch-pan-y" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
                     (window.carouselStates = window.carouselStates || {})[cid] = {
                         index: 0,
                         total: ma.length
@@ -8703,7 +8726,7 @@
             };
             // Find first non-video media for background
             const bgMedia = ma.find(m => !m.includes('video') && !m.includes('.mp4') && !m.startsWith('data:video')) || ma[0];
-            return `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel shadow-sm max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${pid}',true)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`
+            return `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel shadow-sm" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${pid}',true)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`
         }
         window.sharePost = pid => { manageHistory('share-overlay'); window.currentSharePid = pid; const p = posts.find(x => x.id === pid); if (!p) return; const url = window.getPostUrl(p.authorId, pid), pc = document.getElementById('share-post-preview'); document.getElementById('share-link-input').value = url; document.getElementById('share-link-text').innerText = url; const isRep = currentUser.reposts?.includes(pid); const rb = document.getElementById('share-repost-btn'), rt = document.getElementById('share-repost-text'), ri = document.getElementById('share-repost-icon'); if (rb && rt && ri) { rt.innerText = isRep ? 'Un-Repost' : 'Repost'; ri.className = `share-icon-circle ${isRep ? 'bg-green-600' : 'bg-green-500'} text-white` } if (p) { const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '' }; document.getElementById('share-owner-avatar').src = a.avatar; const m = p.media ? (Array.isArray(p.media) ? p.media[0] : p.media) : null, isV = (m && (m.includes('video') || m.endsWith('.mp4'))) || p.embedVideo, mh = m ? (isV ? `<div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center shrink-0"><i data-lucide="clapperboard" class="w-6 h-6 text-white"></i></div>` : `<div class="w-16 h-16 rounded-lg shrink-0 bg-gray-100"><img src="${m}" class="w-full h-full rounded-lg object-cover" onload="this.classList.add('loaded')"></div>`) : (p.embedVideo ? `<div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center shrink-0"><i data-lucide="clapperboard" class="w-6 h-6 text-white"></i></div>` : ''); pc.innerHTML = `<div class="bg-white border border-gray-200 rounded-xl p-3 mb-6"><div class="flex items-center gap-2 mb-2"><div class="w-5 h-5 rounded-full bg-gray-100"><img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><span class="text-xs font-bold text-gray-900 truncate">${a.name}</span></div><div class="flex gap-3 items-center"><div class="flex-1 min-w-0"><p class="text-xs text-gray-600 line-clamp-2 mb-2 leading-relaxed">${p.content || (m || p.embedVideo ? 'Shared a post' : '')}</p><div class="flex items-center gap-3 text-gray-400"><div class="flex items-center gap-1 text-[10px] font-medium"><i data-lucide="heart" class="w-3 h-3"></i> ${p.likes?.length || 0}</div><div class="flex items-center gap-1 text-[10px] font-medium"><i data-lucide="message-circle" class="w-3 h-3"></i> ${p.comments?.length || 0}</div></div></div>${mh}</div></div>`; pc.classList.remove('hidden'); const dl = document.getElementById('share-dl-btn'); if (dl) dl.remove(); if (m && !isV) { const g = document.getElementById('share-grid-options'); if (!document.getElementById(`share-dl-${pid}`)) { const d = document.createElement('div'); d.id = `share-dl-${pid}`; d.className = "share-icon-btn"; d.onclick = () => triggerShare('download'); d.innerHTML = `<div class="share-icon-circle bg-gray-100 text-gray-800 border border-gray-200" id="dl-icon-${pid}"><i data-lucide="download" class="w-6 h-6"></i></div><span class="text-xs font-medium text-gray-700" id="dl-text-${pid}">Download</span>`; g.appendChild(d) } } refreshIcons() } else pc.classList.add('hidden'); toggleModalAnim('share-overlay', 'share-modal', !0) };
         window.closeShareMenu = () => { const o = document.getElementById('share-overlay'), m = document.getElementById('share-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => { o.classList.add('hidden'); window.currentSharePid = null; document.querySelectorAll('[id^="share-dl-"]').forEach(e => e.remove()) }, 200) };
@@ -9534,7 +9557,7 @@
                 if (embedInfo.type === 'image') {
                     mediaHtml = `<div class="img-placeholder w-full h-full"><img src="${embedInfo.url}" loading="lazy" decoding="async" class="w-full h-full object-cover" onload="this.classList.add('loaded')"></div>`;
                 } else if (embedInfo.type === 'video') {
-                    mediaHtml = `<div class="w-full h-full relative"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" loading="lazy"></iframe></div>`;
+                    mediaHtml = `<div class="w-full h-full relative embed-container"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" loading="lazy"></iframe></div>`;
                 } else {
                     mediaHtml = `<div class="w-full h-full flex items-center justify-center bg-gray-100"><i data-lucide="link" class="w-8 h-8 text-gray-400"></i></div>`;
                 }
@@ -9892,11 +9915,11 @@
                     mhDesktop = imgHtml;
                     mhMobile = imgHtml;
                 } else if (embedInfo.type === 'video') {
-                    const ehtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe>`;
+                    const ehtml = `<div class="embed-container"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen loading="lazy"></iframe></div>`;
                     mhDesktop = ehtml;
                     mhMobile = ehtml;
                 } else {
-                    const ehtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                    const ehtml = `<div class="embed-container"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe></div>`;
                     mhDesktop = ehtml;
                     mhMobile = ehtml;
                 }
@@ -9961,13 +9984,13 @@
                     <!-- Left Column: Video/Thumbnail & Post Info & Actions -->
                     <div class="flex flex-col h-full justify-center px-8" style="flex: 2;">
                         <div class="flex items-center justify-center mb-4">
-                            <div class="relative overflow-hidden" style="width: 600px; height: 600px; border-radius: 24px;">
+                            <div class="relative overflow-hidden" style="width: min(92vw, 680px); max-width: 680px; aspect-ratio: 1 / 1; border-radius: 24px;">
                                 ${mhDesktop}
                             </div>
                         </div>
 
                         <!-- Post Info & Actions -->
-                        <div class="flex flex-col items-start gap-3" style="width: 600px;">
+                        <div class="flex flex-col items-start gap-3" style="width: min(92vw, 680px); max-width: 680px;">
                             <!-- Author & Text -->
                             <div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
                                 <div class="img-placeholder rounded-full w-12 h-12 border border-gray-100 overflow-hidden">
