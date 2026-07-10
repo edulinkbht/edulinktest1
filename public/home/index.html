@@ -6488,19 +6488,9 @@
         };
 
         window.renderFrame = () => {
-            // Filter to only video posts
+            // Filter to only native video posts for the frame tab
             const allPosts = [...posts];
-            const videoPosts = allPosts.filter(post => {
-                if (post.embedVideo) {
-                    const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
-                    return embedInfo.type === 'video';
-                } else if (post.media) {
-                    const ma = Array.isArray(post.media) ? post.media : [post.media];
-                    const firstMedia = ma[0];
-                    return firstMedia && (firstMedia.includes('video') || firstMedia.endsWith('.mp4') || firstMedia.startsWith('data:video'));
-                }
-                return false;
-            });
+            const videoPosts = allPosts.filter(post => window.isFrameVideoPost(post));
 
             window.frameList = videoPosts;
             window.currentFrameIndex = 0;
@@ -7648,18 +7638,8 @@
         function createPostElement(p, ctx = 'feed') {
             const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); d.id = `post-card-${ctx}-${p.id}`; d.className = "post-card group overflow-hidden w-full md:max-w-2xl md:mx-auto md:px-4 md:mb-4"; 
             
-            // Check if this is a video post
-            const isVideoPost = () => {
-                if (p.embedVideo) {
-                    const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
-                    return embedInfo.type === 'video';
-                }
-                if (p.media) {
-                    const ma = Array.isArray(p.media) ? p.media : [p.media];
-                    return ma.some(m => m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video'));
-                }
-                return false;
-            };
+            // Check if this should open in the frame view
+            const isVideoPost = () => window.isFrameVideoPost(p);
             
             let lastTapTime = 0;
             const isMobileViewport = () => window.innerWidth < 768;
@@ -7729,11 +7709,11 @@
                         </div>`;
                     } else {
                         // No thumbnail, show iframe directly
-                        mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
+                        mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" onclick="event.stopPropagation()"></iframe></div>`;
                     }
                 } else {
                     // If unknown type, just try as video
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay" onclick="event.stopPropagation()"></iframe></div>`;
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full aspect-video bg-black flex items-center justify-center"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen" onclick="event.stopPropagation()"></iframe></div>`;
                 }
             } else if (p.media) {
                 const ma = Array.isArray(p.media) ? p.media : [p.media];
@@ -8167,18 +8147,8 @@
                 return 0;
             };
             
-            // Check if post is a video
-            const isVideoPost = (p) => {
-                if (p.embedVideo) {
-                    const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
-                    return embedInfo.type === 'video';
-                }
-                if (p.media) {
-                    const ma = Array.isArray(p.media) ? p.media : [p.media];
-                    return ma.some(media => media.includes('video') || media.endsWith('.mp4') || media.startsWith('data:video'));
-                }
-                return false;
-            };
+            // Check if post should appear in the frame tab
+            const isVideoPost = (p) => window.isFrameVideoPost(p);
 
             const normalizeTag = (x) => (x || '').replace(/^#/, '').trim().toLowerCase();
 
@@ -8298,16 +8268,8 @@
                 let fp = posts.filter(p => {
                     if (window.activeExploreTab === 'tags') return p.content.includes('#');
                     if (window.activeExploreTab === 'frame') {
-                        // Check if it's a video post
-                        if (p.embedVideo) {
-                            const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
-                            return embedInfo.type === 'video';
-                        }
-                        if (p.media) {
-                            const ma = Array.isArray(p.media) ? p.media : [p.media];
-                            return ma.some(media => media.includes('video') || media.endsWith('.mp4') || media.startsWith('data:video'));
-                        }
-                        return false;
+                        // Only native video uploads should appear in the frame tab
+                        return window.isFrameVideoPost(p);
                     }
                     return true;
                 });
@@ -9529,18 +9491,8 @@
         window.renderGridPostItem = function(p) {
             const m = Array.isArray(p.media) ? p.media[0] : p.media;
             
-            // Check if this is a video post
-            const isVideoPost = () => {
-                if (p.embedVideo) {
-                    const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
-                    return embedInfo.type === 'video';
-                }
-                if (p.media) {
-                    const ma = Array.isArray(p.media) ? p.media : [p.media];
-                    return ma.some(media => media.includes('video') || media.endsWith('.mp4') || media.startsWith('data:video'));
-                }
-                return false;
-            };
+            // Only native video uploads should open in the frame view
+            const isVideoPost = () => window.isFrameVideoPost(p);
             
             const isV = isVideoPost();
             const likeText = (p.likes?.length > 0) ? p.likes.length : '0';
@@ -9587,18 +9539,8 @@
             const m = Array.isArray(p.media) ? p.media[0] : p.media;
             const author = users.find(u => u.id === p.authorId) || { name: 'User', avatar: 'https://i.imghippo.com/files/dHv4045RXI.png' };
             
-            // Check if this is a video post
-            const isVideoPost = () => {
-                if (p.embedVideo) {
-                    const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
-                    return embedInfo.type === 'video';
-                }
-                if (p.media) {
-                    const ma = Array.isArray(p.media) ? p.media : [p.media];
-                    return ma.some(media => media.includes('video') || media.endsWith('.mp4') || media.startsWith('data:video'));
-                }
-                return false;
-            };
+            // Only native video uploads should open in the frame view
+            const isVideoPost = () => window.isFrameVideoPost(p);
             
             const isV = isVideoPost();
             
@@ -9936,12 +9878,12 @@
                         mhDesktop = ehtml;
                         mhMobile = ehtml;
                     } else {
-                        const ehtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                        const ehtml = `<iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
                         mhDesktop = ehtml;
                         mhMobile = ehtml;
                     }
                 } else {
-                    const ehtml = `<iframe src="${embedInfo.url}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
+                    const ehtml = `<iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute top-0 left-0 w-full h-full border-0" allow="autoplay; fullscreen" allowfullscreen></iframe>`;
                     mhDesktop = ehtml;
                     mhMobile = ehtml;
                 }
@@ -11544,6 +11486,22 @@
             return embedUrl;
         };
 
+        window.isFrameVideoPost = (p) => {
+            if (!p) return false;
+            if (p.embedVideo) return false;
+            if (p.media) {
+                const ma = Array.isArray(p.media) ? p.media : [p.media];
+                return ma.some(media => media.includes('video') || media.endsWith('.mp4') || media.startsWith('data:video'));
+            }
+            return false;
+        };
+
+        window.getAutoplayEmbedUrl = (url) => {
+            if (!url) return url;
+            const separator = url.includes('?') ? '&' : '?';
+            return `${url}${separator}autoplay=1&mute=1`;
+        };
+
         // Handle thumbnail clicks for embedded videos
         window.addEventListener('click', function(e) {
             const thumbnailOverlay = e.target.closest('.thumbnail-overlay');
@@ -11556,7 +11514,7 @@
                     if (embedUrl && embedId) {
                         thumbnailOverlay.style.display = 'none';
                         // Add iframe directly
-                        container.innerHTML = `<iframe src="${embedUrl}?autoplay=1" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay"></iframe>`;
+                        container.innerHTML = `<iframe src="${window.getAutoplayEmbedUrl(embedUrl)}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
                     }
                 }
             }
