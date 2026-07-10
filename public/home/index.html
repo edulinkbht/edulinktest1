@@ -42,6 +42,13 @@
         .frame-mobile-theme #mobile-bottom-nav .mobile-nav-item {
             color: #fff !important;
         }
+        .frame-mobile-theme #mobile-nav-profile .img-placeholder {
+            width: 30px !important;
+            height: 30px !important;
+            border-width: 2px !important;
+            border-color: #fff !important;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+        }
         /* Force mobile footer icons to be outline (not filled) in frame mode */
         .frame-mobile-theme #mobile-bottom-nav svg path,
         .frame-mobile-theme #mobile-bottom-nav svg rect,
@@ -49,43 +56,71 @@
             fill: none !important;
             stroke: #fff !important;
         }
+        .frame-mobile-theme .mobile-nav-item.active i,
+        .frame-mobile-theme .mobile-nav-item.active svg,
+        .frame-mobile-theme .mobile-nav-item.active [data-lucide] {
+            fill: #fff !important;
+            stroke: #fff !important;
+        }
+        .frame-mobile-theme #view-frame {
+            background: #000;
+            padding-top: 64px;
+            padding-bottom: 64px;
+        }
+        .frame-mobile-theme #frame-container {
+            height: calc(100vh - 128px) !important;
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
+        }
+        .frame-mobile-theme #frame-mobile-header,
+        .frame-mobile-theme #frame-mobile-header.hidden {
+            display: flex !important;
+            visibility: visible !important;
+        }
+        .frame-mobile-theme .frame-slide {
+            min-height: calc(100vh - 128px) !important;
+            padding-bottom: 12px !important;
+        }
         /* Make videos full-bleed on small screen frame mode */
         @media (max-width: 767px) {
             .frame-mobile-theme #frame-container .frame-slide .frame-media-container,
             .frame-mobile-theme [id^="frame-media-container-"] {
                 width: 100vw !important;
-                    height: calc(100vh - 64px) !important;
+                height: calc(100vh - 140px) !important;
                 border-radius: 0 !important;
                 background: black !important;
+                border-color: #000 !important;
+                overflow: hidden;
             }
             .frame-mobile-theme .frame-slide {
-                    height: calc(100vh - 64px) !important;
+                min-height: calc(100vh - 128px) !important;
             }
             .frame-mobile-theme #frame-container {
                 padding-top: 0 !important;
             }
-            /* Frame comments panel fixed above footer on small screens */
-            @media (max-width:767px) {
-                .frame-comments-open {
-                    position: fixed !important;
-                    left: 0 !important;
-                    right: 0 !important;
-                    bottom: 64px; /* above footer height */
-                    margin: 0 auto !important;
-                    width: 100% !important;
-                    max-width: 100% !important;
-                    border-radius: 12px 12px 0 0 !important;
-                    height: calc(60vh) !important;
-                    z-index: 60 !important;
-                }
-                .frame-comments-open [id^="frame-comments-list-"] {
-                    height: calc(100% - 120px);
-                    overflow-y: auto;
-                }
+            .frame-mobile-theme .frame-scroll-container {
+                height: calc(100vh - 128px) !important;
             }
-                .frame-mobile-theme .frame-scroll-container {
-                    height: calc(100vh - 64px) !important;
-                }
+            /* Frame comments panel fixed above footer on small screens */
+            .frame-comments-open {
+                position: fixed !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 64px !important; /* above footer height */
+                margin: 0 auto !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                border-radius: 12px 12px 0 0 !important;
+                height: calc(56vh) !important;
+                z-index: 60 !important;
+            }
+            .frame-comments-open [id^="frame-comments-list-"] {
+                height: calc(100% - 120px) !important;
+                overflow-y: auto !important;
+                padding-bottom: 10px !important;
+            }
         }
 
         body {
@@ -4960,8 +4995,20 @@
             </div>
         </aside>
     </div>
-    <div id="view-frame" class="fixed inset-0 z-30 bg-white hidden">
+    <div id="view-frame" class="fixed inset-0 z-30 bg-black hidden">
         <style>#view-frame::-webkit-scrollbar { display: none; }</style>
+        <div id="frame-mobile-header" class="hidden md:hidden fixed top-0 left-0 right-0 z-40 h-[64px] bg-[#121212] border-b border-black text-white flex items-center justify-between px-3">
+            <div class="flex items-center gap-3">
+                <div class="img-placeholder w-9 h-9 rounded-full overflow-hidden border border-white bg-black" id="frame-header-avatar">
+                    <img src="" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
+                </div>
+                <div class="min-w-0">
+                    <div id="frame-header-username" class="text-sm font-semibold truncate">Frame</div>
+                    <div id="frame-header-subtitle" class="text-[11px] text-gray-400 truncate">Reels</div>
+                </div>
+            </div>
+            <button onclick="switchView('feed')" class="text-xs font-semibold text-white px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Close</button>
+        </div>
         <div id="frame-container" class="h-full w-full"></div>
     </div>
     <nav id="mobile-bottom-nav"
@@ -6674,26 +6721,26 @@
                                         <div id="frame-video-section-${post.id}" class="absolute inset-0 flex items-center justify-center bg-black">
                                             ${mediaHtml}
                                             <!-- Mobile overlay: action buttons inside the video -->
-                                            <div class="md:hidden absolute right-3 bottom-20 flex flex-col gap-3 z-30 items-center">
-                                                <button onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')" class="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center hover:bg-black/80 transition-colors">
-                                                    <i data-lucide="heart" class="w-6 h-6 text-white ${isLiked ? 'fill-red-500 text-red-500' : ''}"></i>
+                                            <div class="md:hidden absolute right-4 bottom-20 flex flex-col gap-2 z-30 items-center text-white">
+                                                <button onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')" class="p-0 bg-transparent hover:bg-transparent transition-colors">
+                                                    <i data-lucide="heart" class="w-8 h-8 text-white ${isLiked ? 'fill-red-500 text-red-500' : ''}"></i>
                                                 </button>
-                                                <div class="text-xs text-white font-semibold">${post.likes?.length || 0}</div>
+                                                <div class="text-[11px] font-semibold">${post.likes?.length || 0}</div>
 
-                                                <button onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')" class="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center hover:bg-black/80 transition-colors">
-                                                    <i data-lucide="message-circle" class="w-6 h-6 text-white"></i>
+                                                <button onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')" class="p-0 bg-transparent hover:bg-transparent transition-colors">
+                                                    <i data-lucide="message-circle" class="w-8 h-8 text-white"></i>
                                                 </button>
-                                                <div class="text-xs text-white font-semibold">${post.comments?.length || 0}</div>
+                                                <div class="text-[11px] font-semibold">${post.comments?.length || 0}</div>
 
-                                                <button onclick="event.stopPropagation(); sharePost('${post.id}')" class="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center hover:bg-black/80 transition-colors">
-                                                    <i data-lucide="redo-2" class="w-6 h-6 text-white"></i>
+                                                <button onclick="event.stopPropagation(); sharePost('${post.id}')" class="p-0 bg-transparent hover:bg-transparent transition-colors">
+                                                    <i data-lucide="redo-2" class="w-8 h-8 text-white"></i>
                                                 </button>
-                                                <div class="text-xs text-white font-semibold">Share</div>
+                                                <div class="text-[11px] font-semibold">Share</div>
 
-                                                <button onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')" class="w-12 h-12 rounded-full bg-black/70 flex items-center justify-center hover:bg-black/80 transition-colors">
-                                                    <i data-lucide="bookmark" class="w-6 h-6 text-white ${isSaved ? 'fill-current' : ''}"></i>
+                                                <button onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')" class="p-0 bg-transparent hover:bg-transparent transition-colors">
+                                                    <i data-lucide="bookmark" class="w-8 h-8 text-white ${isSaved ? 'fill-current' : ''}"></i>
                                                 </button>
-                                                <div class="text-xs text-white font-semibold">Save</div>
+                                                <div class="text-[11px] font-semibold">Save</div>
                                             </div>
                                             <!-- Mobile caption overlay -->
                                             ${hasCaption ? `
@@ -6868,14 +6915,8 @@
                 });
                 
                 window.currentFrameIndex = closestIndex;
-                
-                // Close all comment panels except current
-                window.frameList.forEach((post, index) => {
-                    const panel = document.getElementById(`frame-comments-panel-${post.id}`);
-                    if (panel && index !== closestIndex) {
-                        panel.classList.add('hidden');
-                    }
-                });
+                const currentPost = window.frameList[closestIndex];
+                updateFrameHeader(currentPost);
                 
                 // Show/hide up/down buttons (but keep both visible, just disabled maybe)
                 const upBtn = document.getElementById('frame-up-btn');
@@ -6954,6 +6995,19 @@
             if (window.frameList.length > 0) {
                 renderFrameComments(window.frameList[0].id);
                 updateActiveFrame();
+                updateFrameHeader(window.frameList[0]);
+            }
+
+            function updateFrameHeader(post) {
+                const author = users.find(u => u.id === post?.authorId) || { username: 'Unknown', avatar: '' };
+                const headerAvatar = document.querySelector('#frame-header-avatar img');
+                const headerName = document.getElementById('frame-header-username');
+                const headerSubtitle = document.getElementById('frame-header-subtitle');
+                if (headerAvatar && author.avatar) {
+                    headerAvatar.src = author.avatar;
+                }
+                if (headerName) headerName.textContent = author.username ? `@${author.username}` : 'Unknown';
+                if (headerSubtitle) headerSubtitle.textContent = post?.content ? post.content.split('\n')[0].slice(0, 30) : 'Reels';
             }
         };
 
@@ -7109,7 +7163,7 @@
                         </div>
                         
                         <!-- Comments Panel -->
-                        <div id="frame-comments-panel" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 450px); height: min(85vh, 780px);">
+                        <div id="frame-comments-panel-${post.id}" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 450px); height: min(85vh, 780px);">
                             <div id="frame-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
                                 <div class="flex items-center justify-between w-full">
                                     <span class="font-bold text-xl text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
@@ -7404,9 +7458,11 @@
             if (!panel) return;
             if (panel.classList.contains('hidden')) {
                 panel.classList.remove('hidden');
+                panel.classList.add('frame-comments-open');
                 renderFrameComments(postId);
             } else {
                 panel.classList.add('hidden');
+                panel.classList.remove('frame-comments-open');
             }
         };
 
