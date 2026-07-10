@@ -2790,6 +2790,12 @@
             #compose-footer-shell {
                 display: none !important;
             }
+
+            body.compose-mobile-open #mobile-bottom-nav {
+                transform: translateY(100%);
+                opacity: 0;
+                pointer-events: none;
+            }
         }
 
         /* Standardized modal corners */
@@ -11749,7 +11755,7 @@
             }
         };
         window.openCompose = (isEdit = false) => {
-            manageHistory('compose-overlay'); closeCreateMenu(); document.getElementById('compose-overlay').classList.remove('opacity-0', 'pointer-events-none'); const modal = document.getElementById('compose-modal'); modal.classList.remove('scale-95'); modal.classList.remove('translate-y-full');
+            manageHistory('compose-overlay'); closeCreateMenu(); document.body.classList.add('compose-mobile-open'); document.getElementById('compose-overlay').classList.remove('opacity-0', 'pointer-events-none'); const modal = document.getElementById('compose-modal'); modal.classList.remove('scale-95'); modal.classList.remove('translate-y-full');
             if (modal) {
                 modal.ondragover = e => { e.preventDefault(); modal.classList.add('drag-over') };
                 modal.ondragleave = () => modal.classList.remove('drag-over');
@@ -11938,7 +11944,7 @@
             window.renderComposeEmojis(window.__composeEmojiAll || []);
             setTimeout(() => search?.focus(), 50);
         };
-        window.closeCompose = () => { document.getElementById('compose-overlay').classList.add('opacity-0', 'pointer-events-none'); const modal = document.getElementById('compose-modal'); modal.classList.add('scale-95'); modal.classList.add('translate-y-full'); setTimeout(() => { window.editingPostId = null; document.getElementById('compose-text').value = ""; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null] }, 200) };
+        window.closeCompose = () => { document.body.classList.remove('compose-mobile-open'); document.getElementById('compose-overlay').classList.add('opacity-0', 'pointer-events-none'); const modal = document.getElementById('compose-modal'); modal.classList.add('scale-95'); modal.classList.add('translate-y-full'); setTimeout(() => { window.editingPostId = null; document.getElementById('compose-text').value = ""; window.composeImages = [null, null, null, null]; window.composeImageBlobs = [null, null, null, null] }, 200) };
         window.toggleComposeSettings = () => { const a = document.getElementById('compose-settings-area'), ar = document.getElementById('compose-settings-arrow'); a.classList.toggle('hidden'); ar.style.transform = a.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(180deg)' };
         window.openUploadOptions = () => document.getElementById('upload-options-modal').classList.remove('hidden'); window.triggerUpload = m => { window.uploadMode = m; document.getElementById('upload-options-modal').classList.add('hidden'); const i = document.getElementById('media-input'); if (m === 'multiple') i.setAttribute('multiple', ''); else i.removeAttribute('multiple'); i.click() }; window.handleFileSelect = e => { const f = e.target.files; if (f.length > 0) { window.currentMediaBlob = []; window.currentMedia = []; const c = document.getElementById('media-preview-container'), inr = document.getElementById('preview-inner'); c.classList.remove('hidden'); inr.innerHTML = ''; const ps = Array.from(f).map(file => { window.currentMediaBlob.push(file); return new Promise(r => { const d = new FileReader(); d.onload = ev => { window.currentMedia.push(ev.target.result); const iv = file.type.startsWith('video'), el = document.createElement(iv ? 'video' : 'img'); el.src = ev.target.result; el.className = "h-20 w-20 object-cover rounded-md border border-gray-200 shrink-0"; if(iv){el.muted=true;el.preload="metadata";el.onloadeddata=()=>el.currentTime=0.1;el.onseeked=()=>{el.play();setTimeout(()=>el.pause(),10);}} inr.appendChild(el); r() }; d.readAsDataURL(file) }) }); Promise.all(ps).then(() => showToast(`${f.length} file(s) ready`)) } }; window.removeMedia = () => { window.currentMedia = []; window.currentMediaBlob = []; document.getElementById('media-preview-container').classList.add('hidden'); document.getElementById('media-input').value = "" };
         window.renderMediaGrid = () => {
