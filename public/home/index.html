@@ -5029,7 +5029,10 @@
             </svg>
         </div>
         <div class="mobile-nav-item" onclick="switchView('frame')" id="mobile-nav-frame">
-            <i data-lucide="clapperboard" class="custom-icon custom-icon-outline" id="mobile-frame-icon" style="width:26px;height:26px;"></i>
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" class="custom-icon custom-icon-outline" id="mobile-frame-icon" style="stroke-width: 2;">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+            </svg>
         </div>
         <div class="mobile-nav-item" onclick="switchView('create')" id="mobile-nav-create">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="ig-squircle w-7 h-7"
@@ -6416,6 +6419,9 @@
             document.querySelectorAll('.nav-item,.mobile-nav-item').forEach(e => e.classList.remove('active')); 
             const nav = document.getElementById(`nav-${v}`), mnav = document.querySelectorAll('.mobile-nav-item'); 
             if (nav) nav.classList.add('active'); 
+            // Also add active class to mobile nav item
+            const mobileNav = document.getElementById(`mobile-nav-${v}`);
+            if (mobileNav) mobileNav.classList.add('active'); 
             
             if (v === 'frame') {
                 renderFrame();
@@ -6807,31 +6813,32 @@
                                     </button>
                                 </div>
                                 
-                                <!-- Comments Panel - Same as Post Overlay Design -->
-                                <div id="frame-comments-panel-${post.id}" class="hidden flex flex-col bg-white rounded-[24px] border border-gray-200" style="width: min(90vw, 450px); height: min(85vh, 780px);">
-                                    <div class="h-14 flex items-center justify-between px-4 border-b border-gray-100 bg-white z-10 shrink-0 rounded-t-[24px]">
-                                        <div class="flex items-center justify-between w-full">
-                                            <span class="font-bold text-lg text-gray-900" id="frame-comments-count-${post.id}">Comments (${post.comments?.length || 0})</span>
-                                            <div class="flex items-center gap-2">
-                                                <button onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')" class="w-8 h-8 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
-                                                    <i data-lucide="x" class="w-4 h-4 text-gray-600"></i>
-                                                </button>
-                                            </div>
+                                <!-- Mobile Footer: User Info + Caption + Actions (small screens only) -->
+                                <div class="md:hidden absolute bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-30 max-h-[140px] flex flex-col">
+                                    <div class="flex items-start gap-3 px-4 py-3 border-b border-gray-100 flex-1 overflow-hidden">
+                                        <img src="${author.avatar}" class="w-10 h-10 rounded-full object-cover shrink-0 cursor-pointer" onclick="event.stopPropagation(); showProfile('${author.id}')">
+                                        <div class="flex-1 min-w-0 overflow-hidden">
+                                            <div class="font-bold text-gray-900 text-sm cursor-pointer" onclick="event.stopPropagation(); showProfile('${author.id}')" id="frame-username-${post.id}-${index}">@${author.username || author.name}</div>
+                                            ${hasCaption ? `<div class="text-xs text-gray-600 line-clamp-2 mt-1" id="frame-caption-${post.id}-${index}">${formatContent(post.content)}</div>` : ''}
                                         </div>
                                     </div>
-                                    <div id="frame-comments-list-${post.id}" class="flex-1 overflow-y-auto"></div>
-                                    <div class="px-4 h-[64px] flex items-center bg-white shrink-0 rounded-b-[24px]">
-                                        <div class="w-full">
-                                            <div class="flex items-center gap-2">
-                                                <img src="${currentUser.avatar}" class="w-7 h-7 rounded-full bg-gray-200 object-cover shrink-0">
-                                                <div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-3 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all">
-                                                    <input type="text" id="frame-comment-input-${post.id}" placeholder="Add a comment..." class="flex-1 bg-transparent text-[13px] outline-none text-gray-900 placeholder-gray-500">
-                                                    <button onclick="addFrameComment('${post.id}')" class="px-4 py-2 bg-[#3D7EEB] rounded-xl flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm">
-                                                        <i data-lucide="arrow-right" class="w-4 h-4"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div class="flex items-center justify-around gap-2 px-2 py-2 bg-gray-50 shrink-0">
+                                        <button onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')" class="flex flex-col items-center gap-1 flex-1 py-1" id="frame-like-btn-${post.id}-${index}">
+                                            <i data-lucide="heart" class="w-5 h-5 ${isLiked ? 'fill-red-500 text-red-500' : ''}" id="frame-like-icon-mobile-${post.id}-${index}"></i>
+                                            <span class="text-xs font-medium" id="frame-like-count-mobile-${post.id}-${index}">${post.likes?.length || 0}</span>
+                                        </button>
+                                        <button onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')" class="flex flex-col items-center gap-1 flex-1 py-1">
+                                            <i data-lucide="message-circle" class="w-5 h-5"></i>
+                                            <span class="text-xs font-medium">${post.comments?.length || 0}</span>
+                                        </button>
+                                        <button onclick="event.stopPropagation(); sharePost('${post.id}')" class="flex flex-col items-center gap-1 flex-1 py-1">
+                                            <i data-lucide="redo-2" class="w-5 h-5"></i>
+                                            <span class="text-xs font-medium">Share</span>
+                                        </button>
+                                        <button onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')" class="flex flex-col items-center gap-1 flex-1 py-1" id="frame-save-btn-${post.id}-${index}">
+                                            <i data-lucide="bookmark" class="w-5 h-5 ${isSaved ? 'fill-current' : ''}" id="frame-save-icon-mobile-${post.id}-${index}"></i>
+                                            <span class="text-xs font-medium">Save</span>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
