@@ -6526,7 +6526,7 @@
                         // Don't autoplay initially - we'll control playback with updateActiveFrame
                         mediaHtml = `
                             <div class="w-full h-full bg-black" id="frame-skeleton-${post.id}"></div>
-                            <iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute top-0 left-0 w-full h-full border-0 hidden" allowfullscreen allow="fullscreen" id="frame-embed-${post.id}" onload="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden');"></iframe>
+                            <iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute top-0 left-0 w-full h-full border-0 hidden embed-iframe" data-original-src="${window.getAutoplayEmbedUrl(embedInfo.url)}" allowfullscreen allow="fullscreen" id="frame-embed-${post.id}" onload="document.getElementById('frame-skeleton-${post.id}').classList.add('hidden'); this.classList.remove('hidden');"></iframe>
                             <!-- Top buttons - only more options for embedded -->
                             <div class="absolute top-4 right-4 flex gap-2 z-20">
                                 <button onclick="event.stopPropagation(); showPostOptions(event,'${post.id}','${post.authorId}')" class="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center hover:bg-black/70 transition-colors">
@@ -6868,7 +6868,7 @@
             if (post.embedVideo) {
                 const embedInfo = window.getEmbedTypeAndUrl(post.embedVideo);
                 if (embedInfo.type === 'video') {
-                    mediaHtml = `<iframe id="frame-embed-${post.id}" src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute top-0 left-0 w-full h-full border-0" allowfullscreen allow="fullscreen"></iframe>`;
+                    mediaHtml = `<iframe id="frame-embed-${post.id}" src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute top-0 left-0 w-full h-full border-0 embed-iframe" data-original-src="${window.getAutoplayEmbedUrl(embedInfo.url)}" allowfullscreen allow="fullscreen"></iframe>`;
                 }
             } else if (post.media) {
                 const ma = Array.isArray(post.media) ? post.media : [post.media];
@@ -7068,10 +7068,16 @@
                     this.style.display = 'none';
                     const iframe = document.createElement('iframe');
                     iframe.src = window.getAutoplayEmbedUrl(embedUrl);
-                    iframe.className = 'absolute top-0 left-0 w-full h-full border-0';
+                    iframe.className = 'absolute top-0 left-0 w-full h-full border-0 embed-iframe';
+                    iframe.setAttribute('data-original-src', window.getAutoplayEmbedUrl(embedUrl));
                     iframe.allow = 'fullscreen';
                     iframe.allowFullscreen = true;
                     parent.appendChild(iframe);
+                    // ensure observer picks this up
+                    if (window.videoObserver && parent.dataset.observed !== 'true') {
+                        window.videoObserver.observe(parent);
+                        parent.dataset.observed = 'true';
+                    }
                 });
             });
         }
@@ -7690,9 +7696,9 @@
                 if (embedInfo.type === 'image') {
                     mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden flex items-center justify-center bg-gray-50 post-media-container"><div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${embedInfo.url}" class="w-full h-full object-cover" onload="window.imageLoadCache.add('${embedInfo.url}'); this.classList.add('loaded')"></div></div>`;
                 } else if (embedInfo.type === 'video') {
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full bg-black flex items-center justify-center" style="aspect-ratio: 16 / 9; min-height: 240px;"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute inset-0 w-full h-full border-0" allowfullscreen allow="fullscreen" onclick="event.stopPropagation()"></iframe></div>`;
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full bg-black flex items-center justify-center" style="aspect-ratio: 16 / 9; min-height: 240px;"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute inset-0 w-full h-full border-0 embed-iframe" data-original-src="${window.getAutoplayEmbedUrl(embedInfo.url)}" allowfullscreen allow="fullscreen" onclick="event.stopPropagation()"></iframe></div>`;
                 } else {
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full bg-black flex items-center justify-center" style="aspect-ratio: 16 / 9; min-height: 240px;"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute inset-0 w-full h-full border-0" allowfullscreen allow="fullscreen" onclick="event.stopPropagation()"></iframe></div>`;
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden relative w-full bg-black flex items-center justify-center" style="aspect-ratio: 16 / 9; min-height: 240px;"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute inset-0 w-full h-full border-0 embed-iframe" data-original-src="${window.getAutoplayEmbedUrl(embedInfo.url)}" allowfullscreen allow="fullscreen" onclick="event.stopPropagation()"></iframe></div>`;
                 }
             } else if (p.media) {
                 const ma = Array.isArray(p.media) ? p.media : [p.media];
@@ -9834,11 +9840,11 @@
                     mhDesktop = imgHtml;
                     mhMobile = imgHtml;
                 } else if (embedInfo.type === 'video') {
-                    const ehtml = `<div class="relative w-full overflow-hidden bg-black" style="aspect-ratio: 16 / 9; min-height: 240px;"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute inset-0 w-full h-full border-0" allow="fullscreen" allowfullscreen></iframe></div>`;
+                    const ehtml = `<div class="relative w-full overflow-hidden bg-black" style="aspect-ratio: 16 / 9; min-height: 240px;"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute inset-0 w-full h-full border-0 embed-iframe" data-original-src="${window.getAutoplayEmbedUrl(embedInfo.url)}" allow="fullscreen" allowfullscreen></iframe></div>`;
                     mhDesktop = ehtml;
                     mhMobile = ehtml;
                 } else {
-                    const ehtml = `<div class="relative w-full overflow-hidden bg-black" style="aspect-ratio: 16 / 9; min-height: 240px;"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute inset-0 w-full h-full border-0" allow="fullscreen" allowfullscreen></iframe></div>`;
+                    const ehtml = `<div class="relative w-full overflow-hidden bg-black" style="aspect-ratio: 16 / 9; min-height: 240px;"><iframe src="${window.getAutoplayEmbedUrl(embedInfo.url)}" class="absolute inset-0 w-full h-full border-0 embed-iframe" data-original-src="${window.getAutoplayEmbedUrl(embedInfo.url)}" allow="fullscreen" allowfullscreen></iframe></div>`;
                     mhDesktop = ehtml;
                     mhMobile = ehtml;
                 }
@@ -10513,7 +10519,7 @@
                     // Inject YouTube Embed
                     const container = document.getElementById('birthday-media-container');
                     if (container) {
-                        container.innerHTML = `<iframe width="100%" height="100%" src="https://www.youtube.com/embed/u57HBBO1zV4?autoplay=1&mute=0&controls=0&showinfo=0&rel=0&modestbranding=1" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+                        container.innerHTML = `<iframe width="100%" height="100%" src="${window.getAutoplayEmbedUrl('https://www.youtube.com/embed/u57HBBO1zV4')}" class="embed-iframe" data-original-src="${window.getAutoplayEmbedUrl('https://www.youtube.com/embed/u57HBBO1zV4')}" frameborder="0" allowfullscreen></iframe>`;
                     }
                     
                     document.getElementById('user-birthday-overlay').style.display = 'flex';
@@ -11453,7 +11459,32 @@
 
         window.getAutoplayEmbedUrl = (url) => {
             if (!url) return url;
-            return url;
+            try {
+                const u = new URL(url);
+                const params = new URLSearchParams(u.search);
+                // Remove autoplay if present
+                params.delete('autoplay');
+
+                // YouTube tweaks for a cleaner embed appearance
+                if (u.hostname.includes('youtube.com') || u.hostname.includes('youtu.be')) {
+                    params.set('rel', '0');
+                    params.set('modestbranding', '1');
+                    params.set('controls', '1');
+                    params.set('enablejsapi', '1');
+                }
+
+                // Vimeo tweaks
+                if (u.hostname.includes('vimeo.com')) {
+                    params.set('title', '0');
+                    params.set('byline', '0');
+                    params.set('portrait', '0');
+                }
+
+                u.search = params.toString();
+                return u.toString();
+            } catch (e) {
+                return url;
+            }
         };
 
         // Handle thumbnail clicks for embedded videos
@@ -11468,34 +11499,51 @@
                     if (embedUrl && embedId) {
                         thumbnailOverlay.style.display = 'none';
                         // Add iframe directly
-                        container.innerHTML = `<iframe src="${window.getAutoplayEmbedUrl(embedUrl)}" class="absolute inset-0 w-full h-full border-0" allowfullscreen allow="fullscreen"></iframe>`;
+                        container.innerHTML = `<iframe src="${window.getAutoplayEmbedUrl(embedUrl)}" class="absolute inset-0 w-full h-full border-0 embed-iframe" data-original-src="${window.getAutoplayEmbedUrl(embedUrl)}" allowfullscreen allow="fullscreen"></iframe>`;
                     }
                 }
             }
         });
 
-        // Intersection Observer to pause videos when scrolled out of view
+        // Intersection Observer to pause videos and unload embedded iframes when scrolled out of view
         window.videoObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
+                const container = entry.target;
+
+                // Native <video> handling
+                const video = container.querySelector('video');
+                if (video) {
+                    if (!entry.isIntersecting) video.pause();
+                    return; // nothing more to do for native video here
+                }
+
+                // Embedded iframe handling
+                const iframe = container.querySelector('iframe.embed-iframe');
+                if (!iframe) return;
+
                 if (!entry.isIntersecting) {
-                    // Pause native videos
-                    const video = entry.target.querySelector('video');
-                    if (video) {
-                        video.pause();
-                    }
-                    // Reload iframes to stop playback
-                    const iframe = entry.target.querySelector('iframe');
-                    if (iframe) {
-                        const src = iframe.src;
-                        iframe.src = src;
-                    }
+                    // store original src and unload to stop playback
+                    try {
+                        if (!iframe.dataset.originalSrc) iframe.dataset.originalSrc = iframe.src || '';
+                        if (iframe.src && iframe.src !== 'about:blank') iframe.src = 'about:blank';
+                        iframe.dataset.paused = 'true';
+                    } catch (e) {}
+                } else {
+                    // restore original src when it comes back into view
+                    try {
+                        const orig = iframe.dataset.originalSrc;
+                        if (orig && iframe.src !== orig) {
+                            iframe.src = orig;
+                            delete iframe.dataset.paused;
+                        }
+                    } catch (e) {}
                 }
             });
-        }, { threshold: 0.25 }); // Trigger when 25% of the video is out of view
+        }, { threshold: 0.5 }); // Trigger when 50% visibility
 
-        // Function to observe new video containers
+        // Function to observe new video containers (and embedded iframes)
         window.observeVideoContainers = () => {
-            document.querySelectorAll('.post-media-container, .carousel-wrapper').forEach(container => {
+            document.querySelectorAll('.post-media-container, .carousel-wrapper, .post-carousel-item, [data-embed-id]').forEach(container => {
                 if (container.dataset.observed !== 'true') {
                     window.videoObserver.observe(container);
                     container.dataset.observed = 'true';
