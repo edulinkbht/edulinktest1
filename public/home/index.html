@@ -5008,26 +5008,6 @@
     </div>
     <div id="view-frame" class="fixed inset-0 z-30 bg-black hidden">
         <style>#view-frame::-webkit-scrollbar { display: none; }</style>
-        <div id="frame-mobile-header" class="hidden md:hidden fixed top-0 left-0 right-0 z-40 h-[64px] bg-[#121212] border-b border-black text-white flex items-center justify-between px-3">
-            <!-- Left: Menu Icon -->
-            <div class="flex items-center">
-                <button onclick="toggleMoreMenu()" class="w-10 h-10 flex items-center justify-center">
-                    <i data-lucide="menu" class="w-6 h-6 text-white"></i>
-                </button>
-            </div>
-            
-            <!-- Center: EduLink Title -->
-            <div class="absolute left-1/2 -translate-x-1/2">
-                <h1 class="text-2xl font-bold text-white tracking-tight">EduLink</h1>
-            </div>
-            
-            <!-- Right: Search Icon -->
-            <div class="flex items-center">
-                <button onclick="switchView('explore')" class="w-10 h-10 flex items-center justify-center">
-                    <i data-lucide="search" class="w-6 h-6 text-white"></i>
-                </button>
-            </div>
-        </div>
         <div id="frame-container" class="h-full w-full md:pb-0"></div>
     </div>
     <nav id="mobile-bottom-nav"
@@ -6741,25 +6721,64 @@
                                 <!-- Left Column: Video + Caption -->
                                 <div class="flex flex-col items-center">
                                     <!-- Video Container (Vertical like Instagram Reels) -->
-                                    <div id="frame-media-container-${post.id}" class="relative overflow-hidden border border-gray-200 bg-white cursor-pointer" style="width: min(90vw, 450px); height: min(85vh, 780px); border-radius: 8px;" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
+                                    <div id="frame-media-container-${post.id}" class="relative overflow-hidden bg-black cursor-pointer" style="width: min(90vw, 450px); height: min(85vh, 780px); border-radius: 8px;" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
                                         <!-- Video Section -->
                                         <div id="frame-video-section-${post.id}" class="absolute inset-0 flex items-center justify-center bg-black">
                                             ${mediaHtml}
-                                                    <!-- Mobile overlay removed - actions and caption moved to footer -->
                                         </div>
                                         <!-- Caption Section -->
-                                        <div id="frame-caption-section-${post.id}" class="absolute inset-0 p-6 overflow-y-auto hidden">
+                                        <div id="frame-caption-section-${post.id}" class="absolute inset-0 p-6 overflow-y-auto hidden bg-gradient-to-t from-black via-transparent to-transparent">
                                             <div class="flex flex-col gap-3">
-                                                <div class="font-bold text-gray-900 text-lg flex items-center gap-1">
+                                                <div class="font-bold text-white text-lg flex items-center gap-2">
+                                                    <img src="${author.avatar}" class="w-10 h-10 rounded-full object-cover">
                                                     @${author.username || author.name}
                                                 </div>
-                                                <div class="text-gray-700" id="frame-full-caption-${post.id}">
+                                                <div class="text-white text-sm" id="frame-full-caption-${post.id}">
                                                     ${formatContent(post.content)}
                                                 </div>
-                                                <button class="mt-auto text-xs font-bold text-gray-500 hover:text-gray-800" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
+                                                <button class="mt-auto text-xs font-bold text-gray-300 hover:text-white" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">
                                                     See less
                                                 </button>
                                             </div>
+                                        </div>
+                                        
+                                        <!-- Mobile Bottom Left: Author Info Overlay -->
+                                        <div class="md:hidden absolute bottom-0 left-0 right-0 z-10 p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
+                                            <div class="flex items-start gap-3">
+                                                <img src="${author.avatar}" class="w-12 h-12 rounded-full object-cover shrink-0 cursor-pointer border-2 border-white" onclick="event.stopPropagation(); showProfile('${author.id}')">
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="font-bold text-white text-sm cursor-pointer" onclick="event.stopPropagation(); showProfile('${author.id}')" id="frame-username-${post.id}-${index}">@${author.username || author.name}</div>
+                                                    ${hasCaption ? `<div class="text-xs text-white/90 line-clamp-2 mt-1 cursor-pointer" id="frame-caption-${post.id}-${index}" onclick="event.stopPropagation(); toggleFrameCaption('${post.id}', '${index}');">${formatContent(post.content)}</div>` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Mobile Right Column: Action Buttons (inside video) -->
+                                        <div class="md:hidden absolute right-3 bottom-20 flex flex-col items-center gap-5 z-20">
+                                            <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')">
+                                                <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-all">
+                                                    <i data-lucide="heart" class="w-6 h-6 text-white ${isLiked ? 'fill-red-500 text-red-500' : ''}" id="frame-like-icon-mobile-${post.id}-${index}"></i>
+                                                </div>
+                                                <span class="text-xs text-white font-bold" id="frame-like-count-mobile-${post.id}-${index}">${post.likes?.length || 0}</span>
+                                            </button>
+                                            <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')">
+                                                <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-all">
+                                                    <i data-lucide="message-circle" class="w-6 h-6 text-white"></i>
+                                                </div>
+                                                <span class="text-xs text-white font-bold">${post.comments?.length || 0}</span>
+                                            </button>
+                                            <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); sharePost('${post.id}')">
+                                                <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-all">
+                                                    <i data-lucide="redo-2" class="w-6 h-6 text-white"></i>
+                                                </div>
+                                                <span class="text-xs text-white font-bold">Share</span>
+                                            </button>
+                                            <button class="flex flex-col items-center gap-1" onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')">
+                                                <div class="w-12 h-12 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center hover:bg-white/30 transition-all">
+                                                    <i data-lucide="bookmark" class="w-6 h-6 text-white ${isSaved ? 'fill-current' : ''}" id="frame-save-icon-mobile-${post.id}-${index}"></i>
+                                                </div>
+                                                <span class="text-xs text-white font-bold">Save</span>
+                                            </button>
                                         </div>
                                     </div>
                                     
@@ -6822,48 +6841,6 @@
                                         </div>
                                         <span class="text-xs text-gray-700 font-semibold">Save</span>
                                     </button>
-                                </div>
-                                
-                                <!-- Mobile Right Column: Action Buttons (visible on small screens only) -->
-                                <div class="md:hidden absolute right-2 bottom-24 flex flex-col items-center gap-4 z-20">
-                                    <button class="flex flex-col items-center justify-center gap-1" onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')">
-                                        <div class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all">
-                                            <i data-lucide="heart" class="w-7 h-7 text-white ${isLiked ? 'fill-red-500 text-red-500' : ''}" id="frame-like-icon-mobile-${post.id}-${index}"></i>
-                                        </div>
-                                        <span class="text-xs text-white font-bold" id="frame-like-count-mobile-${post.id}-${index}">${post.likes?.length || 0}</span>
-                                    </button>
-                                    
-                                    <button class="flex flex-col items-center justify-center gap-1" onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')">
-                                        <div class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all">
-                                            <i data-lucide="message-circle" class="w-7 h-7 text-white"></i>
-                                        </div>
-                                        <span class="text-xs text-white font-bold">${post.comments?.length || 0}</span>
-                                    </button>
-                                    
-                                    <button class="flex flex-col items-center justify-center gap-1" onclick="event.stopPropagation(); sharePost('${post.id}')">
-                                        <div class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all">
-                                            <i data-lucide="redo-2" class="w-7 h-7 text-white"></i>
-                                        </div>
-                                        <span class="text-xs text-white font-bold">Share</span>
-                                    </button>
-                                    
-                                    <button class="flex flex-col items-center justify-center gap-1" onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')">
-                                        <div class="w-14 h-14 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center hover:bg-black/70 transition-all">
-                                            <i data-lucide="bookmark" class="w-7 h-7 text-white ${isSaved ? 'fill-current' : ''}" id="frame-save-icon-mobile-${post.id}-${index}"></i>
-                                        </div>
-                                        <span class="text-xs text-white font-bold">Save</span>
-                                    </button>
-                                </div>
-                                
-                                <!-- Mobile Bottom Left: Username + Caption Overlay -->
-                                <div class="md:hidden absolute bottom-6 left-3 right-20 z-10">
-                                    <div class="flex items-start gap-3">
-                                        <img src="${author.avatar}" class="w-10 h-10 rounded-full object-cover shrink-0 cursor-pointer border-2 border-white shadow-lg" onclick="event.stopPropagation(); showProfile('${author.id}')">
-                                        <div class="flex-1 min-w-0">
-                                            <div class="font-bold text-white text-sm cursor-pointer" onclick="event.stopPropagation(); showProfile('${author.id}')" id="frame-username-${post.id}-${index}">@${author.username || author.name}</div>
-                                            ${hasCaption ? `<div class="text-sm text-white drop-shadow-lg line-clamp-2" id="frame-caption-${post.id}-${index}">${formatContent(post.content)}</div>` : ''}
-                                        </div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
