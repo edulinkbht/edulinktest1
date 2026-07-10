@@ -4376,7 +4376,7 @@
                     <div class="text-lg font-bold tracking-tight text-gray-900">Create post</div>
                     <div class="h-11 w-11"></div>
                 </div>
-                <div id="create-view-container" class="max-w-2xl mx-auto px-0 py-4 md:px-4 md:py-8">
+                <div id="create-view-container" class="max-w-2xl mx-auto px-0 py-0 md:px-4 md:py-8">
                     <!-- Step 1: Media -->
                     <div id="create-step-1">
                         <div class="mb-6 px-0 md:px-1">
@@ -7467,6 +7467,8 @@
         window.initCreateMediaGrid = () => {
             const grid = document.getElementById('create-media-grid');
             if (!grid) return;
+            grid.classList.add('transition-opacity', 'duration-200', 'ease-out');
+            grid.classList.remove('opacity-0');
             grid.innerHTML = '';
 
             if (window.innerWidth < 768) {
@@ -7509,9 +7511,9 @@
                                     <i data-lucide="x" class="w-4 h-4"></i>
                                 </button>
                             </div>
-                            ${count > 1 ? `<div class="mt-3 flex justify-center gap-2">${items.map((_, dotIndex) => `<button type="button" onclick="window.currentCreateMediaIndex=${dotIndex}; window.initCreateMediaGrid()" class="h-2.5 w-2.5 rounded-full transition-all duration-200 ${dotIndex === activeIndex ? 'bg-gray-900 scale-110' : 'bg-gray-300'}"></button>`).join('')}</div>` : ''}
+                            ${count > 1 ? `<div class="mt-3 flex justify-center gap-2">${items.map((_, dotIndex) => `<button type="button" onclick="window.setCreateMediaIndex(${dotIndex})" class="h-2.5 w-2.5 rounded-full transition-all duration-200 ${dotIndex === activeIndex ? 'bg-gray-900 scale-110' : 'bg-gray-300'}"></button>`).join('')}</div>` : ''}
                             <div class="mt-3 flex items-center gap-2 px-4 ${count < 4 ? 'justify-between' : 'justify-center'}">
-                                ${count < 4 ? `<label class="flex-1 cursor-pointer rounded-full bg-gray-900 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm">
+                                ${count < 4 ? `<label class="flex-1 cursor-pointer rounded-full bg-gray-200 px-4 py-3 text-center text-sm font-semibold text-gray-900 shadow-sm hover:bg-gray-300 transition-colors">
                                     Add more
                                     <input type="file" accept="image/*,video/*" class="hidden" onchange="window.handleCreateImageSelect(this)" />
                                 </label>` : ''}
@@ -7545,6 +7547,26 @@
             refreshIcons();
         };
 
+        window.fadeCreateMediaGrid = (updateFn) => {
+            const grid = document.getElementById('create-media-grid');
+            if (!grid) return;
+            grid.style.transition = 'opacity 180ms ease-out';
+            grid.style.opacity = '0';
+            setTimeout(() => {
+                if (typeof updateFn === 'function') updateFn();
+                initCreateMediaGrid();
+                requestAnimationFrame(() => {
+                    grid.style.opacity = '1';
+                });
+            }, 120);
+        };
+
+        window.setCreateMediaIndex = (index) => {
+            window.fadeCreateMediaGrid(() => {
+                window.currentCreateMediaIndex = index;
+            });
+        };
+
         window.handleCreateImageSelect = (input, index) => {
             const file = input.files[0];
             if (!file) return;
@@ -7569,27 +7591,27 @@
         window.enableCreateMediaSwipe = () => {
             const grid = document.getElementById('create-media-grid');
             if (!grid) return;
+            if (grid._createMediaTouchStart) {
+                grid.removeEventListener('touchstart', grid._createMediaTouchStart);
+                grid.removeEventListener('touchend', grid._createMediaTouchEnd);
+            }
             let startX = 0;
-            let endX = 0;
-            const handleTouchStart = (e) => {
+            grid._createMediaTouchStart = (e) => {
                 startX = e.touches[0].clientX;
             };
-            const handleTouchEnd = (e) => {
-                endX = e.changedTouches[0].clientX;
+            grid._createMediaTouchEnd = (e) => {
+                const endX = e.changedTouches[0].clientX;
                 const delta = endX - startX;
                 if (Math.abs(delta) < 40) return;
                 const items = window.getCreateMediaItems();
                 if (delta < 0) {
-                    window.currentCreateMediaIndex = Math.min(items.length - 1, (window.currentCreateMediaIndex || 0) + 1);
+                    window.setCreateMediaIndex(Math.min(items.length - 1, (window.currentCreateMediaIndex || 0) + 1));
                 } else {
-                    window.currentCreateMediaIndex = Math.max(0, (window.currentCreateMediaIndex || 0) - 1);
+                    window.setCreateMediaIndex(Math.max(0, (window.currentCreateMediaIndex || 0) - 1));
                 }
-                initCreateMediaGrid();
             };
-            grid.removeEventListener('touchstart', handleTouchStart);
-            grid.removeEventListener('touchend', handleTouchEnd);
-            grid.addEventListener('touchstart', handleTouchStart);
-            grid.addEventListener('touchend', handleTouchEnd);
+            grid.addEventListener('touchstart', grid._createMediaTouchStart);
+            grid.addEventListener('touchend', grid._createMediaTouchEnd);
         };
 
         window.removeCreateImage = (index) => {
@@ -7604,8 +7626,10 @@
             }
             window.compactCreateMediaArrays();
             const remaining = window.getCreateMediaItems();
-            window.currentCreateMediaIndex = Math.min(Math.max(0, window.currentCreateMediaIndex || 0), Math.max(0, remaining.length - 1));
-            initCreateMediaGrid();
+            const newIndex = Math.min(Math.max(0, window.currentCreateMediaIndex || 0), Math.max(0, remaining.length - 1));
+            window.fadeCreateMediaGrid(() => {
+                window.currentCreateMediaIndex = newIndex;
+            });
         };
 
         window.updateCreateAvatar = () => {
