@@ -4998,21 +4998,29 @@
     <div id="view-frame" class="fixed inset-0 z-30 bg-black hidden">
         <style>#view-frame::-webkit-scrollbar { display: none; }</style>
         <div id="frame-mobile-header" class="hidden md:hidden fixed top-0 left-0 right-0 z-40 h-[64px] bg-[#121212] border-b border-black text-white flex items-center justify-between px-3">
-            <div class="flex items-center gap-3">
-                <div class="img-placeholder w-9 h-9 rounded-full overflow-hidden border border-white bg-black" id="frame-header-avatar">
-                    <img src="" class="w-full h-full object-cover" onload="this.classList.add('loaded')">
-                </div>
-                <div class="min-w-0">
-                    <div id="frame-header-username" class="text-sm font-semibold truncate">Frame</div>
-                    <div id="frame-header-subtitle" class="text-[11px] text-gray-400 truncate">Reels</div>
-                </div>
+            <!-- Left: Menu Icon -->
+            <div class="flex items-center">
+                <button onclick="toggleMoreMenu()" class="w-10 h-10 flex items-center justify-center">
+                    <i data-lucide="menu" class="w-6 h-6 text-white"></i>
+                </button>
             </div>
-            <button onclick="switchView('feed')" class="text-xs font-semibold text-white px-3 py-2 rounded-lg bg-white/10 hover:bg-white/15 transition-colors">Close</button>
+            
+            <!-- Center: EduLink Title -->
+            <div class="absolute left-1/2 -translate-x-1/2">
+                <h1 class="text-2xl font-bold text-white tracking-tight">EduLink</h1>
+            </div>
+            
+            <!-- Right: Search Icon -->
+            <div class="flex items-center">
+                <button onclick="switchView('explore')" class="w-10 h-10 flex items-center justify-center">
+                    <i data-lucide="search" class="w-6 h-6 text-white"></i>
+                </button>
+            </div>
         </div>
-        <div id="frame-container" class="h-full w-full"></div>
+        <div id="frame-container" class="h-full w-full pb-[120px] md:pb-0"></div>
     </div>
     <nav id="mobile-bottom-nav"
-        class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
+        class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-40 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
         <div class="mobile-nav-item active" onclick="switchView('feed')" id="mobile-nav-feed">
             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
                 class="custom-icon custom-icon-filled" id="mobile-feed-icon" style="stroke-width: 2;">
@@ -6720,34 +6728,7 @@
                                         <!-- Video Section -->
                                         <div id="frame-video-section-${post.id}" class="absolute inset-0 flex items-center justify-center bg-black">
                                             ${mediaHtml}
-                                            <!-- Mobile overlay: action buttons inside the video -->
-                                            <div class="md:hidden absolute right-4 bottom-20 flex flex-col gap-2 z-30 items-center text-white">
-                                                <button onclick="event.stopPropagation(); frameToggleLike('${post.id}', '${index}')" class="p-0 bg-transparent hover:bg-transparent transition-colors">
-                                                    <i data-lucide="heart" class="w-8 h-8 text-white ${isLiked ? 'fill-red-500 text-red-500' : ''}"></i>
-                                                </button>
-                                                <div class="text-[11px] font-semibold">${post.likes?.length || 0}</div>
-
-                                                <button onclick="event.stopPropagation(); toggleFrameComments('${post.id}', '${index}')" class="p-0 bg-transparent hover:bg-transparent transition-colors">
-                                                    <i data-lucide="message-circle" class="w-8 h-8 text-white"></i>
-                                                </button>
-                                                <div class="text-[11px] font-semibold">${post.comments?.length || 0}</div>
-
-                                                <button onclick="event.stopPropagation(); sharePost('${post.id}')" class="p-0 bg-transparent hover:bg-transparent transition-colors">
-                                                    <i data-lucide="redo-2" class="w-8 h-8 text-white"></i>
-                                                </button>
-                                                <div class="text-[11px] font-semibold">Share</div>
-
-                                                <button onclick="event.stopPropagation(); frameToggleSave('${post.id}', '${index}')" class="p-0 bg-transparent hover:bg-transparent transition-colors">
-                                                    <i data-lucide="bookmark" class="w-8 h-8 text-white ${isSaved ? 'fill-current' : ''}"></i>
-                                                </button>
-                                                <div class="text-[11px] font-semibold">Save</div>
-                                            </div>
-                                            <!-- Mobile caption overlay -->
-                                            ${hasCaption ? `
-                                                <div class="md:hidden absolute left-4 bottom-6 text-white text-sm z-30 max-w-[70%]">
-                                                    ${formatContent(post.content.split(/\s+/).slice(0,12).join(' '))}${post.content.trim().split(/\s+/).length > 12 ? '...' : ''}
-                                                </div>
-                                            ` : ''}
+                                                    <!-- Mobile overlay removed - actions and caption moved to footer -->
                                         </div>
                                         <!-- Caption Section -->
                                         <div id="frame-caption-section-${post.id}" class="absolute inset-0 p-6 overflow-y-auto hidden">
@@ -6765,8 +6746,8 @@
                                         </div>
                                     </div>
                                     
-                                    <!-- Bottom Info: Author Username + Short Caption -->
-                                    <div class="mt-4 px-2" style="width: min(90vw, 450px);">
+                                    <!-- Bottom Info (Desktop only) -->
+                                    <div class="hidden md:block mt-4 px-2" style="width: min(90vw, 450px);">
                                         <div class="flex flex-col">
                                             <div class="font-bold text-gray-900 text-sm flex items-center gap-1">
                                                 @${author.username || author.name}
@@ -7417,54 +7398,14 @@
         };
 
         window.toggleFrameComments = (postId, index) => {
-            const panel = document.getElementById(`frame-comments-panel-${postId}`);
-            if (!panel) return;
-            
-            const isHidden = panel.classList.contains('hidden');
-            
-            if (isHidden) {
-                panel.classList.remove('hidden');
-                panel.classList.add('frame-comments-open');
-                renderFrameComments(postId);
-            } else {
-                panel.classList.add('hidden');
-                panel.classList.remove('frame-comments-open');
-            }
+            // Use the existing comments-overlay instead of custom frame comments panel
+            openComments(postId);
         };
 
         function renderFrameComments(postId) {
-            const commentsList = document.getElementById(`frame-comments-list-${postId}`);
-            const post = posts.find(p => p.id === postId);
-            if (!post || !commentsList) return;
-            
-            let topLevel = post.comments?.filter(x => !x.parentId) || [];
-            const html = topLevel.length ? topLevel.map(c => {
-                const replyCount = post.comments.filter(r => r.parentId === c.id).length;
-                return createCommentHTML(c, postId, replyCount);
-            }).join('') : '<div class="flex flex-col items-center justify-center py-10 text-gray-400"><i data-lucide="message-square" class="w-12 h-12 mb-2 opacity-50"></i><p>No comments found.</p></div>';
-
-            if (commentsList.innerHTML !== html) {
-                commentsList.innerHTML = html;
-                refreshIcons();
-            }
-            
-            // Update comments count
-            const countEl = document.getElementById(`frame-comments-count-${postId}`);
-            if (countEl) countEl.textContent = `Comments (${post.comments?.length || 0})`;
+            // Delegate to the existing renderOverlayComments
+            renderOverlayComments(postId);
         }
-
-        window.toggleFrameComments = (postId, index) => {
-            const panel = document.getElementById(`frame-comments-panel-${postId}`);
-            if (!panel) return;
-            if (panel.classList.contains('hidden')) {
-                panel.classList.remove('hidden');
-                panel.classList.add('frame-comments-open');
-                renderFrameComments(postId);
-            } else {
-                panel.classList.add('hidden');
-                panel.classList.remove('frame-comments-open');
-            }
-        };
 
         window.frameToggleLike = (postId, index) => {
             // Call the main toggleLike
