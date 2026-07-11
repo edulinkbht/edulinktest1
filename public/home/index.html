@@ -1788,6 +1788,10 @@
             margin-left: 2px;
         }
 
+        .instagram-grid.active {
+            opacity: 1 !important;
+        }
+
         .scale-in {
             animation: scaleIn .3s cubic-bezier(.2, 0, 0, 1) forwards
         }
@@ -7447,49 +7451,98 @@
 
         window.currentCreateMediaIndex = 0;
         window.createMediaAdjustments = [null, null, null, null];
+        window._createMediaDrag = null;
+        window.__createMediaDragBound = false;
 
         window.getCreateMediaAdjust = (index) => {
             const safeIndex = Math.max(0, Math.min(3, Number(index) || 0));
             if (!window.createMediaAdjustments[safeIndex]) {
-                window.createMediaAdjustments[safeIndex] = { zoom: 1, x: 0, y: 0 };
+                window.createMediaAdjustments[safeIndex] = { 
+                    fillScale: 1, 
+                    maxZoomLimit: 2.5, 
+                    currentScale: 1, 
+                    panX: 0, 
+                    panY: 0 
+                };
             }
             return window.createMediaAdjustments[safeIndex];
         };
 
-        window.setCreateMediaZoom = (index, value) => {
+        window.initializeCreateMediaGeometry = (index, imgElement, frameElement) => {
+            if (!imgElement || !imgElement.naturalWidth || !frameElement) return;
             const adjust = window.getCreateMediaAdjust(index);
-            adjust.zoom = Math.max(1, Math.min(2.2, parseFloat(value) || 1));
-            const target = document.querySelector(`[data-create-media-stage-index="${index}"]`);
-            if (target) target.style.transform = `translate(${adjust.x}px, ${adjust.y}px) scale(${adjust.zoom})`;
+            const frameW = frameElement.clientWidth;
+            const frameH = frameElement.clientHeight;
+            const scaleX = frameW / imgElement.naturalWidth;
+            const scaleY = frameH / imgElement.naturalHeight;
+            adjust.fillScale = Math.max(scaleX, scaleY);
+            adjust.maxZoomLimit = adjust.fillScale * 2.5;
+            adjust.currentScale = adjust.fillScale;
+            adjust.panX = (frameW - imgElement.naturalWidth * adjust.currentScale) / 2;
+            adjust.panY = (frameH - imgElement.naturalHeight * adjust.currentScale) / 2;
+            window.updateCreateMediaTransform(index, imgElement, frameElement);
+        };
+
+        window.updateCreateMediaTransform = (index, imgElement, frameElement) => {
+            const adjust = window.getCreateMediaAdjust(index);
+            if (!imgElement || !frameElement) return;
+            const scaledWidth = imgElement.naturalWidth * adjust.currentScale;
+            const scaledHeight = imgElement.naturalHeight * adjust.currentScale;
+            const minPanX = frameElement.clientWidth - scaledWidth;
+            adjust.panX = Math.min(0, Math.max(minPanX, adjust.panX));
+            const minPanY = frameElement.clientHeight - scaledHeight;
+            adjust.panY = Math.min(0, Math.max(minPanY, adjust.panY));
+            imgElement.style.transform = `translate(${adjust.panX}px, ${adjust.panY}px) scale(${adjust.currentScale})`;
+        };
+
+        window.setCreateMediaZoom = (index, value, imgElement, frameElement) => {
+            const adjust = window.getCreateMediaAdjust(index);
+            const sliderVal = parseFloat(value);
+            const targetScale = adjust.fillScale + sliderVal * (adjust.maxZoomLimit - adjust.fillScale);
+            const centerX = frameElement.clientWidth / 2;
+            const centerY = frameElement.clientHeight / 2;
+            adjust.panX = centerX - (centerX - adjust.panX) * (targetScale / adjust.currentScale);
+            adjust.panY = centerY - (centerY - adjust.panY) * (targetScale / adjust.currentScale);
+            adjust.currentScale = targetScale;
+            window.updateCreateMediaTransform(index, imgElement, frameElement);
         };
 
         window.startCreateMediaDrag = (event, index) => {
             if (!event || typeof index !== 'number') return;
+            const grid = document.getElementById('guide-grid');
+            if (grid) grid.classList.add('active');
             const adjust = window.getCreateMediaAdjust(index);
+            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+            const clientY = event.touches ? event.touches[0].clientY : event.clientY;
             window._createMediaDrag = {
                 index,
-                startX: event.clientX,
-                startY: event.clientY,
-                startXOffset: adjust.x,
-                startYOffset: adjust.y
+                startX: clientX,
+                startY: clientY,
+                startPanX: adjust.panX,
+                startPanY: adjust.panY
             };
             event.preventDefault();
         };
 
         window.moveCreateMediaDrag = (event) => {
             if (!window._createMediaDrag) return;
-            const { index, startX, startY, startXOffset, startYOffset } = window._createMediaDrag;
-            const dx = event.clientX - startX;
-            const dy = event.clientY - startY;
+            event.preventDefault();
+            const { index, startX, startY, startPanX, startPanY } = window._createMediaDrag;
+            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+            const clientY = event.touches ? event.touches[0].clientY : event.clientY;
             const adjust = window.getCreateMediaAdjust(index);
-            adjust.x = startXOffset + dx;
-            adjust.y = startYOffset + dy;
-            const target = document.querySelector(`[data-create-media-stage-index="${index}"]`);
-            if (target) target.style.transform = `translate(${adjust.x}px, ${adjust.y}px) scale(${adjust.zoom})`;
+            adjust.panX = startPanX + (clientX - startX);
+            adjust.panY = startPanY + (clientY - startY);
+            const imgElement = document.querySelector(`[data-create-media-stage-index="${index}"]`);
+            const frameElement = document.getElementById(`create-frame-${index}`);
+            window.updateCreateMediaTransform(index, imgElement, frameElement);
         };
 
         window.endCreateMediaDrag = () => {
+            if (!window._createMediaDrag) return;
             window._createMediaDrag = null;
+            const grid = document.getElementById('guide-grid');
+            if (grid) grid.classList.remove('active');
         };
 
         window.getCreateMediaItems = () => {
@@ -7529,20 +7582,20 @@
                 if (!count) {
                     wrapper.innerHTML = `
                         <div class="w-full">
-                            <div class="relative h-[112vw] max-h-[660px] w-screen max-w-none overflow-hidden rounded-none bg-gray-50 flex flex-col items-center justify-center gap-3 text-center">
+                            <div class="relative aspect-square w-screen max-w-none overflow-hidden rounded-none bg-black flex flex-col items-center justify-center gap-3 text-center">
                                 <i data-lucide="image-plus" class="w-12 h-12 text-gray-400"></i>
                                 <div>
-                                    <div class="text-base font-semibold text-gray-700">Add photo or video</div>
+                                    <div class="text-base font-semibold text-gray-300">Add photo or video</div>
                                     <div class="text-sm text-gray-500 mt-1">Upload one image to start</div>
                                 </div>
-                                    <label class="cursor-pointer rounded-full bg-gray-900 px-3 py-2 text-sm font-semibold text-white shadow-sm">
+                                    <label class="cursor-pointer rounded-full bg-blue-500 px-3 py-2 text-sm font-semibold text-white shadow-sm">
                                         Add photo
                                         <input type="file" accept="image/*,video/*" multiple class="hidden" onchange="window.handleCreateImageSelect(this)" />
                                     </label>
                             </div>
                             <div class="mt-3 flex items-center gap-2 px-4">
-                                <button onclick="window.discardCreate()" class="w-[46%] rounded-full bg-gray-100 px-3 py-2.5 text-sm font-semibold text-gray-900">Discard</button>
-                                <button onclick="goToCreateStep(2)" class="w-[46%] rounded-full bg-gray-900 px-3 py-2.5 text-sm font-semibold text-white">Skip</button>
+                                <button onclick="window.discardCreate()" class="w-[46%] rounded-full bg-gray-800 px-3 py-2.5 text-sm font-semibold text-white">Discard</button>
+                                <button onclick="goToCreateStep(2)" class="w-[46%] rounded-full bg-blue-500 px-3 py-2.5 text-sm font-semibold text-white">Skip</button>
                             </div>
                         </div>
                     `;
@@ -7553,25 +7606,35 @@
                     wrapper.innerHTML = `
                         <div class="w-full">
                             <div class="relative overflow-hidden rounded-none bg-black shadow-sm">
-                                <div class="relative h-[112vw] max-h-[660px] w-screen max-w-none overflow-hidden">
-                                    <div class="pointer-events-none absolute inset-0 z-10" style="background-image: linear-gradient(to right, rgba(255,255,255,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.35) 1px, transparent 1px); background-size: calc(100% / 3) calc(100% / 3);"></div>
-                                    ${isVideo ? `<video src="${currentItem.img}" class="h-full w-full object-cover transition-all duration-300 ease-out" muted playsinline preload="metadata"></video>` : `<img src="${currentItem.img}" data-create-media-stage-index="${activeIndex}" style="transform: translate(${currentAdjust.x}px, ${currentAdjust.y}px) scale(${currentAdjust.zoom}); transform-origin: center center; touch-action: none; cursor: grab;" class="h-full w-full object-cover transition-all duration-300 ease-out" onpointerdown="window.startCreateMediaDrag(event, ${activeIndex})" />`}
+                                <div id="create-frame-${activeIndex}" class="relative aspect-square w-screen max-w-none overflow-hidden">
+                                    <div id="guide-grid" class="instagram-grid pointer-events-none absolute inset-0 z-10" style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); opacity: 0; transition: opacity 0.15s ease;">
+                                        <div style="border: 0.5px solid rgba(255, 255, 255, 0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255, 255, 255, 0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255, 255, 255, 0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255, 255, 255, 0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255, 255, 255, 0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255, 255, 255, 0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255, 255, 255, 0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255, 255, 255, 0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255, 255, 255, 0.3);"></div>
+                                    </div>
+                                    ${isVideo ? `<video src="${currentItem.img}" class="h-full w-full object-cover" muted playsinline preload="metadata"></video>` : `<img id="create-img-${activeIndex}" src="${currentItem.img}" data-create-media-stage-index="${activeIndex}" style="transform-origin: top left; touch-action: none; cursor: grab; max-width: none !important; max-height: none !important; width: auto !important; height: auto !important; position: absolute; top: 0; left: 0;" onpointerdown="window.startCreateMediaDrag(event, ${activeIndex})" onload="window.initializeCreateMediaGeometry(${activeIndex}, this, document.getElementById('create-frame-${activeIndex}'));" />`}
                                 </div>
                                 <button onclick="event.stopPropagation(); window.removeCreateImage(${activeIndex})" class="absolute top-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white">
                                     <i data-lucide="x" class="w-4 h-4"></i>
                                 </button>
                             </div>
-                            ${count > 1 ? `<div class="mt-3 flex justify-center gap-2">${items.map((_, dotIndex) => `<button type="button" onclick="window.setCreateMediaIndex(${dotIndex})" class="h-2.5 w-2.5 rounded-full transition-all duration-200 ${dotIndex === activeIndex ? 'bg-gray-900 scale-110' : 'bg-gray-300'}"></button>`).join('')}</div>` : ''}
+                            ${count > 1 ? `<div class="mt-3 flex justify-center gap-2">${items.map((_, dotIndex) => `<button type="button" onclick="window.setCreateMediaIndex(${dotIndex})" class="h-2.5 w-2.5 rounded-full transition-all duration-200 ${dotIndex === activeIndex ? 'bg-white scale-110' : 'bg-gray-600'}"></button>`).join('')}</div>` : ''}
                             <div class="mt-3 flex items-center gap-2 px-4">
-                                <input type="range" min="1" max="2.2" step="0.1" value="${currentAdjust.zoom}" onchange="window.setCreateMediaZoom(${activeIndex}, this.value)" class="h-2 flex-1 accent-gray-900" />
-                                <span class="text-[11px] font-semibold text-gray-500">Zoom</span>
+                                <span class="text-[11px] font-semibold text-gray-500 uppercase">Zoom</span>
+                                <input type="range" id="zoom-control-${activeIndex}" min="0" max="1" step="0.001" value="0" oninput="window.setCreateMediaZoom(${activeIndex}, this.value, document.getElementById('create-img-${activeIndex}'), document.getElementById('create-frame-${activeIndex}'))" class="h-2 flex-1 accent-white bg-gray-800" />
                             </div>
                             <div class="mt-3 flex items-center gap-2 px-4">
-                                ${count < 4 ? `<label class="w-[46%] cursor-pointer rounded-full bg-gray-200 px-3 py-2.5 text-center text-sm font-semibold text-gray-900 shadow-sm">
+                                ${count < 4 ? `<label class="w-[46%] cursor-pointer rounded-full bg-gray-800 px-3 py-2.5 text-center text-sm font-semibold text-white shadow-sm">
                                     Add more
                                     <input type="file" accept="image/*,video/*" multiple class="hidden" onchange="window.handleCreateImageSelect(this)" />
-                                </label>` : `<button onclick="window.discardCreate()" class="w-[46%] rounded-full bg-gray-100 px-3 py-2.5 text-sm font-semibold text-gray-900">Discard</button>`}
-                                <button onclick="goToCreateStep(2)" class="w-[46%] rounded-full bg-gray-900 px-3 py-2.5 text-sm font-semibold text-white">Next</button>
+                                </label>` : `<button onclick="window.discardCreate()" class="w-[46%] rounded-full bg-gray-800 px-3 py-2.5 text-sm font-semibold text-white">Discard</button>`}
+                                <button onclick="goToCreateStep(2)" class="w-[46%] rounded-full bg-blue-500 px-3 py-2.5 text-sm font-semibold text-white">Next</button>
                             </div>
                         </div>
                     `;
@@ -7584,8 +7647,18 @@
                     window.addEventListener('pointermove', window.moveCreateMediaDrag);
                     window.addEventListener('pointerup', window.endCreateMediaDrag);
                     window.addEventListener('pointercancel', window.endCreateMediaDrag);
+                    window.addEventListener('touchmove', window.moveCreateMediaDrag, { passive: false });
+                    window.addEventListener('touchend', window.endCreateMediaDrag);
                     window.__createMediaDragBound = true;
                 }
+                // Initialize geometry for current image if it's already loaded
+                setTimeout(() => {
+                    const img = document.getElementById(`create-img-${activeIndex}`);
+                    const frame = document.getElementById(`create-frame-${activeIndex}`);
+                    if (img && img.complete) {
+                        window.initializeCreateMediaGeometry(activeIndex, img, frame);
+                    }
+                }, 10);
                 return;
             }
 
