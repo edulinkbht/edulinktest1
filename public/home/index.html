@@ -1014,6 +1014,7 @@
             border-radius: 10px;
             overflow: hidden;
             margin: 6px 0;
+            border: none;
         }
 
         .upload-widget-progress-fill {
@@ -1022,6 +1023,7 @@
             width: 0%;
             transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
             border-radius: 10px;
+            border: none;
         }
 
         .upload-widget-status {
@@ -1689,7 +1691,8 @@
             height: 4px; 
             background-color: #e4e6eb; 
             border-radius: 10px; 
-            overflow: hidden; 
+            overflow: hidden;
+            border: none;
         } 
 
         .progress-fill { 
@@ -1698,6 +1701,7 @@
             background-color: #1a1a1a; 
             border-radius: 10px; 
             transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border: none;
         } 
 
         @keyframes loadProgress { 
@@ -7778,15 +7782,19 @@
                 grid.removeEventListener('touchend', grid._createMediaTouchEnd);
             }
             let startX = 0;
+            let startY = 0;
             grid._createMediaTouchStart = (e) => {
                 startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
             };
             grid._createMediaTouchEnd = (e) => {
                 const endX = e.changedTouches[0].clientX;
-                const delta = endX - startX;
-                if (Math.abs(delta) < 40) return;
+                const endY = e.changedTouches[0].clientY;
+                const deltaX = endX - startX;
+                const deltaY = endY - startY;
+                if (Math.abs(deltaX) < 40 || Math.abs(deltaY) > Math.abs(deltaX)) return;
                 const items = window.getCreateMediaItems();
-                if (delta < 0) {
+                if (deltaX < 0) {
                     window.setCreateMediaIndex(Math.min(items.length - 1, (window.currentCreateMediaIndex || 0) + 1));
                 } else {
                     window.setCreateMediaIndex(Math.max(0, (window.currentCreateMediaIndex || 0) - 1));
