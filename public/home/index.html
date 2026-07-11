@@ -7680,7 +7680,7 @@
                                         const adjust = window.getCreateMediaAdjust(idx);
                                         const isVideo = item.img.includes('video') || item.img.endsWith('.mp4');
                                         return `
-                                            <div id="create-slide-${idx}" class="absolute inset-0 ${idx === activeIndex ? '' : 'hidden'}">
+                                            <div id="create-slide-${idx}" class="absolute inset-0 bg-black ${idx === activeIndex ? '' : 'hidden'}">
                                                 ${isVideo ? 
                                                     `<video src="${item.img}" class="h-full w-full object-cover" muted playsinline preload="metadata"></video>` : 
                                                     `<img id="create-img-${idx}" src="${item.img}" data-create-media-stage-index="${idx}" 
@@ -7762,15 +7762,8 @@
         window.fadeCreateMediaGrid = (updateFn) => {
             const grid = document.getElementById('create-media-grid');
             if (!grid) return;
-            grid.style.transition = 'opacity 180ms ease-out';
-            grid.style.opacity = '0';
-            setTimeout(() => {
-                if (typeof updateFn === 'function') updateFn();
-                initCreateMediaGrid();
-                requestAnimationFrame(() => {
-                    grid.style.opacity = '1';
-                });
-            }, 120);
+            if (typeof updateFn === 'function') updateFn();
+            initCreateMediaGrid();
         };
 
         window.setCreateMediaIndex = (index) => {
@@ -7893,9 +7886,9 @@
             window.compactCreateMediaArrays();
             const remaining = window.getCreateMediaItems();
             const newIndex = Math.min(Math.max(0, window.currentCreateMediaIndex || 0), Math.max(0, remaining.length - 1));
-            window.fadeCreateMediaGrid(() => {
-                window.currentCreateMediaIndex = newIndex;
-            });
+            window.currentCreateMediaIndex = newIndex;
+            // Reinitialize only when removing an image changes the count
+            window.initCreateMediaGrid();
         };
 
         window.updateCreateAvatar = () => {
