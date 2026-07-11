@@ -7451,16 +7451,72 @@
         window.getCreateMediaAdjust = (index) => {
             const safeIndex = Math.max(0, Math.min(3, Number(index) || 0));
             if (!window.createMediaAdjustments[safeIndex]) {
-                window.createMediaAdjustments[safeIndex] = { zoom: 1, x: 0, y: 0 };
+                window.createMediaAdjustments[safeIndex] = { zoom: 1, x: 0, y: 0, fillScale: 1, maxZoomLimit: 2.5 };
             }
             return window.createMediaAdjustments[safeIndex];
         };
 
-        window.setCreateMediaZoom = (index, value) => {
+        window.initializeCreateMediaGeometry = (index, imgElement, frameElement) => {
             const adjust = window.getCreateMediaAdjust(index);
-            adjust.zoom = Math.max(1, Math.min(2.2, parseFloat(value) || 1));
+            if (!imgElement || !imgElement.naturalWidth || !frameElement) return;
+
+            const frameW = frameElement.clientWidth;
+            const frameH = frameElement.clientHeight;
+
+            const scaleX = frameW / imgElement.naturalWidth;
+            const scaleY = frameH / imgElement.naturalHeight;
+
+            // Math.max guarantees the image scales up to fully cover the box with NO black gaps
+            adjust.fillScale = Math.max(scaleX, scaleY);
+            adjust.maxZoomLimit = adjust.fillScale * 2.5;
+
+            // Set to full bleed cover scale immediately by default
+            adjust.zoom = adjust.fillScale;
+
+            // Perfectly center the scaled image inside the square
+            adjust.x = (frameW - imgElement.naturalWidth * adjust.zoom) / 2;
+            adjust.y = (frameH - imgElement.naturalHeight * adjust.zoom) / 2;
+
+            window.updateCreateMediaTransform(index, imgElement);
+        };
+
+        window.updateCreateMediaTransform = (index, imgElement) => {
+            const adjust = window.getCreateMediaAdjust(index);
+            const target = imgElement || document.querySelector(`[data-create-media-stage-index="${index}"]`);
+            const frame = target?.parentElement;
+            if (!target || !frame) return;
+
+            const scaledWidth = target.naturalWidth * adjust.zoom;
+            const scaledHeight = target.naturalHeight * adjust.zoom;
+
+            // Boundary locking rules: completely prevents dragging outside image edges
+            const minPanX = frame.clientWidth - scaledWidth;
+            adjust.x = Math.min(0, Math.max(minPanX, adjust.x));
+
+            const minPanY = frame.clientHeight - scaledHeight;
+            adjust.y = Math.min(0, Math.max(minPanY, adjust.y));
+
+            target.style.transform = `translate(${adjust.x}px, ${adjust.y}px) scale(${adjust.zoom})`;
+        };
+
+        window.setCreateMediaZoom = (index, sliderValue) => {
+            const adjust = window.getCreateMediaAdjust(index);
             const target = document.querySelector(`[data-create-media-stage-index="${index}"]`);
-            if (target) target.style.transform = `translate(${adjust.x}px, ${adjust.y}px) scale(${adjust.zoom})`;
+            const frame = target?.parentElement;
+            if (!target || !frame) return;
+
+            // Convert slider value (0-1) to actual zoom (fillScale to maxZoomLimit)
+            const targetScale = adjust.fillScale + sliderValue * (adjust.maxZoomLimit - adjust.fillScale);
+
+            const centerX = frame.clientWidth / 2;
+            const centerY = frame.clientHeight / 2;
+
+            // Shift pan tracking offsets seamlessly toward center coordinates
+            adjust.x = centerX - (centerX - adjust.x) * (targetScale / adjust.zoom);
+            adjust.y = centerY - (centerY - adjust.y) * (targetScale / adjust.zoom);
+
+            adjust.zoom = targetScale;
+            window.updateCreateMediaTransform(index, target);
         };
 
         window.startCreateMediaDrag = (event, index) => {
@@ -7468,27 +7524,36 @@
             const adjust = window.getCreateMediaAdjust(index);
             window._createMediaDrag = {
                 index,
-                startX: event.clientX,
-                startY: event.clientY,
+                startX: event.touches ? event.touches[0].clientX : event.clientX,
+                startY: event.touches ? event.touches[0].clientY : event.clientY,
                 startXOffset: adjust.x,
                 startYOffset: adjust.y
             };
+            // Show grid overlay
+            const grid = document.getElementById(`create-grid-${index}`);
+            if (grid) grid.style.opacity = '1';
             event.preventDefault();
         };
 
         window.moveCreateMediaDrag = (event) => {
             if (!window._createMediaDrag) return;
             const { index, startX, startY, startXOffset, startYOffset } = window._createMediaDrag;
-            const dx = event.clientX - startX;
-            const dy = event.clientY - startY;
+            const clientX = event.touches ? event.touches[0].clientX : event.clientX;
+            const clientY = event.touches ? event.touches[0].clientY : event.clientY;
+            const dx = clientX - startX;
+            const dy = clientY - startY;
             const adjust = window.getCreateMediaAdjust(index);
             adjust.x = startXOffset + dx;
             adjust.y = startYOffset + dy;
-            const target = document.querySelector(`[data-create-media-stage-index="${index}"]`);
-            if (target) target.style.transform = `translate(${adjust.x}px, ${adjust.y}px) scale(${adjust.zoom})`;
+            window.updateCreateMediaTransform(index);
         };
 
         window.endCreateMediaDrag = () => {
+            if (window._createMediaDrag) {
+                // Hide grid overlay
+                const grid = document.getElementById(`create-grid-${window._createMediaDrag.index}`);
+                if (grid) grid.style.opacity = '0';
+            }
             window._createMediaDrag = null;
         };
 
@@ -7550,12 +7615,19 @@
                     const currentItem = items[activeIndex];
                     const isVideo = currentItem.img.includes('video') || currentItem.img.endsWith('.mp4');
                     const currentAdjust = window.getCreateMediaAdjust(activeIndex);
+                    // Calculate slider value from current zoom
+                    const sliderValue = currentAdjust.fillScale >= currentAdjust.maxZoomLimit ? 0 : 
+                        Math.max(0, Math.min(1, (currentAdjust.zoom - currentAdjust.fillScale) / (currentAdjust.maxZoomLimit - currentAdjust.fillScale)));
                     wrapper.innerHTML = `
                         <div class="w-full">
                             <div class="relative overflow-hidden rounded-none bg-black shadow-sm">
-                                <div class="relative h-[112vw] max-h-[660px] w-screen max-w-none overflow-hidden">
-                                    <div class="pointer-events-none absolute inset-0 z-10" style="background-image: linear-gradient(to right, rgba(255,255,255,0.35) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.35) 1px, transparent 1px); background-size: calc(100% / 3) calc(100% / 3);"></div>
-                                    ${isVideo ? `<video src="${currentItem.img}" class="h-full w-full object-cover transition-all duration-300 ease-out" muted playsinline preload="metadata"></video>` : `<img src="${currentItem.img}" data-create-media-stage-index="${activeIndex}" style="transform: translate(${currentAdjust.x}px, ${currentAdjust.y}px) scale(${currentAdjust.zoom}); transform-origin: center center; touch-action: none; cursor: grab;" class="h-full w-full object-cover transition-all duration-300 ease-out" onpointerdown="window.startCreateMediaDrag(event, ${activeIndex})" />`}
+                                <div class="relative h-[112vw] max-h-[660px] w-screen max-w-none overflow-hidden" id="create-frame-${activeIndex}">
+                                    <div class="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-150" id="create-grid-${activeIndex}" style="display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);">
+                                        <div style="border: 0.5px solid rgba(255,255,255,0.3);"></div><div style="border: 0.5px solid rgba(255,255,255,0.3);"></div><div style="border: 0.5px solid rgba(255,255,255,0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255,255,255,0.3);"></div><div style="border: 0.5px solid rgba(255,255,255,0.3);"></div><div style="border: 0.5px solid rgba(255,255,255,0.3);"></div>
+                                        <div style="border: 0.5px solid rgba(255,255,255,0.3);"></div><div style="border: 0.5px solid rgba(255,255,255,0.3);"></div><div style="border: 0.5px solid rgba(255,255,255,0.3);"></div>
+                                    </div>
+                                    ${isVideo ? `<video src="${currentItem.img}" class="h-full w-full object-cover transition-all duration-300 ease-out" muted playsinline preload="metadata"></video>` : `<img src="${currentItem.img}" data-create-media-stage-index="${activeIndex}" style="transform: translate(${currentAdjust.x}px, ${currentAdjust.y}px) scale(${currentAdjust.zoom}); transform-origin: top left; touch-action: none; cursor: grab; max-width: none !important; max-height: none !important; width: auto !important; height: auto !important;" class="h-full w-full object-cover transition-all duration-300 ease-out" onload="window.initializeCreateMediaGeometry(${activeIndex}, this, document.getElementById('create-frame-${activeIndex}'))" onpointerdown="window.startCreateMediaDrag(event, ${activeIndex})" onpointerup="window.endCreateMediaDrag()" onpointercancel="window.endCreateMediaDrag()" />`}
                                 </div>
                                 <button onclick="event.stopPropagation(); window.removeCreateImage(${activeIndex})" class="absolute top-3 right-3 z-20 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-white">
                                     <i data-lucide="x" class="w-4 h-4"></i>
@@ -7563,7 +7635,7 @@
                             </div>
                             ${count > 1 ? `<div class="mt-3 flex justify-center gap-2">${items.map((_, dotIndex) => `<button type="button" onclick="window.setCreateMediaIndex(${dotIndex})" class="h-2.5 w-2.5 rounded-full transition-all duration-200 ${dotIndex === activeIndex ? 'bg-gray-900 scale-110' : 'bg-gray-300'}"></button>`).join('')}</div>` : ''}
                             <div class="mt-3 flex items-center gap-2 px-4">
-                                <input type="range" min="1" max="2.2" step="0.1" value="${currentAdjust.zoom}" onchange="window.setCreateMediaZoom(${activeIndex}, this.value)" class="h-2 flex-1 accent-gray-900" />
+                                <input type="range" min="0" max="1" step="0.001" value="${sliderValue}" oninput="window.setCreateMediaZoom(${activeIndex}, this.value)" class="h-2 flex-1 accent-gray-900" />
                                 <span class="text-[11px] font-semibold text-gray-500">Zoom</span>
                             </div>
                             <div class="mt-3 flex items-center gap-2 px-4">
@@ -7584,7 +7656,15 @@
                     window.addEventListener('pointermove', window.moveCreateMediaDrag);
                     window.addEventListener('pointerup', window.endCreateMediaDrag);
                     window.addEventListener('pointercancel', window.endCreateMediaDrag);
+                    window.addEventListener('touchmove', window.moveCreateMediaDrag, { passive: false });
+                    window.addEventListener('touchend', window.endCreateMediaDrag);
                     window.__createMediaDragBound = true;
+                }
+                // Also initialize geometry immediately for already loaded images
+                const img = wrapper.querySelector(`[data-create-media-stage-index="${activeIndex}"]`);
+                const frame = wrapper.querySelector(`#create-frame-${activeIndex}`);
+                if (img && frame && img.complete) {
+                    window.initializeCreateMediaGeometry(activeIndex, img, frame);
                 }
                 return;
             }
@@ -7644,6 +7724,9 @@
                     const safeIndex = Math.max(0, Math.min(3, targetIdx));
                     window.composeImages[safeIndex] = e.target.result;
                     window.composeImageBlobs[safeIndex] = file;
+                    // Reset adjustments for this image
+                    window.createMediaAdjustments[safeIndex] = null;
+                    window.getCreateMediaAdjust(safeIndex);
                     window.currentCreateMediaIndex = Math.max(0, window.getCreateMediaItems().length - 1);
                     initCreateMediaGrid();
                 };
