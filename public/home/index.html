@@ -5363,8 +5363,125 @@
         window.commentSearchTerm = ''; window.isCommentSearchOpen = false;
         window.currentClaimLink = null;
         const feedView = document.getElementById('view-feed'), exploreView = document.getElementById('view-explore'), blogView = document.getElementById('view-blog'), ptrSpinner = document.getElementById('ptr-spinner'), refreshIcons = () => window.lucide?.createIcons();
-        if (feedView) { feedView.addEventListener('touchstart', e => { if (!feedView.scrollTop && !isRefreshing) { ptrStartY = e.touches[0].pageY; isPtr = true; ptrSpinner.style.transition = 'none' } }, { passive: true }); feedView.addEventListener('touchmove', e => { if (!isPtr || isRefreshing) return; const d = e.touches[0].pageY - ptrStartY; if (d > 0 && !feedView.scrollTop) { if (e.cancelable) e.preventDefault(); ptrDist = d; const y = Math.min(d * .4, 80); Object.assign(ptrSpinner.style, { transform: `translateX(-50%) translateY(${y}px) rotate(${y * 3}deg)`, opacity: Math.min(y / 40, 1) }) } else { isPtr = false; ptrSpinner.style.opacity = '0'; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)' } }, { passive: false }); feedView.addEventListener('touchend', async () => { if (!isPtr || isRefreshing) return; isPtr = false; ptrSpinner.style.transition = 'all .3s'; if (ptrDist > 100) { isRefreshing = true; Object.assign(ptrSpinner.style, { transform: 'translateX(-50%) translateY(50px)', opacity: '1' }); ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; refreshIcons(); await new Promise(r => setTimeout(r, 1000)); renderFeed(); showToast("Feed updated"); isRefreshing = false; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0'; setTimeout(() => { ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; refreshIcons() }, 300) } else { ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0' } ptrDist = 0 }); feedView.addEventListener('scroll', () => { const c = feedView.scrollTop, h = document.getElementById('main-header'); h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastScrollTop = Math.max(0, c) }, { passive: true }) }
-        if (blogView) { blogView.addEventListener('touchstart', e => { if (!blogView.scrollTop && !isRefreshing) { ptrStartY = e.touches[0].pageY; isPtr = true; ptrSpinner.style.transition = 'none' } }, { passive: true }); blogView.addEventListener('touchmove', e => { if (!isPtr || isRefreshing) return; const d = e.touches[0].pageY - ptrStartY; if (d > 0 && !blogView.scrollTop) { if (e.cancelable) e.preventDefault(); ptrDist = d; const y = Math.min(d * .4, 80); Object.assign(ptrSpinner.style, { transform: `translateX(-50%) translateY(${y}px) rotate(${y * 3}deg)`, opacity: Math.min(y / 40, 1) }) } else { isPtr = false; ptrSpinner.style.opacity = '0'; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)' } }, { passive: false }); blogView.addEventListener('touchend', async () => { if (!isPtr || isRefreshing) return; isPtr = false; ptrSpinner.style.transition = 'all .3s'; if (ptrDist > 100) { isRefreshing = true; Object.assign(ptrSpinner.style, { transform: 'translateX(-50%) translateY(50px)', opacity: '1' }); ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; refreshIcons(); await new Promise(r => setTimeout(r, 1000)); renderBlog(); showToast("Blog updated"); isRefreshing = false; ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0'; setTimeout(() => { ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; refreshIcons() }, 300) } else { ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; ptrSpinner.style.opacity = '0' } ptrDist = 0 }); blogView.addEventListener('scroll', () => { const c = blogView.scrollTop, h = document.getElementById('main-header'); h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastScrollTop = Math.max(0, c) }, { passive: true }) }
+        if (feedView) { 
+            feedView.addEventListener('touchstart', e => { 
+                if (!feedView.scrollTop && !isRefreshing) { 
+                    ptrStartY = e.touches[0].pageY; 
+                    isPtr = true; 
+                    ptrSpinner.style.transition = 'none';
+                } 
+            }, { passive: true }); 
+            feedView.addEventListener('touchmove', e => { 
+                if (!isPtr || isRefreshing) return; 
+                const d = e.touches[0].pageY - ptrStartY; 
+                if (d > 0 && !feedView.scrollTop) { 
+                    if (e.cancelable) e.preventDefault(); 
+                    ptrDist = d; 
+                    // Smoother spring-like damping (sqrt(d) for less resistance as you pull)
+                    const y = Math.min(Math.sqrt(d) * 4, 80); 
+                    Object.assign(ptrSpinner.style, { 
+                        transform: `translateX(-50%) translateY(${y}px) rotate(${y * 2}deg)`, 
+                        opacity: Math.min(y / 40, 1) 
+                    }); 
+                } else { 
+                    isPtr = false; 
+                    ptrSpinner.style.opacity = '0'; 
+                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)';
+                } 
+            }, { passive: false }); 
+            feedView.addEventListener('touchend', async () => { 
+                if (!isPtr || isRefreshing) return; 
+                isPtr = false; 
+                ptrSpinner.style.transition = 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; 
+                if (ptrDist > 100) { 
+                    isRefreshing = true; 
+                    Object.assign(ptrSpinner.style, { 
+                        transform: 'translateX(-50%) translateY(50px)', 
+                        opacity: '1' 
+                    }); 
+                    ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; 
+                    refreshIcons(); 
+                    await new Promise(r => setTimeout(r, 800)); 
+                    renderFeed(); 
+                    showToast("Feed updated"); 
+                    isRefreshing = false; 
+                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; 
+                    ptrSpinner.style.opacity = '0'; 
+                    setTimeout(() => { 
+                        ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; 
+                        refreshIcons(); 
+                    }, 300);
+                } else { 
+                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; 
+                    ptrSpinner.style.opacity = '0';
+                } 
+                ptrDist = 0; 
+            }); 
+            feedView.addEventListener('scroll', () => { 
+                const c = feedView.scrollTop, h = document.getElementById('main-header'); 
+                h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; 
+                lastScrollTop = Math.max(0, c); 
+            }, { passive: true });
+        }
+        if (blogView) { 
+            blogView.addEventListener('touchstart', e => { 
+                if (!blogView.scrollTop && !isRefreshing) { 
+                    ptrStartY = e.touches[0].pageY; 
+                    isPtr = true; 
+                    ptrSpinner.style.transition = 'none';
+                } 
+            }, { passive: true }); 
+            blogView.addEventListener('touchmove', e => { 
+                if (!isPtr || isRefreshing) return; 
+                const d = e.touches[0].pageY - ptrStartY; 
+                if (d > 0 && !blogView.scrollTop) { 
+                    if (e.cancelable) e.preventDefault(); 
+                    ptrDist = d; 
+                    const y = Math.min(Math.sqrt(d) * 4, 80); 
+                    Object.assign(ptrSpinner.style, { 
+                        transform: `translateX(-50%) translateY(${y}px) rotate(${y * 2}deg)`, 
+                        opacity: Math.min(y / 40, 1) 
+                    }); 
+                } else { 
+                    isPtr = false; 
+                    ptrSpinner.style.opacity = '0'; 
+                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)';
+                } 
+            }, { passive: false }); 
+            blogView.addEventListener('touchend', async () => { 
+                if (!isPtr || isRefreshing) return; 
+                isPtr = false; 
+                ptrSpinner.style.transition = 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; 
+                if (ptrDist > 100) { 
+                    isRefreshing = true; 
+                    Object.assign(ptrSpinner.style, { 
+                        transform: 'translateX(-50%) translateY(50px)', 
+                        opacity: '1' 
+                    }); 
+                    ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; 
+                    refreshIcons(); 
+                    await new Promise(r => setTimeout(r, 800)); 
+                    renderBlog(); 
+                    showToast("Blog updated"); 
+                    isRefreshing = false; 
+                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; 
+                    ptrSpinner.style.opacity = '0'; 
+                    setTimeout(() => { 
+                        ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; 
+                        refreshIcons(); 
+                    }, 300);
+                } else { 
+                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; 
+                    ptrSpinner.style.opacity = '0';
+                } 
+                ptrDist = 0; 
+            }); 
+            blogView.addEventListener('scroll', () => { 
+                const c = blogView.scrollTop, h = document.getElementById('main-header'); 
+                h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; 
+                lastScrollTop = Math.max(0, c); 
+            }, { passive: true });
+        }
         if (exploreView) exploreView.addEventListener('scroll', () => { const c = exploreView.scrollTop, h = document.getElementById('explore-header-container'); h.style.transform = c > lastExploreScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; lastExploreScrollTop = Math.max(0, c) }, { passive: true });
         const formatDate = t => { if (!t) return ''; const d = t.toDate ? t.toDate() : new Date(t); if (isNaN(d.getTime())) return ''; const now = new Date(), s = (now - d) / 1000; if (s < 60) return 'Now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; if (s < 604800) return Math.floor(s / 86400) + 'd ago'; return d.toLocaleDateString() };
         
@@ -8971,6 +9088,13 @@
             });
             document.getElementById('user-list-overlay').classList.remove('hidden')
         };
+        // User list state for infinite scroll
+        window.userListState = {
+            allIds: [],
+            displayedCount: 0,
+            isLoading: false
+        };
+
         window.openUserList = (type, uid) => {
             const u = users.find(x => x.id === uid);
             if (!u) return;
@@ -8986,7 +9110,7 @@
                 priv = u.settings?.privateNetwork,
                 hide = u.settings?.hideConnections;
             if (!me && type !== 'mutual' && (hide || (priv && !fol))) {
-                c.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-gray-400 opacity-60"><i data-lucide="${hide ? 'eye-off' : 'lock'}" class="w-16 h-16 mb-2"></i><p>${hide ? 'Connections hidden' : 'Account is private'}</p></div>`
+                c.innerHTML = `<div class="flex flex-col items-center justify-center py-10 text-gray-400 opacity-60"><i data-lucide="${hide ? 'eye-off' : 'lock'}" class="w-16 h-16 mb-2"></i><p>${hide ? 'Connections hidden' : 'Account is private'}</p></div>`;
             } else {
                 let ids = [];
                 if (type === 'following') ids = (u.following || []);
@@ -9000,27 +9124,97 @@
                     ).map(user => user.id);
                 }
 
-                if (!ids.length) c.innerHTML = `<div class="text-center text-gray-400 py-8">No ${type === 'mutual' ? 'mutual friends' : 'users'} found.</div>`;
-                else {
-                    c.innerHTML = '';
-                    ids.forEach(id => {
-                        const user = users.find(x => x.id === id);
-                        if (user) {
-                            const d = document.createElement('div');
-                            d.className = "flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer last:border-b-0";
-                            d.onclick = () => {
-                                closeUserList();
-                                showProfile(user.id)
-                            };
-                            d.innerHTML = `<div class="flex items-center gap-3"><div class="rounded-full w-12 h-12 shrink-0 overflow-hidden"><img src="${user.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-[15px] text-gray-900 flex items-center">${user.name}${user.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}</div><div class="text-[13px] text-gray-500">@${user.username || 'user'}</div></div></div>`;
-                            c.appendChild(d)
-                        }
-                    })
+                // Initialize user list state
+                window.userListState = {
+                    allIds: ids,
+                    displayedCount: 10,
+                    isLoading: false
+                };
+
+                if (!ids.length) {
+                    c.innerHTML = `<div class="text-center text-gray-400 py-8">No ${type === 'mutual' ? 'mutual friends' : 'users'} found.</div>`;
+                } else {
+                    renderUserList();
                 }
+
+                // Add scroll listener for infinite scroll
+                setTimeout(() => {
+                    const userListContent = document.getElementById('user-list-content');
+                    if (userListContent) {
+                        userListContent.addEventListener('scroll', handleUserListScroll);
+                    }
+                }, 100);
             }
-            toggleModalAnim('user-list-overlay', 'user-list-modal', !0);
-            refreshIcons()
-        }; window.closeUserList = () => toggleModalAnim('user-list-overlay', 'user-list-modal', !1);
+            toggleModalAnim('user-list-overlay', 'user-list-modal', true);
+            refreshIcons();
+        };
+        
+        const handleUserListScroll = () => {
+            const c = document.getElementById('user-list-content');
+            if (!c || window.userListState.isLoading) return;
+            const { scrollTop, scrollHeight, clientHeight } = c;
+            if (scrollTop + clientHeight >= scrollHeight - 100) {
+                loadMoreUserList();
+            }
+        };
+        
+        const loadMoreUserList = () => {
+            if (window.userListState.isLoading) return;
+            window.userListState.isLoading = true;
+            window.userListState.displayedCount += 10;
+            renderUserList();
+            window.userListState.isLoading = false;
+        };
+        
+        window.renderUserList = () => {
+            const c = document.getElementById('user-list-content');
+            if (!c) return;
+            
+            const ids = window.userListState.allIds;
+            if (!ids || !ids.length) {
+                c.innerHTML = `<div class="text-center text-gray-400 py-8">No users found.</div>`;
+                return;
+            }
+            
+            const displayList = ids.slice(0, window.userListState.displayedCount);
+            const hasMore = displayList.length < ids.length;
+            
+            c.innerHTML = displayList.map(id => {
+                const user = users.find(x => x.id === id);
+                if (!user) return '';
+                const isFollowing = currentUser.following?.includes(user.id);
+                return `
+                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer last:border-b-0" onclick="closeUserList();showProfile('${user.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="rounded-full w-12 h-12 shrink-0 overflow-hidden">
+                                <img src="${user.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
+                            </div>
+                            <div>
+                                <div class="font-bold text-[15px] text-gray-900 flex items-center">
+                                    ${user.name}${user.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}
+                                </div>
+                                <div class="text-[13px] text-gray-500">@${user.username || 'user'}</div>
+                            </div>
+                        </div>
+                        ${user.id !== currentUser.id ? `
+                            <button onclick="event.stopPropagation(); toggleFollow('${user.id}')" class="px-4 py-2 rounded-xl text-sm font-bold transition-all ${isFollowing ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}">
+                                ${isFollowing ? 'Following' : 'Follow'}
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('') + (hasMore ? '<div class="py-4 text-center text-gray-500 text-sm">Loading more...</div>' : '');
+            refreshIcons();
+        };
+        
+        window.closeUserList = () => {
+            // Remove scroll listener
+            const c = document.getElementById('user-list-content');
+            if (c) {
+                c.removeEventListener('scroll', handleUserListScroll);
+            }
+            toggleModalAnim('user-list-overlay', 'user-list-modal', false);
+        };
         window.toggleLike = async (pid, forceLike = false) => { 
             const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid); 
             if (!p) return;
@@ -9101,11 +9295,29 @@
                         currentY = e.touches[0].clientY;
                         const diff = currentY - startY;
                         if (diff > 0) {
-                            // Use translate3d for hardware acceleration (smoother)
-                            m.style.transform = `translate3d(0, ${diff}px, 0)`;
-                            // Smoothly fade out the overlay background as it's dragged down
-                            const opacity = Math.max(0, 0.4 - (diff / 800));
-                            o.style.backgroundColor = `rgba(0, 0, 0, ${opacity})`;
+                            // Check if the scrollable content is at the top
+                            let isAtTop = true;
+                            const scrollContainer = 
+                                document.getElementById('likes-list-content') || 
+                                document.getElementById('user-list-content') || 
+                                document.getElementById('engagement-content') || 
+                                document.querySelector('#thread-overlay .discussion-panel') || 
+                                document.querySelector('#comment-options-content') || 
+                                document.querySelector('#settings-content') || 
+                                document.querySelector('#share-content') || 
+                                document.querySelector('#privacy-content');
+                            
+                            if (scrollContainer && scrollContainer.scrollTop > 0) {
+                                isAtTop = false;
+                            }
+                            
+                            if (isAtTop) {
+                                // Use translate3d for hardware acceleration (smoother)
+                                m.style.transform = `translate3d(0, ${diff}px, 0)`;
+                                // Smoothly fade out the overlay background as it's dragged down
+                                const opacity = Math.max(0, 0.4 - (diff / 800));
+                                o.style.backgroundColor = `rgba(0, 0, 0, ${opacity})`;
+                            }
                         }
                     }, { passive: true });
 
@@ -9113,7 +9325,24 @@
                         m.style.transition = 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
                         m.style.willChange = 'auto';
                         const diff = currentY - startY;
-                        if (diff > 150) {
+                        
+                        // Check if the scrollable content is at the top before closing
+                        let isAtTop = true;
+                        const scrollContainer = 
+                            document.getElementById('likes-list-content') || 
+                            document.getElementById('user-list-content') || 
+                            document.getElementById('engagement-content') || 
+                            document.querySelector('#thread-overlay .discussion-panel') || 
+                            document.querySelector('#comment-options-content') || 
+                            document.querySelector('#settings-content') || 
+                            document.querySelector('#share-content') || 
+                            document.querySelector('#privacy-content');
+                        
+                        if (scrollContainer && scrollContainer.scrollTop > 0) {
+                            isAtTop = false;
+                        }
+                        
+                        if (diff > 150 && isAtTop) {
                             if (oid === 'thread-overlay' || oid === 'comments-overlay') {
                                 history.back();
                             } else {
@@ -9157,19 +9386,126 @@
                 setTimeout(() => o.classList.add('hidden'), 150);
             }
         };
-        window.openLikes = pid => { manageHistory('likes-overlay'); const p = posts.find(x => x.id === pid), c = document.getElementById('likes-list-content'); const searchInput = document.getElementById('likes-search-input'); if (searchInput) searchInput.value = ''; if (p.settings?.allowLikeView === false && p.authorId !== currentUser.id) { c.innerHTML = '<div class="text-center text-gray-400 py-8">Creator hid likes.</div>'; toggleModalAnim('likes-overlay', 'likes-modal', true); return } renderLikesList(p.likes || []); searchInput.oninput = (e) => { const term = e.target.value.toLowerCase(); const allLikes = p.likes || []; if (!term) { renderLikesList(allLikes) } else { const filtered = allLikes.filter(uid => { const u = users.find(x => x.id === uid); return u && (u.name.toLowerCase().includes(term) || (u.username && u.username.toLowerCase().includes(term))) }); renderLikesList(filtered) } }; toggleModalAnim('likes-overlay', 'likes-modal', true) };
-        window.renderLikesList = (idList) => {
+        // Likes state for infinite scroll
+        window.likesState = {
+            allIds: [],
+            displayedCount: 0,
+            searchTerm: '',
+            isLoading: false
+        };
+
+        window.openLikes = pid => { 
+            manageHistory('likes-overlay'); 
+            const p = posts.find(x => x.id === pid), c = document.getElementById('likes-list-content'); 
+            const searchInput = document.getElementById('likes-search-input'); 
+            if (searchInput) searchInput.value = ''; 
+            if (p.settings?.allowLikeView === false && p.authorId !== currentUser.id) { 
+                c.innerHTML = '<div class="text-center text-gray-400 py-8">Creator hid likes.</div>'; 
+                toggleModalAnim('likes-overlay', 'likes-modal', true); 
+                return; 
+            }
+            
+            // Initialize likes state
+            window.likesState = {
+                allIds: p.likes || [],
+                displayedCount: 10,
+                searchTerm: '',
+                isLoading: false
+            };
+            renderLikesList(); 
+            
+            searchInput.oninput = (e) => { 
+                const term = e.target.value.toLowerCase(); 
+                window.likesState.searchTerm = term;
+                window.likesState.displayedCount = 10;
+                renderLikesList();
+            }; 
+            toggleModalAnim('likes-overlay', 'likes-modal', true);
+            
+            // Add scroll listener for infinite scroll
+            setTimeout(() => {
+                const likesContent = document.getElementById('likes-list-content');
+                if (likesContent) {
+                    likesContent.addEventListener('scroll', handleLikesScroll);
+                }
+            }, 100);
+        };
+        
+        const handleLikesScroll = () => {
             const c = document.getElementById('likes-list-content');
+            if (!c || window.likesState.isLoading) return;
+            const { scrollTop, scrollHeight, clientHeight } = c;
+            if (scrollTop + clientHeight >= scrollHeight - 100) {
+                loadMoreLikes();
+            }
+        };
+        
+        const loadMoreLikes = () => {
+            if (window.likesState.isLoading) return;
+            window.likesState.isLoading = true;
+            window.likesState.displayedCount += 10;
+            renderLikesList();
+            window.likesState.isLoading = false;
+        };
+        
+        window.renderLikesList = () => {
+            const c = document.getElementById('likes-list-content');
+            let idList = window.likesState.allIds;
+            
+            if (window.likesState.searchTerm) {
+                idList = idList.filter(uid => {
+                    const u = users.find(x => x.id === uid);
+                    return u && (
+                        u.name.toLowerCase().includes(window.likesState.searchTerm) || 
+                        (u.username && u.username.toLowerCase().includes(window.likesState.searchTerm))
+                    );
+                });
+            }
+            
             if (!idList || !idList.length) {
                 c.innerHTML = '<div class="text-center text-gray-400 py-8">No matching users.</div>';
-                return
+                return;
             }
-            c.innerHTML = idList.map(uid => {
+            
+            const displayList = idList.slice(0, window.likesState.displayedCount);
+            const hasMore = displayList.length < idList.length;
+            
+            c.innerHTML = displayList.map(uid => {
                 const u = users.find(x => x.id === uid);
-                return u ? `<div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer last:border-b-0" onclick="closeLikes();showProfile('${u.id}')"><div class="flex items-center gap-3"><div class="rounded-full w-12 h-12 shrink-0 overflow-hidden"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-[15px] text-gray-900 flex items-center">${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}</div><div class="text-[13px] text-gray-500 truncate w-48">@${u.username || 'user'}</div></div></div></div>` : ''
-            }).join('')
+                if (!u) return '';
+                const isFollowing = currentUser.following?.includes(u.id);
+                return `
+                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer last:border-b-0" onclick="closeLikes();showProfile('${u.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="rounded-full w-12 h-12 shrink-0 overflow-hidden">
+                                <img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
+                            </div>
+                            <div>
+                                <div class="font-bold text-[15px] text-gray-900 flex items-center">
+                                    ${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}
+                                </div>
+                                <div class="text-[13px] text-gray-500 truncate w-48">@${u.username || 'user'}</div>
+                            </div>
+                        </div>
+                        ${u.id !== currentUser.id ? `
+                            <button onclick="event.stopPropagation(); toggleFollow('${u.id}')" class="px-4 py-2 rounded-xl text-sm font-bold transition-all ${isFollowing ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}">
+                                ${isFollowing ? 'Following' : 'Follow'}
+                            </button>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('') + (hasMore ? '<div class="py-4 text-center text-gray-500 text-sm">Loading more...</div>' : '');
+            refreshIcons();
         };
-        window.closeLikes = () => toggleModalAnim('likes-overlay', 'likes-modal', !1);
+        
+        window.closeLikes = () => {
+            // Remove scroll listener
+            const c = document.getElementById('likes-list-content');
+            if (c) {
+                c.removeEventListener('scroll', handleLikesScroll);
+            }
+            toggleModalAnim('likes-overlay', 'likes-modal', false);
+        };
         window.toggleSave = async (pid) => { 
             const isSaving = !document.querySelector(`.js-save-btn-${pid}`)?.classList.contains('active'); 
             document.querySelectorAll(`.js-save-btn-${pid}`).forEach(b => b.classList.toggle('active', isSaving)); 
@@ -9781,7 +10117,7 @@
                         sendNotification(uid, 'follow', 'started following you')
                     ]); 
                 } 
-            } 
+            }
 
             // Update button label
             const updateButton = (b, isNowF) => {
@@ -9819,6 +10155,10 @@
                 icon.setAttribute('data-lucide', isNowFollowing ? 'check' : 'plus');
             });
             refreshIcons();
+
+            // Re-render relevant lists if they are open
+            if (window.renderLikesList) window.renderLikesList();
+            if (window.renderUserList) window.renderUserList();
         };
         window.showProfile = (uid, tab = 'posts') => {
             if (!uid) uid = currentUser.id;
