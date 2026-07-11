@@ -9183,6 +9183,9 @@
                 const user = users.find(x => x.id === id);
                 if (!user) return '';
                 const isFollowing = currentUser.following?.includes(user.id);
+                const isFriend = window.isFriend(user.id);
+                const followLabel = isFollowing ? (isFriend ? 'Friends' : 'Following') : (user.settings?.privateNetwork ? 'Request' : 'Follow');
+                const followClass = isFollowing ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#3D7EEB] text-white';
                 return `
                     <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer last:border-b-0" onclick="closeUserList();showProfile('${user.id}')">
                         <div class="flex items-center gap-3">
@@ -9197,8 +9200,8 @@
                             </div>
                         </div>
                         ${user.id !== currentUser.id ? `
-                            <button onclick="event.stopPropagation(); toggleFollow('${user.id}')" class="px-4 py-2 rounded-xl text-sm font-bold transition-all ${isFollowing ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}">
-                                ${isFollowing ? 'Following' : 'Follow'}
+                            <button onclick="event.stopPropagation(); toggleFollow('${user.id}')" class="js-follow-btn-${user.id} min-w-[95px] px-5 py-2 rounded-full text-[13px] font-bold transition-all hover:opacity-90 ${followClass}">
+                                ${followLabel}
                             </button>
                         ` : ''}
                     </div>
@@ -9273,6 +9276,21 @@
                 el.innerText = newLikeCount;
             });
         };
+        const getModalScrollableContainer = (oid) => {
+            const candidates = [
+                document.getElementById('likes-list-content'),
+                document.getElementById('user-list-content'),
+                document.getElementById('comments-overlay-content'),
+                document.getElementById('engagement-content'),
+                document.querySelector('#thread-overlay .discussion-panel'),
+                document.querySelector('#comment-options-content'),
+                document.querySelector('#settings-content'),
+                document.querySelector('#share-content'),
+                document.querySelector('#privacy-content')
+            ];
+            return candidates.find(Boolean) || null;
+        };
+
         const toggleModalAnim = (oid, mid, s) => {
             const o = document.getElementById(oid), m = document.getElementById(mid);
             if (!o || !m) return;
@@ -9295,18 +9313,9 @@
                         currentY = e.touches[0].clientY;
                         const diff = currentY - startY;
                         if (diff > 0) {
-                            // Check if the scrollable content is at the top
+                            // Only allow drag-down close when the content is already at the top
                             let isAtTop = true;
-                            const scrollContainer = 
-                                document.getElementById('likes-list-content') || 
-                                document.getElementById('user-list-content') || 
-                                document.getElementById('engagement-content') || 
-                                document.querySelector('#thread-overlay .discussion-panel') || 
-                                document.querySelector('#comment-options-content') || 
-                                document.querySelector('#settings-content') || 
-                                document.querySelector('#share-content') || 
-                                document.querySelector('#privacy-content');
-                            
+                            const scrollContainer = getModalScrollableContainer(oid);
                             if (scrollContainer && scrollContainer.scrollTop > 0) {
                                 isAtTop = false;
                             }
@@ -9328,16 +9337,7 @@
                         
                         // Check if the scrollable content is at the top before closing
                         let isAtTop = true;
-                        const scrollContainer = 
-                            document.getElementById('likes-list-content') || 
-                            document.getElementById('user-list-content') || 
-                            document.getElementById('engagement-content') || 
-                            document.querySelector('#thread-overlay .discussion-panel') || 
-                            document.querySelector('#comment-options-content') || 
-                            document.querySelector('#settings-content') || 
-                            document.querySelector('#share-content') || 
-                            document.querySelector('#privacy-content');
-                        
+                        const scrollContainer = getModalScrollableContainer(oid);
                         if (scrollContainer && scrollContainer.scrollTop > 0) {
                             isAtTop = false;
                         }
@@ -9474,6 +9474,9 @@
                 const u = users.find(x => x.id === uid);
                 if (!u) return '';
                 const isFollowing = currentUser.following?.includes(u.id);
+                const isFriend = window.isFriend(u.id);
+                const followLabel = isFollowing ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? 'Request' : 'Follow');
+                const followClass = isFollowing ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#3D7EEB] text-white';
                 return `
                     <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer last:border-b-0" onclick="closeLikes();showProfile('${u.id}')">
                         <div class="flex items-center gap-3">
@@ -9488,8 +9491,8 @@
                             </div>
                         </div>
                         ${u.id !== currentUser.id ? `
-                            <button onclick="event.stopPropagation(); toggleFollow('${u.id}')" class="px-4 py-2 rounded-xl text-sm font-bold transition-all ${isFollowing ? 'bg-gray-100 text-gray-900 hover:bg-gray-200' : 'bg-black text-white hover:bg-gray-800'}">
-                                ${isFollowing ? 'Following' : 'Follow'}
+                            <button onclick="event.stopPropagation(); toggleFollow('${u.id}')" class="js-follow-btn-${u.id} min-w-[95px] px-5 py-2 rounded-full text-[13px] font-bold transition-all hover:opacity-90 ${followClass}">
+                                ${followLabel}
                             </button>
                         ` : ''}
                     </div>
@@ -10129,8 +10132,8 @@
                     b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
                     b.className = `flex-1 py-3 ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
                 } else {
-                    b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : 'Follow';
-                    b.className = `js-follow-btn-${uid} text-[13px] font-bold ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90`;
+                    b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
+                    b.className = `js-follow-btn-${uid} min-w-[95px] px-5 py-2 rounded-full text-[13px] font-bold ${isNowF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#3D7EEB] text-white'} transition-all hover:opacity-90`;
                 }
             };
 
