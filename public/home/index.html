@@ -3288,7 +3288,7 @@
             </div>
             <div class="p-2 border-b border-gray-100"><input type="text" id="likes-search-input"
                     placeholder="Search users..."
-                    class="w-full bg-gray-100 border-none rounded-xl px-4 py-2 text-sm outline-none focus:ring-1 focus:ring-blue-500">
+                    class="w-full bg-gray-100 border-none rounded-xl px-4 py-2 text-sm outline-none focus:outline-none">
             </div>
             <div id="likes-list-content" class="flex-1 overflow-y-auto p-2"></div>
         </div>
@@ -3462,6 +3462,11 @@
                     </button>
                     <span id="user-list-title" class="modal-standard-title">Users</span>
                 </div>
+            </div>
+            <div class="p-2 border-b border-gray-100">
+                <input type="text" id="user-list-search-input"
+                    placeholder="Search users..."
+                    class="w-full bg-gray-100 border-none rounded-xl px-4 py-2 text-sm outline-none focus:outline-none">
             </div>
             <div id="user-list-content" class="flex-1 overflow-y-auto p-2"></div>
         </div>
@@ -9104,6 +9109,17 @@
             
             const title = type === 'following' ? 'Following' : (type === 'mutual' ? 'Mutual Friends' : 'Followers');
             document.getElementById('user-list-title').innerText = title;
+            const searchInput = document.getElementById('user-list-search-input');
+            if (searchInput) {
+                searchInput.value = '';
+                const placeholder = type === 'following' ? 'Search following...' : (type === 'mutual' ? 'Search friends...' : 'Search followers...');
+                searchInput.placeholder = placeholder;
+                searchInput.oninput = (e) => {
+                    window.userListState.searchTerm = (e.target.value || '').toLowerCase();
+                    window.userListState.displayedCount = 10;
+                    renderUserList();
+                };
+            }
 
             const me = uid === currentUser.id,
                 fol = currentUser.following.includes(uid),
@@ -9128,6 +9144,7 @@
                 window.userListState = {
                     allIds: ids,
                     displayedCount: 10,
+                    searchTerm: '',
                     isLoading: false
                 };
 
@@ -9176,9 +9193,26 @@
                 return;
             }
             
-            const displayList = ids.slice(0, window.userListState.displayedCount);
-            const hasMore = displayList.length < ids.length;
+            let filteredIds = ids;
+            const searchTerm = (window.userListState.searchTerm || '').toLowerCase();
+            if (searchTerm) {
+                filteredIds = filteredIds.filter(id => {
+                    const user = users.find(x => x.id === id);
+                    return user && (
+                        (user.name || '').toLowerCase().includes(searchTerm) ||
+                        (user.username || '').toLowerCase().includes(searchTerm)
+                    );
+                });
+            }
+
+            const displayList = filteredIds.slice(0, window.userListState.displayedCount);
+            const hasMore = displayList.length < filteredIds.length;
             
+            if (!displayList.length) {
+                c.innerHTML = '<div class="text-center text-gray-400 py-8">No matching users.</div>';
+                return;
+            }
+
             c.innerHTML = displayList.map(id => {
                 const user = users.find(x => x.id === id);
                 if (!user) return '';
