@@ -9302,31 +9302,40 @@
                 
                 // Add swipe-to-close listeners
                 if (!m.hasSwipeListener) {
-                    let startY = 0, currentY = 0;
+                    let startY = 0, currentY = 0, startX = 0;
+                    let canDragDown = false;
+                    const scrollContainer = () => getModalScrollableContainer(oid);
+
                     m.addEventListener('touchstart', (e) => {
+                        const target = e.target;
+                        const listContainer = scrollContainer();
+                        const startedInsideList = !!(target && listContainer && target.closest('#likes-list-content, #user-list-content, #comments-overlay-content, .discussion-scroll, .discussion-panel'));
+                        const startedOnHeader = !!(target && target.closest('.modal-drag-handle, .modal-standard-header, .modal-chevron-btn'));
+
+                        canDragDown = !startedInsideList && (startedOnHeader || target === m || target === o);
                         startY = e.touches[0].clientY;
+                        currentY = startY;
+                        startX = e.touches[0].clientX;
                         m.style.transition = 'none';
                         m.style.willChange = 'transform';
                     }, { passive: true });
 
                     m.addEventListener('touchmove', (e) => {
-                        currentY = e.touches[0].clientY;
+                        if (!canDragDown) return;
+                        const touch = e.touches[0];
+                        const deltaY = touch.clientY - startY;
+                        const deltaX = touch.clientX - startX;
+                        if (deltaY <= 0 || Math.abs(deltaY) < Math.abs(deltaX)) return;
+
+                        currentY = touch.clientY;
                         const diff = currentY - startY;
-                        if (diff > 0) {
-                            // Only allow drag-down close when the content is already at the top
-                            let isAtTop = true;
-                            const scrollContainer = getModalScrollableContainer(oid);
-                            if (scrollContainer && scrollContainer.scrollTop > 0) {
-                                isAtTop = false;
-                            }
-                            
-                            if (isAtTop) {
-                                // Use translate3d for hardware acceleration (smoother)
-                                m.style.transform = `translate3d(0, ${diff}px, 0)`;
-                                // Smoothly fade out the overlay background as it's dragged down
-                                const opacity = Math.max(0, 0.4 - (diff / 800));
-                                o.style.backgroundColor = `rgba(0, 0, 0, ${opacity})`;
-                            }
+                        const list = scrollContainer();
+                        const isAtTop = !list || list.scrollTop <= 0;
+                        
+                        if (isAtTop) {
+                            m.style.transform = `translate3d(0, ${diff}px, 0)`;
+                            const opacity = Math.max(0, 0.4 - (diff / 800));
+                            o.style.backgroundColor = `rgba(0, 0, 0, ${opacity})`;
                         }
                     }, { passive: true });
 
@@ -9335,14 +9344,10 @@
                         m.style.willChange = 'auto';
                         const diff = currentY - startY;
                         
-                        // Check if the scrollable content is at the top before closing
-                        let isAtTop = true;
-                        const scrollContainer = getModalScrollableContainer(oid);
-                        if (scrollContainer && scrollContainer.scrollTop > 0) {
-                            isAtTop = false;
-                        }
+                        const list = scrollContainer();
+                        const isAtTop = !list || list.scrollTop <= 0;
                         
-                        if (diff > 150 && isAtTop) {
+                        if (diff > 150 && canDragDown && isAtTop) {
                             if (oid === 'thread-overlay' || oid === 'comments-overlay') {
                                 history.back();
                             } else {
