@@ -4229,7 +4229,7 @@
                 <div class="more-menu-item flex items-center justify-between cursor-pointer" onclick="toggleSidebar(); event.stopPropagation();">
                     <div class="flex items-center gap-3">
                         <i data-lucide="panel-right"></i>
-                        <span>Compact Sidebar</span>
+                        <span>Collapse</span>
                     </div>
                     <div id="sidebar-toggle-switch" class="toggle-switch" onclick="toggleSidebar(); event.stopPropagation();">
                         <div class="toggle-dot"></div>
@@ -12063,6 +12063,130 @@
             }
             window.replyingToCommentId = null
         }
+        // Global state for mention functionality
+        window.selectedMentionUsers = [];
+        window.currentMentionInputId = null;
+        window.currentMentionSuggestionsId = null;
+        window.highlightedMentionIndex = 0;
+
+        // Handle mention input: show suggestions when user types @
+        window.handleMentionInput = (inputId, suggestionsId) => {
+            const input = document.getElementById(inputId);
+            const suggestions = document.getElementById(suggestionsId);
+            if (!input || !suggestions) return;
+
+            window.currentMentionInputId = inputId;
+            window.currentMentionSuggestionsId = suggestionsId;
+
+            const text = input.value;
+            const cursorPos = input.selectionStart;
+            
+            // Find the @ position before the cursor
+            let atIndex = -1;
+            for (let i = cursorPos - 1; i >= 0; i--) {
+                if (text[i] === '@') {
+                    atIndex = i;
+                    break;
+                }
+                if (text[i] === ' ') break;
+            }
+
+            if (atIndex === -1) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+
+            const query = text.substring(atIndex + 1, cursorPos).toLowerCase();
+            const filteredUsers = users.filter(u => 
+                u.id !== currentUser.id && 
+                (
+                    (u.username || '').toLowerCase().includes(query) || 
+                    (u.name || '').toLowerCase().includes(query)
+                )
+            );
+
+            if (filteredUsers.length === 0) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+
+            window.highlightedMentionIndex = 0;
+            suggestions.innerHTML = filteredUsers.map((u, i) => `
+                <div class="mention-item ${i === 0 ? 'highlighted' : ''}" data-user-id="${u.id}" data-username="${u.username}" onclick="selectMention('${u.id}', '${u.username}', '${inputId}', '${suggestionsId}')">
+                    <img src="${u.avatar}" alt="${u.name}">
+                    <div class="flex flex-col">
+                        <div class="mention-item-name">${u.name}</div>
+                        <div class="mention-item-username">@${u.username}</div>
+                    </div>
+                </div>
+            `).join('');
+            suggestions.classList.remove('hidden');
+        };
+
+        // Handle keydown for mention navigation
+        window.handleMentionKeydown = (e, inputId, suggestionsId) => {
+            const suggestions = document.getElementById(suggestionsId);
+            if (!suggestions || suggestions.classList.contains('hidden')) return;
+
+            const items = suggestions.querySelectorAll('.mention-item');
+            if (items.length === 0) return;
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                items[window.highlightedMentionIndex].classList.remove('highlighted');
+                window.highlightedMentionIndex = (window.highlightedMentionIndex + 1) % items.length;
+                items[window.highlightedMentionIndex].classList.add('highlighted');
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                items[window.highlightedMentionIndex].classList.remove('highlighted');
+                window.highlightedMentionIndex = window.highlightedMentionIndex === 0 ? items.length - 1 : window.highlightedMentionIndex - 1;
+                items[window.highlightedMentionIndex].classList.add('highlighted');
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const selectedItem = items[window.highlightedMentionIndex];
+                const userId = selectedItem.dataset.userId;
+                const username = selectedItem.dataset.username;
+                selectMention(userId, username, inputId, suggestionsId);
+            } else if (e.key === 'Escape') {
+                suggestions.classList.add('hidden');
+            }
+        };
+
+        // Select a mention and insert into input
+        window.selectMention = (userId, username, inputId, suggestionsId) => {
+            const input = document.getElementById(inputId);
+            const suggestions = document.getElementById(suggestionsId);
+            if (!input || !suggestions) return;
+
+            const text = input.value;
+            const cursorPos = input.selectionStart;
+            
+            // Find the @ position before the cursor
+            let atIndex = -1;
+            for (let i = cursorPos - 1; i >= 0; i--) {
+                if (text[i] === '@') {
+                    atIndex = i;
+                    break;
+                }
+                if (text[i] === ' ') break;
+            }
+
+            if (atIndex === -1) {
+                suggestions.classList.add('hidden');
+                return;
+            }
+
+            const newText = text.substring(0, atIndex) + '@' + username + ' ' + text.substring(cursorPos);
+            input.value = newText;
+            
+            // Set cursor position after the inserted mention
+            const newCursorPos = atIndex + username.length + 2;
+            input.selectionStart = newCursorPos;
+            input.selectionEnd = newCursorPos;
+            input.focus();
+            
+            suggestions.classList.add('hidden');
+        };
         window.promptForImageLink = () => { const u = prompt("Enter Image URL:"); if (u && (u.startsWith('http') || u.startsWith('data:'))) { window.currentMedia = [u]; window.currentMediaType = 'image'; document.getElementById('media-preview-container').classList.remove('hidden'); document.getElementById('preview-inner').innerHTML = `<img src="${u}" class="h-20 w-20 object-cover rounded-md">`; showToast("Added") } };
         window.openAnnouncement = () => { manageHistory('announcement-overlay'); const o = document.getElementById('announcement-overlay'); toggleModalAnim('announcement-overlay', 'announcement-overlay-modal', !0); closeSettings() }; window.closeAnnouncement = () => { toggleModalAnim('announcement-overlay', 'announcement-overlay-modal', !1) };
         window.sendAnnouncement = async () => { const t = document.getElementById('announcement-text').value.trim(); if (!t) return; showAlert("Broadcast?", async () => { for (const u of users) if (u.id !== currentUser.id) await addDoc(collection(db, "notifications"), { receiverId: u.id, senderId: currentUser.id, type: 'system', content: t, timestamp: serverTimestamp(), read: !1 }); showToast("Sent"); document.getElementById('announcement-text').value = ""; closeAnnouncement() }) };
@@ -13494,7 +13618,7 @@
 
         // Initialize sidebar state immediately
         (function() {
-            const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+            const isCollapsed = localStorage.getItem('sidebarCollapsed') !== 'false';
             if (isCollapsed) {
                 const sidebar = document.getElementById('main-sidebar');
                 if (sidebar) sidebar.classList.add('collapsed');
