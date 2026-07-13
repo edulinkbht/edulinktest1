@@ -3294,6 +3294,32 @@
         </div>
     </div>
 
+    <div id="tag-overlay"
+        class="fixed inset-0 z-[75] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-md hidden opacity-0 transition-opacity duration-200"
+        onclick="closeTagOverlay()">
+        <div id="tag-modal"
+            class="bg-white w-full h-[85vh] md:h-auto md:w-[400px] md:max-h-[85vh] md:rounded-[24px] rounded-t-[24px] shadow-2xl relative transform translate-y-full md:translate-y-0 md:scale-95 transition-transform duration-200 flex flex-col overflow-hidden"
+            onclick="event.stopPropagation()">
+            <div class="modal-drag-handle"></div>
+            <div class="modal-standard-header">
+                <div class="flex items-center justify-between w-full">
+                    <div class="flex items-center">
+                        <button onclick="closeTagOverlay()" class="modal-chevron-btn">
+                            <i data-lucide="chevron-down" class="w-6 h-6"></i>
+                        </button>
+                        <span class="modal-standard-title">Tag People</span>
+                    </div>
+                    <button onclick="confirmTagSelection()" class="font-bold text-[#3D7EEB] text-sm">Done</button>
+                </div>
+            </div>
+            <div class="p-2 border-b border-gray-100"><input type="text" id="tag-search-input"
+                    placeholder="Search users..."
+                    class="w-full bg-gray-100 border-none rounded-xl px-4 py-2 text-sm outline-none focus:outline-none">
+            </div>
+            <div id="tag-list-content" class="flex-1 overflow-y-auto p-2"></div>
+        </div>
+    </div>
+
     <div id="announcement-overlay"
         class="fixed inset-0 z-[75] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
         onclick="closeAnnouncement()">
@@ -12069,58 +12095,18 @@
         window.currentMentionSuggestionsId = null;
         window.highlightedMentionIndex = 0;
 
-        // Handle mention input: show suggestions when user types @
+        // Handle mention input: open tag overlay when user types @
         window.handleMentionInput = (inputId, suggestionsId) => {
             const input = document.getElementById(inputId);
-            const suggestions = document.getElementById(suggestionsId);
-            if (!input || !suggestions) return;
-
-            window.currentMentionInputId = inputId;
-            window.currentMentionSuggestionsId = suggestionsId;
+            if (!input) return;
 
             const text = input.value;
             const cursorPos = input.selectionStart;
             
-            // Find the @ position before the cursor
-            let atIndex = -1;
-            for (let i = cursorPos - 1; i >= 0; i--) {
-                if (text[i] === '@') {
-                    atIndex = i;
-                    break;
-                }
-                if (text[i] === ' ') break;
+            // Check if the last character typed is '@'
+            if (cursorPos > 0 && text[cursorPos - 1] === '@') {
+                openTagOverlay(inputId);
             }
-
-            if (atIndex === -1) {
-                suggestions.classList.add('hidden');
-                return;
-            }
-
-            const query = text.substring(atIndex + 1, cursorPos).toLowerCase();
-            const filteredUsers = users.filter(u => 
-                u.id !== currentUser.id && 
-                (
-                    (u.username || '').toLowerCase().includes(query) || 
-                    (u.name || '').toLowerCase().includes(query)
-                )
-            );
-
-            if (filteredUsers.length === 0) {
-                suggestions.classList.add('hidden');
-                return;
-            }
-
-            window.highlightedMentionIndex = 0;
-            suggestions.innerHTML = filteredUsers.map((u, i) => `
-                <div class="mention-item ${i === 0 ? 'highlighted' : ''}" data-user-id="${u.id}" data-username="${u.username}" onclick="selectMention('${u.id}', '${u.username}', '${inputId}', '${suggestionsId}')">
-                    <img src="${u.avatar}" alt="${u.name}">
-                    <div class="flex flex-col">
-                        <div class="mention-item-name">${u.name}</div>
-                        <div class="mention-item-username">@${u.username}</div>
-                    </div>
-                </div>
-            `).join('');
-            suggestions.classList.remove('hidden');
         };
 
         // Handle keydown for mention navigation
@@ -12186,6 +12172,158 @@
             input.focus();
             
             suggestions.classList.add('hidden');
+        };
+
+        // Tag overlay state
+        window.tagOverlayState = {
+            selectedUserIds: [],
+            searchTerm: '',
+            activeInputId: null, // To know which input to insert mentions into
+            displayedCount: 10
+        };
+
+        // Open tag overlay
+        window.openTagOverlay = (inputId) => {
+            manageHistory('tag-overlay');
+            window.tagOverlayState = {
+                selectedUserIds: [],
+                searchTerm: '',
+                activeInputId: inputId,
+                displayedCount: 10
+            };
+            const searchInput = document.getElementById('tag-search-input');
+            if (searchInput) searchInput.value = '';
+            renderTagList();
+            toggleModalAnim('tag-overlay', 'tag-modal', true);
+
+            // Setup search input
+            searchInput.oninput = (e) => {
+                window.tagOverlayState.searchTerm = e.target.value.toLowerCase();
+                window.tagOverlayState.displayedCount = 10;
+                renderTagList();
+            };
+        };
+
+        // Close tag overlay
+        window.closeTagOverlay = () => {
+            toggleModalAnim('tag-overlay', 'tag-modal', false);
+        };
+
+        // Toggle user selection in tag overlay
+        window.toggleTagUser = (userId) => {
+            const idx = window.tagOverlayState.selectedUserIds.indexOf(userId);
+            if (idx === -1) {
+                window.tagOverlayState.selectedUserIds.push(userId);
+            } else {
+                window.tagOverlayState.selectedUserIds.splice(idx, 1);
+            }
+            renderTagList();
+        };
+
+        // Render tag list
+        window.renderTagList = () => {
+            const container = document.getElementById('tag-list-content');
+            if (!container) return;
+
+            let filteredUsers = users.filter(u => u.id !== currentUser.id);
+
+            if (window.tagOverlayState.searchTerm) {
+                filteredUsers = filteredUsers.filter(u =>
+                    (u.name && u.name.toLowerCase().includes(window.tagOverlayState.searchTerm)) ||
+                    (u.username && u.username.toLowerCase().includes(window.tagOverlayState.searchTerm))
+                );
+            }
+
+            const displayUsers = filteredUsers.slice(0, window.tagOverlayState.displayedCount);
+
+            container.innerHTML = displayUsers.map(u => {
+                const isSelected = window.tagOverlayState.selectedUserIds.includes(u.id);
+                return `
+                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer" onclick="event.stopPropagation(); toggleTagUser('${u.id}')">
+                        <div class="flex items-center gap-3">
+                            <div class="rounded-full w-12 h-12 shrink-0 overflow-hidden">
+                                <img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
+                            </div>
+                            <div>
+                                <div class="font-bold text-[15px] text-gray-900 flex items-center">
+                                    ${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}
+                                </div>
+                                <div class="text-[13px] text-gray-500 truncate w-48">@${u.username || 'user'}</div>
+                            </div>
+                        </div>
+                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center ${isSelected ? 'bg-[#3D7EEB] border-[#3D7EEB]' : ''}">
+                            ${isSelected ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            refreshIcons();
+
+            // Setup infinite scroll
+            setTimeout(() => {
+                const content = document.getElementById('tag-list-content');
+                if (content) {
+                    content.addEventListener('scroll', handleTagScroll);
+                }
+            }, 100);
+        };
+
+        // Handle tag list scroll (infinite scroll)
+        window.handleTagScroll = () => {
+            const c = document.getElementById('tag-list-content');
+            if (!c) return;
+            const { scrollTop, scrollHeight, clientHeight } = c;
+            if (scrollTop + clientHeight >= scrollHeight - 100) {
+                window.tagOverlayState.displayedCount += 10;
+                renderTagList();
+            }
+        };
+
+        // Confirm tag selection and insert into input
+        window.confirmTagSelection = () => {
+            const inputId = window.tagOverlayState.activeInputId;
+            const input = document.getElementById(inputId);
+            if (!input) {
+                closeTagOverlay();
+                return;
+            }
+
+            const selectedUsers = window.tagOverlayState.selectedUserIds.map(uid => users.find(u => u.id === uid)).filter(Boolean);
+            if (selectedUsers.length === 0) {
+                closeTagOverlay();
+                return;
+            }
+
+            const mentionString = selectedUsers.map(u => '@' + (u.username || 'user')).join(' ');
+            const text = input.value;
+            const cursorPos = input.selectionStart;
+
+            // Find the @ position before the cursor
+            let atIndex = -1;
+            for (let i = cursorPos - 1; i >= 0; i--) {
+                if (text[i] === '@') {
+                    atIndex = i;
+                    break;
+                }
+                if (text[i] === ' ') break;
+            }
+
+            let newText, newCursorPos;
+            if (atIndex === -1) {
+                newText = text + (text.endsWith(' ') ? '' : ' ') + mentionString + ' ';
+                newCursorPos = newText.length;
+            } else {
+                newText = text.substring(0, atIndex) + mentionString + ' ' + text.substring(cursorPos);
+                newCursorPos = atIndex + mentionString.length + 1;
+            }
+
+            input.value = newText;
+            input.selectionStart = newCursorPos;
+            input.selectionEnd = newCursorPos;
+            input.focus();
+
+            closeTagOverlay();
         };
         window.promptForImageLink = () => { const u = prompt("Enter Image URL:"); if (u && (u.startsWith('http') || u.startsWith('data:'))) { window.currentMedia = [u]; window.currentMediaType = 'image'; document.getElementById('media-preview-container').classList.remove('hidden'); document.getElementById('preview-inner').innerHTML = `<img src="${u}" class="h-20 w-20 object-cover rounded-md">`; showToast("Added") } };
         window.openAnnouncement = () => { manageHistory('announcement-overlay'); const o = document.getElementById('announcement-overlay'); toggleModalAnim('announcement-overlay', 'announcement-overlay-modal', !0); closeSettings() }; window.closeAnnouncement = () => { toggleModalAnim('announcement-overlay', 'announcement-overlay-modal', !1) };
