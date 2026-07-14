@@ -548,20 +548,18 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCHeKhAj0fKHjmcp1V_tX7bvQvVE3tzVLk",
-        authDomain: "idembt.firebaseapp.com",
-        projectId: "idembt",
-        storageBucket: "idembt.firebasestorage.app",
-        messagingSenderId: "297940761171",
-        appId: "1:297940761171:web:5e11230daad141c5a6a4a6",
-        measurementId: "G-612RFP1X36"
-    };
+    const configResponse = await fetch('/api/api');
+    const config = await configResponse.json();
+    const firebaseConfig = config.firebaseConfig;
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
+    const db = getFirestore(app);
+    const DEFAULT_PFP = 'https://i.imghippo.com/files/ID6752xZg.webp';
+    const DEFAULT_BIO = 'No bio yet';
     let pollingTimerInstance = null;
 
     window.navigateBack = function() {
@@ -603,6 +601,24 @@
             submitBtn.textContent = "Signing up...";
 
             const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+            const username = emailInput.value.split('@')[0].toLowerCase();
+
+            await updateProfile(userCredential.user, {
+                displayName: username,
+                photoURL: DEFAULT_PFP
+            });
+
+            await setDoc(doc(db, 'users', userCredential.user.uid), {
+                email: emailInput.value,
+                name: username,
+                username,
+                photoURL: DEFAULT_PFP,
+                avatar: DEFAULT_PFP,
+                bio: DEFAULT_BIO,
+                provider: 'password',
+                createdAt: new Date()
+            });
+
             await sendEmailVerification(userCredential.user);
 
             document.getElementById('sent-target-string').textContent = emailInput.value;
@@ -640,17 +656,19 @@
                 if (currentUser.emailVerified) {
                     clearInterval(pollingTimerInstance);
                     
+                    // Hide the modal overlay
                     document.getElementById('verification-overlay').classList.add('hidden');
                     
                     const feedbackText = document.getElementById('clean-feedback-box');
                     feedbackText.textContent = "Success! Your account is verified.";
                     feedbackText.className = "clean-text-status success-type";
+                    feedbackText.classList.remove('hidden');
                     
                     document.getElementById('signup-form').reset();
                     window.checkPasswordMatch();
                     
-                    document.getElementById('submit-btn').disabled = false;
-                    document.getElementById('submit-btn').textContent = "Sign up";
+                    // Redirect the verified user instantly to the login page
+                    window.location.href = '/login';
                 }
             }
         }, 2000);
