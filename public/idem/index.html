@@ -165,6 +165,48 @@
             background-color: transparent;
         }
 
+        .location-input-wrapper {
+            position: relative;
+        }
+
+        .location-icon-btn {
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0 8px 0 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .location-suggestions {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+            z-index: 10;
+            max-height: 220px;
+            overflow-y: auto;
+            display: none;
+        }
+
+        .location-suggestions li {
+            list-style: none;
+            padding: 12px 14px;
+            font-size: 14px;
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+
+        .location-suggestions li:hover {
+            background: #f5f5f5;
+        }
+
         .input-container-field input::placeholder {
             color: #8e8e8e;
             font-size: 15px;
@@ -453,9 +495,17 @@
 
         <div class="form-group">
             <label>Location</label>
-            <div class="input-container-field">
-                <input type="text" id="location" placeholder="City, Country" required>
+            <div class="input-container-field location-input-wrapper">
+                <button type="button" class="location-icon-btn" id="detect-location-btn" aria-label="Use current location">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">
+                        <path d="M12 21s-6-5.58-6-11a6 6 0 1 1 12 0c0 5.42-6 11-6 11Z"></path>
+                        <circle cx="12" cy="10" r="3"></circle>
+                    </svg>
+                </button>
+                <input type="text" id="location" placeholder="Type a location or use the pin icon" required autocomplete="off">
+                <ul id="location-suggestions" class="location-suggestions"></ul>
             </div>
+            <p class="privacy-note">Use the pin icon to try your exact current location, or type a location manually.</p>
         </div>
 
         <div class="form-group">
@@ -545,6 +595,9 @@
         <p class="privacy-note" style="margin-top: 28px; color: var(--text-secondary);">
             By proceeding, you agree to our <a href="/terms">Terms of Service</a> and acknowledge our <a href="/privacypolicy">Privacy Policy</a>. We use your secure layout inputs to strictly personalize your secure interactive profile experience.
         </p>
+        <p class="privacy-note" style="margin-top: 8px; color: var(--text-secondary);">
+            After signing up, please check your spam or promotions inbox if the verification email does not appear in your main inbox.
+        </p>
 
         <div id="clean-feedback-box" class="clean-text-status hidden"></div>
         <button type="submit" id="submit-btn" class="submit-btn">Sign up</button>
@@ -567,7 +620,7 @@
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
-    const DEFAULT_PFP = 'https://i.imghippo.com/files/ID6752xZg.webp';
+    const DEFAULT_PFP = 'https://i.pinimg.com/736x/2c/47/d5/2c47d5dd5b532f83bb55c4cd6f5bd1ef.jpg';
     const DEFAULT_BIO = 'No bio yet';
     let pollingTimerInstance = null;
     let usernameCheckTimer = null;
@@ -582,6 +635,85 @@
     };
 
     const usernameStatus = document.getElementById('username-status');
+    const locationInput = document.getElementById('location');
+    const locationSuggestions = document.getElementById('location-suggestions');
+    const detectLocationBtn = document.getElementById('detect-location-btn');
+    let locationLookupTimer = null;
+
+    async function lookupLocations(query) {
+        const value = query.trim();
+        if (value.length < 2) {
+            locationSuggestions.style.display = 'none';
+            locationSuggestions.innerHTML = '';
+            return;
+        }
+
+        try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=6&q=${encodeURIComponent(value)}`);
+            const data = await res.json();
+            const results = data.map(item => {
+                const address = item.address || {};
+                const city = address.city || address.town || address.village || address.county || item.name || 'Unknown place';
+                const country = address.country || '';
+                return country ? `${city}, ${country}` : city;
+            });
+
+            locationSuggestions.innerHTML = '';
+            if (results.length > 0) {
+                results.forEach(result => {
+                    const li = document.createElement('li');
+                    li.textContent = result;
+                    li.onclick = () => {
+                        locationInput.value = result;
+                        locationSuggestions.style.display = 'none';
+                    };
+                    locationSuggestions.appendChild(li);
+                });
+                locationSuggestions.style.display = 'block';
+            } else {
+                locationSuggestions.style.display = 'none';
+            }
+        } catch (error) {
+            locationSuggestions.style.display = 'none';
+        }
+    }
+
+    locationInput.addEventListener('input', () => {
+        clearTimeout(locationLookupTimer);
+        locationLookupTimer = setTimeout(() => lookupLocations(locationInput.value), 350);
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!event.target.closest('.location-input-wrapper')) {
+            locationSuggestions.style.display = 'none';
+        }
+    });
+
+    detectLocationBtn.addEventListener('click', () => {
+        if (!navigator.geolocation) {
+            locationInput.value = '';
+            locationInput.placeholder = 'Geolocation not supported';
+            return;
+        }
+
+        locationInput.placeholder = 'Finding your location...';
+        navigator.geolocation.getCurrentPosition(async (position) => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.coords.latitude}&lon=${position.coords.longitude}`);
+                const data = await res.json();
+                const address = data.address || {};
+                const city = address.city || address.town || address.village || address.county || '';
+                const country = address.country || '';
+                locationInput.value = city && country ? `${city}, ${country}` : data.display_name || 'Current location';
+            } catch (error) {
+                locationInput.value = 'Current location';
+            }
+            locationInput.placeholder = 'Type a location or use the pin icon';
+        }, () => {
+            locationInput.value = '';
+            locationInput.placeholder = 'Location access denied';
+        });
+    });
 
     async function checkUsernameAvailability(value) {
         const normalized = value.trim().toLowerCase();
@@ -708,7 +840,12 @@
                 photoURL: DEFAULT_PFP
             });
 
-            await setDoc(doc(db, 'users', userCredential.user.uid), {
+            await sendEmailVerification(userCredential.user);
+
+            document.getElementById('sent-target-string').textContent = emailInput.value;
+            document.getElementById('verification-overlay').classList.remove('hidden');
+
+            const pendingProfile = {
                 email: emailInput.value,
                 name: displayName,
                 username,
@@ -727,22 +864,9 @@
                 settings: { privateNetwork: false },
                 joinedAt: new Date(),
                 createdAt: new Date()
-            });
+            };
 
-            localStorage.setItem('edulink_saved_user', JSON.stringify({
-                email: emailInput.value,
-                name: displayName,
-                photoURL: DEFAULT_PFP,
-                username,
-                bio: DEFAULT_BIO,
-                provider: 'password'
-            }));
-
-            await sendEmailVerification(userCredential.user);
-
-            document.getElementById('sent-target-string').textContent = emailInput.value;
-            document.getElementById('verification-overlay').classList.remove('hidden');
-
+            localStorage.setItem('pending_idem_profile', JSON.stringify(pendingProfile));
             startVerificationCheckLoop();
 
         } catch (error) {
@@ -774,20 +898,32 @@
                 
                 if (currentUser.emailVerified) {
                     clearInterval(pollingTimerInstance);
-                    
-                    // Hide the modal overlay
+
+                    const pendingProfile = JSON.parse(localStorage.getItem('pending_idem_profile') || '{}');
+                    if (pendingProfile.email) {
+                        await setDoc(doc(db, 'users', currentUser.uid), pendingProfile);
+                        localStorage.setItem('edulink_saved_user', JSON.stringify({
+                            email: pendingProfile.email,
+                            name: pendingProfile.name,
+                            photoURL: pendingProfile.avatar || pendingProfile.photoURL,
+                            username: pendingProfile.username,
+                            bio: pendingProfile.bio,
+                            provider: pendingProfile.provider
+                        }));
+                        localStorage.removeItem('pending_idem_profile');
+                    }
+
                     document.getElementById('verification-overlay').classList.add('hidden');
-                    
+
                     const feedbackText = document.getElementById('clean-feedback-box');
                     feedbackText.textContent = "Success! Your account is verified.";
                     feedbackText.className = "clean-text-status success-type";
                     feedbackText.classList.remove('hidden');
-                    
+
                     document.getElementById('signup-form').reset();
                     window.checkPasswordMatch();
-                    
-                    // Redirect the verified user instantly to the login page
-                    window.location.href = '/login';
+
+                    window.location.href = '/home';
                 }
             }
         }, 2000);
