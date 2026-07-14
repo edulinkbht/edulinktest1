@@ -444,21 +444,6 @@
 </head>
 <body>
 
-<div id="verification-overlay" class="verification-modal-overlay hidden">
-    <div class="modal-content-box">
-        <div class="loading-spinner-circle"></div>
-        <h2>Verify your email</h2>
-        <p>
-            We've sent a verification link to:
-            <span id="sent-target-string" class="target-email-highlight">your.email@example.com</span>
-            <br><br>
-            Please check your inbox and click the link. This screen will automatically clear once verified.
-        </p>
-        <button type="button" id="resend-verification-btn" class="submit-btn" style="margin-top:0;">Resend Link</button>
-        <button type="button" id="cancel-verification-btn" class="secondary-modal-btn">Cancel registration</button>
-    </div>
-</div>
-
 <div class="main-wrapper">
     <button type="button" class="back-btn" onclick="navigateBack()" aria-label="Go back">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -596,7 +581,7 @@
             By proceeding, you agree to our <a href="/terms">Terms of Service</a> and acknowledge our <a href="/privacypolicy">Privacy Policy</a>. We use your secure layout inputs to strictly personalize your secure interactive profile experience.
         </p>
         <p class="privacy-note" style="margin-top: 8px; color: var(--text-secondary);">
-            After signing up, please check your spam or promotions inbox if the verification email does not appear in your main inbox.
+            Your account will be ready to use immediately after signup.
         </p>
 
         <div id="clean-feedback-box" class="clean-text-status hidden"></div>
@@ -610,7 +595,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getAuth, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
     import { getFirestore, collection, query, where, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const configResponse = await fetch('/api/api');
@@ -622,7 +607,6 @@
     const db = getFirestore(app);
     const DEFAULT_PFP = 'https://i.pinimg.com/736x/2c/47/d5/2c47d5dd5b532f83bb55c4cd6f5bd1ef.jpg';
     const DEFAULT_BIO = 'No bio yet';
-    let pollingTimerInstance = null;
     let usernameCheckTimer = null;
     let usernameIsAvailable = false;
 
@@ -840,12 +824,7 @@
                 photoURL: DEFAULT_PFP
             });
 
-            await sendEmailVerification(userCredential.user);
-
-            document.getElementById('sent-target-string').textContent = emailInput.value;
-            document.getElementById('verification-overlay').classList.remove('hidden');
-
-            const pendingProfile = {
+            const profileDoc = {
                 email: emailInput.value,
                 name: displayName,
                 username,
@@ -866,8 +845,30 @@
                 createdAt: new Date()
             };
 
-            localStorage.setItem('pending_idem_profile', JSON.stringify(pendingProfile));
-            startVerificationCheckLoop();
+            await setDoc(doc(db, 'users', userCredential.user.uid), profileDoc);
+
+            localStorage.setItem('edulink_saved_user', JSON.stringify({
+                uid: userCredential.user.uid,
+                email: profileDoc.email,
+                name: profileDoc.name,
+                photoURL: profileDoc.avatar || profileDoc.photoURL,
+                username: profileDoc.username,
+                bio: profileDoc.bio,
+                provider: profileDoc.provider,
+                dob: profileDoc.dob,
+                location: profileDoc.location,
+                gender: profileDoc.gender,
+                orientation: profileDoc.orientation
+            }));
+            localStorage.removeItem('pending_idem_profile');
+
+            feedbackText.textContent = "Account created successfully.";
+            feedbackText.className = "clean-text-status success-type";
+            feedbackText.classList.remove('hidden');
+
+            document.getElementById('signup-form').reset();
+            window.checkPasswordMatch();
+            window.location.href = '/home';
 
         } catch (error) {
             let userFriendlyMsg = error.message;
@@ -886,78 +887,6 @@
             submitBtn.disabled = false;
             submitBtn.textContent = "Sign up";
         }
-    });
-
-    function startVerificationCheckLoop() {
-        if (pollingTimerInstance) clearInterval(pollingTimerInstance);
-
-        pollingTimerInstance = setInterval(async () => {
-            const currentUser = auth.currentUser;
-            if (currentUser) {
-                await currentUser.reload();
-                
-                if (currentUser.emailVerified) {
-                    clearInterval(pollingTimerInstance);
-
-                    const pendingProfile = JSON.parse(localStorage.getItem('pending_idem_profile') || '{}');
-                    if (pendingProfile.email) {
-                        await setDoc(doc(db, 'users', currentUser.uid), pendingProfile);
-                        localStorage.setItem('edulink_saved_user', JSON.stringify({
-                            email: pendingProfile.email,
-                            name: pendingProfile.name,
-                            photoURL: pendingProfile.avatar || pendingProfile.photoURL,
-                            username: pendingProfile.username,
-                            bio: pendingProfile.bio,
-                            provider: pendingProfile.provider
-                        }));
-                        localStorage.removeItem('pending_idem_profile');
-                    }
-
-                    document.getElementById('verification-overlay').classList.add('hidden');
-
-                    const feedbackText = document.getElementById('clean-feedback-box');
-                    feedbackText.textContent = "Success! Your account is verified.";
-                    feedbackText.className = "clean-text-status success-type";
-                    feedbackText.classList.remove('hidden');
-
-                    document.getElementById('signup-form').reset();
-                    window.checkPasswordMatch();
-
-                    window.location.href = '/home';
-                }
-            }
-        }, 2000);
-    }
-
-    document.getElementById('resend-verification-btn').addEventListener('click', async () => {
-        const btn = document.getElementById('resend-verification-btn');
-        try {
-            if (auth.currentUser) {
-                btn.disabled = true;
-                btn.textContent = "Sending...";
-                await sendEmailVerification(auth.currentUser);
-                btn.textContent = "Link Sent!";
-                setTimeout(() => {
-                    btn.disabled = false;
-                    btn.textContent = "Resend Link";
-                }, 4000);
-            }
-        } catch (e) {
-            btn.textContent = "Error, try again later";
-            btn.disabled = false;
-        }
-    });
-
-    document.getElementById('cancel-verification-btn').addEventListener('click', async () => {
-        if (pollingTimerInstance) clearInterval(pollingTimerInstance);
-        try {
-            await signOut(auth);
-        } catch(e){}
-        
-        document.getElementById('verification-overlay').classList.add('hidden');
-        const submitBtn = document.getElementById('submit-btn');
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Sign up";
     });
 
     window.validateUsername = function(input) {
