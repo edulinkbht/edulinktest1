@@ -447,7 +447,15 @@
             <div class="input-container-field">
                 <input type="text" id="username" placeholder="Username" maxlength="20" oninput="validateUsername(this)" required>
             </div>
+            <p id="username-status" class="privacy-note">Checking availability...</p>
             <p class="privacy-note">Usernames can only contain lowercase letters, numbers, underscores, and periods.</p>
+        </div>
+
+        <div class="form-group">
+            <label>Location</label>
+            <div class="input-container-field">
+                <input type="text" id="location" placeholder="City, Country" required>
+            </div>
         </div>
 
         <div class="form-group">
@@ -476,23 +484,24 @@
 
         <div class="form-group">
             <label>Biological Gender</label>
-            <select class="form-control-raw" required>
+            <select id="gender" class="form-control-raw" required>
                 <option value="" disabled selected>Select your gender</option>
-                <option>Male</option>
-                <option>Female</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Prefer not to say">Prefer not to say</option>
             </select>
         </div>
 
         <div class="form-group">
             <label>Sexual Orientation</label>
-            <select class="form-control-raw" required>
+            <select id="orientation" class="form-control-raw" required>
                 <option value="" disabled selected>Select orientation</option>
-                <option>Straight / Heterosexual</option>
-                <option>Gay / Lesbian</option>
-                <option>Bisexual</option>
-                <option>Pansexual</option>
-                <option>Asexual</option>
-                <option>Prefer not to say</option>
+                <option value="Straight / Heterosexual">Straight / Heterosexual</option>
+                <option value="Gay / Lesbian">Gay / Lesbian</option>
+                <option value="Bisexual">Bisexual</option>
+                <option value="Pansexual">Pansexual</option>
+                <option value="Asexual">Asexual</option>
+                <option value="Prefer not to say">Prefer not to say</option>
             </select>
             <p class="privacy-note">
                 Your sexual orientation is kept strictly private and used safely only to personalize your feeds.
@@ -549,7 +558,7 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
     import { getAuth, createUserWithEmailAndPassword, sendEmailVerification, signOut, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-    import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getFirestore, collection, query, where, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
     const configResponse = await fetch('/api/api');
     const config = await configResponse.json();
@@ -561,6 +570,8 @@
     const DEFAULT_PFP = 'https://i.imghippo.com/files/ID6752xZg.webp';
     const DEFAULT_BIO = 'No bio yet';
     let pollingTimerInstance = null;
+    let usernameCheckTimer = null;
+    let usernameIsAvailable = false;
 
     window.navigateBack = function() {
         if (document.referrer) {
@@ -570,12 +581,54 @@
         }
     };
 
+    const usernameStatus = document.getElementById('username-status');
+
+    async function checkUsernameAvailability(value) {
+        const normalized = value.trim().toLowerCase();
+        if (!normalized || normalized.length < 3 || normalized.length > 20 || /\s/.test(normalized) || !/^[a-z0-9_.]+$/.test(normalized)) {
+            usernameIsAvailable = false;
+            usernameStatus.textContent = 'Use 3-20 lowercase letters, numbers, underscores, or periods.';
+            usernameStatus.style.color = 'var(--health-weak)';
+            return false;
+        }
+
+        try {
+            const q = query(collection(db, 'users'), where('username', '==', normalized));
+            const snapshot = await getDocs(q);
+            usernameIsAvailable = snapshot.empty;
+            usernameStatus.textContent = usernameIsAvailable ? 'Username available.' : 'Username is already taken.';
+            usernameStatus.style.color = usernameIsAvailable ? 'var(--status-success)' : 'var(--health-weak)';
+            return usernameIsAvailable;
+        } catch (error) {
+            usernameIsAvailable = false;
+            usernameStatus.textContent = 'Could not verify username right now.';
+            usernameStatus.style.color = 'var(--health-weak)';
+            return false;
+        }
+    }
+
+    document.getElementById('username').addEventListener('input', () => {
+        const value = document.getElementById('username').value;
+        clearTimeout(usernameCheckTimer);
+        usernameCheckTimer = setTimeout(() => {
+            checkUsernameAvailability(value);
+        }, 400);
+    });
+
     document.getElementById('signup-form').addEventListener('submit', async (event) => {
         event.preventDefault();
 
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const confirmInput = document.getElementById('confirm_password');
+        const displayNameInput = document.getElementById('display-name');
+        const usernameInput = document.getElementById('username');
+        const locationInput = document.getElementById('location');
+        const birthMonthInput = document.getElementById('birth-month');
+        const birthDayInput = document.getElementById('birth-day');
+        const birthYearInput = document.getElementById('birth-year');
+        const genderInput = document.getElementById('gender');
+        const orientationInput = document.getElementById('orientation');
         const feedbackText = document.getElementById('clean-feedback-box');
         const submitBtn = document.getElementById('submit-btn');
 
@@ -584,6 +637,50 @@
 
         if (!emailInput.value) {
             feedbackText.textContent = "Please enter a valid email address.";
+            feedbackText.classList.add('error-type');
+            feedbackText.classList.remove('hidden');
+            return;
+        }
+
+        if (!displayNameInput.value.trim()) {
+            feedbackText.textContent = "Please enter your display name.";
+            feedbackText.classList.add('error-type');
+            feedbackText.classList.remove('hidden');
+            return;
+        }
+
+        const usernameValue = usernameInput.value.trim().toLowerCase();
+        if (!usernameValue || !/^[a-z0-9_.]+$/.test(usernameValue) || usernameValue.length < 3 || usernameValue.length > 20) {
+            feedbackText.textContent = "Please enter a valid username.";
+            feedbackText.classList.add('error-type');
+            feedbackText.classList.remove('hidden');
+            return;
+        }
+
+        if (!locationInput.value.trim()) {
+            feedbackText.textContent = "Please enter your location.";
+            feedbackText.classList.add('error-type');
+            feedbackText.classList.remove('hidden');
+            return;
+        }
+
+        if (!birthMonthInput.value || !birthDayInput.value || !birthYearInput.value) {
+            feedbackText.textContent = "Please choose your date of birth.";
+            feedbackText.classList.add('error-type');
+            feedbackText.classList.remove('hidden');
+            return;
+        }
+
+        if (!genderInput.value || !orientationInput.value) {
+            feedbackText.textContent = "Please complete your profile details.";
+            feedbackText.classList.add('error-type');
+            feedbackText.classList.remove('hidden');
+            return;
+        }
+
+        const usernameReady = await checkUsernameAvailability(usernameValue);
+        if (!usernameReady) {
+            feedbackText.textContent = "That username is already taken. Please choose another one.";
             feedbackText.classList.add('error-type');
             feedbackText.classList.remove('hidden');
             return;
@@ -601,23 +698,45 @@
             submitBtn.textContent = "Signing up...";
 
             const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-            const username = emailInput.value.split('@')[0].toLowerCase();
+            const displayName = displayNameInput.value.trim();
+            const username = usernameValue;
+            const location = locationInput.value.trim();
+            const dob = `${birthYearInput.value}-${String(birthMonthInput.value).padStart(2, '0')}-${String(birthDayInput.value).padStart(2, '0')}`;
 
             await updateProfile(userCredential.user, {
-                displayName: username,
+                displayName,
                 photoURL: DEFAULT_PFP
             });
 
             await setDoc(doc(db, 'users', userCredential.user.uid), {
                 email: emailInput.value,
-                name: username,
+                name: displayName,
                 username,
+                dob,
+                location,
+                gender: genderInput.value,
+                orientation: orientationInput.value,
                 photoURL: DEFAULT_PFP,
                 avatar: DEFAULT_PFP,
                 bio: DEFAULT_BIO,
                 provider: 'password',
+                following: [],
+                followers: [],
+                friends: [],
+                saved: [],
+                settings: { privateNetwork: false },
+                joinedAt: new Date(),
                 createdAt: new Date()
             });
+
+            localStorage.setItem('edulink_saved_user', JSON.stringify({
+                email: emailInput.value,
+                name: displayName,
+                photoURL: DEFAULT_PFP,
+                username,
+                bio: DEFAULT_BIO,
+                provider: 'password'
+            }));
 
             await sendEmailVerification(userCredential.user);
 
