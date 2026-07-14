@@ -367,74 +367,54 @@
             text-decoration: underline;
         }
 
-        .verification-modal-overlay {
+        .loading-screen-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--bg-color);
+            inset: 0;
+            background: rgba(255, 255, 255, 0.96);
+            backdrop-filter: blur(6px);
             z-index: 9999;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 40px 24px;
+            padding: 24px;
             text-align: center;
         }
 
-        .modal-content-box {
-            max-width: 400px; 
+        .loading-screen-content {
+            max-width: 360px;
             width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
         }
 
         .loading-spinner-circle {
-            width: 40px; 
-            height: 40px;
+            width: 42px;
+            height: 42px;
             border: 3.5px solid var(--border-color);
-            border-top-color: var(--text-secondary);
+            border-top-color: var(--button-bg);
             border-radius: 50%;
             animation: spinLoop 1s linear infinite;
-            margin: 0 auto 28px auto;
         }
 
         @keyframes spinLoop {
             to { transform: rotate(360deg); }
         }
 
-        .modal-content-box h2 {
-            font-size: 22px; 
-            font-weight: 600;
+        .loading-screen-content h2 {
+            font-size: 22px;
+            font-weight: 700;
             color: var(--text-primary);
-            margin: 0 0 14px 0;
+            margin: 0;
         }
 
-        .modal-content-box p {
-            font-size: 15px; 
+        .loading-screen-content p {
+            font-size: 15px;
             line-height: 1.5;
             color: var(--text-secondary);
-            margin: 0 0 28px 0;
-        }
-
-        .target-email-highlight {
-            color: var(--text-primary);
-            font-weight: 600;
-            display: block;
-            margin-top: 8px;
-            word-break: break-all;
-        }
-
-        .secondary-modal-btn {
-            background: none;
-            border: none;
-            color: var(--button-bg);
-            font-size: 15px; 
-            font-weight: 600;
-            cursor: pointer;
-            margin-top: 18px;
-            display: block;
-            width: 100%;
-            text-align: center;
+            margin: 0;
         }
 
         .hidden {
@@ -443,6 +423,14 @@
     </style>
 </head>
 <body>
+
+<div id="creating-account-overlay" class="loading-screen-overlay hidden">
+    <div class="loading-screen-content">
+        <div class="loading-spinner-circle"></div>
+        <h2>Creating your account</h2>
+        <p>We’re setting up your profile and getting you ready to enter the app.</p>
+    </div>
+</div>
 
 <div class="main-wrapper">
     <button type="button" class="back-btn" onclick="navigateBack()" aria-label="Go back">
@@ -579,6 +567,9 @@
 
         <p class="privacy-note" style="margin-top: 28px; color: var(--text-secondary);">
             By proceeding, you agree to our <a href="/terms">Terms of Service</a> and acknowledge our <a href="/privacypolicy">Privacy Policy</a>. We use your secure layout inputs to strictly personalize your secure interactive profile experience.
+        </p>
+        <p class="privacy-note" style="margin-top: 8px; color: var(--text-secondary);">
+            Your account will be ready to use immediately after signup.
         </p>
 
         <div id="clean-feedback-box" class="clean-text-status hidden"></div>
@@ -809,6 +800,7 @@
         try {
             submitBtn.disabled = true;
             submitBtn.textContent = "Signing up...";
+            document.getElementById('creating-account-overlay').classList.remove('hidden');
 
             const userCredential = await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
             const displayName = displayNameInput.value.trim();
@@ -865,7 +857,10 @@
 
             document.getElementById('signup-form').reset();
             window.checkPasswordMatch();
-            window.location.href = '/home';
+
+            setTimeout(() => {
+                window.location.href = '/home';
+            }, 700);
 
         } catch (error) {
             let userFriendlyMsg = error.message;
@@ -876,6 +871,8 @@
             } else if (error.code === 'auth/weak-password') {
                 userFriendlyMsg = "The password security select is weak.";
             }
+
+            document.getElementById('creating-account-overlay').classList.add('hidden');
 
             feedbackText.textContent = `Sign up failed: ${userFriendlyMsg}`;
             feedbackText.classList.add('error-type');
