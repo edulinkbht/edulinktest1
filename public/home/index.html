@@ -2016,14 +2016,15 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 6px;
-            background: rgba(255,255,255,0.18);
+            height: 3px;
+            background: rgba(255,255,255,0.24);
             overflow: visible;
             z-index: 12;
             cursor: pointer;
             touch-action: none;
             user-select: none;
             -webkit-user-select: none;
+            border-radius: 999px;
         }
 
         .mobile-reel-progress-bar .mobile-reel-progress-fill {
@@ -2031,6 +2032,7 @@
             height: 100%;
             background: #fff;
             transition: width 0.04s linear;
+            border-radius: inherit;
         }
 
         .mobile-reel-progress-bar.dragging .mobile-reel-progress-fill,
@@ -2042,15 +2044,15 @@
             position: absolute;
             top: 50%;
             left: 0%;
-            width: 12px;
-            height: 12px;
+            width: 10px;
+            height: 10px;
             border-radius: 999px;
             background: #fff;
             box-shadow: 0 0 0 2px rgba(255,255,255,0.16);
-            transform: translate(-50%, -50%) scale(0.85);
+            transform: translate(-50%, -50%) scale(0.75);
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.12s ease, left 0.08s linear, transform 0.12s ease;
+            transition: opacity 0.12s ease, left 0.04s linear, transform 0.12s ease;
         }
 
         .mobile-reel-progress-bar.dragging .mobile-reel-progress-thumb,
@@ -7253,6 +7255,25 @@
                 window.setReelProgressBarDragState(false);
             });
             bar.dataset.seekBound = 'true';
+        };
+
+        window.pauseActiveReel = () => {
+            const track = document.getElementById('reels-container');
+            if (!track) return;
+            const videos = Array.from(track.querySelectorAll('video'));
+            videos.forEach(video => {
+                if (!video.paused) video.pause();
+            });
+        };
+
+        window.resumeActiveReel = () => {
+            const track = document.getElementById('reels-container');
+            if (!track) return;
+            const videos = Array.from(track.querySelectorAll('video'));
+            const activeVideo = videos[window.reelState.index];
+            if (activeVideo && activeVideo.paused) {
+                activeVideo.play().catch(() => {});
+            }
         };
 
         window.updateReelPosition = (newIndex) => {
@@ -13525,6 +13546,9 @@
         // Override switchView to include icon updates
         const originalSwitchView = window.switchView;
         window.switchView = function (view) {
+            if (view !== 'reels' && document.body.classList.contains('reel-mode')) {
+                window.pauseActiveReel();
+            }
             if (originalSwitchView) originalSwitchView(view);
             updateNavIcons(view);
         };
