@@ -2018,7 +2018,7 @@
             right: 0;
             height: 4px;
             background: rgba(255,255,255,0.18);
-            overflow: hidden;
+            overflow: visible;
             z-index: 12;
             cursor: pointer;
         }
@@ -2028,6 +2028,19 @@
             height: 100%;
             background: #fff;
             transition: width 0.1s linear;
+        }
+
+        .mobile-reel-progress-bar .mobile-reel-progress-thumb {
+            position: absolute;
+            top: 50%;
+            left: 0%;
+            width: 12px;
+            height: 12px;
+            border-radius: 999px;
+            background: #fff;
+            box-shadow: 0 0 0 2px rgba(255,255,255,0.16);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
         }
 
         .reel-pause-overlay {
@@ -2049,9 +2062,31 @@
         }
 
         .reel-pause-overlay i,
-        .reel-pause-overlay svg {
+        .reel-pause-overlay svg,
+        .reel-play-overlay i,
+        .reel-play-overlay svg {
             width: 56px;
             height: 56px;
+            fill: #fff;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.45));
+        }
+
+        .reel-play-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.18);
+            color: #fff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 2;
+        }
+
+        .reel-play-overlay.show {
+            opacity: 1;
         }
 
         .reels-track > .reel-card {
@@ -2115,7 +2150,7 @@
         }
 
         .reel-card .reel-right-actions {
-            right: 20px;
+            right: 28px;
             bottom: 88px;
             align-items: center;
             width: min(15vw, 84px);
@@ -2242,7 +2277,7 @@
                 left: 12px;
             }
             .reel-right-actions {
-                right: 12px;
+                right: 16px;
                 width: min(15vw, 72px);
             }
             .reel-left-copy .reel-caption-text {
@@ -5317,7 +5352,10 @@
     </div>
     <nav id="mobile-bottom-nav"
         class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
-        <div id="mobile-reel-progress-bar" class="mobile-reel-progress-bar hidden"><div class="mobile-reel-progress-fill"></div></div>
+        <div id="mobile-reel-progress-bar" class="mobile-reel-progress-bar hidden">
+            <div class="mobile-reel-progress-fill"></div>
+            <div class="mobile-reel-progress-thumb"></div>
+        </div>
         <div class="mobile-nav-item active" onclick="switchView('feed')" id="mobile-nav-feed">
             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
                 class="custom-icon custom-icon-filled" id="mobile-feed-icon" style="stroke-width: 2;">
@@ -7059,11 +7097,13 @@
                     </div>
                 </div>
                 <div class="reel-pause-overlay hidden" aria-hidden="true"><i data-lucide="pause"></i></div>
+                <div class="reel-play-overlay hidden" aria-hidden="true"><i data-lucide="play"></i></div>
                 <video src="${videoSrc}" autoplay loop playsinline preload="metadata"></video>
             `;
 
             const video = post.querySelector('video');
             const pauseOverlay = post.querySelector('.reel-pause-overlay');
+            const playOverlay = post.querySelector('.reel-play-overlay');
             if (video) {
                 video.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -7072,6 +7112,14 @@
                         if (pauseOverlay) {
                             pauseOverlay.classList.remove('show');
                             pauseOverlay.classList.add('hidden');
+                        }
+                        if (playOverlay) {
+                            playOverlay.classList.remove('hidden');
+                            playOverlay.classList.add('show');
+                            setTimeout(() => {
+                                playOverlay.classList.remove('show');
+                                playOverlay.classList.add('hidden');
+                            }, 650);
                         }
                     } else {
                         video.pause();
@@ -7128,7 +7176,10 @@
 
         window.updateReelProgressUI = (percent) => {
             const fill = document.querySelector('.mobile-reel-progress-fill');
-            if (fill) fill.style.width = `${Math.max(0, Math.min(100, percent || 0))}%`;
+            const thumb = document.querySelector('.mobile-reel-progress-thumb');
+            const value = Math.max(0, Math.min(100, percent || 0));
+            if (fill) fill.style.width = `${value}%`;
+            if (thumb) thumb.style.left = `${value}%`;
         };
 
         window.seekActiveReelTo = (clientX) => {
