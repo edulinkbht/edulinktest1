@@ -1954,16 +1954,30 @@
         }
 
         #view-reels .reels-scroll {
-            height: calc(100vh - 70px);
-            overflow-y: auto;
-            scroll-snap-type: y mandatory;
-            -webkit-overflow-scrolling: touch;
+            height: 100%;
+            overflow: hidden;
+            position: relative;
+            touch-action: none;
             padding-top: 0;
             padding-bottom: max(120px, calc(env(safe-area-inset-bottom, 0px) + 60px));
         }
 
-        #view-reels .reels-scroll > .reel-card {
-            scroll-snap-align: start;
+        .reels-wrapper {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.22s cubic-bezier(0.1, 0.76, 0.55, 0.94);
+        }
+
+        .reel-card {
+            width: 100%;
+            min-height: 100%;
+            height: 100%;
+            flex-shrink: 0;
+            position: relative;
+            background: #000;
+            border-radius: 0;
         }
 
         .reel-card .reel-overlay {
@@ -1978,11 +1992,11 @@
 
         .reel-card .reel-bottom-actions {
             position: absolute;
-            right: 8px;
-            bottom: calc(var(--reel-bottom-height, 0px) + var(--reel-bottom-gap, 10px));
+            right: 12px;
+            bottom: 16px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 20px;
             align-items: center;
             pointer-events: auto;
             z-index: 3;
@@ -2048,39 +2062,39 @@
 
         .reel-card .reel-overlay-bottom {
             position: absolute;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            padding: 6px 16px max(24px, env(safe-area-inset-bottom, 24px));
-            padding-right: 108px;
-            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.70) 34%, rgba(0,0,0,0.96) 100%);
+            left: 16px;
+            right: 16px;
+            bottom: 16px;
+            width: auto;
+            max-width: 72%;
+            padding: 14px 16px 14px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 40%, transparent 100%);
             pointer-events: auto;
             z-index: 2;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end;
-            min-height: calc(56px + max(24px, env(safe-area-inset-bottom, 24px)));
+            gap: 10px;
+            border-radius: 18px;
+            backdrop-filter: blur(12px);
         }
 
         .reel-card .reel-details-block {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             width: 100%;
-            margin-top: auto;
             pointer-events: auto;
         }
 
         .reel-card .reel-bottom-copy {
             color: #f5f5f5;
-            font-size: 15px;
+            font-size: 14px;
             line-height: 1.55;
-            max-height: 7.5em;
             overflow: hidden;
             margin-bottom: 0;
             text-align: left;
-            max-width: none;
+            max-width: 100%;
             display: block;
             white-space: pre-wrap;
             word-break: break-word;
@@ -2117,6 +2131,25 @@
             pointer-events: auto;
             width: 100%;
             min-width: 0;
+        }
+
+        .reel-card .reel-bottom-user img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255,255,255,0.9);
+            object-fit: cover;
+        }
+
+        .reel-card .reel-bottom-user .username {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .reel-card .reel-handle {
+            font-size: 12.5px;
+            color: #e1e1e1;
+            margin-top: 0px;
         }
 
         .reel-card .reel-bottom-user .reel-user-meta {
@@ -5189,7 +5222,7 @@
                         </button>
                     </div>
                 </div>
-                <div id="reels-container" class="reels-scroll space-y-0 px-0 pb-36 pt-0"></div>
+                <div class="reels-wrapper" id="reels-wrapper"></div>
                 <div id="reels-empty-state" class="flex flex-col items-center justify-center py-14 text-center text-gray-400 hidden">
                     <i data-lucide="video" class="w-10 h-10 mb-4"></i>
                     <div class="text-base font-semibold">No uploaded videos yet</div>
@@ -5873,6 +5906,52 @@
         };
         window.adjustAllReelSpacings = () => document.querySelectorAll('#view-reels .reel-card').forEach(window.adjustReelSpacing);
         window.addEventListener('resize', () => window.adjustAllReelSpacings());
+        window.initReelNavigation = () => {
+            const view = document.getElementById('view-reels');
+            const wrapper = document.getElementById('reels-wrapper');
+            if (!view || !wrapper) return;
+
+            let startY = 0;
+            let isTransitioning = false;
+            const swipeThreshold = 60;
+            let lastWheelTime = 0;
+
+            view.addEventListener('touchstart', e => {
+                if (e.touches && e.touches[0]) {
+                    startY = e.touches[0].clientY;
+                }
+            }, { passive: true });
+
+            view.addEventListener('touchmove', e => {
+                if (e.cancelable) e.preventDefault();
+            }, { passive: false });
+
+            view.addEventListener('touchend', e => {
+                if (isTransitioning) return;
+                const endY = e.changedTouches[0].clientY;
+                const diff = startY - endY;
+                if (Math.abs(diff) > swipeThreshold) {
+                    isTransitioning = true;
+                    if (diff > 0) window.goToReel((window.currentReelIndex || 0) + 1);
+                    else window.goToReel((window.currentReelIndex || 0) - 1);
+                    setTimeout(() => { isTransitioning = false; }, 250);
+                }
+            }, { passive: true });
+
+            view.addEventListener('wheel', e => {
+                if (isTransitioning) return;
+                const now = Date.now();
+                if (now - lastWheelTime < 500) return;
+                if (Math.abs(e.deltaY) > 20) {
+                    e.preventDefault();
+                    lastWheelTime = now;
+                    isTransitioning = true;
+                    if (e.deltaY > 0) window.goToReel((window.currentReelIndex || 0) + 1);
+                    else window.goToReel((window.currentReelIndex || 0) - 1);
+                    setTimeout(() => { isTransitioning = false; }, 250);
+                }
+            }, { passive: false });
+        };
         window.toggleTextExpansion = id => {
             const isExpanding = !window.expandedTexts.has(id);
             let elToScroll = null, container = null, startTop = 0;
@@ -6749,13 +6828,19 @@
             if (nav) nav.classList.add('active'); 
             if (mnav) mnav.classList.add('active'); 
 
-            if (v === 'reels' && window.innerWidth < 768) {
-                if (mbn) mbn.classList.add('reel-footer');
-                if (document.getElementById('reels-container')?.children.length === 0) {
+            if (v === 'reels') {
+                // enable mobile footer styling when on small screens
+                if (window.innerWidth < 768 && mbn) mbn.classList.add('reel-footer');
+                document.body.classList.add('reel-mode');
+                if (document.getElementById('reels-wrapper')?.children.length === 0) {
                     window.renderReels();
+                } else {
+                    // ensure navigation handlers are bound
+                    if (window.initReelNavigation) window.initReelNavigation();
                 }
-            } else if (mbn) {
-                mbn.classList.remove('reel-footer');
+            } else {
+                if (mbn) mbn.classList.remove('reel-footer');
+                document.body.classList.remove('reel-mode');
             }
             
             if (v === 'create' && !window.editingPostId) {
@@ -6838,7 +6923,7 @@
                 renderMuteFriendsList();
             }
 
-            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'reels') { mnav[1]?.classList.add('active'); if (document.getElementById('reels-container').children.length === 0) renderReels(); } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
+            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'reels') { mnav[1]?.classList.add('active'); if (document.getElementById('reels-wrapper').children.length === 0) renderReels(); } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
             if (mp) {
                 if (v === 'profile') {
                     mp.classList.add('profile-view');
@@ -7008,7 +7093,7 @@
         };
 
         window.renderReels = async () => {
-            const container = document.getElementById('reels-container');
+            const container = document.getElementById('reels-wrapper');
             const emptyState = document.getElementById('reels-empty-state');
             if (!container || !emptyState) return;
             container.innerHTML = '';
@@ -7029,6 +7114,25 @@
             });
             refreshIcons();
             window.adjustAllReelSpacings();
+            window.currentReelIndex = 0;
+            window.updateReelTransform();
+            // Bind navigation handlers after initial render
+            if (window.initReelNavigation) window.initReelNavigation();
+        };
+
+        window.updateReelTransform = () => {
+            const wrapper = document.getElementById('reels-wrapper');
+            if (!wrapper) return;
+            wrapper.style.transform = `translateY(-${(window.currentReelIndex || 0) * 100}%)`;
+        };
+
+        window.goToReel = index => {
+            const wrapper = document.getElementById('reels-wrapper');
+            if (!wrapper) return;
+            const cardsCount = wrapper.children.length;
+            if (index < 0 || index >= cardsCount) return;
+            window.currentReelIndex = index;
+            wrapper.style.transform = `translateY(-${window.currentReelIndex * 100}%)`;
         };
 
         window.updateCreateFooter = () => {
