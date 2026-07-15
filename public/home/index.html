@@ -7360,7 +7360,6 @@
         window.attachReelSeekBar = () => {
             const bar = document.getElementById('mobile-reel-progress-bar');
             if (!bar || bar.dataset.seekBound === 'true') return;
-            const handleSeek = (clientX) => window.seekActiveReelTo(clientX);
             const seekFromEvent = (event) => {
                 const rect = bar.getBoundingClientRect();
                 const ratio = (event.clientX - rect.left) / rect.width;
@@ -7376,16 +7375,17 @@
                 if (!window.reelState.seeking) return;
                 seekFromEvent(event);
             });
-            bar.addEventListener('click', (event) => {
-                seekFromEvent(event);
+            bar.addEventListener('pointerup', () => {
+                window.reelState.seeking = false;
+                window.setReelProgressBarDragState(false);
             });
             bar.addEventListener('pointercancel', () => {
                 window.reelState.seeking = false;
                 window.setReelProgressBarDragState(false);
             });
-            bar.addEventListener('pointerup', () => {
-                window.reelState.seeking = false;
-                window.setReelProgressBarDragState(false);
+            bar.addEventListener('click', (event) => {
+                if (window.reelState.seeking) return;
+                seekFromEvent(event);
             });
             bar.addEventListener('pointerleave', () => {
                 if (!window.reelState.seeking) return;
