@@ -2020,6 +2020,7 @@
             background: rgba(255,255,255,0.18);
             overflow: hidden;
             z-index: 12;
+            cursor: pointer;
         }
 
         .mobile-reel-progress-bar .mobile-reel-progress-fill {
@@ -2027,6 +2028,30 @@
             height: 100%;
             background: #fff;
             transition: width 0.1s linear;
+        }
+
+        .reel-pause-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.18);
+            color: #fff;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 2;
+        }
+
+        .reel-pause-overlay.show {
+            opacity: 1;
+        }
+
+        .reel-pause-overlay i,
+        .reel-pause-overlay svg {
+            width: 56px;
+            height: 56px;
         }
 
         .reels-track > .reel-card {
@@ -2090,7 +2115,7 @@
         }
 
         .reel-card .reel-right-actions {
-            right: 16px;
+            right: 20px;
             bottom: 88px;
             align-items: center;
             width: min(15vw, 84px);
@@ -2197,23 +2222,12 @@
             white-space: nowrap;
         }
 
-        .reel-audio-org-block {
-            width: 46px;
-            height: 46px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 12px;
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
-        }
-
         .reel-audio-org-pfp {
-            width: 30px;
-            height: 30px;
+            width: 38px;
+            height: 38px;
             object-fit: cover;
-            border-radius: 10px;
-            border: 1px solid rgba(255,255,255,0.8);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.25);
         }
 
         @media (max-width: 520px) {
@@ -7041,16 +7055,40 @@
                             <i data-lucide="bookmark"></i>
                             <span class="reel-action-label">Save</span>
                         </div>
-                        <div class="reel-audio-org-block" onclick="event.stopPropagation();">
-                            <img src="${author.avatar || 'https://i.imghippo.com/files/ID6752xZg.webp'}" alt="${author.username || 'Creator'} audio org" class="reel-audio-org-pfp">
-                        </div>
+                        <img src="${author.avatar || 'https://i.imghippo.com/files/ID6752xZg.webp'}" alt="${author.username || 'Creator'} audio org" class="reel-audio-org-pfp" onclick="event.stopPropagation();">
                     </div>
                 </div>
+                <div class="reel-pause-overlay hidden" aria-hidden="true"><i data-lucide="pause"></i></div>
                 <video src="${videoSrc}" autoplay loop playsinline preload="metadata"></video>
             `;
 
+            const video = post.querySelector('video');
+            const pauseOverlay = post.querySelector('.reel-pause-overlay');
+            if (video) {
+                video.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (video.paused) {
+                        video.play().catch(() => {});
+                        if (pauseOverlay) {
+                            pauseOverlay.classList.remove('show');
+                            pauseOverlay.classList.add('hidden');
+                        }
+                    } else {
+                        video.pause();
+                        if (pauseOverlay) {
+                            pauseOverlay.classList.remove('hidden');
+                            pauseOverlay.classList.add('show');
+                            setTimeout(() => {
+                                pauseOverlay.classList.remove('show');
+                                pauseOverlay.classList.add('hidden');
+                            }, 650);
+                        }
+                    }
+                });
+            }
+
             post.addEventListener('click', (e) => {
-                if (window.innerWidth < 768) {
+                if (window.innerWidth < 768 && !e.target.closest('video')) {
                     e.stopPropagation();
                     window.openPostView(p.id);
                 }
@@ -7085,6 +7123,47 @@
             animating: false,
             touchStartY: 0,
             touchDelta: 0,
+            seeking: false,
+        };
+
+        window.updateReelProgressUI = (percent) => {
+            const fill = document.querySelector('.mobile-reel-progress-fill');
+            if (fill) fill.style.width = `${Math.max(0, Math.min(100, percent || 0))}%`;
+        };
+
+        window.seekActiveReelTo = (clientX) => {
+            const bar = document.getElementById('mobile-reel-progress-bar');
+            const track = document.getElementById('reels-container');
+            if (!bar || !track) return;
+            const videos = Array.from(track.querySelectorAll('video'));
+            const activeVideo = videos[window.reelState.index];
+            if (!activeVideo || !activeVideo.duration || !Number.isFinite(activeVideo.duration)) return;
+            const rect = bar.getBoundingClientRect();
+            const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            activeVideo.currentTime = activeVideo.duration * ratio;
+            window.updateReelProgressUI(ratio * 100);
+        };
+
+        window.attachReelSeekBar = () => {
+            const bar = document.getElementById('mobile-reel-progress-bar');
+            if (!bar || bar.dataset.seekBound === 'true') return;
+            const handleSeek = (clientX) => window.seekActiveReelTo(clientX);
+            bar.addEventListener('pointerdown', (event) => {
+                window.reelState.seeking = true;
+                bar.setPointerCapture(event.pointerId);
+                handleSeek(event.clientX);
+            });
+            bar.addEventListener('pointermove', (event) => {
+                if (!window.reelState.seeking) return;
+                handleSeek(event.clientX);
+            });
+            bar.addEventListener('pointerup', () => {
+                window.reelState.seeking = false;
+            });
+            bar.addEventListener('pointerleave', () => {
+                if (window.reelState.seeking) window.reelState.seeking = false;
+            });
+            bar.dataset.seekBound = 'true';
         };
 
         window.updateReelPosition = (newIndex) => {
@@ -7106,19 +7185,23 @@
             const track = document.getElementById('reels-container');
             if (!track) return;
             const videos = Array.from(track.querySelectorAll('video'));
-            const progressFill = document.querySelector('.mobile-reel-progress-fill');
             const progressBar = document.getElementById('mobile-reel-progress-bar');
             if (progressBar) {
                 progressBar.classList.toggle('hidden', !document.body.classList.contains('reel-mode'));
             }
             videos.forEach((video, index) => {
+                const card = video.closest('.reel-card');
+                const overlay = card?.querySelector('.reel-pause-overlay');
                 if (index === window.reelState.index) {
                     if (video.paused) video.play().catch(() => {});
-                    video.currentTime = video.currentTime;
+                    if (overlay) {
+                        overlay.classList.remove('show');
+                        overlay.classList.add('hidden');
+                    }
                     video.ontimeupdate = () => {
-                        if (!progressFill || !video.duration || video.duration === Infinity) return;
+                        if (!video.duration || video.duration === Infinity) return;
                         const percent = Math.min(100, (video.currentTime / video.duration) * 100);
-                        progressFill.style.width = `${percent}%`;
+                        window.updateReelProgressUI(percent);
                     };
                 } else {
                     video.pause();
@@ -7183,6 +7266,7 @@
             track.style.transition = 'transform 220ms ease-out';
             track.style.transform = 'translateY(0)';
             track.style.willChange = 'transform';
+            window.attachReelSeekBar();
             window.updateReelPlayback();
             if (!shellBody.dataset.reelHandlersAttached) {
                 shellBody.addEventListener('wheel', window.handleReelWheel, { passive: false });
