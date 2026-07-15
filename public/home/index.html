@@ -1296,7 +1296,7 @@
             padding: 0;
         }
         .details-content-body {
-            padding: 32px 32px 40px;
+            padding: 24px 32px 5px;
             display: flex;
             flex-direction: column;
             flex-grow: 1;
@@ -1456,6 +1456,35 @@
             .details-modal { width: 100%; max-width: 100%; min-height: 100vh; max-height: 100vh; border-radius: 0; box-shadow: none; }
             .details-content-body { padding: 24px 20px 32px; }
             .details-image-container { height: 180px; }
+        }
+
+        /* Make details overlay always above footer and reduce bottom gap */
+        .details-overlay { z-index: 99999; }
+        .details-modal { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); max-height: calc(100vh - 20px); }
+
+        /* Ensure page uses smooth scrolling and anchor jumps land content below fixed header */
+        html { scroll-behavior: smooth; }
+
+        /* Make anchor targets land below fixed headers/footers */
+        :target {
+            scroll-margin-top: calc(72px + env(safe-area-inset-top));
+        }
+
+        /* Apply scroll-margin to common content blocks so jumps focus content instead of media */
+        section, .post-card, .reel-card, .link-preview-card, .discussion-panel {
+            scroll-margin-top: calc(72px + env(safe-area-inset-top));
+        }
+
+        /* Add bottom padding to main scrolling containers so content never sits under footer */
+        #workspace-layout, #main-panel, .desktop-post-container, .mobile-scroll-content, .mobile-overlay-layout, .discussion-scroll {
+            padding-bottom: calc(80px + env(safe-area-inset-bottom));
+        }
+
+        /* Center header and footer content */
+        header, #mobile-bottom-nav, footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         /* User Birthday Overlay Styles */
@@ -1933,17 +1962,10 @@
             fill: none;
         }
 
-        :root {
-            --mobile-header-height: 64px;
-            --mobile-footer-height: 64px;
-            --reel-bottom-gap: 8px; /* small gap between details and action icons */
-        }
-
         .reel-card {
             position: relative;
-            /* make each reel fill the area between mobile header and footer */
-            min-height: calc(100vh - var(--mobile-header-height) - var(--mobile-footer-height));
-            height: calc(100vh - var(--mobile-header-height) - var(--mobile-footer-height));
+            min-height: calc(100vh - 146px);
+            height: calc(100vh - 146px);
             overflow: hidden;
             background: #000;
             border-radius: 0;
@@ -1955,21 +1977,18 @@
             inset: 0;
             width: 100%;
             height: 100%;
-            /* cover like Instagram reels for immersive feel */
-            object-fit: cover;
-            object-position: center center;
+            object-fit: contain;
+            object-position: center 38%;
             background: #000;
         }
 
         #view-reels .reels-scroll {
-            /* allow the full scrollable area but keep reels sized between header/footer */
-            height: calc(100vh - var(--mobile-header-height));
+            height: calc(100vh - 70px);
             overflow-y: auto;
             scroll-snap-type: y mandatory;
             -webkit-overflow-scrolling: touch;
             padding-top: 0;
-            /* leave room at bottom so the last reel isn't hidden under footer */
-            padding-bottom: calc(var(--mobile-footer-height) + 8px);
+            padding-bottom: 120px;
         }
 
         #view-reels .reels-scroll > .reel-card {
@@ -1989,13 +2008,12 @@
         .reel-card .reel-bottom-actions {
             position: absolute;
             right: 8px;
-            /* sit just above the footer with a small gap */
-            bottom: calc(var(--mobile-footer-height) + var(--reel-bottom-gap));
+            bottom: 60px;
             display: flex;
             flex-direction: column;
             gap: 8px;
             align-items: center;
-            pointer-events: auto;
+            pointer-events: auto; 
             z-index: 3;
         }
 
@@ -2062,9 +2080,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            /* leave space equal to footer height so copy is visible above it */
-            padding: 6px 16px calc(var(--mobile-footer-height) + var(--reel-bottom-gap));
-            /* keep room on the right for actions (tweak if icons change width) */
+            padding: 6px 16px 54px;
             padding-right: 108px;
             background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.70) 34%, rgba(0,0,0,0.96) 100%);
             pointer-events: auto;
