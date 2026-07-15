@@ -2039,14 +2039,15 @@
             pointer-events: none;
             transition: opacity 0.16s ease;
             z-index: 14;
+            white-space: nowrap;
         }
 
         .mobile-reel-progress-bar .reel-progress-current-time {
-            left: 0;
+            left: 6px;
         }
 
         .mobile-reel-progress-bar .reel-progress-total-time {
-            right: 0;
+            right: 6px;
         }
 
         .mobile-reel-progress-bar.reel-time-visible .reel-progress-time {
@@ -2057,7 +2058,7 @@
             width: 0%;
             height: 100%;
             background: #fff;
-            transition: width 0.04s linear;
+            transition: width 0.08s linear;
             border-radius: inherit;
         }
 
@@ -2078,7 +2079,7 @@
             transform: translate(-50%, -50%) scale(0.75);
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.12s ease, left 0.04s linear, transform 0.12s ease;
+            transition: opacity 0.12s ease, left 0.08s linear, transform 0.12s ease;
         }
 
         .mobile-reel-progress-bar.dragging .mobile-reel-progress-thumb,
@@ -7198,6 +7199,8 @@
             const speedHint = post.querySelector('.reel-speed-hint');
             let longPressTimer = null;
             let longPressTriggered = false;
+            let holdStartX = 0;
+            let holdStartY = 0;
             if (video) {
                 video.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
@@ -7244,6 +7247,9 @@
             post.addEventListener('pointerdown', (e) => {
                 if (e.button !== 0 && e.pointerType === 'mouse') return;
                 if (e.target.closest('.reel-action-block, .reel-follow-btn, .reel-audio-org-pfp')) return;
+                holdStartX = e.clientX;
+                holdStartY = e.clientY;
+                longPressTriggered = false;
                 if (longPressTimer) clearTimeout(longPressTimer);
                 longPressTimer = setTimeout(() => {
                     longPressTimer = null;
@@ -7256,7 +7262,17 @@
                     video.playbackRate = 2;
                     longPressTriggered = true;
                     if (video.paused) video.play().catch(() => {});
-                }, 360);
+                }, 1000);
+            });
+
+            post.addEventListener('pointermove', (e) => {
+                if (!longPressTimer || longPressTriggered) return;
+                const dx = e.clientX - holdStartX;
+                const dy = e.clientY - holdStartY;
+                if (Math.abs(dx) > 8 || Math.abs(dy) > 8) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
             });
 
             const endSpeedHold = () => {
@@ -7322,6 +7338,8 @@
             seeking: false,
             speedHolding: false,
             speedCard: null,
+            progressRaf: null,
+            progressPercent: 0,
         };
 
         window.clearReelSpeedOverride = () => {
@@ -7363,13 +7381,19 @@
             const fill = document.querySelector('.mobile-reel-progress-fill');
             const thumb = document.querySelector('.mobile-reel-progress-thumb');
             const value = Math.max(0, Math.min(100, percent || 0));
-            if (fill) fill.style.width = `${value}%`;
-            if (thumb) thumb.style.left = `${value}%`;
-            const track = document.getElementById('reels-container');
-            if (!track) return;
-            const videos = Array.from(track.querySelectorAll('video'));
-            const activeVideo = videos[window.reelState.index];
-            window.updateReelTimeLabels(activeVideo);
+            window.reelState.progressPercent = value;
+            if (window.reelState.progressRaf) {
+                cancelAnimationFrame(window.reelState.progressRaf);
+            }
+            window.reelState.progressRaf = requestAnimationFrame(() => {
+                if (fill) fill.style.width = `${window.reelState.progressPercent}%`;
+                if (thumb) thumb.style.left = `${window.reelState.progressPercent}%`;
+                const track = document.getElementById('reels-container');
+                if (!track) return;
+                const videos = Array.from(track.querySelectorAll('video'));
+                const activeVideo = videos[window.reelState.index];
+                window.updateReelTimeLabels(activeVideo);
+            });
         };
 
         window.setReelProgressBarDragState = (active) => {
