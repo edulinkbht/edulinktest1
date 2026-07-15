@@ -1954,30 +1954,16 @@
         }
 
         #view-reels .reels-scroll {
-            height: 100%;
-            overflow: hidden;
-            position: relative;
-            touch-action: none;
+            height: calc(100vh - 70px);
+            overflow-y: auto;
+            scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
             padding-top: 0;
-            padding-bottom: max(120px, calc(env(safe-area-inset-bottom, 0px) + 60px));
+            padding-bottom: 120px;
         }
 
-        .reels-wrapper {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            transition: transform 0.22s cubic-bezier(0.1, 0.76, 0.55, 0.94);
-        }
-
-        .reel-card {
-            width: 100%;
-            min-height: 100%;
-            height: 100%;
-            flex-shrink: 0;
-            position: relative;
-            background: #000;
-            border-radius: 0;
+        #view-reels .reels-scroll > .reel-card {
+            scroll-snap-align: start;
         }
 
         .reel-card .reel-overlay {
@@ -1992,11 +1978,11 @@
 
         .reel-card .reel-bottom-actions {
             position: absolute;
-            right: 12px;
-            bottom: 16px;
+            right: 8px;
+            bottom: 60px;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            gap: 8px;
             align-items: center;
             pointer-events: auto;
             z-index: 3;
@@ -2062,52 +2048,39 @@
 
         .reel-card .reel-overlay-bottom {
             position: absolute;
-            left: 16px;
-            right: 16px;
-            bottom: 16px;
-            width: auto;
-            max-width: 72%;
-            padding: 14px 16px 14px;
-            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.2) 40%, transparent 100%);
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 6px 16px 54px;
+            padding-right: 108px;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.70) 34%, rgba(0,0,0,0.96) 100%);
             pointer-events: auto;
             z-index: 2;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            border-radius: 18px;
-            backdrop-filter: blur(12px);
+            justify-content: flex-end;
         }
 
         .reel-card .reel-details-block {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
             width: 100%;
+            margin-top: auto;
             pointer-events: auto;
         }
 
         .reel-card .reel-bottom-copy {
             color: #f5f5f5;
-            font-size: 14px;
+            font-size: 15px;
             line-height: 1.55;
+            max-height: 7.5em;
             overflow: hidden;
             margin-bottom: 0;
             text-align: left;
-            max-width: 100%;
+            max-width: none;
             display: block;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        .reel-card .reel-bottom-copy .read-more-btn {
-            color: #fff;
-            font-weight: 700;
-            margin-left: 4px;
-            cursor: pointer;
-        }
-        .reel-card .reel-no-caption {
-            color: #d1d5db;
-            font-style: italic;
         }
 
         .reel-card .reel-music-line {
@@ -2131,25 +2104,6 @@
             pointer-events: auto;
             width: 100%;
             min-width: 0;
-        }
-
-        .reel-card .reel-bottom-user img {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: 1.5px solid rgba(255,255,255,0.9);
-            object-fit: cover;
-        }
-
-        .reel-card .reel-bottom-user .username {
-            font-size: 14px;
-            font-weight: 600;
-        }
-
-        .reel-card .reel-handle {
-            font-size: 12.5px;
-            color: #e1e1e1;
-            margin-top: 0px;
         }
 
         .reel-card .reel-bottom-user .reel-user-meta {
@@ -2183,12 +2137,6 @@
         }
 
         @media (max-width: 520px) {
-            .reel-card .reel-bottom-actions {
-                bottom: calc(var(--reel-bottom-height, 0px) + var(--reel-bottom-gap, 10px));
-            }
-            .reel-card .reel-overlay-bottom {
-                padding-bottom: max(18px, env(safe-area-inset-bottom, 18px));
-            }
             .reel-card .reel-bottom-actions .reel-action-block {
                 min-width: 44px;
                 min-height: 44px;
@@ -5222,7 +5170,7 @@
                         </button>
                     </div>
                 </div>
-                <div class="reels-wrapper" id="reels-wrapper"></div>
+                <div id="reels-container" class="reels-scroll space-y-0 px-0 pb-36 pt-0"></div>
                 <div id="reels-empty-state" class="flex flex-col items-center justify-center py-14 text-center text-gray-400 hidden">
                     <i data-lucide="video" class="w-10 h-10 mb-4"></i>
                     <div class="text-base font-semibold">No uploaded videos yet</div>
@@ -5894,64 +5842,7 @@
             }
         };
 
-        window.renderTextWithReadMore = (text, id, limit = 180) => { if (!text) return ''; const isExpanded = window.expandedTexts.has(id); if (text.length <= limit) return formatContent(text); const display = isExpanded ? formatContent(text) : formatContent(text.substring(0, limit)) + '...'; return `${display}<span class="read-more-btn" onclick="event.stopPropagation(); toggleTextExpansion('${id}')">${isExpanded ? 'See less' : 'See more'}</span>` };
-        window.adjustReelSpacing = card => {
-            if (!card) return;
-            const overlay = card.querySelector('.reel-overlay-bottom');
-            if (!overlay) return;
-            const overlayHeight = overlay.offsetHeight;
-            const gap = overlayHeight > 120 ? 45 : 10;
-            card.style.setProperty('--reel-bottom-height', `${overlayHeight}px`);
-            card.style.setProperty('--reel-bottom-gap', `${gap}px`);
-        };
-        window.adjustAllReelSpacings = () => document.querySelectorAll('#view-reels .reel-card').forEach(window.adjustReelSpacing);
-        window.addEventListener('resize', () => window.adjustAllReelSpacings());
-        window.initReelNavigation = () => {
-            const view = document.getElementById('view-reels');
-            const wrapper = document.getElementById('reels-wrapper');
-            if (!view || !wrapper) return;
-
-            let startY = 0;
-            let isTransitioning = false;
-            const swipeThreshold = 60;
-            let lastWheelTime = 0;
-
-            view.addEventListener('touchstart', e => {
-                if (e.touches && e.touches[0]) {
-                    startY = e.touches[0].clientY;
-                }
-            }, { passive: true });
-
-            view.addEventListener('touchmove', e => {
-                if (e.cancelable) e.preventDefault();
-            }, { passive: false });
-
-            view.addEventListener('touchend', e => {
-                if (isTransitioning) return;
-                const endY = e.changedTouches[0].clientY;
-                const diff = startY - endY;
-                if (Math.abs(diff) > swipeThreshold) {
-                    isTransitioning = true;
-                    if (diff > 0) window.goToReel((window.currentReelIndex || 0) + 1);
-                    else window.goToReel((window.currentReelIndex || 0) - 1);
-                    setTimeout(() => { isTransitioning = false; }, 250);
-                }
-            }, { passive: true });
-
-            view.addEventListener('wheel', e => {
-                if (isTransitioning) return;
-                const now = Date.now();
-                if (now - lastWheelTime < 500) return;
-                if (Math.abs(e.deltaY) > 20) {
-                    e.preventDefault();
-                    lastWheelTime = now;
-                    isTransitioning = true;
-                    if (e.deltaY > 0) window.goToReel((window.currentReelIndex || 0) + 1);
-                    else window.goToReel((window.currentReelIndex || 0) - 1);
-                    setTimeout(() => { isTransitioning = false; }, 250);
-                }
-            }, { passive: false });
-        };
+        window.renderTextWithReadMore = (text, id, limit = 180) => { if (!text) return ''; const isExpanded = window.expandedTexts.has(id); if (text.length <= limit) return formatContent(text); const display = isExpanded ? formatContent(text) : formatContent(text.substring(0, limit)) + '...'; return `${display}<span class="read-more-btn" onclick="event.stopPropagation(); toggleTextExpansion('${id}')">${isExpanded ? 'less' : 'more'}</span>` };
         window.toggleTextExpansion = id => {
             const isExpanding = !window.expandedTexts.has(id);
             let elToScroll = null, container = null, startTop = 0;
@@ -5980,18 +5871,6 @@
                 let foundC = null;
                 for (const p of posts) if (p.comments) { foundC = p.comments.find(c => c.id === cid); if (foundC) break }
                 if (foundC) document.querySelectorAll(`.js-comment-body-${cid}`).forEach(el => el.innerHTML = window.renderTextWithReadMore(foundC.content, id));
-            } else if (id.startsWith('reel-')) {
-                const pid = id.replace('reel-', ''), p = posts.find(x => x.id === pid);
-                if (p) {
-                    const card = document.querySelector(`#view-reels .reel-card[data-post-id="${pid}"]`);
-                    const rawContent = p.content || '';
-                    const html = rawContent ? window.renderTextWithReadMore(rawContent, id, 50) : '<span class="reel-no-caption">No caption</span>';
-                    if (card) {
-                        const copy = card.querySelector('.reel-bottom-copy');
-                        if (copy) copy.innerHTML = html;
-                        window.adjustReelSpacing(card);
-                    }
-                }
             }
 
             if (!isExpanding && elToScroll) {
@@ -6828,19 +6707,13 @@
             if (nav) nav.classList.add('active'); 
             if (mnav) mnav.classList.add('active'); 
 
-            if (v === 'reels') {
-                // enable mobile footer styling when on small screens
-                if (window.innerWidth < 768 && mbn) mbn.classList.add('reel-footer');
-                document.body.classList.add('reel-mode');
-                if (document.getElementById('reels-wrapper')?.children.length === 0) {
+            if (v === 'reels' && window.innerWidth < 768) {
+                if (mbn) mbn.classList.add('reel-footer');
+                if (document.getElementById('reels-container')?.children.length === 0) {
                     window.renderReels();
-                } else {
-                    // ensure navigation handlers are bound
-                    if (window.initReelNavigation) window.initReelNavigation();
                 }
-            } else {
-                if (mbn) mbn.classList.remove('reel-footer');
-                document.body.classList.remove('reel-mode');
+            } else if (mbn) {
+                mbn.classList.remove('reel-footer');
             }
             
             if (v === 'create' && !window.editingPostId) {
@@ -6923,7 +6796,7 @@
                 renderMuteFriendsList();
             }
 
-            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'reels') { mnav[1]?.classList.add('active'); if (document.getElementById('reels-wrapper').children.length === 0) renderReels(); } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
+            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'reels') { mnav[1]?.classList.add('active'); if (document.getElementById('reels-container').children.length === 0) renderReels(); } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
             if (mp) {
                 if (v === 'profile') {
                     mp.classList.add('profile-view');
@@ -7040,10 +6913,8 @@
             const post = document.createElement('article');
             const likeCount = p.likes?.length || 0;
             const commentCount = p.comments?.length || 0;
-            const rawContent = p.content || '';
-            const contentHtml = rawContent ? window.renderTextWithReadMore(rawContent, `reel-${p.id}`, 50) : '<span class="reel-no-caption">No caption</span>';
+            const contentText = p.content ? p.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
             post.className = 'reel-card px-0';
-            post.dataset.postId = p.id;
             post.innerHTML = `
                 <div class="reel-overlay">
                     <div class="reel-bottom-actions">
@@ -7076,7 +6947,7 @@
                                     <div class="reel-handle"><span class="reel-audio-inline"><i data-lucide="music" class="w-4 h-4"></i> Original audio · ${author.username || 'Creator'}</span></div>
                                 </div>
                             </div>
-                            <div class="reel-bottom-copy">${contentHtml}</div>
+                            <div class="reel-bottom-copy">${contentText || '&nbsp;'}</div>
                         </div>
                     </div>
                 </div>
@@ -7093,7 +6964,7 @@
         };
 
         window.renderReels = async () => {
-            const container = document.getElementById('reels-wrapper');
+            const container = document.getElementById('reels-container');
             const emptyState = document.getElementById('reels-empty-state');
             if (!container || !emptyState) return;
             container.innerHTML = '';
@@ -7107,32 +6978,9 @@
 
             visible.forEach(p => {
                 const card = window.createReelCard(p);
-                if (card) {
-                    container.appendChild(card);
-                    window.adjustReelSpacing(card);
-                }
+                if (card) container.appendChild(card);
             });
             refreshIcons();
-            window.adjustAllReelSpacings();
-            window.currentReelIndex = 0;
-            window.updateReelTransform();
-            // Bind navigation handlers after initial render
-            if (window.initReelNavigation) window.initReelNavigation();
-        };
-
-        window.updateReelTransform = () => {
-            const wrapper = document.getElementById('reels-wrapper');
-            if (!wrapper) return;
-            wrapper.style.transform = `translateY(-${(window.currentReelIndex || 0) * 100}%)`;
-        };
-
-        window.goToReel = index => {
-            const wrapper = document.getElementById('reels-wrapper');
-            if (!wrapper) return;
-            const cardsCount = wrapper.children.length;
-            if (index < 0 || index >= cardsCount) return;
-            window.currentReelIndex = index;
-            wrapper.style.transform = `translateY(-${window.currentReelIndex * 100}%)`;
         };
 
         window.updateCreateFooter = () => {
