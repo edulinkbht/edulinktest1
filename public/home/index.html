@@ -7245,20 +7245,23 @@
             const bar = document.getElementById('mobile-reel-progress-bar');
             if (!bar || bar.dataset.seekBound === 'true') return;
             const handleSeek = (clientX) => window.seekActiveReelTo(clientX);
+            const seekFromEvent = (event) => {
+                const rect = bar.getBoundingClientRect();
+                const ratio = (event.clientX - rect.left) / rect.width;
+                window.seekActiveReelToRatio(ratio);
+            };
             bar.addEventListener('pointerdown', (event) => {
                 window.reelState.seeking = true;
                 window.setReelProgressBarDragState(true);
                 bar.setPointerCapture(event.pointerId);
-                handleSeek(event.clientX);
+                seekFromEvent(event);
             });
             bar.addEventListener('pointermove', (event) => {
                 if (!window.reelState.seeking) return;
-                handleSeek(event.clientX);
+                seekFromEvent(event);
             });
             bar.addEventListener('click', (event) => {
-                const rect = bar.getBoundingClientRect();
-                const ratio = (event.clientX - rect.left) / rect.width;
-                window.seekActiveReelToRatio(ratio);
+                seekFromEvent(event);
             });
             bar.addEventListener('pointercancel', () => {
                 window.reelState.seeking = false;
@@ -7276,6 +7279,10 @@
             bar.dataset.seekBound = 'true';
         };
 
+        window.isReelsPlaybackActive = () => {
+            return document.body.classList.contains('reel-mode') && window.currentViewName === 'reels';
+        };
+
         window.pauseActiveReel = () => {
             const track = document.getElementById('reels-container');
             if (!track) return;
@@ -7286,6 +7293,7 @@
         };
 
         window.resumeActiveReel = () => {
+            if (!window.isReelsPlaybackActive()) return;
             const track = document.getElementById('reels-container');
             if (!track) return;
             const videos = Array.from(track.querySelectorAll('video'));
@@ -7315,13 +7323,14 @@
             if (!track) return;
             const videos = Array.from(track.querySelectorAll('video'));
             const progressBar = document.getElementById('mobile-reel-progress-bar');
+            const shouldPlay = window.isReelsPlaybackActive();
             if (progressBar) {
-                progressBar.classList.toggle('hidden', !document.body.classList.contains('reel-mode'));
+                progressBar.classList.toggle('hidden', !shouldPlay);
             }
             videos.forEach((video, index) => {
                 const card = video.closest('.reel-card');
                 const overlay = card?.querySelector('.reel-pause-overlay');
-                if (index === window.reelState.index) {
+                if (shouldPlay && index === window.reelState.index) {
                     if (video.paused) video.play().catch(() => {});
                     if (overlay) {
                         overlay.classList.remove('show');
@@ -7334,6 +7343,10 @@
                     };
                 } else {
                     video.pause();
+                    if (overlay) {
+                        overlay.classList.remove('show');
+                        overlay.classList.add('hidden');
+                    }
                 }
             });
         };
