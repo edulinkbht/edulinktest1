@@ -2016,18 +2016,21 @@
             top: 0;
             left: 0;
             right: 0;
-            height: 4px;
+            height: 6px;
             background: rgba(255,255,255,0.18);
             overflow: visible;
             z-index: 12;
             cursor: pointer;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
         }
 
         .mobile-reel-progress-bar .mobile-reel-progress-fill {
             width: 0%;
             height: 100%;
             background: #fff;
-            transition: width 0.08s linear;
+            transition: width 0.04s linear;
         }
 
         .mobile-reel-progress-bar.dragging .mobile-reel-progress-fill,
@@ -2163,10 +2166,10 @@
         }
 
         .reel-card .reel-right-actions {
-            right: 10px;
+            right: 6px;
             bottom: 88px;
             align-items: center;
-            width: min(14vw, 72px);
+            width: min(13vw, 68px);
         }
 
         .reel-left-copy .reel-identity-row {
@@ -2290,8 +2293,8 @@
                 left: 12px;
             }
             .reel-right-actions {
-                right: 8px;
-                width: min(14vw, 64px);
+                right: 4px;
+                width: min(13vw, 60px);
             }
             .reel-left-copy .reel-caption-text {
                 font-size: 14px;
@@ -7215,7 +7218,10 @@
             if (!activeVideo || !activeVideo.duration || !Number.isFinite(activeVideo.duration)) return;
             const rect = bar.getBoundingClientRect();
             const ratio = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
-            activeVideo.currentTime = activeVideo.duration * ratio;
+            const seekTime = activeVideo.duration * ratio;
+            if (Math.abs(activeVideo.currentTime - seekTime) > 0.02) {
+                activeVideo.currentTime = seekTime;
+            }
             window.updateReelProgressUI(ratio * 100);
         };
 
@@ -7233,12 +7239,17 @@
                 if (!window.reelState.seeking) return;
                 handleSeek(event.clientX);
             });
+            bar.addEventListener('pointercancel', () => {
+                window.reelState.seeking = false;
+                window.setReelProgressBarDragState(false);
+            });
             bar.addEventListener('pointerup', () => {
                 window.reelState.seeking = false;
                 window.setReelProgressBarDragState(false);
             });
             bar.addEventListener('pointerleave', () => {
-                if (window.reelState.seeking) window.reelState.seeking = false;
+                if (!window.reelState.seeking) return;
+                window.reelState.seeking = false;
                 window.setReelProgressBarDragState(false);
             });
             bar.dataset.seekBound = 'true';
