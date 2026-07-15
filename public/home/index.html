@@ -2027,6 +2027,32 @@
             border-radius: 999px;
         }
 
+        .mobile-reel-progress-bar .reel-progress-time {
+            position: absolute;
+            top: -24px;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.55);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.16s ease;
+            z-index: 14;
+        }
+
+        .mobile-reel-progress-bar .reel-progress-current-time {
+            left: 0;
+        }
+
+        .mobile-reel-progress-bar .reel-progress-total-time {
+            right: 0;
+        }
+
+        .mobile-reel-progress-bar.reel-time-visible .reel-progress-time {
+            opacity: 1;
+        }
+
         .mobile-reel-progress-bar .mobile-reel-progress-fill {
             width: 0%;
             height: 100%;
@@ -5412,6 +5438,8 @@
     <nav id="mobile-bottom-nav"
         class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
         <div id="mobile-reel-progress-bar" class="mobile-reel-progress-bar hidden">
+            <div id="mobile-reel-current-time" class="reel-progress-time reel-progress-current-time hidden">0:00</div>
+            <div id="mobile-reel-total-time" class="reel-progress-time reel-progress-total-time hidden">0:00</div>
             <div class="mobile-reel-progress-fill"></div>
             <div class="mobile-reel-progress-thumb"></div>
         </div>
@@ -7306,6 +7334,29 @@
             }
             window.reelState.speedHolding = false;
             window.reelState.speedCard = null;
+            window.updateReelTimeLabels(null);
+        };
+
+        window.formatReelTime = (seconds) => {
+            if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+            const safeSeconds = Math.floor(seconds);
+            const minutes = Math.floor(safeSeconds / 60);
+            const remainingSeconds = safeSeconds % 60;
+            return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+        };
+
+        window.updateReelTimeLabels = (video) => {
+            const bar = document.getElementById('mobile-reel-progress-bar');
+            const currentEl = document.getElementById('mobile-reel-current-time');
+            const totalEl = document.getElementById('mobile-reel-total-time');
+            if (!bar || !currentEl || !totalEl) return;
+            const shouldShow = !!(video && document.querySelector('.reel-card.reel-speed-active'));
+            bar.classList.toggle('reel-time-visible', shouldShow);
+            currentEl.classList.toggle('hidden', !shouldShow);
+            totalEl.classList.toggle('hidden', !shouldShow);
+            if (!shouldShow) return;
+            currentEl.textContent = window.formatReelTime(video.currentTime || 0);
+            totalEl.textContent = window.formatReelTime(video.duration || 0);
         };
 
         window.updateReelProgressUI = (percent) => {
@@ -7314,6 +7365,11 @@
             const value = Math.max(0, Math.min(100, percent || 0));
             if (fill) fill.style.width = `${value}%`;
             if (thumb) thumb.style.left = `${value}%`;
+            const track = document.getElementById('reels-container');
+            if (!track) return;
+            const videos = Array.from(track.querySelectorAll('video'));
+            const activeVideo = videos[window.reelState.index];
+            window.updateReelTimeLabels(activeVideo);
         };
 
         window.setReelProgressBarDragState = (active) => {
