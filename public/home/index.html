@@ -5061,7 +5061,7 @@
             </svg>
         </div>
         <div class="mobile-nav-item" onclick="switchView('ter')" id="mobile-nav-ter">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="ter-play-icon" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="ter-play-icon custom-icon custom-icon-outline" id="mobile-ter-icon" fill="currentColor">
                 <path d="M8 5v14l11-7z"/>
             </svg>
         </div>
@@ -6421,24 +6421,35 @@
         window.openProfileFilter = () => { manageHistory('profile-filter-overlay'); toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !0);['latest', 'oldest', 'popular'].forEach(s => { const el = document.getElementById(`sort-check-${s}`); if (window.profileSort === s) el.classList.remove('hidden'); else el.classList.add('hidden') }) }; window.closeProfileFilter = () => toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !1);
         window.setProfileSort = s => { window.profileSort = s; renderProfileContent(window.currentViewingProfileId, window.currentProfileTab); closeProfileFilter() };
         window.togglePrivacy = async () => { const t = document.getElementById('toggle-privacy'), p = !t.classList.contains('active'); t.classList.toggle('active'); const s = currentUser.settings || {}; s.privateNetwork = p; await updateDoc(doc(db, "users", currentUser.id), { settings: s }); currentUser.settings = s; showToast(`Account is ${p ? 'Private' : 'Public'}`) };
+        window.isUploadedVideoPost = (post) => {
+            if (!post) return false;
+            if (post.embedVideo) return false;
+            const mediaList = Array.isArray(post.media) ? post.media : (post.media ? [post.media] : []);
+            return mediaList.some(media => {
+                const value = (media || '').toString().trim();
+                if (!value) return false;
+                if (value.startsWith('data:video')) return true;
+                if (value.includes('drive.google.com') || value.includes('youtube.com') || value.includes('youtu.be')) return false;
+                return /(\.mp4|\.mov|\.m4v|\.webm|\.avi|\.mkv|\.ogv)(\?.*)?$/i.test(value);
+            });
+        };
+
         window.getUserUploadedTerVideos = () => {
             const uid = currentUser?.id || auth?.currentUser?.uid;
             if (!uid || !Array.isArray(posts)) return [];
             return posts
                 .filter(post => {
                     const authorId = post.userId || post.authorId || post.uid || post.author?.uid;
-                    if (authorId !== uid || post.embedVideo) return false;
-                    const mediaList = Array.isArray(post.media) ? post.media : (post.media ? [post.media] : []);
-                    return mediaList.some(media => {
-                        const value = (media || '').toString();
-                        return /\.mp4|\.mov|\.m4v|\.webm|video/i.test(value) || value.startsWith('data:video');
-                    });
+                    return authorId === uid && window.isUploadedVideoPost(post);
                 })
                 .map(post => {
                     const mediaList = Array.isArray(post.media) ? post.media : (post.media ? [post.media] : []);
                     const videoUrl = mediaList.find(media => {
-                        const value = (media || '').toString();
-                        return /\.mp4|\.mov|\.m4v|\.webm|video/i.test(value) || value.startsWith('data:video');
+                        const value = (media || '').toString().trim();
+                        if (!value) return false;
+                        if (value.startsWith('data:video')) return true;
+                        if (value.includes('drive.google.com') || value.includes('youtube.com') || value.includes('youtu.be')) return false;
+                        return /(\.mp4|\.mov|\.m4v|\.webm|\.avi|\.mkv|\.ogv)(\?.*)?$/i.test(value);
                     }) || mediaList[0];
                     return { ...post, videoUrl };
                 })
@@ -12904,6 +12915,7 @@
                 'explore': document.getElementById('mobile-explore-icon'),
                 'notifications': document.getElementById('mobile-notifications-icon')
             };
+            const terIcon = document.getElementById('mobile-ter-icon');
 
             // Update desktop icons
             Object.keys(desktopIcons).forEach(view => {
@@ -12954,6 +12966,11 @@
                     }
                 }
             });
+
+            if (terIcon) {
+                terIcon.classList.toggle('custom-icon-filled', activeView === 'ter');
+                terIcon.classList.toggle('custom-icon-outline', activeView !== 'ter');
+            }
         };
 
         // Override switchView to include icon updates
