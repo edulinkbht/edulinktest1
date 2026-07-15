@@ -7227,6 +7227,20 @@
             window.updateReelProgressUI(ratio * 100);
         };
 
+        window.seekActiveReelToRatio = (ratio) => {
+            const track = document.getElementById('reels-container');
+            if (!track) return;
+            const videos = Array.from(track.querySelectorAll('video'));
+            const activeVideo = videos[window.reelState.index];
+            if (!activeVideo || !activeVideo.duration || !Number.isFinite(activeVideo.duration)) return;
+            const safeRatio = Math.max(0, Math.min(1, ratio));
+            const seekTime = activeVideo.duration * safeRatio;
+            if (Math.abs(activeVideo.currentTime - seekTime) > 0.02) {
+                activeVideo.currentTime = seekTime;
+            }
+            window.updateReelProgressUI(safeRatio * 100);
+        };
+
         window.attachReelSeekBar = () => {
             const bar = document.getElementById('mobile-reel-progress-bar');
             if (!bar || bar.dataset.seekBound === 'true') return;
@@ -7240,6 +7254,11 @@
             bar.addEventListener('pointermove', (event) => {
                 if (!window.reelState.seeking) return;
                 handleSeek(event.clientX);
+            });
+            bar.addEventListener('click', (event) => {
+                const rect = bar.getBoundingClientRect();
+                const ratio = (event.clientX - rect.left) / rect.width;
+                window.seekActiveReelToRatio(ratio);
             });
             bar.addEventListener('pointercancel', () => {
                 window.reelState.seeking = false;
@@ -13552,6 +13571,20 @@
             if (originalSwitchView) originalSwitchView(view);
             updateNavIcons(view);
         };
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                window.pauseActiveReel();
+            }
+        });
+
+        window.addEventListener('blur', () => {
+            window.pauseActiveReel();
+        });
+
+        window.addEventListener('pagehide', () => {
+            window.pauseActiveReel();
+        });
 
         // Initialize filter button and search container state on load
         (function() {
