@@ -2082,6 +2082,18 @@
             text-align: left;
             max-width: none;
             display: block;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .reel-card .reel-bottom-copy .read-more-btn {
+            color: #fff;
+            font-weight: 700;
+            margin-left: 4px;
+            cursor: pointer;
+        }
+        .reel-card .reel-no-caption {
+            color: #d1d5db;
+            font-style: italic;
         }
 
         .reel-card .reel-music-line {
@@ -5849,7 +5861,18 @@
             }
         };
 
-        window.renderTextWithReadMore = (text, id, limit = 180) => { if (!text) return ''; const isExpanded = window.expandedTexts.has(id); if (text.length <= limit) return formatContent(text); const display = isExpanded ? formatContent(text) : formatContent(text.substring(0, limit)) + '...'; return `${display}<span class="read-more-btn" onclick="event.stopPropagation(); toggleTextExpansion('${id}')">${isExpanded ? 'less' : 'more'}</span>` };
+        window.renderTextWithReadMore = (text, id, limit = 180) => { if (!text) return ''; const isExpanded = window.expandedTexts.has(id); if (text.length <= limit) return formatContent(text); const display = isExpanded ? formatContent(text) : formatContent(text.substring(0, limit)) + '...'; return `${display}<span class="read-more-btn" onclick="event.stopPropagation(); toggleTextExpansion('${id}')">${isExpanded ? 'See less' : 'See more'}</span>` };
+        window.adjustReelSpacing = card => {
+            if (!card) return;
+            const overlay = card.querySelector('.reel-overlay-bottom');
+            const actions = card.querySelector('.reel-bottom-actions');
+            if (!overlay || !actions) return;
+            const overlayHeight = overlay.offsetHeight;
+            const gap = overlayHeight > 120 ? 45 : 10;
+            actions.style.bottom = `calc(${overlayHeight}px + ${gap}px)`;
+        };
+        window.adjustAllReelSpacings = () => document.querySelectorAll('#view-reels .reel-card').forEach(window.adjustReelSpacing);
+        window.addEventListener('resize', () => window.adjustAllReelSpacings());
         window.toggleTextExpansion = id => {
             const isExpanding = !window.expandedTexts.has(id);
             let elToScroll = null, container = null, startTop = 0;
@@ -5878,6 +5901,18 @@
                 let foundC = null;
                 for (const p of posts) if (p.comments) { foundC = p.comments.find(c => c.id === cid); if (foundC) break }
                 if (foundC) document.querySelectorAll(`.js-comment-body-${cid}`).forEach(el => el.innerHTML = window.renderTextWithReadMore(foundC.content, id));
+            } else if (id.startsWith('reel-')) {
+                const pid = id.replace('reel-', ''), p = posts.find(x => x.id === pid);
+                if (p) {
+                    const card = document.querySelector(`#view-reels .reel-card[data-post-id="${pid}"]`);
+                    const rawContent = p.content || '';
+                    const html = rawContent ? window.renderTextWithReadMore(rawContent, id, 50) : '<span class="reel-no-caption">No caption</span>';
+                    if (card) {
+                        const copy = card.querySelector('.reel-bottom-copy');
+                        if (copy) copy.innerHTML = html;
+                        window.adjustReelSpacing(card);
+                    }
+                }
             }
 
             if (!isExpanding && elToScroll) {
@@ -6920,8 +6955,10 @@
             const post = document.createElement('article');
             const likeCount = p.likes?.length || 0;
             const commentCount = p.comments?.length || 0;
-            const contentText = p.content ? p.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
+            const rawContent = p.content || '';
+            const contentHtml = rawContent ? window.renderTextWithReadMore(rawContent, `reel-${p.id}`, 50) : '<span class="reel-no-caption">No caption</span>';
             post.className = 'reel-card px-0';
+            post.dataset.postId = p.id;
             post.innerHTML = `
                 <div class="reel-overlay">
                     <div class="reel-bottom-actions">
@@ -6954,7 +6991,7 @@
                                     <div class="reel-handle"><span class="reel-audio-inline"><i data-lucide="music" class="w-4 h-4"></i> Original audio · ${author.username || 'Creator'}</span></div>
                                 </div>
                             </div>
-                            <div class="reel-bottom-copy">${contentText || '&nbsp;'}</div>
+                            <div class="reel-bottom-copy">${contentHtml}</div>
                         </div>
                     </div>
                 </div>
@@ -6985,9 +7022,13 @@
 
             visible.forEach(p => {
                 const card = window.createReelCard(p);
-                if (card) container.appendChild(card);
+                if (card) {
+                    container.appendChild(card);
+                    window.adjustReelSpacing(card);
+                }
             });
             refreshIcons();
+            window.adjustAllReelSpacings();
         };
 
         window.updateCreateFooter = () => {
