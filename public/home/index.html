@@ -1780,112 +1780,114 @@
             opacity: 0.7;
         }
 
-        .mobile-bottom-nav.ter-footer-mode {
+        .mobile-nav-ter-active {
             background: #121212;
-            border-color: #121212;
-            box-shadow: none;
+            border-color: rgba(255,255,255,0.1);
         }
 
-        .mobile-bottom-nav.ter-footer-mode .mobile-nav-item {
+        .mobile-nav-ter-active .mobile-nav-item {
             color: #ffffff;
         }
 
-        .mobile-bottom-nav.ter-footer-mode .mobile-nav-item svg {
+        .mobile-nav-ter-active .mobile-nav-item.active {
+            color: #ffffff;
+        }
+
+        .mobile-nav-ter-active .mobile-nav-item.active svg,
+        .mobile-nav-ter-active .mobile-nav-item.active i {
+            color: #ffffff;
             fill: #ffffff;
             stroke: #ffffff;
-            color: #ffffff;
         }
 
-        .mobile-bottom-nav.ter-footer-mode .mobile-nav-item.active {
-            color: #ffffff;
-        }
-
-        .mobile-bottom-nav.ter-footer-mode .mobile-nav-item.active svg {
-            fill: #ffffff;
-            stroke: #ffffff;
-            color: #ffffff;
-        }
-
-        .mobile-bottom-nav.ter-footer-mode .mobile-nav-item .ter-play-icon {
-            fill: none !important;
-            stroke: #ffffff;
-            stroke-width: 2;
-        }
-
-        #ter-video-list {
-            height: 100%;
-            overflow-y: auto;
-            scroll-snap-type: y mandatory;
-            scroll-behavior: smooth;
-            overscroll-behavior-y: contain;
-            scrollbar-width: none;
-        }
-
-        #ter-video-list::-webkit-scrollbar {
-            display: none;
-        }
-
-        .ter-video-slide {
-            position: relative;
-            width: 100%;
-            height: calc(100dvh - 64px);
-            min-height: calc(100dvh - 64px);
+        .ter-tab-overlay {
             background: #000000;
-            scroll-snap-align: start;
-            scroll-snap-stop: always;
+        }
+
+        .ter-slide {
+            min-height: 100%;
+            position: relative;
+            background: #000000;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            scroll-snap-align: start;
         }
 
-        .ter-video-slide video {
+        .ter-slide video {
             width: 100%;
             height: 100%;
             object-fit: cover;
             background: #000000;
         }
 
-        .ter-video-overlay {
+        .ter-slide::after {
+            content: "";
             position: absolute;
             inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0.18) 55%, rgba(0,0,0,0.72) 100%);
             pointer-events: none;
-            background: linear-gradient(180deg, rgba(0,0,0,0.04) 0%, rgba(0,0,0,0.18) 100%);
         }
 
-        .ter-like-btn {
-            pointer-events: auto;
-            width: 58px;
-            height: 58px;
-            border-radius: 9999px;
+        .ter-details-panel {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            top: 0;
+            padding: 0 16px 24px 16px;
             display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(255, 255, 255, 0.16);
-            color: #ffffff;
-            border: 1px solid rgba(255, 255, 255, 0.16);
-            backdrop-filter: blur(8px);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 12px;
+            z-index: 3;
+            pointer-events: none;
         }
 
-        .ter-like-btn.liked {
-            background: rgba(255, 255, 255, 0.96);
-            color: #ff2d55;
+        .ter-details-panel > * {
+            pointer-events: auto;
         }
 
-        .ter-empty-state {
-            height: 100%;
+        .ter-details-left {
+            max-width: 72%;
+        }
+
+        .ter-action-stack {
             display: flex;
             flex-direction: column;
+            gap: 14px;
+            align-items: center;
+        }
+
+        .ter-action-btn {
+            width: 48px;
+            height: 48px;
+            border-radius: 9999px;
+            background: rgba(255,255,255,0.16);
+            backdrop-filter: blur(10px);
+            display: flex;
             align-items: center;
             justify-content: center;
-            text-align: center;
             color: #ffffff;
-            padding: 24px;
-            background: #000000;
+        }
+
+        .ter-action-btn.active {
+            background: rgba(255,255,255,0.24);
+        }
+
+        .ter-action-count {
+            font-size: 12px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 2px;
+        }
+
+        .ter-footer-bar {
+            height: 64px;
+            background: #121212;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: #ffffff;
         }
 
         .official-badge {
@@ -4761,9 +4763,6 @@
                     </div>
                 </div>
             </div>
-            <div id="view-ter" class="flex-1 h-full overflow-hidden hidden bg-black pt-0 md:hidden">
-                <div id="ter-video-list" class="h-full w-full"></div>
-            </div>
             <!-- Mobile footer -->
             <div id="create-mobile-footer" class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 z-30 hidden">
                 <div id="create-footer-buttons" class="flex items-center justify-between">
@@ -5053,8 +5052,20 @@
             </div>
         </aside>
     </div>
+    <div id="ter-tab-overlay" class="ter-tab-overlay md:hidden fixed inset-0 z-[60] hidden flex-col">
+        <div id="ter-tab-content" class="flex-1 overflow-y-auto snap-y snap-mandatory"></div>
+        <div class="ter-footer-bar flex items-center justify-between px-5 text-white">
+            <button onclick="closeTerTab()" class="w-10 h-10 rounded-full flex items-center justify-center bg-white/10">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div class="text-sm font-semibold tracking-wide">Ter</div>
+            <button onclick="switchView('feed')" class="w-10 h-10 rounded-full flex items-center justify-center bg-white/10">
+                <i data-lucide="home" class="w-5 h-5"></i>
+            </button>
+        </div>
+    </div>
     <nav id="mobile-bottom-nav"
-        class="mobile-bottom-nav md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
+        class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300">
         <div class="mobile-nav-item active" onclick="switchView('feed')" id="mobile-nav-feed">
             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
                 class="custom-icon custom-icon-filled" id="mobile-feed-icon" style="stroke-width: 2;">
@@ -5062,10 +5073,8 @@
                     d="M3 10.5L10.2 4.6C11.3 3.7 12.7 3.7 13.8 4.6L21 10.5C21.6 11 22 11.7 22 12.5V19C22 20.7 20.7 22 19 22H15C14.4 22 14 21.6 14 21V15C14 13.9 13.1 13 12 13C10.9 13 10 13.9 10 15V21C10 21.6 9.6 22 9 22H5C3.3 22 2 20.7 2 19V12.5C2 11.7 2.4 11 3 10.5Z" />
             </svg>
         </div>
-        <div class="mobile-nav-item" onclick="switchView('ter')" id="mobile-nav-ter">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" class="ter-play-icon custom-icon custom-icon-outline" id="mobile-ter-icon" fill="currentColor">
-                <path d="M8 5v14l11-7z"/>
-            </svg>
+        <div class="mobile-nav-item md:hidden" onclick="openTerTab()" id="mobile-nav-ter">
+            <i data-lucide="play" class="w-6 h-6"></i>
         </div>
         <div class="mobile-nav-item" onclick="switchView('create')" id="mobile-nav-create">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="ig-squircle w-7 h-7"
@@ -6423,84 +6432,6 @@
         window.openProfileFilter = () => { manageHistory('profile-filter-overlay'); toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !0);['latest', 'oldest', 'popular'].forEach(s => { const el = document.getElementById(`sort-check-${s}`); if (window.profileSort === s) el.classList.remove('hidden'); else el.classList.add('hidden') }) }; window.closeProfileFilter = () => toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !1);
         window.setProfileSort = s => { window.profileSort = s; renderProfileContent(window.currentViewingProfileId, window.currentProfileTab); closeProfileFilter() };
         window.togglePrivacy = async () => { const t = document.getElementById('toggle-privacy'), p = !t.classList.contains('active'); t.classList.toggle('active'); const s = currentUser.settings || {}; s.privateNetwork = p; await updateDoc(doc(db, "users", currentUser.id), { settings: s }); currentUser.settings = s; showToast(`Account is ${p ? 'Private' : 'Public'}`) };
-        window.isUploadedVideoPost = (post) => {
-            if (!post) return false;
-            if (post.embedVideo) return false;
-            const mediaList = Array.isArray(post.media) ? post.media : (post.media ? [post.media] : []);
-            return mediaList.some(media => {
-                const value = (media || '').toString().trim();
-                if (!value) return false;
-                if (value.startsWith('data:video')) return true;
-                if (value.includes('drive.google.com') || value.includes('youtube.com') || value.includes('youtu.be')) return false;
-                return /(\.mp4|\.mov|\.m4v|\.webm|\.avi|\.mkv|\.ogv)(\?.*)?$/i.test(value);
-            });
-        };
-
-        window.getUserUploadedTerVideos = () => {
-            const uid = currentUser?.id || auth?.currentUser?.uid || currentUser?.uid || currentUser?.userId;
-            if (!uid || !Array.isArray(posts)) return [];
-            return posts
-                .filter(post => {
-                    const authorId = post.userId || post.authorId || post.uid || post.user?.id || post.user?.uid || post.author?.uid || post.author?.id;
-                    return authorId === uid && window.isUploadedVideoPost(post);
-                })
-                .map(post => {
-                    const mediaList = Array.isArray(post.media) ? post.media : (post.media ? [post.media] : []);
-                    const videoUrl = mediaList.find(media => {
-                        const value = (media || '').toString().trim();
-                        if (!value) return false;
-                        if (value.startsWith('data:video')) return true;
-                        if (value.includes('drive.google.com') || value.includes('youtube.com') || value.includes('youtu.be')) return false;
-                        return /(\.mp4|\.mov|\.m4v|\.webm|\.avi|\.mkv|\.ogv)(\?.*)?$/i.test(value);
-                    }) || mediaList[0];
-                    return { ...post, videoUrl };
-                })
-                .filter(item => item.videoUrl);
-        };
-
-        window.terLikedPostIds = new Set();
-        window.toggleTerLike = (postId) => {
-            const button = document.querySelector(`#ter-video-list .ter-like-btn[data-post-id="${postId}"]`);
-            if (!button) return;
-            button.classList.toggle('liked');
-            if (window.terLikedPostIds.has(postId)) {
-                window.terLikedPostIds.delete(postId);
-            } else {
-                window.terLikedPostIds.add(postId);
-            }
-        };
-
-        window.renderTerView = () => {
-            const container = document.getElementById('ter-video-list');
-            if (!container) return;
-            const items = window.getUserUploadedTerVideos();
-            if (!items.length) {
-                container.innerHTML = `
-                    <div class="ter-empty-state">
-                        <div class="text-2xl font-bold mb-2">No uploaded videos yet</div>
-                        <div class="text-sm text-white/70">Upload a video to see it here.</div>
-                    </div>
-                `;
-                return;
-            }
-
-            container.innerHTML = items.map(item => `
-                <div class="ter-video-slide" data-post-id="${item.id}">
-                    <video src="${item.videoUrl}" muted playsinline preload="metadata" autoplay loop></video>
-                    <div class="ter-video-overlay">
-                        <button class="ter-like-btn ${window.terLikedPostIds.has(item.id) ? 'liked' : ''}" data-post-id="${item.id}" onclick="event.stopPropagation(); window.toggleTerLike('${item.id}')">
-                            <i data-lucide="heart" class="w-6 h-6"></i>
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-
-            container.querySelectorAll('video').forEach(video => {
-                video.play().catch(() => {});
-            });
-            refreshIcons();
-        };
-
         window.updateMobileFooterProfile = () => {
             const mProfile = document.getElementById('mobile-nav-profile');
             if (!mProfile || !currentUser) return;
@@ -6524,8 +6455,129 @@
             `;
             refreshIcons();
         };
+        window.openTerTab = () => {
+            if (window.innerWidth >= 768) return;
+            const overlay = document.getElementById('ter-tab-overlay');
+            const nav = document.getElementById('mobile-bottom-nav');
+            if (!overlay) return;
+            window.isTerTabOpen = true;
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            if (nav) {
+                nav.classList.add('mobile-nav-ter-active');
+            }
+            document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
+            const terItem = document.getElementById('mobile-nav-ter');
+            if (terItem) terItem.classList.add('active');
+            window.renderTerTab();
+        };
+        window.closeTerTab = () => {
+            const overlay = document.getElementById('ter-tab-overlay');
+            const nav = document.getElementById('mobile-bottom-nav');
+            if (overlay) {
+                overlay.classList.add('hidden');
+                overlay.classList.remove('flex');
+            }
+            if (nav) nav.classList.remove('mobile-nav-ter-active');
+            window.isTerTabOpen = false;
+            document.querySelectorAll('.mobile-nav-item').forEach(item => item.classList.remove('active'));
+            const feedItem = document.getElementById('mobile-nav-feed');
+            if (feedItem) feedItem.classList.add('active');
+        };
+        window.renderTerTab = () => {
+            const container = document.getElementById('ter-tab-content');
+            if (!container) return;
+            const videos = posts.filter(p => {
+                if (!currentUser || p.authorId !== currentUser.id || p.embedVideo) return false;
+                const mediaList = Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []);
+                return mediaList.some(item => typeof item === 'string' && (item.includes('.mp4') || item.includes('video') || item.startsWith('data:video')));
+            }).sort((a, b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0));
+            if (!videos.length) {
+                container.innerHTML = `
+                    <div class="h-full w-full flex flex-col items-center justify-center bg-black px-6 text-center">
+                        <div class="w-16 h-16 rounded-full border border-white/20 flex items-center justify-center mb-4 text-white">
+                            <i data-lucide="play" class="w-8 h-8"></i>
+                        </div>
+                        <div class="text-white font-semibold text-lg">No uploaded videos yet</div>
+                        <div class="text-white/70 text-sm mt-2">Your uploaded videos will appear here.</div>
+                    </div>
+                `;
+                refreshIcons();
+                return;
+            }
+            container.innerHTML = videos.map((p, index) => {
+                const mediaList = Array.isArray(p.media) ? p.media : (p.media ? [p.media] : []);
+                const videoUrl = mediaList.find(item => typeof item === 'string' && (item.includes('.mp4') || item.includes('video') || item.startsWith('data:video')));
+                const author = users.find(u => u.id === p.authorId) || currentUser;
+                const avatar = author?.avatar || currentUser?.avatar || '';
+                const username = author?.username || currentUser?.username || 'user';
+                const caption = (p.content || '').trim();
+                const isLiked = p.likes?.includes(currentUser.id);
+                const likeCount = p.likes?.length || 0;
+                const commentCount = p.comments?.length || 0;
+                return `
+                    <section class="ter-slide h-full w-full" data-ter-index="${index}">
+                        <video src="${videoUrl || ''}" class="ter-video" autoplay muted loop playsinline preload="metadata"></video>
+                        <div class="ter-details-panel">
+                            <div class="ter-details-left">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <img src="${avatar}" class="w-8 h-8 rounded-full object-cover border border-white/20" alt="avatar">
+                                    <div class="text-white font-semibold text-sm">@${username}</div>
+                                </div>
+                                ${caption ? `<div class="text-white/90 text-sm leading-5 whitespace-pre-wrap">${caption}</div>` : ''}
+                            </div>
+                            <div class="ter-action-stack justify-center self-center">
+                                <button class="ter-action-btn ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); window.toggleLike('${p.id}')">
+                                    <i data-lucide="heart" class="w-5 h-5 ${isLiked ? 'fill-white text-white' : 'text-white'}"></i>
+                                </button>
+                                <div class="ter-action-count">${likeCount}</div>
+                                <button class="ter-action-btn" onclick="event.stopPropagation(); openComments('${p.id}')">
+                                    <i data-lucide="message-circle" class="w-5 h-5 text-white"></i>
+                                </button>
+                                <div class="ter-action-count">${commentCount}</div>
+                                <button class="ter-action-btn" onclick="event.stopPropagation(); sharePost('${p.id}')">
+                                    <i data-lucide="send" class="w-5 h-5 text-white"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </section>
+                `;
+            }).join('');
+            refreshIcons();
+            setTimeout(() => {
+                const slides = container.querySelectorAll('.ter-slide');
+                slides.forEach(slide => {
+                    const video = slide.querySelector('video');
+                    if (video) video.play().catch(() => {});
+                });
+                if (slides.length) {
+                    const handleSnap = () => {
+                        const mid = container.scrollTop + container.clientHeight / 2;
+                        let nearest = slides[0];
+                        let nearestDist = Number.MAX_SAFE_INTEGER;
+                        slides.forEach(slide => {
+                            const top = slide.offsetTop;
+                            const dist = Math.abs(top - mid);
+                            if (dist < nearestDist) {
+                                nearestDist = dist;
+                                nearest = slide;
+                            }
+                        });
+                        nearest.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    };
+                    container.onscroll = () => {
+                        clearTimeout(window.terSnapTimer);
+                        window.terSnapTimer = setTimeout(handleSnap, 120);
+                    };
+                    container.scrollTop = 0;
+                }
+            }, 50);
+        };
         window.switchView = async (v, direction = 'none') => {
-            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'blog', 'notifications', 'settings', 'notification-settings', 'mute-friends', 'create', 'ter'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); 
+            if (window.isTerTabOpen) {
+                window.closeTerTab();
+            }
+            ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'blog', 'notifications', 'settings', 'notification-settings', 'mute-friends', 'create'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); 
             
             const ms = document.getElementById('main-sidebar'); // Left sidebar
             const tp = document.getElementById('trending-panel'); // Right sidebar
@@ -6534,7 +6586,6 @@
                   mbn = document.getElementById('mobile-bottom-nav'), 
                   mnh = document.getElementById('mobile-notifications-header'), 
                   mp = document.getElementById('main-panel'); 
-            const footerShell = document.getElementById('mobile-bottom-nav');
             
             window.currentViewName = v; 
             
@@ -6555,7 +6606,7 @@
             if (mbn) mbn.classList.remove('hidden'); 
             if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } 
             if ((v === 'profile' && window.innerWidth < 768) && mh) mh.classList.add('hidden'); 
-            if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create' || v === 'ter') && mh && window.innerWidth < 768) mh.classList.add('hidden'); 
+            if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create') && mh && window.innerWidth < 768) mh.classList.add('hidden'); 
             if (v === 'notifications') { 
                 if (mh) mh.classList.add('hidden'); 
                 if (mnh) { 
@@ -6573,10 +6624,6 @@
             // Hide mobile footer for settings-related views and the create view on small screens
             if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || (v === 'create' && window.innerWidth < 768)) && mbn && window.innerWidth < 768) mbn.classList.add('hidden'); 
             else if (mbn && window.innerWidth < 768) mbn.classList.remove('hidden');
-
-            if (footerShell && window.innerWidth < 768) {
-                footerShell.classList.toggle('ter-footer-mode', v === 'ter');
-            }
             
             // Adjust main-panel width and trending-panel visibility
             if (mp && window.innerWidth >= 1024) {
@@ -6624,10 +6671,6 @@
             const nav = document.getElementById(`nav-${v}`), mnav = document.getElementById(`mobile-nav-${v}`); 
             if (nav) nav.classList.add('active'); 
             if (mnav) mnav.classList.add('active'); 
-
-            if (v === 'ter' && window.innerWidth < 768) {
-                window.renderTerView();
-            }
 
             if (mbn) mbn.classList.remove('reel-footer');
             
@@ -12917,7 +12960,6 @@
                 'explore': document.getElementById('mobile-explore-icon'),
                 'notifications': document.getElementById('mobile-notifications-icon')
             };
-            const terIcon = document.getElementById('mobile-ter-icon');
 
             // Update desktop icons
             Object.keys(desktopIcons).forEach(view => {
@@ -12968,11 +13010,6 @@
                     }
                 }
             });
-
-            if (terIcon) {
-                terIcon.classList.remove('custom-icon-filled');
-                terIcon.classList.add('custom-icon-outline');
-            }
         };
 
         // Override switchView to include icon updates
