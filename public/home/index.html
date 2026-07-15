@@ -1897,6 +1897,10 @@
             background: #fff
         }
 
+        body.reel-mode {
+            overflow: hidden;
+        }
+
         body.reel-mode #mobile-bottom-nav {
             display: none !important
         }
@@ -1935,12 +1939,14 @@
 
         .reel-card {
             position: relative;
-            min-height: calc(100vh - 146px);
-            height: calc(100vh - 146px);
+            width: 100%;
+            min-height: 100%;
+            height: 100%;
             overflow: hidden;
             background: #000;
             border-radius: 0;
             scroll-snap-align: start;
+            scroll-snap-stop: always;
         }
 
         .reel-card video {
@@ -1949,17 +1955,29 @@
             width: 100%;
             height: 100%;
             object-fit: contain;
-            object-position: center 38%;
-            background: #000;
+            object-position: center;
+            background: linear-gradient(180deg, #000 0%, #050505 100%);
+        }
+
+        #view-reels {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
         }
 
         #view-reels .reels-scroll {
-            height: calc(100vh - 70px);
+            flex: 1 1 auto;
+            min-height: 0;
             overflow-y: auto;
+            overflow-x: hidden;
             scroll-snap-type: y mandatory;
+            scroll-padding: 0;
+            scroll-behavior: smooth;
+            overscroll-behavior-y: contain;
             -webkit-overflow-scrolling: touch;
-            padding-top: 0;
-            padding-bottom: 120px;
+            padding: 0 0 0 0;
         }
 
         #view-reels .reels-scroll > .reel-card {
@@ -1978,31 +1996,33 @@
 
         .reel-card .reel-bottom-actions {
             position: absolute;
-            right: 8px;
-            bottom: 60px;
+            right: 12px;
+            bottom: 92px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 12px;
             align-items: center;
             pointer-events: auto; 
             z-index: 3;
         }
 
         .reel-card .reel-bottom-actions .reel-action-block {
-            width: 56px;
-            height: 56px;
+            width: 54px;
+            height: 54px;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             gap: 3px;
-            background: transparent;
-            border: none;
+            background: rgba(0, 0, 0, 0.18);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 999px;
             color: #fff;
             cursor: pointer;
             pointer-events: auto;
             transition: transform 0.12s ease, color 0.12s ease, background 0.12s ease;
             padding: 0;
+            backdrop-filter: blur(10px);
         }
 
         .reel-card .reel-bottom-actions .reel-action-block:hover {
@@ -2012,8 +2032,8 @@
 
         .reel-card .reel-bottom-actions .reel-action-block i,
         .reel-card .reel-bottom-actions .reel-action-block svg {
-            width: 38px !important;
-            height: 38px !important;
+            width: 24px !important;
+            height: 24px !important;
             stroke-width: 1.7;
             display: block;
             opacity: 0.96;
@@ -2051,9 +2071,9 @@
             left: 0;
             right: 0;
             bottom: 0;
-            padding: 6px 16px 54px;
-            padding-right: 108px;
-            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.70) 34%, rgba(0,0,0,0.96) 100%);
+            padding: 8px 16px 92px;
+            padding-right: 92px;
+            background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.28) 30%, rgba(0,0,0,0.88) 100%);
             pointer-events: auto;
             z-index: 2;
             box-sizing: border-box;
@@ -2072,14 +2092,14 @@
         }
 
         .reel-card .reel-bottom-copy {
-            color: #f5f5f5;
-            font-size: 15px;
-            line-height: 1.55;
+            color: rgba(255, 255, 255, 0.95);
+            font-size: 14px;
+            line-height: 1.45;
             max-height: 7.5em;
             overflow: hidden;
             margin-bottom: 0;
             text-align: left;
-            max-width: none;
+            max-width: min(92%, 480px);
             display: block;
         }
 
@@ -2088,8 +2108,8 @@
             display: flex;
             justify-content: flex-start;
             gap: 8px;
-            color: #d1d5db;
-            font-size: 13px;
+            color: rgba(255, 255, 255, 0.76);
+            font-size: 12.5px;
             align-items: center;
             white-space: normal;
             overflow: visible;
@@ -2111,11 +2131,34 @@
             flex-direction: column;
             gap: 2px;
             min-width: 0;
+            width: 100%;
+        }
+
+        .reel-card .reel-bottom-user .username {
+            color: #fff;
+            font-size: 15px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .reel-card .reel-follow-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.72);
+            color: #fff;
+            background: rgba(255, 255, 255, 0.12);
+            font-size: 12px;
+            font-weight: 700;
+            margin-left: 6px;
+            white-space: nowrap;
         }
 
         .reel-card .reel-audio-inline {
-            color: #d1d5db;
-            font-size: 13px;
+            color: rgba(255, 255, 255, 0.76);
+            font-size: 12.5px;
             line-height: 1.2;
             display: inline-flex;
             align-items: center;
@@ -6708,12 +6751,16 @@
             if (mnav) mnav.classList.add('active'); 
 
             if (v === 'reels' && window.innerWidth < 768) {
+                document.body.classList.add('reel-mode');
+                document.body.style.overflow = 'hidden';
                 if (mbn) mbn.classList.add('reel-footer');
                 if (document.getElementById('reels-container')?.children.length === 0) {
                     window.renderReels();
                 }
-            } else if (mbn) {
-                mbn.classList.remove('reel-footer');
+            } else {
+                document.body.classList.remove('reel-mode');
+                document.body.style.overflow = '';
+                if (mbn) mbn.classList.remove('reel-footer');
             }
             
             if (v === 'create' && !window.editingPostId) {
@@ -6943,7 +6990,10 @@
                             <div class="reel-bottom-user">
                                 <img src="${author.avatar}" alt="${author.username || 'Creator'}" class="w-10 h-10 rounded-full object-cover border border-white/20">
                                 <div class="reel-user-meta">
-                                    <div class="username">${author.username || author.name || 'Creator'}</div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="username">${author.username || author.name || 'Creator'}</div>
+                                        <button type="button" class="reel-follow-btn" onclick="event.stopPropagation();">Follow</button>
+                                    </div>
                                     <div class="reel-handle"><span class="reel-audio-inline"><i data-lucide="music" class="w-4 h-4"></i> Original audio · ${author.username || 'Creator'}</span></div>
                                 </div>
                             </div>
