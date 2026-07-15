@@ -1480,6 +1480,12 @@
             padding-bottom: calc(80px + env(safe-area-inset-bottom));
         }
 
+        /* Force the non-active reels view to stay hidden */
+        #view-reels.hidden,
+        #view-reels[hidden] {
+            display: none !important;
+        }
+
         /* Center header and footer content */
         header, #mobile-bottom-nav, footer {
             display: flex;
@@ -5256,7 +5262,7 @@
         </aside>
     </div>
     <nav id="mobile-bottom-nav"
-        class="md:hidden fixed bottom-0 left-0 w-full bg-white border-t border-[#eaecf0] h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300" style="border-top-color: rgba(234,236,240,0.95);">
+        class="md:hidden fixed bottom-0 left-0 w-full bg-white h-[64px] flex items-center justify-around z-50 pb-[env(safe-area-inset-bottom)] px-2 shadow-lg transition-transform duration-300" style="border-top: none;">
         <div class="mobile-nav-item active" onclick="switchView('feed')" id="mobile-nav-feed">
             <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24"
                 class="custom-icon custom-icon-filled" id="mobile-feed-icon" style="stroke-width: 2;">
@@ -6835,7 +6841,37 @@
                 renderMuteFriendsList();
             }
 
-            if (v === 'feed') { mnav[0]?.classList.add('active'); if (document.getElementById('feed-container').children.length === 0) renderFeed() } else if (v === 'explore') { mnav[1]?.classList.add('active'); if (!window.activeExploreTab) switchExploreMainTab('posts'); else { const currentTab = window.activeExploreTab; switchExploreMainTab(currentTab); } } else if (v === 'reels') { mnav[1]?.classList.add('active'); if (document.getElementById('reels-container').children.length === 0) renderReels(); } else if (v === 'network') { if (nav) nav.classList.add('active'); if (document.getElementById('network-content').children.length === 0) renderNetwork() } else if (v === 'notifications') { if (nav) nav.classList.add('active'); mnav[3]?.classList.add('active'); renderNotifications(); const un = notifications.filter(n => !n.read); if (un.length > 0) { const b = writeBatch(db); un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 })); await b.commit() } } else if (v === 'saved') { if (nav) nav.classList.add('active'); if (document.getElementById('saved-container').children.length === 0) renderSaved() } else if (v === 'profile') { mnav[4]?.classList.add('active') }
+            if (v === 'feed') {
+                mnav[0]?.classList.add('active');
+                if (document.getElementById('feed-container').children.length === 0) renderFeed();
+            } else if (v === 'explore') {
+                if (!window.activeExploreTab) switchExploreMainTab('posts');
+                else {
+                    const currentTab = window.activeExploreTab;
+                    switchExploreMainTab(currentTab);
+                }
+            } else if (v === 'reels') {
+                mnav[1]?.classList.add('active');
+                if (document.getElementById('reels-container').children.length === 0) renderReels();
+            } else if (v === 'network') {
+                if (nav) nav.classList.add('active');
+                if (document.getElementById('network-content').children.length === 0) renderNetwork();
+            } else if (v === 'notifications') {
+                if (nav) nav.classList.add('active');
+                mnav[3]?.classList.add('active');
+                renderNotifications();
+                const un = notifications.filter(n => !n.read);
+                if (un.length > 0) {
+                    const b = writeBatch(db);
+                    un.forEach(n => b.update(doc(db, "notifications", n.id), { read: !0 }));
+                    await b.commit();
+                }
+            } else if (v === 'saved') {
+                if (nav) nav.classList.add('active');
+                if (document.getElementById('saved-container').children.length === 0) renderSaved();
+            } else if (v === 'profile') {
+                mnav[4]?.classList.add('active');
+            }
             if (mp) {
                 if (v === 'profile') {
                     mp.classList.add('profile-view');
