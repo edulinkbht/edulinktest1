@@ -2079,6 +2079,45 @@
             opacity: 1;
         }
 
+        .reel-speed-hint {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 12px;
+            color: #fff;
+            font-weight: 700;
+            font-size: 14px;
+            letter-spacing: 0.02em;
+            text-align: center;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.55);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 13;
+        }
+
+        .reel-speed-hint .reel-speed-hint-subtitle {
+            margin-top: 2px;
+            font-size: 11px;
+            font-weight: 600;
+            opacity: 0.92;
+        }
+
+        .reel-card.reel-speed-active .reel-speed-hint {
+            opacity: 1;
+        }
+
+        .reel-card.reel-speed-active .reel-left-copy,
+        .reel-card.reel-speed-active .reel-right-actions {
+            opacity: 0;
+            pointer-events: none;
+        }
+
         .reel-pause-overlay i,
         .reel-pause-overlay svg,
         .reel-play-overlay i,
@@ -7114,17 +7153,27 @@
                         <img src="${author.avatar || 'https://i.imghippo.com/files/ID6752xZg.webp'}" alt="${author.username || 'Creator'} audio org" class="reel-audio-org-pfp" onclick="event.stopPropagation();">
                     </div>
                 </div>
-                <div class="reel-pause-overlay hidden" aria-hidden="true"><i data-lucide="pause"></i></div>
+                    <div class="reel-pause-overlay hidden" aria-hidden="true"><i data-lucide="pause"></i></div>
                 <div class="reel-play-overlay hidden" aria-hidden="true"><i data-lucide="play"></i></div>
+                <div class="reel-speed-hint hidden" aria-hidden="true">
+                    <div>2x speed</div>
+                    <div class="reel-speed-hint-subtitle">Release to stop 2x</div>
+                </div>
                 <video src="${videoSrc}" autoplay loop playsinline preload="metadata"></video>
             `;
 
             const video = post.querySelector('video');
             const pauseOverlay = post.querySelector('.reel-pause-overlay');
             const playOverlay = post.querySelector('.reel-play-overlay');
+            const speedHint = post.querySelector('.reel-speed-hint');
+            let longPressTimer = null;
+            let longPressTriggered = false;
             if (video) {
                 video.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    if (post.classList.contains('reel-speed-active')) {
+                        return;
+                    }
                     if (video.paused) {
                         video.play().catch(() => {});
                         if (pauseOverlay) {
@@ -7153,7 +7202,49 @@
                 });
             }
 
+            post.addEventListener('pointerdown', (e) => {
+                if (e.button !== 0 && e.pointerType === 'mouse') return;
+                if (e.target.closest('.reel-action-block, .reel-follow-btn, .reel-audio-org-pfp')) return;
+                if (longPressTimer) clearTimeout(longPressTimer);
+                longPressTimer = setTimeout(() => {
+                    longPressTimer = null;
+                    if (!window.isReelsPlaybackActive()) return;
+                    window.clearReelSpeedOverride();
+                    window.reelState.speedHolding = true;
+                    window.reelState.speedCard = post;
+                    post.classList.add('reel-speed-active');
+                    speedHint?.classList.remove('hidden');
+                    video.playbackRate = 2;
+                    longPressTriggered = true;
+                    if (video.paused) video.play().catch(() => {});
+                }, 360);
+            });
+
+            const endSpeedHold = () => {
+                if (longPressTimer) {
+                    clearTimeout(longPressTimer);
+                    longPressTimer = null;
+                }
+                if (!window.reelState.speedHolding || window.reelState.speedCard !== post) return;
+                window.clearReelSpeedOverride();
+            };
+
+            post.addEventListener('pointerup', endSpeedHold);
+            post.addEventListener('pointercancel', endSpeedHold);
+            post.addEventListener('pointerleave', (event) => {
+                if (event.pointerType === 'mouse') endSpeedHold();
+            });
+
             post.addEventListener('click', (e) => {
+                if (longPressTriggered) {
+                    longPressTriggered = false;
+                    e.stopPropagation();
+                    return;
+                }
+                if (post.classList.contains('reel-speed-active')) {
+                    e.stopPropagation();
+                    return;
+                }
                 if (window.innerWidth < 768 && !e.target.closest('video')) {
                     e.stopPropagation();
                     window.openPostView(p.id);
@@ -7190,6 +7281,20 @@
             touchStartY: 0,
             touchDelta: 0,
             seeking: false,
+            speedHolding: false,
+            speedCard: null,
+        };
+
+        window.clearReelSpeedOverride = () => {
+            const activeCard = window.reelState.speedCard;
+            if (activeCard) {
+                activeCard.classList.remove('reel-speed-active');
+                activeCard.querySelector('.reel-speed-hint')?.classList.add('hidden');
+                const activeVideo = activeCard.querySelector('video');
+                if (activeVideo) activeVideo.playbackRate = 1;
+            }
+            window.reelState.speedHolding = false;
+            window.reelState.speedCard = null;
         };
 
         window.updateReelProgressUI = (percent) => {
@@ -7290,6 +7395,7 @@
             videos.forEach(video => {
                 if (!video.paused) video.pause();
             });
+            window.clearReelSpeedOverride();
         };
 
         window.resumeActiveReel = () => {
