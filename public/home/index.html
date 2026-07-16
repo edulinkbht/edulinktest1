@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport"
         content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+    <meta name="theme-color" content="#ffffff">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>EduLink</title>
     <link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -21,7 +23,15 @@
             --text-secondary: #374151;
             --outline: #e5e7eb;
             --hover-bg: #f2f2f2;
-            --primary: #000000
+            --primary: #000000;
+            --app-nav-bg: #ffffff;
+            --app-nav-text: #111827;
+            --app-nav-muted: #6b7280;
+            --app-nav-border: rgba(15, 23, 42, 0.08);
+            --app-nav-shadow: 0 -8px 24px rgba(15, 15, 15, 0.06);
+            --app-status-bar-bg: #ffffff;
+            --app-status-bar-color: #111827;
+            --safe-area-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         body {
@@ -31,6 +41,23 @@
             overflow: hidden;
             overscroll-behavior-y: none;
             -webkit-tap-highlight-color: transparent;
+            transition: background-color 0.24s ease, color 0.24s ease;
+        }
+
+        body[data-tab-theme="reels"] {
+            --background: #121212;
+            --surface: #121212;
+            --on-surface: #ffffff;
+            --text-secondary: rgba(255, 255, 255, 0.72);
+            --outline: rgba(255, 255, 255, 0.12);
+            --hover-bg: rgba(255, 255, 255, 0.08);
+            --app-nav-bg: #121212;
+            --app-nav-text: #ffffff;
+            --app-nav-muted: rgba(255, 255, 255, 0.72);
+            --app-nav-border: rgba(255, 255, 255, 0.12);
+            --app-nav-shadow: 0 -12px 28px rgba(0, 0, 0, 0.35);
+            --app-status-bar-bg: #121212;
+            --app-status-bar-color: #ffffff;
         }
 
         #view-feed, #view-explore, #view-profile, #view-notifications, #view-saved, #view-network, #view-events {
@@ -1924,34 +1951,37 @@
         }
 
         #mobile-bottom-nav {
-            background: color-mix(in srgb, var(--surface) 92%, transparent);
-            border-top-color: var(--outline);
-            box-shadow: 0 -8px 24px rgba(15, 15, 15, 0.06);
+            background: var(--app-nav-bg);
+            color: var(--app-nav-text);
+            border-top-color: var(--app-nav-border);
+            box-shadow: var(--app-nav-shadow);
             backdrop-filter: blur(14px);
             -webkit-backdrop-filter: blur(14px);
-            transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+            transition: background-color 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease, color 0.24s ease;
+            padding-bottom: calc(0.7rem + var(--safe-area-bottom));
+            padding-top: 0.35rem;
         }
 
         body.reel-mode #mobile-bottom-nav {
             display: flex !important;
-            background: linear-gradient(180deg, rgba(10, 10, 10, 0.96), rgba(0, 0, 0, 0.98));
-            border-top-color: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.35);
+            background: var(--app-nav-bg);
+            border-top-color: var(--app-nav-border);
+            box-shadow: var(--app-nav-shadow);
         }
 
         body.reel-mode #mobile-bottom-nav .mobile-nav-item {
-            color: rgba(255, 255, 255, 0.84);
+            color: var(--app-nav-muted);
         }
 
         body.reel-mode #mobile-bottom-nav .mobile-nav-item.active {
-            color: #ffffff;
+            color: var(--app-nav-text);
         }
 
         #mobile-bottom-nav.reel-footer {
             display: flex !important;
-            background: linear-gradient(180deg, rgba(18, 18, 18, 0.96), rgba(8, 8, 8, 0.98));
-            border-top-color: rgba(255, 255, 255, 0.08);
-            box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.35);
+            background: var(--app-nav-bg);
+            border-top-color: var(--app-nav-border);
+            box-shadow: var(--app-nav-shadow);
         }
 
         #mobile-bottom-nav.reel-footer .mobile-nav-item .custom-icon,
@@ -6914,6 +6944,27 @@
         window.openProfileFilter = () => { manageHistory('profile-filter-overlay'); toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !0);['latest', 'oldest', 'popular'].forEach(s => { const el = document.getElementById(`sort-check-${s}`); if (window.profileSort === s) el.classList.remove('hidden'); else el.classList.add('hidden') }) }; window.closeProfileFilter = () => toggleModalAnim('profile-filter-overlay', 'profile-filter-modal', !1);
         window.setProfileSort = s => { window.profileSort = s; renderProfileContent(window.currentViewingProfileId, window.currentProfileTab); closeProfileFilter() };
         window.togglePrivacy = async () => { const t = document.getElementById('toggle-privacy'), p = !t.classList.contains('active'); t.classList.toggle('active'); const s = currentUser.settings || {}; s.privateNetwork = p; await updateDoc(doc(db, "users", currentUser.id), { settings: s }); currentUser.settings = s; showToast(`Account is ${p ? 'Private' : 'Public'}`) };
+        window.updateTabTheme = (view = window.currentViewName || 'feed') => {
+            const isReels = view === 'reels';
+            const themeColor = isReels ? '#121212' : '#ffffff';
+            document.body.dataset.tabTheme = isReels ? 'reels' : 'default';
+            document.documentElement.style.setProperty('--app-nav-bg', themeColor);
+            document.documentElement.style.setProperty('--app-status-bar-bg', themeColor);
+            document.documentElement.style.setProperty('--app-status-bar-color', isReels ? '#ffffff' : '#111827');
+            document.documentElement.style.setProperty('--background', themeColor);
+            document.documentElement.style.setProperty('--surface', themeColor);
+            document.documentElement.style.setProperty('--on-surface', isReels ? '#ffffff' : '#0f0f0f');
+            const meta = document.querySelector('meta[name="theme-color"]');
+            if (meta) {
+                meta.setAttribute('content', themeColor);
+            } else {
+                const newMeta = document.createElement('meta');
+                newMeta.name = 'theme-color';
+                newMeta.content = themeColor;
+                document.head.appendChild(newMeta);
+            }
+        };
+
         window.updateMobileFooterProfile = () => {
             const mProfile = document.getElementById('mobile-nav-profile');
             if (!mProfile || !currentUser) return;
@@ -6949,6 +7000,7 @@
                   mp = document.getElementById('main-panel'); 
             
             window.currentViewName = v; 
+            window.updateTabTheme(v);
             
             // Only show sidebar on desktop
             if (ms && window.innerWidth >= 1024) {
@@ -7198,6 +7250,7 @@
 
             syncURLState(); setTimeout(() => refreshIcons(), 10); window.updateMobileFooterProfile();
         };
+        window.updateTabTheme('feed');
         window.switchNetworkTab = t => { activeNetworkTab = t; document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active')); document.getElementById(`net-tab-${t}`)?.classList.add('active'); renderNetwork(); syncURLState() };
 
         window.renderFeed = async (t) => {
