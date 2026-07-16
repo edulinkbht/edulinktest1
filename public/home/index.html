@@ -2295,7 +2295,7 @@
 
         .reel-left-copy .reel-follow-btn {
             margin-left: auto;
-            border: none;
+            border: 1px solid transparent;
             border-radius: 14px;
             background: rgba(255,255,255,0.12);
             color: #fff;
@@ -2303,6 +2303,19 @@
             font-size: 12px;
             font-weight: 700;
             cursor: pointer;
+            min-width: 82px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+
+        .reel-left-copy .reel-follow-btn.following {
+            background: #fff;
+            color: #374151;
+            border-color: #e5e7eb;
+        }
+
+        .reel-left-copy .reel-follow-btn:hover {
+            opacity: 0.9;
         }
 
         .reel-left-copy .reel-audio-track {
@@ -7185,6 +7198,8 @@
             const contentText = p.content ? p.content.replace(/</g, '&lt;').replace(/>/g, '&gt;') : '';
             const isLiked = Array.isArray(p.likes) && p.likes.includes(currentUser?.id);
             const isSaved = Array.isArray(savedPosts) && savedPosts.includes(p.id);
+            const isFollowing = Array.isArray(currentUser?.following) && currentUser.following.includes(author.id);
+            const isFriend = window.isFriend ? window.isFriend(author.id) : false;
             post.className = 'reel-card px-0';
             post.innerHTML = `
                 <div class="reel-overlay">
@@ -7192,7 +7207,7 @@
                         <div class="reel-identity-row">
                             <img src="${author.avatar || 'https://i.imghippo.com/files/ID6752xZg.webp'}" alt="${author.username || 'Creator'}" class="reel-avatar">
                             <div class="reel-username">${author.username || author.name || 'Creator'}</div>
-                            <button class="reel-follow-btn">Follow</button>
+                            ${author.id !== currentUser?.id ? `<button class="reel-follow-btn js-follow-btn-${author.id} ${isFollowing ? 'following' : ''}" onclick="event.preventDefault(); event.stopPropagation(); toggleFollow('${author.id}')">${isFollowing ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : ''}
                         </div>
                         <div class="reel-audio-track">
                             <i data-lucide="music"></i>
@@ -7201,9 +7216,9 @@
                         <div class="reel-caption-text">${contentText || ' '}</div>
                     </div>
                     <div class="reel-right-actions">
-                        <div class="reel-action-block like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')">
+                        <div class="reel-action-block like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.preventDefault(); event.stopPropagation(); toggleLike('${p.id}')">
                             <i data-lucide="heart"></i>
-                            <span class="reel-action-count">${likeCount}</span>
+                            <span class="reel-action-count js-like-count-${p.id}">${likeCount}</span>
                         </div>
                         <div class="reel-action-block" onclick="event.stopPropagation(); openComments('${p.id}')">
                             <i data-lucide="message-circle"></i>
@@ -7213,7 +7228,7 @@
                             <i data-lucide="send"></i>
                             <span class="reel-action-label">Share</span>
                         </div>
-                        <div class="reel-action-block bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')">
+                        <div class="reel-action-block bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.preventDefault(); event.stopPropagation(); toggleSave('${p.id}')">
                             <i data-lucide="bookmark"></i>
                             <span class="reel-action-label">Save</span>
                         </div>
@@ -7325,6 +7340,10 @@
                     return;
                 }
                 if (post.classList.contains('reel-speed-active')) {
+                    e.stopPropagation();
+                    return;
+                }
+                if (e.target.closest('.reel-action-block, .reel-follow-btn, .reel-audio-org-pfp')) {
                     e.stopPropagation();
                     return;
                 }
@@ -9619,7 +9638,13 @@
             if (ovBtn) { if (isSaving) { ovBtn.classList.add('text-blue-600'); ovBtn.classList.remove('fill-yellow-500', 'text-yellow-500', 'text-gray-700') } else { ovBtn.classList.remove('text-blue-600', 'fill-yellow-500', 'text-yellow-500'); ovBtn.classList.add('text-gray-700') } } 
             const movBtn = document.getElementById(`mobile-overlay-save-btn-${pid}`); 
             if (movBtn) { if (isSaving) { movBtn.classList.add('text-blue-600'); movBtn.classList.remove('fill-yellow-500', 'text-yellow-500', 'text-900') } else { movBtn.classList.remove('text-blue-600', 'fill-yellow-500', 'text-yellow-500'); movBtn.classList.add('text-900') } } 
-            if (isSaving) savedPosts.push(pid); else savedPosts = savedPosts.filter(x => x !== pid); 
+            if (isSaving) {
+                if (!savedPosts.includes(pid)) savedPosts.push(pid);
+                if (!currentUser.saved?.includes(pid)) currentUser.saved = [...(currentUser.saved || []), pid];
+            } else {
+                savedPosts = savedPosts.filter(x => x !== pid);
+                currentUser.saved = (currentUser.saved || []).filter(x => x !== pid);
+            }
             await updateDoc(doc(db, "users", currentUser.id), { saved: isSaving ? arrayUnion(pid) : arrayRemove(pid) });
             
             // Update frame UI - all frame save icons
@@ -9630,6 +9655,12 @@
                     icon.classList.remove('fill-current');
                 }
             });
+
+            if (window.currentViewName === 'reels') {
+                window.renderReels();
+            } else if (window.currentViewName === 'saved') {
+                window.renderSaved();
+            }
         };
         window.toggleRepost = async (pid) => {
             if (!currentUser) return;
@@ -10182,7 +10213,8 @@
             const m = doc(db, "users", currentUser.id), 
                   t = doc(db, "users", uid), 
                   u = users.find(x => x.id === uid), 
-                  isF = currentUser.following.includes(uid), 
+                  followingList = Array.isArray(currentUser.following) ? currentUser.following : [],
+                  isF = followingList.includes(uid), 
                   priv = u?.settings?.privateNetwork,
                   isFriend = window.isFriend(uid); 
 
@@ -10227,14 +10259,19 @@
             // Update button label
             const updateButton = (b, isNowF) => {
                 const isNowFriend = window.isFriend(uid);
+                const label = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
+                const isReelButton = b.classList.contains('reel-follow-btn');
                 if (b.id === 'profile-follow-btn') {
-                    b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
+                    b.innerText = label;
                     b.className = `js-follow-btn-${uid} ${isNowF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#3D7EEB] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
                 } else if (b.id === 'pp-follow-btn') {
-                    b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
+                    b.innerText = label;
                     b.className = `flex-1 py-3 ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
+                } else if (isReelButton) {
+                    b.innerText = label;
+                    b.className = `reel-follow-btn js-follow-btn-${uid} ${isNowF ? 'following' : ''}`;
                 } else {
-                    b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
+                    b.innerText = label;
                     b.className = `js-follow-btn-${uid} min-w-[90px] px-4 py-1.5 rounded-lg text-[13px] font-bold ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} transition-all hover:opacity-90`;
                 }
             };
@@ -10264,6 +10301,9 @@
             // Re-render relevant lists if they are open
             if (window.renderLikesList) window.renderLikesList();
             if (window.renderUserList) window.renderUserList();
+            if (window.currentViewName === 'reels') {
+                window.renderReels();
+            }
         };
         window.showProfile = (uid, tab = 'posts') => {
             if (!uid) uid = currentUser.id;
