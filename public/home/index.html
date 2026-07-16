@@ -2362,7 +2362,26 @@
             transition: fill 0.2s ease, color 0.2s ease;
         }
 
+        .reel-right-actions .reel-action-block .reel-like-icon,
+        .reel-right-actions .reel-action-block .reel-save-icon {
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
         .reel-right-actions .reel-action-block.active i {
+            fill: #ef4444;
+            color: #ef4444;
+        }
+
+        .reel-right-actions .reel-action-block.bookmark.active i {
+            fill: #fff;
+            color: #fff;
+        }
+
+        .reel-right-actions .reel-action-block.like.active i {
             fill: #ef4444;
             color: #ef4444;
         }
@@ -7200,6 +7219,8 @@
             const isSaved = Array.isArray(savedPosts) && savedPosts.includes(p.id);
             const isFollowing = Array.isArray(currentUser?.following) && currentUser.following.includes(author.id);
             const isFriend = window.isFriend ? window.isFriend(author.id) : false;
+            const likeIcon = isLiked ? '<svg viewBox="0 0 24 24" fill="currentColor" class="reel-like-icon"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>' : '<i data-lucide="heart"></i>';
+            const saveIcon = isSaved ? '<svg viewBox="0 0 24 24" fill="currentColor" class="reel-save-icon"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-3-7 3V5a1 1 0 0 1 1-1z"></path></svg>' : '<i data-lucide="bookmark"></i>';
             post.className = 'reel-card px-0';
             post.innerHTML = `
                 <div class="reel-overlay">
@@ -7217,7 +7238,7 @@
                     </div>
                     <div class="reel-right-actions">
                         <div class="reel-action-block like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.preventDefault(); event.stopPropagation(); toggleLike('${p.id}')">
-                            <i data-lucide="heart"></i>
+                            ${likeIcon}
                             <span class="reel-action-count js-like-count-${p.id}">${likeCount}</span>
                         </div>
                         <div class="reel-action-block" onclick="event.stopPropagation(); openComments('${p.id}')">
@@ -7229,7 +7250,7 @@
                             <span class="reel-action-label">Share</span>
                         </div>
                         <div class="reel-action-block bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.preventDefault(); event.stopPropagation(); toggleSave('${p.id}')">
-                            <i data-lucide="bookmark"></i>
+                            ${saveIcon}
                             <span class="reel-action-label">Save</span>
                         </div>
                         <img src="${author.avatar || 'https://i.imghippo.com/files/ID6752xZg.webp'}" alt="${author.username || 'Creator'} audio org" class="reel-audio-org-pfp" onclick="event.stopPropagation();">
@@ -7249,6 +7270,7 @@
             const playOverlay = post.querySelector('.reel-play-overlay');
             const speedHint = post.querySelector('.reel-speed-hint');
             let longPressTimer = null;
+            let lastTapTime = 0;
             let longPressTriggered = false;
             let holdStartX = 0;
             let holdStartY = 0;
@@ -7352,6 +7374,24 @@
                     window.openPostView(p.id);
                 }
             });
+
+            post.addEventListener('touchend', (e) => {
+                if (!window.innerWidth < 768) return;
+                if (e.target.closest('.reel-action-block, .reel-follow-btn, .reel-audio-org-pfp')) return;
+                const now = Date.now();
+                if (now - lastTapTime < 280) {
+                    lastTapTime = 0;
+                    const heartOverlay = document.createElement('div');
+                    heartOverlay.className = 'post-double-tap-heart';
+                    heartOverlay.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>';
+                    post.appendChild(heartOverlay);
+                    requestAnimationFrame(() => heartOverlay.classList.add('show'));
+                    heartOverlay.addEventListener('animationend', () => heartOverlay.remove(), { once: true });
+                    window.toggleLike(p.id, true);
+                } else {
+                    lastTapTime = now;
+                }
+            }, { passive: false });
             return post;
         };
 
