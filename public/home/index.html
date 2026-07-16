@@ -2434,23 +2434,21 @@
             justify-content: center;
         }
 
-        .reel-right-actions .reel-action-block.active .reel-like-icon,
-        .reel-right-actions .reel-action-block.active .reel-save-icon {
+        .reel-right-actions .reel-action-block.like.active .reel-like-icon {
             color: #ef4444;
-            fill: currentColor;
-            stroke: currentColor;
+            fill: #ef4444;
+            stroke: #ef4444;
         }
 
         .reel-right-actions .reel-action-block.bookmark.active .reel-save-icon {
             color: #fff;
-            fill: currentColor;
-            stroke: currentColor;
+            fill: #fff;
+            stroke: #fff;
         }
 
-        .reel-right-actions .reel-action-block.like.active .reel-like-icon {
-            color: #ef4444;
-            fill: currentColor;
-            stroke: currentColor;
+        .reel-right-actions .reel-action-block .reel-like-icon,
+        .reel-right-actions .reel-action-block .reel-save-icon {
+            opacity: 1;
         }
 
         .reel-right-actions .reel-action-count,
@@ -9473,10 +9471,12 @@
             toggleModalAnim('user-list-overlay', 'user-list-modal', false);
         };
         window.toggleLike = async (pid, forceLike = false) => { 
+            const currentUserId = currentUser?.id;
+            if (!currentUserId) return;
             const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid); 
             if (!p) return;
             if (!p.likes) p.likes = [];
-            const wasLiked = p.likes.includes(currentUser.id);
+            const wasLiked = p.likes.includes(currentUserId);
 
             if (forceLike && wasLiked) {
                 const likeBtn = document.querySelector(`.js-like-btn-${pid}`);
@@ -9489,11 +9489,23 @@
             }
 
             const isLiking = !wasLiked;
+            if (wasLiked) {
+                p.likes = p.likes.filter(id => id !== currentUserId);
+            } else {
+                p.likes = [...p.likes, currentUserId];
+            }
+
+            const newLikeCount = p.likes.length;
+            const countText = newLikeCount === 0 ? 'Like' : newLikeCount;
             document.querySelectorAll(`.reel-action-block.like.js-like-btn-${pid}`).forEach(b => {
                 b.classList.toggle('active', isLiking);
-                const countEl = b.querySelector(`.js-like-count-${pid}`);
-                const countMarkup = countEl ? countEl.outerHTML : `<span class="reel-action-count js-like-count-${pid}">${p.likes.length}</span>`;
-                b.innerHTML = `${window.getReelLikeIconMarkup(isLiking)}${countMarkup}`;
+                b.innerHTML = `${window.getReelLikeIconMarkup(isLiking)}<span class="reel-action-count js-like-count-${pid}">${countText}</span>`;
+                const icon = b.querySelector('.reel-like-icon');
+                if (icon) {
+                    icon.style.color = isLiking ? '#ef4444' : '#fff';
+                    icon.style.fill = isLiking ? '#ef4444' : 'none';
+                    icon.style.stroke = isLiking ? '#ef4444' : 'currentColor';
+                }
             });
             document.querySelectorAll(`.js-like-btn-${pid}`).forEach(b => {
                 if (b.classList.contains('reel-action-block')) return;
@@ -9502,23 +9514,24 @@
                 b.classList.toggle('text-gray-700', !isLiking);
             });
             
-            if (wasLiked) {
-                p.likes = p.likes.filter(id => id !== currentUser.id);
-                await updateDoc(r, { likes: arrayRemove(currentUser.id) });
-            } else {
-                p.likes.push(currentUser.id);
-                await updateDoc(r, { likes: arrayUnion(currentUser.id) });
-                if (p.authorId !== currentUser.id) sendNotification(p.authorId, 'like', 'liked your post', pid); 
-                // Notify reposters
-                users.filter(u => u.reposts?.includes(pid)).forEach(rep => {
-                    if (rep.id !== currentUser.id && rep.id !== p.authorId) {
-                        sendNotification(rep.id, 'repost_like', 'liked the post you reposted', pid);
-                    }
-                });
+            try {
+                if (wasLiked) {
+                    await updateDoc(r, { likes: arrayRemove(currentUserId) });
+                } else {
+                    await updateDoc(r, { likes: arrayUnion(currentUserId) });
+                    if (p.authorId !== currentUserId) sendNotification(p.authorId, 'like', 'liked your post', pid); 
+                    // Notify reposters
+                    users.filter(u => u.reposts?.includes(pid)).forEach(rep => {
+                        if (rep.id !== currentUserId && rep.id !== p.authorId) {
+                            sendNotification(rep.id, 'repost_like', 'liked the post you reposted', pid);
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to update like state:', error);
             }
             
             // Update all like counts
-            const newLikeCount = p.likes.length;
             document.querySelectorAll(`.js-like-count-${pid}`).forEach(el => { let t = el.innerText; let c = parseInt(t); if (isNaN(c)) c = 0; el.innerText = newLikeCount === 0 ? 'Like' : newLikeCount }); 
             
             // Update overlay and mobile overlay like buttons
@@ -9780,10 +9793,16 @@
             toggleModalAnim('likes-overlay', 'likes-modal', false);
         };
         window.toggleSave = async (pid) => { 
-            const isSaving = !document.querySelector(`.js-save-btn-${pid}`)?.classList.contains('active'); 
-            document.querySelectorAll(`.js-save-btn-${pid}`).forEach(b => {
+            const isSaving = !document.querySelector(`.reel-action-block.bookmark.js-save-btn-${pid}`)?.classList.contains('active'); 
+            document.querySelectorAll(`.reel-action-block.bookmark.js-save-btn-${pid}`).forEach(b => {
                 b.classList.toggle('active', isSaving);
                 b.innerHTML = `${window.getReelSaveIconMarkup(isSaving)}<span class="reel-action-label">Save</span>`;
+                const icon = b.querySelector('.reel-save-icon');
+                if (icon) {
+                    icon.style.color = '#fff';
+                    icon.style.fill = isSaving ? '#fff' : 'none';
+                    icon.style.stroke = isSaving ? '#fff' : 'currentColor';
+                }
             }); 
             showToast(isSaving ? "Saved" : "Removed"); 
             const ovBtn = document.getElementById('post-view-save-btn'); 
