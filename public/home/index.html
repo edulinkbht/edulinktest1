@@ -2404,24 +2404,23 @@
             justify-content: center;
         }
 
-        .reel-right-actions .reel-action-block.active i {
-            fill: #ef4444;
+        .reel-right-actions .reel-action-block.active .reel-like-icon,
+        .reel-right-actions .reel-action-block.active .reel-save-icon {
             color: #ef4444;
+            fill: currentColor;
+            stroke: currentColor;
         }
 
-        .reel-right-actions .reel-action-block.bookmark.active i {
-            fill: #fff;
+        .reel-right-actions .reel-action-block.bookmark.active .reel-save-icon {
             color: #fff;
+            fill: currentColor;
+            stroke: currentColor;
         }
 
-        .reel-right-actions .reel-action-block.like.active i {
-            fill: #ef4444;
+        .reel-right-actions .reel-action-block.like.active .reel-like-icon {
             color: #ef4444;
-        }
-
-        .reel-right-actions .reel-action-block.bookmark.active i {
-            fill: #fff;
-            color: #fff;
+            fill: currentColor;
+            stroke: currentColor;
         }
 
         .reel-right-actions .reel-action-count,
@@ -7238,6 +7237,9 @@
             return media.some(m => typeof m === 'string' && (m.includes('video') || m.endsWith('.mp4') || m.startsWith('data:video')));
         };
 
+        window.getReelLikeIconMarkup = (active) => active ? `<svg viewBox="0 0 24 24" class="reel-like-icon" fill="currentColor" stroke="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>` : `<svg viewBox="0 0 24 24" class="reel-like-icon" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 20.8l-1.1-1.04C5.7 14.9 2.8 12.2 2.8 8.9 2.8 6.5 4.7 4.6 7.1 4.6c1.3 0 2.6.6 3.4 1.7.8-1.1 2.1-1.7 3.4-1.7 2.4 0 4.3 1.9 4.3 4.3 0 3.3-2.9 6-8.1 10.8L12 20.8z"></path></svg>`;
+        window.getReelSaveIconMarkup = (active) => active ? `<svg viewBox="0 0 24 24" class="reel-save-icon" fill="currentColor" stroke="currentColor"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-3-7 3V5a1 1 0 0 1 1-1z"></path></svg>` : `<svg viewBox="0 0 24 24" class="reel-save-icon" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-3-7 3V5a1 1 0 0 1 1-1z"></path></svg>`;
+
         window.createReelCard = (p) => {
             const author = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', username: 'Creator' };
             const media = Array.isArray(p.media) ? p.media : [p.media];
@@ -7252,8 +7254,8 @@
             const isSaved = Array.isArray(savedPosts) && savedPosts.includes(p.id);
             const isFollowing = Array.isArray(currentUser?.following) && currentUser.following.includes(author.id);
             const isFriend = window.isFriend ? window.isFriend(author.id) : false;
-            const likeIcon = isLiked ? '<svg viewBox="0 0 24 24" fill="currentColor" class="reel-like-icon"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>' : '<i data-lucide="heart"></i>';
-            const saveIcon = isSaved ? '<svg viewBox="0 0 24 24" fill="currentColor" class="reel-save-icon"><path d="M6 4h12a1 1 0 0 1 1 1v15l-7-3-7 3V5a1 1 0 0 1 1-1z"></path></svg>' : '<i data-lucide="bookmark"></i>';
+            const likeIcon = window.getReelLikeIconMarkup(isLiked);
+            const saveIcon = window.getReelSaveIconMarkup(isSaved);
             post.className = 'reel-card px-0';
             post.innerHTML = `
                 <div class="reel-overlay">
@@ -7305,6 +7307,7 @@
             let longPressTimer = null;
             let lastTapTime = 0;
             let longPressTriggered = false;
+            let doubleTapHandled = false;
             let holdStartX = 0;
             let holdStartY = 0;
             if (video) {
@@ -7389,6 +7392,12 @@
             });
 
             post.addEventListener('click', (e) => {
+                if (doubleTapHandled) {
+                    doubleTapHandled = false;
+                    e.stopPropagation();
+                    e.preventDefault();
+                    return;
+                }
                 if (longPressTriggered) {
                     longPressTriggered = false;
                     e.stopPropagation();
@@ -7409,11 +7418,14 @@
             });
 
             post.addEventListener('touchend', (e) => {
-                if (!window.innerWidth < 768) return;
+                if (window.innerWidth >= 768) return;
                 if (e.target.closest('.reel-action-block, .reel-follow-btn, .reel-audio-org-pfp')) return;
                 const now = Date.now();
                 if (now - lastTapTime < 280) {
+                    e.preventDefault();
+                    e.stopPropagation();
                     lastTapTime = 0;
+                    doubleTapHandled = true;
                     const heartOverlay = document.createElement('div');
                     heartOverlay.className = 'post-double-tap-heart';
                     heartOverlay.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>';
@@ -9424,7 +9436,18 @@
             }
 
             const isLiking = !wasLiked;
-            document.querySelectorAll(`.js-like-btn-${pid}`).forEach(b => b.classList.toggle('active', isLiking)); 
+            document.querySelectorAll(`.reel-action-block.like.js-like-btn-${pid}`).forEach(b => {
+                b.classList.toggle('active', isLiking);
+                const countEl = b.querySelector(`.js-like-count-${pid}`);
+                const countMarkup = countEl ? countEl.outerHTML : `<span class="reel-action-count js-like-count-${pid}">${p.likes.length}</span>`;
+                b.innerHTML = `${window.getReelLikeIconMarkup(isLiking)}${countMarkup}`;
+            });
+            document.querySelectorAll(`.js-like-btn-${pid}`).forEach(b => {
+                if (b.classList.contains('reel-action-block')) return;
+                b.classList.toggle('active', isLiking);
+                b.classList.toggle('text-red-500', isLiking);
+                b.classList.toggle('text-gray-700', !isLiking);
+            });
             
             if (wasLiked) {
                 p.likes = p.likes.filter(id => id !== currentUser.id);
@@ -9705,7 +9728,10 @@
         };
         window.toggleSave = async (pid) => { 
             const isSaving = !document.querySelector(`.js-save-btn-${pid}`)?.classList.contains('active'); 
-            document.querySelectorAll(`.js-save-btn-${pid}`).forEach(b => b.classList.toggle('active', isSaving)); 
+            document.querySelectorAll(`.js-save-btn-${pid}`).forEach(b => {
+                b.classList.toggle('active', isSaving);
+                b.innerHTML = `${window.getReelSaveIconMarkup(isSaving)}<span class="reel-action-label">Save</span>`;
+            }); 
             showToast(isSaving ? "Saved" : "Removed"); 
             const ovBtn = document.getElementById('post-view-save-btn'); 
             if (ovBtn) { if (isSaving) { ovBtn.classList.add('text-blue-600'); ovBtn.classList.remove('fill-yellow-500', 'text-yellow-500', 'text-gray-700') } else { ovBtn.classList.remove('text-blue-600', 'fill-yellow-500', 'text-yellow-500'); ovBtn.classList.add('text-gray-700') } } 
@@ -9729,9 +9755,7 @@
                 }
             });
 
-            if (window.currentViewName === 'reels') {
-                window.renderReels();
-            } else if (window.currentViewName === 'saved') {
+            if (window.currentViewName === 'saved') {
                 window.renderSaved();
             }
         };
