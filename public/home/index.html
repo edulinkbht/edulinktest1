@@ -51,27 +51,56 @@
             border-bottom-color: transparent;
         }
 
-        .explore-grid-shell {
+        .grid-post-container {
             display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 2px;
             padding: 0 0 16px;
         }
 
-        .explore-grid-shell .explore-tile {
+        @media (min-width: 768px) {
+            .grid-post-container {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        .grid-post-item,
+        .explore-tile {
             position: relative;
             aspect-ratio: 1 / 1;
             overflow: hidden;
-            border-radius: 8px;
-            background: #f3f4f6;
+            cursor: pointer;
+            background-color: #efeff1;
+            border-radius: 0;
         }
 
-        .explore-grid-shell .explore-tile img,
-        .explore-grid-shell .explore-tile video {
+        .grid-post-item:hover .grid-post-overlay,
+        .explore-tile:hover .grid-post-overlay {
+            opacity: 1;
+        }
+
+        .grid-post-item img,
+        .grid-post-item video,
+        .explore-tile img,
+        .explore-tile video {
             width: 100%;
             height: 100%;
             object-fit: cover;
             display: block;
+        }
+
+        .grid-post-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, .3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity .2s;
+            color: #fff;
+            font-weight: 700;
+            gap: 16px;
         }
 
         @media (min-width: 768px) {
@@ -1674,7 +1703,7 @@
 
         .grid-post-item {
             position: relative;
-            aspect-ratio: 4/5;
+            aspect-ratio: 1 / 1;
             overflow: hidden;
             cursor: pointer;
             background-color: #efeff1;
@@ -1683,7 +1712,7 @@
         }
 
         .grid-post-item:hover .grid-post-overlay {
-             opacity: 1
+             opacity: 1;
          }
 
         .grid-post-overlay {
@@ -1697,7 +1726,7 @@
             transition: opacity .2s;
             color: #fff;
             font-weight: 700;
-            gap: 16px
+            gap: 16px;
         }
 
         .logo-spinner { 
@@ -8770,7 +8799,7 @@
 
         window.setExploreSearchMode = (active) => {
             const isFocused = document.activeElement?.id === 'global-search' || document.activeElement?.id === 'mobile-explore-search';
-            const shouldBeActive = Boolean(active || (isFocused && window.innerWidth < 768));
+            const shouldBeActive = Boolean((active || isFocused) && window.innerWidth < 768);
             document.body.classList.toggle('search-ui-active', shouldBeActive);
             const backBtn = document.getElementById('mobile-explore-back-btn');
             if (backBtn) {
@@ -8787,7 +8816,7 @@
             const resultsContainer = document.getElementById('explore-results');
             if (resultsContainer) {
                 const hasQuery = !!(window.currentSearchQuery || '').trim();
-                resultsContainer.classList.toggle('hidden', shouldBeActive && !hasQuery);
+                resultsContainer.classList.toggle('hidden', shouldBeActive && !hasQuery && window.innerWidth < 768);
             }
         };
 
@@ -9063,16 +9092,19 @@
             const t = termRaw.toLowerCase().trim();
             if (!pl || !v) return;
 
-            if (!t && isExploreSearchModeActive && window.innerWidth < 768) {
+            if (!t && isExploreSearchModeActive) {
                 pl.classList.add('hidden');
                 pl.classList.remove('flex');
                 pl.innerHTML = '';
                 v.innerHTML = '';
+                if (window.innerWidth < 768) {
+                    v.classList.remove('hidden');
+                    v.classList.toggle('hidden', true);
+                    syncURLState();
+                    refreshIcons();
+                    return;
+                }
                 v.classList.remove('hidden');
-                v.classList.toggle('hidden', true);
-                syncURLState();
-                refreshIcons();
-                return;
             }
 
             if (t && exploreView?.classList.contains('hidden') && !isExploreSearchModeActive) {
@@ -9200,7 +9232,7 @@
                 if (visiblePosts.length) {
                     postsHtml = `
                         <h2 class="text-[14px] font-bold text-gray-400 mb-1 px-4 pt-3 uppercase tracking-wider">RELEVANT POSTS</h2>
-                        <div id="explore-search-grid" class="explore-grid-shell">${visiblePosts.map(p => renderGridPostItem(p)).join('')}</div>
+                        <div id="explore-search-grid" class="grid-post-container">${visiblePosts.map(p => renderGridPostItem(p)).join('')}</div>
                     `;
                 }
 
