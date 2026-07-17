@@ -53,7 +53,7 @@
 
         .explore-grid-shell {
             display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+            grid-template-columns: repeat(2, minmax(0, 1fr));
             gap: 2px;
             padding: 0 0 16px;
         }
@@ -72,6 +72,12 @@
             height: 100%;
             object-fit: cover;
             display: block;
+        }
+
+        @media (min-width: 768px) {
+            .explore-grid-shell {
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
         }
 
         h1,
@@ -8763,19 +8769,26 @@
         };
 
         window.setExploreSearchMode = (active) => {
-            document.body.classList.toggle('search-ui-active', active);
+            const isFocused = document.activeElement?.id === 'global-search' || document.activeElement?.id === 'mobile-explore-search';
+            const shouldBeActive = Boolean(active || isFocused);
+            document.body.classList.toggle('search-ui-active', shouldBeActive);
             const backBtn = document.getElementById('mobile-explore-back-btn');
             if (backBtn) {
-                backBtn.classList.toggle('hidden', !active);
-                backBtn.classList.toggle('flex', active);
+                backBtn.classList.toggle('hidden', !shouldBeActive);
+                backBtn.classList.toggle('flex', shouldBeActive);
             }
             const mbn = document.getElementById('mobile-bottom-nav');
             if (mbn) {
-                mbn.classList.toggle('hidden', active);
+                mbn.classList.toggle('hidden', shouldBeActive);
                 mbn.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
             }
             const viewExplore = document.getElementById('view-explore');
-            if (viewExplore) viewExplore.classList.toggle('search-mode-active', active);
+            if (viewExplore) viewExplore.classList.toggle('search-mode-active', shouldBeActive);
+            const resultsContainer = document.getElementById('explore-results');
+            if (resultsContainer) {
+                const hasQuery = !!(window.currentSearchQuery || '').trim();
+                resultsContainer.classList.toggle('hidden', shouldBeActive && !hasQuery);
+            }
         };
 
         window.handleGlobalSearchFocus = () => {
@@ -8861,7 +8874,8 @@
             }
             
             const hasValue = !!(val || '').trim();
-            window.setExploreSearchMode(hasValue);
+            const isFocused = document.activeElement?.id === 'global-search' || document.activeElement?.id === 'mobile-explore-search';
+            window.setExploreSearchMode(hasValue || isFocused);
             
             if (hasValue) {
                 window.expandSearchBar();
@@ -8870,11 +8884,7 @@
             }
             
             if (window.currentViewName === 'explore') {
-                if (hasValue) {
-                    window.handleSearch(val || '');
-                } else {
-                    window.handleSearch('');
-                }
+                window.handleSearch(val || '');
             }
             window.renderSearchSuggestions(val);
         };
@@ -9040,13 +9050,30 @@
         
         window.handleSearch = q => {
             window.currentSearchQuery = q;
-            if (document.getElementById('view-explore').classList.contains('hidden')) switchView('explore');
-            const termRaw = q ? q.trim() : '';
-            const t = termRaw.toLowerCase().trim();
+            const exploreView = document.getElementById('view-explore');
             const pl = document.getElementById('explore-people-results');
             const v = document.getElementById('explore-results');
             const mp = document.getElementById('main-panel');
+            const isExploreSearchModeActive = document.body.classList.contains('search-ui-active') || (exploreView && exploreView.classList.contains('search-mode-active'));
+            const termRaw = q ? q.trim() : '';
+            const t = termRaw.toLowerCase().trim();
             if (!pl || !v) return;
+
+            if (!t && isExploreSearchModeActive) {
+                pl.classList.add('hidden');
+                pl.classList.remove('flex');
+                pl.innerHTML = '';
+                v.innerHTML = '';
+                v.classList.remove('hidden');
+                v.classList.toggle('hidden', true);
+                syncURLState();
+                refreshIcons();
+                return;
+            }
+
+            if (t && exploreView?.classList.contains('hidden') && !isExploreSearchModeActive) {
+                switchView('explore');
+            }
             
             if (t) {
                 window.expandSearchBar();
@@ -9180,6 +9207,7 @@
                     return;
                 }
 
+                v.classList.remove('hidden');
                 v.innerHTML = `${peopleHtml}${postsHtml}${window.exploreSearchState.hasMore ? '<div id="explore-search-load-more" class="h-12"></div>' : ''}`;
                 syncURLState();
                 refreshIcons();
@@ -9191,9 +9219,7 @@
             window.searchPeopleDisplayCount = 10;
             window.searchAllPeople = [];
 
-            const isSearchActive = document.body.classList.contains('search-ui-active') || document.getElementById('view-explore')?.classList.contains('search-mode-active');
-
-            if (isSearchActive) {
+            if (isExploreSearchModeActive) {
                 pl.classList.add('hidden');
                 pl.classList.remove('flex');
                 pl.innerHTML = '';
@@ -10760,7 +10786,7 @@
                 mediaHtml = `<div class="grid-post-text-preview !bg-transparent">${p.content.substring(0, 60)}${p.content.length > 60 ? '...' : ''}</div>`;
             }
 
-            return `<div class="grid-post-item group ${!m && !p.embedVideo ? 'border border-gray-100' : ''}" onclick="openPostView('${p.id}')">
+            return `<div class="grid-post-item group explore-tile ${!m && !p.embedVideo ? 'border border-gray-100' : ''}" onclick="openPostView('${p.id}')">
                 ${mediaHtml}
                 <div class="grid-post-overlay">
                     <div class="flex items-center gap-1 cursor-pointer" onclick="event.stopPropagation(); openLikes('${p.id}')"><i data-lucide="heart" class="w-5 h-5 fill-white"></i> <span class="js-like-count-${p.id}">${likeText}</span></div>
