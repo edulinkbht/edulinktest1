@@ -5500,7 +5500,15 @@
                                 onkeydown="if(event.key==='Enter'){ handleSearch(this.value); document.getElementById('search-suggestions')?.classList.add('hidden'); }"></div>
                     </div>
                 </div>
-                <div id="explore-content-wrapper" class="pb-32 py-6">
+                <div id="explore-search-tabs" class="hidden border-b border-gray-100 bg-white px-2 py-2 sm:px-3">
+                    <div class="grid grid-cols-4 gap-1">
+                        <button type="button" data-search-tab="for-you" class="rounded-full px-2 py-2 text-[12px] font-semibold text-gray-600 bg-gray-100 transition-all" onclick="window.switchExploreSearchTab('for-you')">For You</button>
+                        <button type="button" data-search-tab="people" class="rounded-full px-2 py-2 text-[12px] font-semibold text-gray-600 bg-gray-100 transition-all" onclick="window.switchExploreSearchTab('people')">People</button>
+                        <button type="button" data-search-tab="posts" class="rounded-full px-2 py-2 text-[12px] font-semibold text-gray-600 bg-gray-100 transition-all" onclick="window.switchExploreSearchTab('posts')">Posts</button>
+                        <button type="button" data-search-tab="hashtags" class="rounded-full px-2 py-2 text-[12px] font-semibold text-gray-600 bg-gray-100 transition-all" onclick="window.switchExploreSearchTab('hashtags')">Hashtags</button>
+                    </div>
+                </div>
+                <div id="explore-content-wrapper" class="pb-32 py-4">
                     <div id="explore-people-results" class="hidden"></div>
                     <div id="explore-results" class="space-y-0 pt-0"></div>
                     <div id="explore-search-sentinel" class="h-10"></div>
@@ -5637,7 +5645,7 @@
         const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), storage = getStorage(app); window.auth = auth; window.db = db; window.increment = increment;
         window.APP_CONFIG = config; // Store globally for other functions
         let currentUser = null, users = [], posts = [], notifications = [], savedPosts = [], activeNotifTab = 'all', activeNetworkTab = 'people';
-        window.replyingToCommentId = null; window.currentViewingProfileId = null; window.activeExploreTab = 'top'; window.activeExploreCategory = 'For You'; window.currentProfileTab = 'posts';
+        window.replyingToCommentId = null; window.currentViewingProfileId = null; window.activeExploreTab = 'top'; window.activeExploreCategory = 'For You'; window.activeExploreSearchTab = 'for-you'; window.currentProfileTab = 'posts';
         window.postViewStartTime = null; window.viewedPostsInSession = new Set();
         window.addEventListener('beforeunload', () => {
             if (window.postViewStartTime && window.currentViewingPostId) {
@@ -8733,6 +8741,27 @@
             d.innerHTML = `<div class="bg-white md:rounded-2xl md:border md:border-gray-100 md:overflow-hidden">${rh}<div class="p-3 md:p-4"><div class="post-header"><div class="flex gap-3"><div class="post-avatar-container w-9 h-9 rounded-full"><img src="${a.avatar}" loading="lazy" decoding="async" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')"></div><div><div class="flex items-center"><span class="post-author-name" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}</div><div class="post-meta flex items-center">${formatDate(p.timestamp)}</div></div></div><div class="flex items-center gap-1">${followBtn}<button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')"><i data-lucide="more-vertical" class="w-[26px] h-[26px]"></i></button></div></div><div class="post-content"><div class="post-body js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>${previewHtml}${(p.media || p.embedVideo) ? `${mh}${tagsHtml}` : `${tagsHtml}`}</div><div class="post-actions"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id} cursor-pointer" onclick="event.stopPropagation(); openLikes('${p.id}')">${likeText}</span></button><button class="action-btn comment" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }"><i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}"></i> <span class="js-comment-count-${p.id}">${commentText}</span></button><button class="action-btn share-btn" onclick="event.stopPropagation(); sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${rightActionBtn}</div></div>${lh}</div>`; return d
         }
         window.moveCarousel = (cid, dir) => { const s = window.carouselStates[cid]; if (!s) return; let n = s.index + dir; if (n < 0) n = 0; if (n >= s.total) n = s.total - 1; s.index = n; const outer = document.getElementById(cid), inner = outer ? outer.querySelector('.post-carousel-inner') : null; if (inner) inner.style.transform = `translateX(-${n * 100}%)`; const dc = document.getElementById(cid).nextElementSibling; if (dc) dc.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === n)); const ctid = cid.replace('carousel-', 'counter-'), cnt = document.getElementById(ctid); if (cnt) cnt.innerText = n + 1 };
+        window.updateExploreSearchTabs = (tab = 'for-you', show = false) => {
+            const container = document.getElementById('explore-search-tabs');
+            if (container) container.classList.toggle('hidden', !show);
+            document.querySelectorAll('#explore-search-tabs button[data-search-tab]').forEach(btn => {
+                const isActive = btn.getAttribute('data-search-tab') === tab;
+                btn.classList.toggle('bg-black', isActive);
+                btn.classList.toggle('text-white', isActive);
+                btn.classList.toggle('bg-gray-100', !isActive);
+                btn.classList.toggle('text-gray-600', !isActive);
+                btn.classList.toggle('font-semibold', isActive);
+            });
+        };
+
+        window.switchExploreSearchTab = tab => {
+            const targetTab = ['for-you', 'people', 'posts', 'hashtags'].includes(tab) ? tab : 'for-you';
+            window.activeExploreSearchTab = targetTab;
+            window.updateExploreSearchTabs(targetTab, Boolean((window.currentSearchQuery || '').trim()));
+            const q = (window.currentSearchQuery || '').trim();
+            if (q) handleSearch(q);
+        };
+
         window.switchExploreMainTab = t => {
             window.activeExploreTab = t;
             const tabIds = ['posts', 'people', 'tags'];
@@ -9091,7 +9120,10 @@
             const t = termRaw.toLowerCase().trim();
             if (!pl || !v) return;
 
-            if (!t && isExploreSearchModeActive) {
+            const currentTab = window.activeExploreSearchTab || 'for-you';
+            window.updateExploreSearchTabs(currentTab, Boolean(t));
+
+            if (!t) {
                 pl.classList.add('hidden');
                 pl.classList.remove('flex');
                 pl.innerHTML = '';
@@ -9104,29 +9136,21 @@
                     return;
                 }
                 v.classList.remove('hidden');
+                syncURLState();
+                refreshIcons();
+                return;
             }
 
             if (t && exploreView?.classList.contains('hidden') && !isExploreSearchModeActive) {
                 switchView('explore');
             }
             
-            if (t) {
-                window.expandSearchBar();
-                // Adjust main-panel width in explore view
-                if (mp && window.innerWidth >= 1024) {
-                    mp.style.maxWidth = '600px';
-                    mp.style.width = '600px';
-                }
-            } else {
-                window.collapseSearchBar();
-                // Revert main-panel width in explore view
-                if (mp && window.innerWidth >= 1024) {
-                    mp.style.maxWidth = '700px';
-                    mp.style.width = '700px';
-                }
+            window.expandSearchBar();
+            if (mp && window.innerWidth >= 1024) {
+                mp.style.maxWidth = '600px';
+                mp.style.width = '600px';
             }
 
-            // Force activeExploreTab to always be 'posts' since we removed tabs
             window.activeExploreTab = 'posts';
 
             const scoreText = (text, term) => {
@@ -9139,186 +9163,150 @@
                 if (idx >= 0) return 50 - Math.min(idx, 30);
                 return 0;
             };
-            
-            // Check if post is a video
-            const isVideoPost = (p) => {
-                if (p.embedVideo) {
-                    const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
-                    return embedInfo.type === 'video';
-                }
-                if (p.media) {
-                    const ma = Array.isArray(p.media) ? p.media : [p.media];
-                    return ma.some(media => media.includes('video') || media.endsWith('.mp4') || media.startsWith('data:video'));
-                }
-                return false;
-            };
 
             const normalizeTag = (x) => (x || '').replace(/^#/, '').trim().toLowerCase();
 
-            if (t) {
+            pl.classList.add('hidden');
+            pl.classList.remove('flex');
+            pl.innerHTML = '';
+            v.innerHTML = '';
 
-                // Show search results: People first, then relevant posts!
-                pl.classList.add('hidden');
-                pl.classList.remove('flex');
-                pl.innerHTML = '';
-                v.innerHTML = '';
+            const peopleResults = users
+                .map(u => {
+                    const authorScore = scoreText(u.name, t) * 1.5;
+                    const usernameScore = scoreText(u.username, t) * 1.25;
+                    const popularity = Math.min((u.followers?.length || 0) / 100, 25);
+                    return { u, score: authorScore + usernameScore + popularity };
+                })
+                .filter(x => x.score > 0)
+                .sort((a, b) => b.score - a.score);
 
-                // People scoring
-                const peopleResults = users
-                    .map(u => {
-                        const authorScore = scoreText(u.name, t) * 1.5;
-                        const usernameScore = scoreText(u.username, t) * 1.25;
-                        const popularity = Math.min((u.followers?.length || 0) / 100, 25);
-                        return { u, score: authorScore + usernameScore + popularity };
-                    })
-                    .filter(x => x.score > 0)
-                    .sort((a, b) => b.score - a.score);
+            const postResults = posts
+                .filter(p => p && window.canSeePost(p))
+                .map(p => {
+                    const author = users.find(u => u.id === p.authorId) || {};
+                    const content = String(p.content || '').toLowerCase();
+                    const authorMatches = ((String(author.name || '').toLowerCase().includes(t)) || (String(author.username || '').toLowerCase().includes(t)));
+                    const exactTitleMatch = content === t || content.split(/\s+/).includes(t);
+                    const hashtagMatch = (content.match(/#[\p{L}\p{N}_]+/gu) || []).some(tag => tag.toLowerCase() === `#${t}`);
+                    const timestampValue = p.timestamp?.toMillis ? p.timestamp.toMillis() : (typeof p.timestamp === 'number' ? p.timestamp : 0);
+                    const recency = Math.max(0, 1 - ((Date.now() - timestampValue) / (1000 * 60 * 60 * 24 * 30)));
+                    const engagement = Math.min((p.likes?.length || 0) + (p.comments?.length || 0) * 2 + (p.reposts?.length || 0) * 2, 100);
+                    const socialAuthority = Math.min((author.followers?.length || 0) / 100, 50);
+                    const personalization = currentUser.following.includes(author.id) ? 20 : 0;
+                    let score = 0;
+                    if (exactTitleMatch) score += 150;
+                    if (authorMatches) score += 120;
+                    if (hashtagMatch) score += 120;
+                    if (content.includes(t)) score += 60;
+                    score += engagement;
+                    score += socialAuthority;
+                    score += Math.max(0, recency) * 40;
+                    score += personalization;
+                    return { p, score };
+                })
+                .filter(x => x.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .map(x => x.p);
 
-                // Post scoring with relevance signals
-                const postResults = posts
-                    .filter(p => p && window.canSeePost(p))
-                    .map(p => {
-                        const author = users.find(u => u.id === p.authorId) || {};
-                        const content = String(p.content || '').toLowerCase();
-                        const authorMatches = ((String(author.name || '').toLowerCase().includes(t)) || (String(author.username || '').toLowerCase().includes(t)));
-                        const exactTitleMatch = content === t || content.split(/\s+/).includes(t);
-                        const hashtagMatch = (content.match(/#[\p{L}\p{N}_]+/gu) || []).some(tag => tag.toLowerCase() === `#${t}`);
-                        const timestampValue = p.timestamp?.toMillis ? p.timestamp.toMillis() : (typeof p.timestamp === 'number' ? p.timestamp : 0);
-                        const recency = Math.max(0, 1 - ((Date.now() - timestampValue) / (1000 * 60 * 60 * 24 * 30))); // 30 day decay
-                        const engagement = Math.min((p.likes?.length || 0) + (p.comments?.length || 0) * 2 + (p.reposts?.length || 0) * 2, 100);
-                        const socialAuthority = Math.min((author.followers?.length || 0) / 100, 50);
-                        const personalization = currentUser.following.includes(author.id) ? 20 : 0;
-                        let score = 0;
-                        if (exactTitleMatch) score += 150;
-                        if (authorMatches) score += 120;
-                        if (hashtagMatch) score += 120;
-                        if (content.includes(t)) score += 60;
-                        score += engagement;
-                        score += socialAuthority;
-                        score += Math.max(0, recency) * 40;
-                        score += personalization;
-                        return { p, score };
-                    })
-                    .filter(x => x.score > 0)
-                    .sort((a, b) => b.score - a.score)
-                    .map(x => x.p);
+            const tagCounts = new Map();
+            posts.forEach(p => {
+                if (!p || !p.content) return;
+                const matches = String(p.content).match(/#[\p{L}\p{N}_]+/gu);
+                if (!matches) return;
+                matches.forEach(tagText => {
+                    const tag = normalizeTag(tagText);
+                    if (!tag) return;
+                    if (t && !tag.includes(t)) return;
+                    tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1);
+                });
+            });
+            const hashtagResults = Array.from(tagCounts.entries())
+                .map(([tag, count]) => ({ tag, count }))
+                .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+                .slice(0, 8);
 
-                window.exploreSearchState.query = t;
-                window.exploreSearchState.people = peopleResults;
-                window.exploreSearchState.posts = postResults;
-                window.exploreSearchState.cursor = 0;
-                window.exploreSearchState.hasMore = postResults.length > window.exploreSearchState.limit;
+            window.exploreSearchState.query = t;
+            window.exploreSearchState.people = peopleResults;
+            window.exploreSearchState.posts = postResults;
+            window.exploreSearchState.cursor = 0;
+            window.exploreSearchState.hasMore = postResults.length > window.exploreSearchState.limit;
 
-                const peopleHtml = peopleResults.length ? `
-                    <h2 class="text-[14px] font-bold text-gray-400 mb-1 px-4 pt-3 uppercase tracking-wider">PEOPLE</h2>
-                    <div id="search-people-list" class="flex flex-col">${peopleResults.slice(0, 10).map(({ u }) => `
-                        <div class="flex items-center px-4 py-1.5 hover:bg-gray-50 cursor-pointer" onclick="showProfile('${u.id}')">
+            let resultsHtml = '';
+
+            if (currentTab === 'people') {
+                if (peopleResults.length) {
+                    resultsHtml = `<div class="flex flex-col pb-4">${peopleResults.slice(0, 10).map(({ u }) => `
+                        <div class="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-b-0" onclick="showProfile('${u.id}')">
                             <div class="rounded-full w-10 h-10 shrink-0 overflow-hidden">
                                 <img src="${u.avatar}" loading="lazy" decoding="async" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
                             </div>
                             <div class="ml-3 min-w-0">
-                                <div class="font-bold text-gray-900 text-[14px] truncate flex items-center">
+                                <div class="font-semibold text-gray-900 text-[14px] truncate flex items-center">
                                     ${u.name || 'User'}
                                     ${u.isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}
                                 </div>
                                 <div class="text-[12px] text-gray-500 truncate">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div>
                             </div>
                         </div>
-                    `).join('')}</div>` : '';
-
-                const visiblePosts = postResults.slice(0, window.exploreSearchState.limit);
-                let postsHtml = '';
-                if (visiblePosts.length) {
-                    postsHtml = `
-                        <h2 class="text-[14px] font-bold text-gray-400 mb-1 px-4 pt-3 uppercase tracking-wider">RELEVANT POSTS</h2>
-                        <div id="explore-search-grid">${visiblePosts.map(p => createPostElement(p, 'search').outerHTML).join('')}</div>
-                    `;
-                }
-
-                if (!peopleHtml && !postsHtml) {
-                    v.innerHTML = `<div class="text-center py-20 text-gray-400"><p>No results found.</p></div>`;
-                    syncURLState();
-                    refreshIcons();
-                    return;
-                }
-
-                v.classList.remove('hidden');
-                v.innerHTML = `${peopleHtml}${postsHtml}${window.exploreSearchState.hasMore ? '<div id="explore-search-load-more" class="h-12"></div>' : ''}`;
-                syncURLState();
-                refreshIcons();
-                if (window.exploreSearchState.hasMore) window.observeExploreSearchSentinel();
-                return;
-            }
-            
-            // When there's no search query, reset state
-            window.searchPeopleDisplayCount = 10;
-            window.searchAllPeople = [];
-
-            if (isExploreSearchModeActive) {
-                pl.classList.add('hidden');
-                pl.classList.remove('flex');
-                pl.innerHTML = '';
-                v.innerHTML = '';
-                syncURLState();
-                refreshIcons();
-                return;
-            }
-
-            if (window.activeExploreTab === 'people') {
-                pl.classList.remove('hidden');
-                pl.classList.add('flex', 'md:max-w-2xl', 'md:mx-auto', 'w-full');
-                v.innerHTML = '';
-                pl.innerHTML = '';
-                const container = document.createElement('div');
-                container.className = 'w-full md:px-4';
-                const innerContainer = document.createElement('div');
-                innerContainer.className = 'bg-white md:rounded-2xl md:border md:border-gray-100 md:overflow-hidden';
-                const fu = t ? users.filter(u => (u.name || "").toLowerCase().includes(t) || (u.username || "").toLowerCase().includes(t)) : users.slice(0, 10);
-                if (fu.length) {
-                    fu.forEach(u => {
-                        const isF = currentUser.following.includes(u.id);
-                        const d = document.createElement('div');
-                        const isFriend = window.isFriend(u.id);
-                        d.className = "flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer last:border-b-0";
-                        d.onclick = () => showProfile(u.id);
-                        d.innerHTML = `<div class="flex items-center gap-3"><div class="rounded-full w-12 h-12 shrink-0 overflow-hidden"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-[#1f1f1f] text-[15px] flex items-center">${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${u.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}</div><div class="text-[13px] text-gray-500 font-medium">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div></div></div><button onclick="event.stopPropagation(); toggleFollow('${u.id}')" class="js-follow-btn-${u.id} shrink-0 text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90 min-w-[85px]">${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>`;
-                        innerContainer.appendChild(d);
-                    });
-                    container.appendChild(innerContainer);
-                    pl.appendChild(container);
+                    `).join('')}</div>`;
                 } else {
-                    pl.innerHTML = '<div class="text-gray-400 text-xs italic text-center py-4 w-full">No people found</div>';
+                    resultsHtml = '<div class="text-center py-20 text-gray-400"><p>No people found.</p></div>';
+                }
+            } else if (currentTab === 'hashtags') {
+                if (hashtagResults.length) {
+                    resultsHtml = `<div class="px-3 py-2">${hashtagResults.map(({ tag, count }) => `
+                        <div class="flex items-center justify-between px-2 py-3 border-b border-gray-100 last:border-b-0">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 shrink-0">
+                                    <i data-lucide="hash" class="w-4 h-4"></i>
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-[14px] font-semibold text-gray-900 truncate">#${tag}</div>
+                                    <div class="text-[12px] text-gray-500">${count} ${count === 1 ? 'post' : 'posts'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}</div>`;
+                } else {
+                    resultsHtml = '<div class="text-center py-20 text-gray-400"><p>No hashtags found.</p></div>';
+                }
+            } else if (currentTab === 'posts') {
+                const visiblePosts = postResults.slice(0, window.exploreSearchState.limit);
+                if (visiblePosts.length) {
+                    resultsHtml = `<div id="explore-search-grid" class="space-y-0 pb-4">${visiblePosts.map(p => createPostElement(p, 'search').outerHTML).join('')}</div>${window.exploreSearchState.hasMore ? '<div id="explore-search-load-more" class="h-12"></div>' : ''}`;
+                } else {
+                    resultsHtml = '<div class="text-center py-20 text-gray-400"><p>No posts found.</p></div>';
                 }
             } else {
-                pl.classList.add('hidden');
-                pl.classList.remove('flex');
-                v.innerHTML = '';
-                let fp = posts.filter(p => {
-                    if (window.activeExploreTab === 'tags') return p.content.includes('#');
-                    if (window.activeExploreTab === 'frame') {
-                        // Check if it's a video post
-                        if (p.embedVideo) {
-                            const embedInfo = window.getEmbedTypeAndUrl(p.embedVideo);
-                            return embedInfo.type === 'video';
-                        }
-                        if (p.media) {
-                            const ma = Array.isArray(p.media) ? p.media : [p.media];
-                            return ma.some(media => media.includes('video') || media.endsWith('.mp4') || media.startsWith('data:video'));
-                        }
-                        return false;
-                    }
-                    return true;
-                });
-                if (t) fp = fp.filter(p => p.content.toLowerCase().includes(t));
-                else if (window.activeExploreTab !== 'tags') fp.sort(() => .5 - Math.random());
-                fp = fp.filter(p => window.canSeePost(p));
-                if (!fp.length) v.innerHTML = '<div class="text-center py-20 text-gray-400"><p>No posts found.</p></div>';
-                else {
-                    v.innerHTML = `<div class="grid grid-cols-2 gap-[2px]">${fp.map(p => renderGridPostItem(p)).join('')}</div>`;
+                const topPeople = peopleResults.slice(0, 3);
+                const topPosts = postResults.slice(0, 3);
+                if (topPeople.length || topPosts.length) {
+                    resultsHtml = `${topPeople.length ? `<div class="px-4 pt-2 pb-2"><div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400 mb-2">Top people</div><div class="flex flex-col">${topPeople.map(({ u }) => `
+                        <div class="flex items-center px-0 py-2.5 border-b border-gray-100 last:border-b-0 cursor-pointer" onclick="showProfile('${u.id}')">
+                            <div class="rounded-full w-10 h-10 shrink-0 overflow-hidden">
+                                <img src="${u.avatar}" loading="lazy" decoding="async" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
+                            </div>
+                            <div class="ml-3 min-w-0">
+                                <div class="font-semibold text-gray-900 text-[14px] truncate flex items-center">
+                                    ${u.name || 'User'}
+                                    ${u.isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}
+                                </div>
+                                <div class="text-[12px] text-gray-500 truncate">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div>
+                            </div>
+                        </div>
+                    `).join('')}</div></div>` : ''}${topPosts.length ? `<div class="px-4 pt-3 pb-2"><div class="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-400 mb-2">Top posts</div><div class="space-y-0">${topPosts.map(p => createPostElement(p, 'search').outerHTML).join('')}</div></div>` : ''}`;
+                } else {
+                    resultsHtml = '<div class="text-center py-20 text-gray-400"><p>No results found.</p></div>';
                 }
             }
+
+            v.classList.remove('hidden');
+            v.innerHTML = resultsHtml;
             syncURLState();
             refreshIcons();
+            if (currentTab === 'posts' && window.exploreSearchState.hasMore) window.observeExploreSearchSentinel();
+            return;
         };
         
         window.handleSeeMorePeople = () => {
