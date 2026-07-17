@@ -5899,98 +5899,112 @@
             if (isAccountPrivate && !isFollowing) return false; 
             return true 
         };
+        // Fallback: Force remove loader after 5 seconds if it still exists
+        setTimeout(() => {
+            const loader = document.getElementById('app-loader');
+            if (loader) {
+                loader.style.display = 'none';
+                loader.style.opacity = '0';
+                loader.remove();
+            }
+        }, 5000);
         onAuthStateChanged(auth, async u => {
             const l = document.getElementById('app-loader');
-            
-            // Check for localStorage QR session first (demo compatibility)
-            let userEmail = null;
-            if (!u) {
-                const mockedSession = localStorage.getItem("mocked_qr_session");
-                const savedUser = localStorage.getItem("edulink_saved_user");
-                if (mockedSession) {
-                    userEmail = mockedSession;
-                } else if (savedUser) {
-                    const parsedUser = JSON.parse(savedUser);
-                    userEmail = parsedUser.email;
+            try {
+                // Check for localStorage QR session first (demo compatibility)
+                let userEmail = null;
+                if (!u) {
+                    const mockedSession = localStorage.getItem("mocked_qr_session");
+                    const savedUser = localStorage.getItem("edulink_saved_user");
+                    if (mockedSession) {
+                        userEmail = mockedSession;
+                    } else if (savedUser) {
+                        const parsedUser = JSON.parse(savedUser);
+                        userEmail = parsedUser.email;
+                    }
                 }
-            }
 
-            // If no user and no localStorage session, redirect to login
-            if (!u && !userEmail) {
-                return window.location.href = '/login';
-            }
-
-            // If we have a user from Firebase Auth OR a localStorage email
-            let r, s, isAdmin, uid;
-            const adminEmails = ['edulinkbht@gmail.com', 'ngawang.tphuentshok2024@academy.bt'];
-
-            if (u) {
-                // Firebase Auth user, normal flow
-                uid = u.uid;
-                r = doc(db, "users", u.uid);
-                s = await getDoc(r);
-                isAdmin = adminEmails.includes(u.email);
-            } else if (userEmail) {
-                // localStorage session, find user by email
-                const q = query(collection(db, "users"), where("email", "==", userEmail));
-                const querySnapshot = await getDocs(q);
-                if (querySnapshot.empty) {
-                    localStorage.removeItem("mocked_qr_session");
-                    localStorage.removeItem("edulink_saved_user");
+                // If no user and no localStorage session, redirect to login
+                if (!u && !userEmail) {
                     return window.location.href = '/login';
                 }
-                const userDoc = querySnapshot.docs[0];
-                uid = userDoc.id;
-                s = userDoc;
-                r = doc(db, "users", uid);
-                isAdmin = adminEmails.includes(userEmail);
-            }
 
-            if (s.exists()) {
-                const data = s.data();
-                if (data.banned) {
-                    document.getElementById('banned-overlay').classList.remove('hidden');
-                    if (l) {
-                        l.style.opacity = '0';
-                        setTimeout(() => l.remove(), 500)
+                // If we have a user from Firebase Auth OR a localStorage email
+                let r, s, isAdmin, uid;
+                const adminEmails = ['edulinkbht@gmail.com', 'ngawang.tphuentshok2024@academy.bt'];
+
+                if (u) {
+                    // Firebase Auth user, normal flow
+                    uid = u.uid;
+                    r = doc(db, "users", u.uid);
+                    s = await getDoc(r);
+                    isAdmin = adminEmails.includes(u.email);
+                } else if (userEmail) {
+                    // localStorage session, find user by email
+                    const q = query(collection(db, "users"), where("email", "==", userEmail));
+                    const querySnapshot = await getDocs(q);
+                    if (querySnapshot.empty) {
+                        localStorage.removeItem("mocked_qr_session");
+                        localStorage.removeItem("edulink_saved_user");
+                        return window.location.href = '/login';
                     }
-                    return
+                    const userDoc = querySnapshot.docs[0];
+                    uid = userDoc.id;
+                    s = userDoc;
+                    r = doc(db, "users", uid);
+                    isAdmin = adminEmails.includes(userEmail);
                 }
-                currentUser = {
-                    id: uid,
-                    ...data
-                };
-                if (isAdmin && !currentUser.isOfficial) await updateDoc(r, {
-                    isOfficial: true
-                })
-            } else if (u) { // Only create new user if we have a Firebase Auth user
-                const newUser = {
-                    name: u.displayName || 'User',
-                    email: u.email,
-                    username: 'user' + u.uid.substring(0, 6).toLowerCase(),
-                    avatar: u.photoURL || `https://ui-avatars.com/api/?name=${u.displayName || 'User'}&background=random`,
-                    banner: '',
-                    bio: 'no bio',
-                    isOfficial: isAdmin,
-                    following: [],
-                    followers: [],
-                    saved: [],
-                    joinedAt: serverTimestamp(),
-                    timestamp: serverTimestamp()
-                };
-                await setDoc(r, newUser);
-                currentUser = {
-                    id: uid,
-                    ...newUser
+
+                if (s.exists()) {
+                    const data = s.data();
+                    if (data.banned) {
+                        document.getElementById('banned-overlay').classList.remove('hidden');
+                        if (l) {
+                            l.style.opacity = '0';
+                            setTimeout(() => l.remove(), 500)
+                        }
+                        return
+                    }
+                    currentUser = {
+                        id: uid,
+                        ...data
+                    };
+                    if (isAdmin && !currentUser.isOfficial) await updateDoc(r, {
+                        isOfficial: true
+                    })
+                } else if (u) { // Only create new user if we have a Firebase Auth user
+                    const newUser = {
+                        name: u.displayName || 'User',
+                        email: u.email,
+                        username: 'user' + u.uid.substring(0, 6).toLowerCase(),
+                        avatar: u.photoURL || `https://ui-avatars.com/api/?name=${u.displayName || 'User'}&background=random`,
+                        banner: '',
+                        bio: 'no bio',
+                        isOfficial: isAdmin,
+                        following: [],
+                        followers: [],
+                        saved: [],
+                        joinedAt: serverTimestamp(),
+                        timestamp: serverTimestamp()
+                    };
+                    await setDoc(r, newUser);
+                    currentUser = {
+                        id: uid,
+                        ...newUser
+                    }
+                } 
+                // Ensure existing users have joinedAt field
+                if (!currentUser.joinedAt && r) {
+                    const updateData = { joinedAt: currentUser.timestamp || serverTimestamp() };
+                    await updateDoc(r, updateData);
+                    currentUser.joinedAt = updateData.joinedAt;
                 }
-            } 
-            // Ensure existing users have joinedAt field
-            if (!currentUser.joinedAt && r) {
-                const updateData = { joinedAt: currentUser.timestamp || serverTimestamp() };
-                await updateDoc(r, updateData);
-                currentUser.joinedAt = updateData.joinedAt;
+                currentUser.following ||= []; currentUser.followers ||= []; currentUser.friends ||= []; currentUser.saved ||= []; currentUser.links ||= []; currentUser.settings ||= { privateNetwork: false }; window.currentUser = currentUser; savedPosts = currentUser.saved; if (!currentUser.username) document.getElementById('username-modal').classList.remove('hidden'); try { updateUserInterface(); } catch(e) { console.error('updateUserInterface error:', e); } try { initRealtimeListeners(); } catch(e) { console.error('initRealtimeListeners error:', e); } try { refreshIcons(); } catch(e) { console.error('refreshIcons error:', e); } try { initBannerDrag(); } catch(e) { console.error('initBannerDrag error:', e); } window.history.replaceState({ root: true }, ""); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } try { initializeStateFromURL(); } catch(e) { console.error('initializeStateFromURL error:', e); }
+            } catch(e) {
+                console.error('Auth handler error:', e);
+                if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) }
             }
-            currentUser.following ||= []; currentUser.followers ||= []; currentUser.friends ||= []; currentUser.saved ||= []; currentUser.links ||= []; currentUser.settings ||= { privateNetwork: false }; window.currentUser = currentUser; savedPosts = currentUser.saved; if (!currentUser.username) document.getElementById('username-modal').classList.remove('hidden'); updateUserInterface(); initRealtimeListeners(); refreshIcons(); initBannerDrag(); window.history.replaceState({ root: true }, ""); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } initializeStateFromURL(); });
+        });
         window.onpopstate = e => { 
             // Clear search inputs when navigating back
             const globalSearch = document.getElementById('global-search');
