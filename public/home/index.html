@@ -8731,11 +8731,10 @@
 
         window.handleExploreSearchBlur = () => {
             const activeValue = (document.getElementById('global-search')?.value || document.getElementById('mobile-explore-search')?.value || '').trim();
-            if (!activeValue) {
-                window.setExploreSearchMode(false);
-                const viewExplore = document.getElementById('view-explore');
-                if (viewExplore) viewExplore.classList.remove('search-mode-active');
+            if (activeValue) {
+                window.setExploreSearchMode(true);
             }
+            window.collapseSearchBar();
         };
 
         window.handleExploreBackButton = () => {
@@ -8754,10 +8753,10 @@
             setTimeout(() => {
                 const activeValue = (document.getElementById('global-search')?.value || document.getElementById('mobile-explore-search')?.value || '').trim();
                 const suggestions = document.getElementById('search-suggestions');
-                if (!activeValue && suggestions && suggestions.classList.contains('hidden')) {
-                    window.setExploreSearchMode(false);
-                    const viewExplore = document.getElementById('view-explore');
-                    if (viewExplore) viewExplore.classList.remove('search-mode-active');
+                if (activeValue) {
+                    window.setExploreSearchMode(true);
+                } else if (suggestions && suggestions.classList.contains('hidden')) {
+                    window.setExploreSearchMode(document.activeElement?.id === 'global-search' || document.activeElement?.id === 'mobile-explore-search');
                 }
                 window.collapseSearchBar();
             }, 80);
@@ -9191,6 +9190,18 @@
             // When there's no search query, reset state
             window.searchPeopleDisplayCount = 10;
             window.searchAllPeople = [];
+
+            const isSearchActive = document.body.classList.contains('search-ui-active') || document.getElementById('view-explore')?.classList.contains('search-mode-active');
+
+            if (isSearchActive) {
+                pl.classList.add('hidden');
+                pl.classList.remove('flex');
+                pl.innerHTML = '';
+                v.innerHTML = '';
+                syncURLState();
+                refreshIcons();
+                return;
+            }
 
             if (window.activeExploreTab === 'people') {
                 pl.classList.remove('hidden');
