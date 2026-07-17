@@ -7040,7 +7040,7 @@
             document.body.classList.remove('search-ui-active');
             const viewExplore = document.getElementById('view-explore');
             if (viewExplore) viewExplore.classList.remove('search-mode-active');
-            if (((v === 'profile' && window.innerWidth < 768) || v === 'reels') && mh) mh.classList.add('hidden'); 
+            if ((v === 'profile' || v === 'reels') && mh) mh.classList.add('hidden'); 
             if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create') && mh && window.innerWidth < 768) mh.classList.add('hidden'); 
             if (v === 'notifications') { 
                 if (mh) mh.classList.add('hidden'); 
@@ -8770,7 +8770,7 @@
 
         window.setExploreSearchMode = (active) => {
             const isFocused = document.activeElement?.id === 'global-search' || document.activeElement?.id === 'mobile-explore-search';
-            const shouldBeActive = Boolean(active || isFocused);
+            const shouldBeActive = Boolean(active || (isFocused && window.innerWidth < 768));
             document.body.classList.toggle('search-ui-active', shouldBeActive);
             const backBtn = document.getElementById('mobile-explore-back-btn');
             if (backBtn) {
@@ -8892,6 +8892,10 @@
         window.renderSearchSuggestions = (q) => {
             const suggestions = document.getElementById('search-suggestions');
             const content = document.getElementById('search-suggestions-content');
+            if (window.innerWidth >= 768) {
+                suggestions.classList.add('hidden');
+                return;
+            }
             if (!q.trim()) {
                 suggestions.classList.add('hidden');
                 return;
@@ -9059,7 +9063,7 @@
             const t = termRaw.toLowerCase().trim();
             if (!pl || !v) return;
 
-            if (!t && isExploreSearchModeActive) {
+            if (!t && isExploreSearchModeActive && window.innerWidth < 768) {
                 pl.classList.add('hidden');
                 pl.classList.remove('flex');
                 pl.innerHTML = '';
