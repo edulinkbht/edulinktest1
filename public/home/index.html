@@ -1767,7 +1767,7 @@
             flex: 1;
             gap: 4px;
             color: #000;
-            transition: transform 0.1s ease;
+            transition: none;
             cursor: pointer;
             position: relative
         }
@@ -1775,7 +1775,7 @@
         .mobile-nav-item i {
             width: 40px;
             height: 40px;
-            transition: none
+            transition: none;
         }
 
         .mobile-nav-item.active {
@@ -1783,7 +1783,7 @@
         }
 
         .mobile-nav-item.active i {
-            transform: scale(1.05);
+            transform: none;
             fill: black;
             stroke-width: 2.5px
         }
@@ -5406,12 +5406,14 @@
                                 data-lucide="search" class="w-5 h-5 text-gray-400 mr-3"></i><input type="text"
                                 id="mobile-explore-search"
                                 class="bg-transparent border-none outline-none text-[15px] w-full" placeholder="Search This"
-                                oninput="handleSearch(this.value)"></div>
+                                oninput="handleGlobalSearchInput(this.value)"
+                                onkeydown="if(event.key==='Enter'){ handleSearch(this.value); document.getElementById('search-suggestions')?.classList.add('hidden'); }"></div>
                     </div>
                 </div>
                 <div id="explore-content-wrapper" class="pb-32 py-6">
                     <div id="explore-people-results" class="hidden"></div>
                     <div id="explore-results" class="space-y-0 pt-0"></div>
+                    <div id="explore-search-sentinel" class="h-10"></div>
                 </div>
             </div>
             <div id="view-blog" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20 hidden">
@@ -5566,6 +5568,15 @@
         window.currentDownloadImages = []; window.selectedDownloadIndices = new Set();
         window.sessionSeenPosts = new Set();
         window.feedPagination = { cursor: 0, limit: 10, loading: false, hasMore: true, allCandidates: [] };
+        window.exploreSearchState = {
+            query: '',
+            people: [],
+            posts: [],
+            cursor: 0,
+            limit: 12,
+            loading: false,
+            hasMore: false
+        };
         window.imageLoadCache = new Set();
         window.commentOverlayState = {
             pid: null,
@@ -5601,6 +5612,38 @@
 
         const sentinel = document.getElementById('feed-sentinel');
         if (sentinel) feedObserver.observe(sentinel);
+
+        window.observeExploreSearchSentinel = () => {
+            if (window.exploreSearchObserver) window.exploreSearchObserver.disconnect();
+            const rootEl = document.getElementById('view-explore');
+            window.exploreSearchObserver = new IntersectionObserver((entries) => {
+                if (!entries[0].isIntersecting || window.exploreSearchState.loading || !window.exploreSearchState.hasMore) return;
+                window.exploreSearchState.loading = true;
+                window.exploreSearchState.cursor += window.exploreSearchState.limit;
+                const nextBatch = window.exploreSearchState.posts.slice(window.exploreSearchState.cursor, window.exploreSearchState.cursor + window.exploreSearchState.limit);
+                const container = document.getElementById('explore-search-grid');
+                if (container && nextBatch.length) {
+                    const fragment = document.createDocumentFragment();
+                    nextBatch.forEach(p => {
+                        const wrapper = document.createElement('div');
+                        wrapper.innerHTML = renderGridPostItem(p);
+                        fragment.appendChild(wrapper.firstElementChild);
+                    });
+                    container.appendChild(fragment);
+                    refreshIcons();
+                }
+                window.exploreSearchState.hasMore = window.exploreSearchState.cursor + window.exploreSearchState.limit < window.exploreSearchState.posts.length;
+                const sentinelEl = document.getElementById('explore-search-load-more');
+                if (sentinelEl && !window.exploreSearchState.hasMore) sentinelEl.remove();
+                window.exploreSearchState.loading = false;
+            }, {
+                root: rootEl,
+                rootMargin: '1200px',
+                threshold: 0.01
+            });
+            const trigger = document.getElementById('explore-search-load-more');
+            if (trigger) window.exploreSearchObserver.observe(trigger);
+        };
 
         // Virtual List Memory Management: Post Observer to track visibility
         window.postsInDOM = new Map();
@@ -5642,8 +5685,6 @@
                     if (currentCount >= allPosts.length) return;
 
                     window.isProfileLoadingMore = true;
-                    const spinner = document.getElementById('profile-loading-spinner');
-                    if (spinner) spinner.classList.remove('hidden');
 
                     setTimeout(() => {
                         const nextBatch = allPosts.slice(currentCount, currentCount + 9);
@@ -8685,7 +8726,6 @@
         window.handleGlobalSearchInput = (val) => {
             if (window.currentViewName === 'notifications') {
                 window.handleNotifSearch(val || '');
-                // Also show suggestions if not in explore
                 window.renderSearchSuggestions(val);
                 return;
             }
@@ -8696,12 +8736,8 @@
                 window.collapseSearchBar();
             }
             
-            if (window.currentViewName === 'explore') {
-                window.handleSearch(val || '');
-                document.getElementById('search-suggestions').classList.add('hidden');
-            } else {
-                window.renderSearchSuggestions(val);
-            }
+            // In explore mode, typing only shows suggestions; actual search runs on Enter or explicit search submission.
+            window.renderSearchSuggestions(val);
         };
 
         window.renderSearchSuggestions = (q) => {
@@ -8926,44 +8962,58 @@
                 pl.innerHTML = '';
                 v.innerHTML = '';
 
-                // People first
-                window.searchAllPeople = users
-                    .map(u => ({ u, s: Math.max(scoreText(u.name, t), scoreText(u.username, t)) }))
-                    .filter(x => x.s > 0)
-                    .sort((a, b) => b.s - a.s);
-                window.searchPeopleDisplayCount = 10;
+                // People scoring
+                const peopleResults = users
+                    .map(u => {
+                        const authorScore = scoreText(u.name, t) * 1.5;
+                        const usernameScore = scoreText(u.username, t) * 1.25;
+                        const popularity = Math.min((u.followers?.length || 0) / 100, 25);
+                        return { u, score: authorScore + usernameScore + popularity };
+                    })
+                    .filter(x => x.score > 0)
+                    .sort((a, b) => b.score - a.score);
 
-                // Then relevant posts - prioritize posts from users that match the search query
-                let fp = posts
+                // Post scoring with relevance signals
+                const postResults = posts
                     .filter(p => p && window.canSeePost(p))
                     .map(p => {
-                        const author = users.find(u => u.id === p.authorId);
+                        const author = users.find(u => u.id === p.authorId) || {};
+                        const content = String(p.content || '').toLowerCase();
+                        const authorMatches = ((String(author.name || '').toLowerCase().includes(t)) || (String(author.username || '').toLowerCase().includes(t)));
+                        const exactTitleMatch = content === t || content.split(/\s+/).includes(t);
+                        const hashtagMatch = (content.match(/#[\p{L}\p{N}_]+/gu) || []).some(tag => tag.toLowerCase() === `#${t}`);
+                        const timestampValue = p.timestamp?.toMillis ? p.timestamp.toMillis() : (typeof p.timestamp === 'number' ? p.timestamp : 0);
+                        const recency = Math.max(0, 1 - ((Date.now() - timestampValue) / (1000 * 60 * 60 * 24 * 30))); // 30 day decay
+                        const engagement = Math.min((p.likes?.length || 0) + (p.comments?.length || 0) * 2 + (p.reposts?.length || 0) * 2, 100);
+                        const socialAuthority = Math.min((author.followers?.length || 0) / 100, 50);
+                        const personalization = currentUser.following.includes(author.id) ? 20 : 0;
                         let score = 0;
-                        const matchesContent = p.content.toLowerCase().includes(t);
-                        const matchesAuthor = author && (
-                            (author.name && author.name.toLowerCase().includes(t)) ||
-                            (author.username && author.username.toLowerCase().includes(t))
-                        );
-                        if (matchesAuthor) score += 200;
-                        if (matchesContent) score += scoreText(p.content, t);
-                        score += (p.likes?.length || 0);
+                        if (exactTitleMatch) score += 150;
+                        if (authorMatches) score += 120;
+                        if (hashtagMatch) score += 120;
+                        if (content.includes(t)) score += 60;
+                        score += engagement;
+                        score += socialAuthority;
+                        score += Math.max(0, recency) * 40;
+                        score += personalization;
                         return { p, score };
                     })
-                    .filter(item => item.score > 0)
+                    .filter(x => x.score > 0)
                     .sort((a, b) => b.score - a.score)
                     .map(x => x.p);
 
-                let html = '';
+                window.exploreSearchState.query = t;
+                window.exploreSearchState.people = peopleResults;
+                window.exploreSearchState.posts = postResults;
+                window.exploreSearchState.cursor = 0;
+                window.exploreSearchState.hasMore = postResults.length > window.exploreSearchState.limit;
 
-                if (window.searchAllPeople.length) {
-                    html += `<h2 class="text-[14px] font-bold text-gray-400 mb-1 px-4 pt-3 uppercase tracking-wider">PEOPLE</h2>`;
-                    html += `<div id="search-people-list" class="flex flex-col">`;
-                    const peopleToShow = window.searchAllPeople.slice(0, window.searchPeopleDisplayCount);
-                    peopleToShow.forEach(({ u }) => {
-                        html += `
+                const peopleHtml = peopleResults.length ? `
+                    <h2 class="text-[14px] font-bold text-gray-400 mb-1 px-4 pt-3 uppercase tracking-wider">PEOPLE</h2>
+                    <div id="search-people-list" class="flex flex-col">${peopleResults.slice(0, 10).map(({ u }) => `
                         <div class="flex items-center px-4 py-1.5 hover:bg-gray-50 cursor-pointer" onclick="showProfile('${u.id}')">
                             <div class="rounded-full w-10 h-10 shrink-0 overflow-hidden">
-                                <img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
+                                <img src="${u.avatar}" loading="lazy" decoding="async" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
                             </div>
                             <div class="ml-3 min-w-0">
                                 <div class="font-bold text-gray-900 text-[14px] truncate flex items-center">
@@ -8973,28 +9023,28 @@
                                 <div class="text-[12px] text-gray-500 truncate">@${u.username || 'user'} • ${u.followers?.length || 0} followers</div>
                             </div>
                         </div>
-                        `;
-                    });
-                    html += `</div>`;
-                    // Add see more button if needed
-                    if (window.searchAllPeople.length > window.searchPeopleDisplayCount) {
-                        html += `<div class="flex justify-center px-4 py-3">
-                            <button id="see-more-people" onclick="window.handleSeeMorePeople()" class="text-[13px] font-bold text-blue-600 hover:opacity-80">See more</button>
-                        </div>`;
-                    }
+                    `).join('')}</div>` : '';
+
+                const visiblePosts = postResults.slice(0, window.exploreSearchState.limit);
+                let postsHtml = '';
+                if (visiblePosts.length) {
+                    postsHtml = `
+                        <h2 class="text-[14px] font-bold text-gray-400 mb-1 px-4 pt-3 uppercase tracking-wider">RELEVANT POSTS</h2>
+                        <div id="explore-search-grid" class="grid grid-cols-3 gap-[2px] pb-20">${visiblePosts.map(p => renderGridPostItem(p)).join('')}</div>
+                    `;
                 }
 
-                if (fp.length) {
-                    html += `<h2 class="text-[14px] font-bold text-gray-400 mb-1 px-4 pt-3 uppercase tracking-wider">RELEVANT POSTS</h2>`;
-                    html += `<div class="grid grid-cols-3 gap-[2px] pb-20">${fp.map(p => renderGridPostItem(p)).join('')}</div>`;
+                if (!peopleHtml && !postsHtml) {
+                    v.innerHTML = `<div class="text-center py-20 text-gray-400"><p>No results found.</p></div>`;
+                    syncURLState();
+                    refreshIcons();
+                    return;
                 }
 
-                if (!html) {
-                    html = `<div class="text-center py-20 text-gray-400"><p>No results found.</p></div>`;
-                }
-
-                v.innerHTML = html;
-                syncURLState(); refreshIcons();
+                v.innerHTML = `${peopleHtml}${postsHtml}${window.exploreSearchState.hasMore ? '<div id="explore-search-load-more" class="h-12"></div>' : ''}`;
+                syncURLState();
+                refreshIcons();
+                if (window.exploreSearchState.hasMore) window.observeExploreSearchSentinel();
                 return;
             }
             
@@ -10476,12 +10526,7 @@
                     const hasMore = tp.length > limit;
 
                     c.innerHTML = `<div class="grid-post-container" id="profile-grid-container">${visiblePosts.map(p => renderGridPostItem(p)).join('')}</div>
-                        <div id="profile-load-more-trigger" class="flex flex-col items-center justify-center pt-8 pb-20 ${hasMore ? '' : 'hidden'}">
-                            <div id="profile-loading-spinner" class="flex flex-col items-center gap-3">
-                                <img src="https://i.imghippo.com/files/YVls8804tw.png" class="logo-spinner" alt="Loading...">
-                                <span class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] opacity-60">Loading next set</span>
-                            </div>
-                        </div>`;
+                        <div id="profile-load-more-trigger" class="flex flex-col items-center justify-center pt-8 pb-20 ${hasMore ? '' : 'hidden'}"></div>`;
 
                     if (hasMore) {
                         setupProfileInfiniteScroll(uid, t, tp);
@@ -10505,12 +10550,7 @@
             const hasMore = tp.length > limit;
 
             c.innerHTML = `<div class="grid-post-container" id="profile-grid-container">${visiblePosts.map(p => renderGridPostItem(p)).join('')}</div>
-                <div id="profile-load-more-trigger" class="flex flex-col items-center justify-center pt-8 pb-20 ${hasMore ? '' : 'hidden'}">
-                    <div id="profile-loading-spinner" class="flex flex-col items-center gap-3">
-                        <img src="https://i.imghippo.com/files/YVls8804tw.png" class="logo-spinner" alt="Loading...">
-                        <span class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] opacity-60">Loading next set</span>
-                    </div>
-                </div>`;
+                <div id="profile-load-more-trigger" class="flex flex-col items-center justify-center pt-8 pb-20 ${hasMore ? '' : 'hidden'}"></div>`;
 
             if (hasMore) {
                 setupProfileInfiniteScroll(uid, t, tp);
