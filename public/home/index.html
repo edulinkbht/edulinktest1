@@ -38,6 +38,42 @@
             overscroll-behavior-y: none;
         }
 
+        #view-explore.search-mode-active {
+            background: #fafafa;
+        }
+
+        #view-explore.search-mode-active #explore-content-wrapper {
+            padding-top: 4px;
+        }
+
+        #view-explore.search-mode-active #explore-header-container {
+            background: #fafafa;
+            border-bottom-color: transparent;
+        }
+
+        .explore-grid-shell {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 2px;
+            padding: 0 0 16px;
+        }
+
+        .explore-grid-shell .explore-tile {
+            position: relative;
+            aspect-ratio: 1 / 1;
+            overflow: hidden;
+            border-radius: 8px;
+            background: #f3f4f6;
+        }
+
+        .explore-grid-shell .explore-tile img,
+        .explore-grid-shell .explore-tile video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
         h1,
         h2,
         h3,
@@ -1796,6 +1832,16 @@
         .mobile-nav-item:active {
             transform: scale(0.92);
             opacity: 0.7;
+        }
+
+        body.search-ui-active #mobile-bottom-nav {
+            transform: translateY(120%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        #view-explore.search-mode-active {
+            background: #fafafa;
         }
 
         .official-badge {
@@ -4785,7 +4831,7 @@
                     <input
                         type="text" placeholder="Search This" id="global-search" oninput="handleGlobalSearchInput(this.value)"
                         onfocus="handleGlobalSearchFocus(); expandSearchBar()"
-                        onblur="collapseSearchBar()"
+                        onblur="window.handleGlobalSearchBlur()"
                         onkeydown="if(event.key==='Enter'){ handleSearch(this.value); document.getElementById('search-suggestions').classList.add('hidden'); }"
                         class="w-full bg-[#f3f4f6] rounded-full py-3.5 pl-14 pr-6 outline-none focus:ring-1 focus:ring-gray-200 transition-all text-[#1f1f1f] text-[15px]">
                     
@@ -5406,6 +5452,8 @@
                                 data-lucide="search" class="w-5 h-5 text-gray-400 mr-3"></i><input type="text"
                                 id="mobile-explore-search"
                                 class="bg-transparent border-none outline-none text-[15px] w-full" placeholder="Search This"
+                                onfocus="window.handleExploreSearchFocus(this.value)"
+                                onblur="window.handleExploreSearchBlur()"
                                 oninput="handleGlobalSearchInput(this.value)"
                                 onkeydown="if(event.key==='Enter'){ handleSearch(this.value); document.getElementById('search-suggestions')?.classList.add('hidden'); }"></div>
                     </div>
@@ -6976,6 +7024,9 @@
             if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } 
             if (mbn) mbn.classList.remove('hidden'); 
             if (mnh) { mnh.classList.add('hidden'); mnh.classList.add('flex') } 
+            document.body.classList.remove('search-ui-active');
+            const viewExplore = document.getElementById('view-explore');
+            if (viewExplore) viewExplore.classList.remove('search-mode-active');
             if (((v === 'profile' && window.innerWidth < 768) || v === 'reels') && mh) mh.classList.add('hidden'); 
             if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create') && mh && window.innerWidth < 768) mh.classList.add('hidden'); 
             if (v === 'notifications') { 
@@ -6995,6 +7046,14 @@
             // Hide mobile footer for settings-related views and the create view on small screens
             if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || (v === 'create' && window.innerWidth < 768)) && mbn && window.innerWidth < 768) mbn.classList.add('hidden'); 
             else if (mbn && window.innerWidth < 768) mbn.classList.remove('hidden');
+
+            if (v !== 'explore') {
+                document.body.classList.remove('search-ui-active');
+                if (mbn) {
+                    mbn.classList.remove('hidden');
+                }
+                if (viewExplore) viewExplore.classList.remove('search-mode-active');
+            }
             
             // Adjust main-panel width and trending-panel visibility
             if (mp && window.innerWidth >= 1024) {
@@ -8649,8 +8708,57 @@
             setTimeout(() => refreshIcons(), 50);
         };
         window.toggleExploreSearch = () => { const b = document.getElementById('explore-search-bar'); if (b) { b.classList.toggle('hidden'); if (!b.classList.contains('hidden')) document.getElementById('mobile-explore-search').focus() } };
+        window.handleExploreSearchFocus = (val = '') => {
+            if (window.currentViewName !== 'explore') switchView('explore');
+            window.setExploreSearchMode(true);
+            const inputValue = (val || '').trim();
+            if (inputValue) {
+                window.handleSearch(inputValue);
+                window.renderSearchSuggestions(inputValue);
+            } else {
+                window.handleSearch('');
+                window.renderSearchSuggestions('');
+            }
+            const viewExplore = document.getElementById('view-explore');
+            if (viewExplore) viewExplore.classList.add('search-mode-active');
+        };
+
+        window.handleExploreSearchBlur = () => {
+            const activeValue = (document.getElementById('global-search')?.value || document.getElementById('mobile-explore-search')?.value || '').trim();
+            if (!activeValue) {
+                window.setExploreSearchMode(false);
+                const viewExplore = document.getElementById('view-explore');
+                if (viewExplore) viewExplore.classList.remove('search-mode-active');
+            }
+        };
+
+        window.handleGlobalSearchBlur = () => {
+            setTimeout(() => {
+                const activeValue = (document.getElementById('global-search')?.value || document.getElementById('mobile-explore-search')?.value || '').trim();
+                const suggestions = document.getElementById('search-suggestions');
+                if (!activeValue && suggestions && suggestions.classList.contains('hidden')) {
+                    window.setExploreSearchMode(false);
+                    const viewExplore = document.getElementById('view-explore');
+                    if (viewExplore) viewExplore.classList.remove('search-mode-active');
+                }
+                window.collapseSearchBar();
+            }, 80);
+        };
+
+        window.setExploreSearchMode = (active) => {
+            document.body.classList.toggle('search-ui-active', active);
+            const mbn = document.getElementById('mobile-bottom-nav');
+            if (mbn) {
+                mbn.classList.toggle('hidden', active);
+                mbn.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+            }
+            const viewExplore = document.getElementById('view-explore');
+            if (viewExplore) viewExplore.classList.toggle('search-mode-active', active);
+        };
+
         window.handleGlobalSearchFocus = () => {
             const val = document.getElementById('global-search').value;
+            window.handleExploreSearchFocus(val);
             if (val.trim() && window.currentViewName !== 'explore') {
                 window.renderSearchSuggestions(val);
             }
@@ -8730,13 +8838,22 @@
                 return;
             }
             
-            if (val.trim()) {
+            const hasValue = !!(val || '').trim();
+            window.setExploreSearchMode(hasValue || document.activeElement?.id === 'global-search' || document.activeElement?.id === 'mobile-explore-search');
+            
+            if (hasValue) {
                 window.expandSearchBar();
             } else {
                 window.collapseSearchBar();
             }
             
-            // In explore mode, typing only shows suggestions; actual search runs on Enter or explicit search submission.
+            if (window.currentViewName === 'explore') {
+                if (hasValue) {
+                    window.handleSearch(val || '');
+                } else {
+                    window.handleSearch('');
+                }
+            }
             window.renderSearchSuggestions(val);
         };
 
@@ -9030,7 +9147,7 @@
                 if (visiblePosts.length) {
                     postsHtml = `
                         <h2 class="text-[14px] font-bold text-gray-400 mb-1 px-4 pt-3 uppercase tracking-wider">RELEVANT POSTS</h2>
-                        <div id="explore-search-grid" class="grid grid-cols-3 gap-[2px] pb-20">${visiblePosts.map(p => renderGridPostItem(p)).join('')}</div>
+                        <div id="explore-search-grid" class="explore-grid-shell">${visiblePosts.map(p => renderGridPostItem(p)).join('')}</div>
                     `;
                 }
 
