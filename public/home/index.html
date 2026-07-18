@@ -119,6 +119,12 @@
             border-radius: 0;
         }
 
+        /* In search mode make tiles white so single/no results don't look grey */
+        #view-explore.search-mode-active .grid-post-item,
+        #view-explore.search-mode-active .explore-tile {
+            background-color: #ffffff;
+        }
+
         .grid-post-item:hover .grid-post-overlay,
         .explore-tile:hover .grid-post-overlay {
             opacity: 1;
@@ -5535,7 +5541,7 @@
                                 aria-label="Go back">
                                 <i data-lucide="arrow-left" class="w-5 h-5"></i>
                             </button>
-                            <div class="relative bg-gray-100 rounded-full flex items-center px-3 sm:px-4 py-3 flex-1 min-w-0"><i
+                                <div class="relative bg-gray-100 rounded-lg flex items-center px-3 sm:px-4 py-3 flex-1 min-w-0"><i
                                     data-lucide="search" class="w-5 h-5 text-gray-400 mr-3"></i><input type="text"
                                     id="mobile-explore-search"
                                     class="bg-transparent border-none outline-none text-[15px] w-full" placeholder="Search This"
@@ -6694,15 +6700,8 @@
             }
             currentUser.following ||= []; currentUser.followers ||= []; currentUser.friends ||= []; currentUser.saved ||= []; currentUser.links ||= []; currentUser.settings ||= { privateNetwork: false }; window.currentUser = currentUser; savedPosts = currentUser.saved; if (!currentUser.username) document.getElementById('username-modal').classList.remove('hidden'); const detailsOverlay = document.getElementById('details-overlay'); if (detailsOverlay) detailsOverlay.style.display = 'none'; updateUserInterface(); initRealtimeListeners(); refreshIcons(); initBannerDrag(); window.checkUserBirthday(); window.history.replaceState({ root: true }, ""); if (l) { l.style.opacity = '0'; setTimeout(() => l.remove(), 500) } initializeStateFromURL(); });
         window.onpopstate = e => { 
-            // Clear search inputs when navigating back
-            const globalSearch = document.getElementById('global-search');
-            const mobileExploreSearch = document.getElementById('mobile-explore-search');
-            if (globalSearch) globalSearch.value = '';
-            if (mobileExploreSearch) mobileExploreSearch.value = '';
-            // Reset search results
-            if (window.currentViewName === 'explore') {
-                handleSearch('');
-            }
+            // Preserve search inputs/results when popping state that closes overlays.
+            // Only clear search state on a true navigation away (handled later below).
             
             const modals = [{ id: 'thread-overlay', close: window.closeThread }, { id: 'comments-overlay', close: window.closeComments }, { id: 'post-view-overlay', close: window.closePostView }, { id: 'edit-profile-overlay', close: window.closeEditProfile }, { id: 'likes-overlay', close: window.closeLikes }, { id: 'user-list-overlay', close: window.closeUserList }, { id: 'feed-filter-overlay', close: window.closeFeedFilter }, { id: 'compose-overlay', close: window.attemptCloseCompose }, { id: 'share-overlay', close: window.closeShareMenu }, { id: 'post-options-overlay', close: window.hidePostMenu }, { id: 'settings-overlay', close: window.closeSettings }, { id: 'notif-options-overlay', close: window.closeNotifOptions }, { id: 'qr-overlay', close: window.closeQR }, { id: 'privacy-overlay', close: window.closePrivacySettings }, { id: 'profile-filter-overlay', close: window.closeProfileFilter }, { id: 'download-select-overlay', close: window.closeDownloadSelect }, { id: 'comment-options-overlay', close: window.closeCommentOptions }, { id: 'create-menu-overlay', close: window.closeCreateMenu }, { id: 'announcement-overlay', close: window.closeAnnouncement }, { id: 'profile-preview-overlay', close: window.closeProfilePreview }, { id: 'claim-link-overlay', close: window.closeClaimOverlay }, { id: 'view-profile', close: () => window.switchView('feed') }]; let closedAny = false; if (e.state && e.state.modal) { } else { for (let m of modals) { const el = document.getElementById(m.id); if (el && !el.classList.contains('hidden') && !el.classList.contains('opacity-0')) { if (m.id === 'view-profile') { if (window.currentViewingProfileId) { window.switchView('feed'); window.currentViewingProfileId = null; closedAny = true } } else if (m.id === 'compose-overlay') { window.closeCompose(); closedAny = true } else if (m.id === 'create-menu-overlay') { window.closeCreateMenu(); closedAny = true } else { m.close(); closedAny = true } if (closedAny) break } } } if (!closedAny) { if (history.length > 1) { history.back(); } else { if (exitAttempt) { } else { window.history.pushState({ root: true }, ""); exitAttempt = true; showToast("Press back again to exit"); setTimeout(() => { exitAttempt = false }, 2000) } } } };
         window.checkUsername = e => { const v = e.value.trim().toLowerCase(), l = v.length; document.getElementById('username-counter').innerText = `${l}/20`; if (l < 3) { document.getElementById('username-error').classList.add('hidden'); return } const t = users.some(u => u.username === v && u.id !== currentUser.id); const err = document.getElementById('username-error'); if (t) { err.innerText = "Username taken"; err.classList.remove('hidden') } else err.classList.add('hidden') };
@@ -8807,6 +8806,40 @@
             if (q) handleSearch(q);
         };
 
+        // Ensure double-tap-to-like works for posts rendered as HTML in search results
+        window.attachSearchDoubleTap = () => {
+            const cards = document.querySelectorAll('#explore-results .post-card');
+            cards.forEach(d => {
+                if (d.__doubleTapBound) return;
+                d.__doubleTapBound = true;
+                let lastTapTime = 0;
+                const isMobileViewport = () => window.innerWidth < 768;
+                const isInteractiveTarget = (target) => Boolean(target && target.closest('button, a, input, textarea, select, [onclick], .post-avatar, .post-author-name, .post-actions, .post-header'));
+                d.addEventListener('touchend', (e) => {
+                    if (!isMobileViewport()) return;
+                    const target = e.target;
+                    if (isInteractiveTarget(target)) return;
+                    e.preventDefault(); e.stopPropagation();
+                    const now = Date.now();
+                    if (now - lastTapTime < 280) {
+                        lastTapTime = 0;
+                        const pid = (d.id || '').split('-').slice(-1)[0];
+                        if (pid) {
+                            window.toggleLike(pid, true);
+                            const heartOverlay = document.createElement('div');
+                            heartOverlay.className = 'post-double-tap-heart';
+                            heartOverlay.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path></svg>';
+                            d.appendChild(heartOverlay);
+                            requestAnimationFrame(() => heartOverlay.classList.add('show'));
+                            heartOverlay.addEventListener('animationend', () => heartOverlay.remove(), { once: true });
+                        }
+                    } else {
+                        lastTapTime = now;
+                    }
+                }, { passive: false });
+            });
+        };
+
         window.switchExploreMainTab = t => {
             window.activeExploreTab = t;
             const tabIds = ['posts', 'people', 'tags'];
@@ -9114,8 +9147,8 @@
                     html += `<div class="px-6 pt-2 pb-2 text-[11px] font-bold text-gray-400 uppercase tracking-[0.1em]">Trending Tags</div>`;
                     html += `<div class="px-2 pb-2">` + tags.map(({tag, count}) => `
                         <div class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer rounded-xl transition-colors group" onclick="searchTag('${tag}'); document.getElementById('search-suggestions').classList.add('hidden')">
-                            <div class="w-10 h-10 flex items-center justify-center text-gray-500">
-                                <i data-lucide="hash" class="w-6 h-6"></i>
+                                <div class="w-10 h-10 flex items-center justify-center text-gray-500">
+                                <i data-lucide="hash" class="w-6 h-6 custom-icon custom-icon-bold"></i>
                             </div>
                             <div class="flex-1 min-w-0">
                                 <div class="text-[15px] font-bold text-gray-900 truncate">#${tag}</div>
@@ -9304,7 +9337,7 @@
                         <div class="flex items-center justify-between px-4 py-3">
                             <div class="flex items-center gap-3 min-w-0">
                                 <div class="w-9 h-9 rounded-full border border-gray-100 flex items-center justify-center text-gray-600 shrink-0 bg-white">
-                                    <i data-lucide="hash" class="w-4 h-4"></i>
+                                    <i data-lucide="hash" class="w-4 h-4 custom-icon custom-icon-bold"></i>
                                 </div>
                                 <div class="min-w-0">
                                     <div class="text-[14px] font-semibold text-gray-900 truncate">#${tag}</div>
@@ -9350,6 +9383,8 @@
             v.innerHTML = resultsHtml;
             syncURLState();
             refreshIcons();
+            // Attach double-tap handlers for search-post cards rendered as HTML
+            try { window.attachSearchDoubleTap(); } catch (e) { /* ignore */ }
             if (currentTab === 'posts' && window.exploreSearchState.hasMore) window.observeExploreSearchSentinel();
             return;
         };
