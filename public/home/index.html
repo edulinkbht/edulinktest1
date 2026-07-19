@@ -5713,7 +5713,7 @@
         const firebaseConfig = config.firebaseConfig;
         const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), storage = getStorage(app); window.auth = auth; window.db = db; window.increment = increment;
         window.APP_CONFIG = config; // Store globally for other functions
-        let currentUser = null, users = [], posts = [], notifications = [], savedPosts = [], activeNotifTab = 'all', activeNetworkTab = 'people';
+        let currentUser = null, users = [], posts = [], notifications = [], outgoingFollowRequests = [], savedPosts = [], activeNotifTab = 'all', activeNetworkTab = 'people';
         window.replyingToCommentId = null; window.currentViewingProfileId = null; window.activeExploreTab = 'top'; window.activeExploreCategory = 'For You'; window.activeExploreSearchTab = 'for-you'; window.currentProfileTab = 'posts';
         window.postViewStartTime = null; window.viewedPostsInSession = new Set();
         window.addEventListener('beforeunload', () => {
@@ -6901,6 +6901,11 @@
                 if (m) { m.style.display = u ? 'flex' : 'none'; m.innerText = t }
                 if (!document.getElementById('view-notifications').classList.contains('hidden')) renderNotifications();
                 refreshIcons()
+            })
+
+            onSnapshot(query(collection(db, "notifications"), where("senderId", "==", currentUser.id), where("type", "==", "follow_request")), s => {
+                window.outgoingFollowRequests = s.docs.map(d => ({ id: d.id, ...d.data() }));
+                refreshIcons();
             })
         }
 
@@ -9524,7 +9529,7 @@
                     d = document.createElement('div');
                 d.className = `flex items-center justify-between px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer ${sel ? 'bg-gray-50' : ''}`;
                 d.onclick = () => toggleCollaborator(u);
-                d.innerHTML = `<div class="flex items-center gap-3"><div class="rounded-full w-12 h-12 shrink-0 overflow-hidden"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-[15px] text-gray-900 flex items-center">${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}</div><div class="text-[13px] text-gray-500">@${u.username || 'user'}</div></div></div>${sel ? '<i data-lucide="check" class="text-blue-600 w-5 h-5"></i>' : ''}`;
+                d.innerHTML = `<div class="flex items-center gap-3"><div class="rounded-full w-12 h-12 shrink-0 overflow-hidden"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-[15px] text-gray-900 flex items-center">${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}</div><div class="text-[13px] text-gray-500">${u.username || 'user'}</div></div></div>${sel ? '<i data-lucide="check" class="text-blue-600 w-5 h-5"></i>' : ''}`;
                 c.appendChild(d)
             });
             o.classList.remove('hidden');
@@ -9545,7 +9550,7 @@
                     closeUserList();
                     showProfile(u.id)
                 };
-                d.innerHTML = `<div class="flex items-center gap-3"><div class="rounded-full w-12 h-12 shrink-0 overflow-hidden"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-[15px] text-gray-900 flex items-center">${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}</div><div class="text-[13px] text-gray-500">@${u.username || 'user'}</div></div></div>`;
+                d.innerHTML = `<div class="flex items-center gap-3"><div class="rounded-full w-12 h-12 shrink-0 overflow-hidden"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-[15px] text-gray-900 flex items-center">${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}</div><div class="text-[13px] text-gray-500">${u.username || 'user'}</div></div></div>`;
                 c.appendChild(d)
             });
             document.getElementById('user-list-overlay').classList.remove('hidden')
@@ -9675,8 +9680,9 @@
                 if (!user) return '';
                 const isFollowing = currentUser.following?.includes(user.id);
                 const isFriend = window.isFriend(user.id);
-                const followLabel = isFollowing ? (isFriend ? 'Friends' : 'Following') : (user.settings?.privateNetwork ? 'Request' : 'Follow');
-                const followClass = isFollowing ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white';
+                const isRequested = !isFollowing && user.settings?.privateNetwork && window.hasRequestedFollow(user.id);
+                const followLabel = isFollowing ? (isFriend ? 'Friends' : 'Following') : (user.settings?.privateNetwork ? (isRequested ? 'Requested' : 'Request') : 'Follow');
+                const followClass = isFollowing ? 'bg-white border border-gray-200 text-gray-500' : (isRequested ? 'bg-gray-100 border border-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#3D7EEB] text-white');
                 return `
                     <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer last:border-b-0" onclick="closeUserList();showProfile('${user.id}')">
                         <div class="flex items-center gap-3">
@@ -9687,7 +9693,7 @@
                                 <div class="font-bold text-[15px] text-gray-900 flex items-center">
                                     ${user.name}${user.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}
                                 </div>
-                                <div class="text-[13px] text-gray-500">@${user.username || 'user'}</div>
+                                <div class="text-[13px] text-gray-500">${user.username || 'user'}</div>
                             </div>
                         </div>
                         ${user.id !== currentUser.id ? `
@@ -9971,8 +9977,9 @@
                 if (!u) return '';
                 const isFollowing = currentUser.following?.includes(u.id);
                 const isFriend = window.isFriend(u.id);
-                const followLabel = isFollowing ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? 'Request' : 'Follow');
-                const followClass = isFollowing ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white';
+                const isRequested = !isFollowing && u.settings?.privateNetwork && window.hasRequestedFollow(u.id);
+                const followLabel = isFollowing ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? (isRequested ? 'Requested' : 'Request') : 'Follow');
+                const followClass = isFollowing ? 'bg-white border border-gray-200 text-gray-500' : (isRequested ? 'bg-gray-100 border border-gray-200 text-gray-500 cursor-not-allowed' : 'bg-[#3D7EEB] text-white');
                 return `
                     <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer last:border-b-0" onclick="closeLikes();showProfile('${u.id}')">
                         <div class="flex items-center gap-3">
@@ -9983,7 +9990,7 @@
                                 <div class="font-bold text-[15px] text-gray-900 flex items-center">
                                     ${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}
                                 </div>
-                                <div class="text-[13px] text-gray-500 truncate w-48">@${u.username || 'user'}</div>
+                                <div class="text-[13px] text-gray-500 truncate w-48">${u.username || 'user'}</div>
                             </div>
                         </div>
                         ${u.id !== currentUser.id ? `
@@ -10487,9 +10494,10 @@
             fb.classList.remove('hidden');
             const isF = currentUser.following.includes(uid);
             const isFriend = window.isFriend(uid);
-            fb.innerText = isF ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? 'Request' : 'Follow');
+            const isRequested = !isF && u.settings?.privateNetwork && window.hasRequestedFollow(uid);
+            fb.innerText = isF ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? (isRequested ? 'Requested' : 'Request') : 'Follow');
             fb.onclick = (e) => { e.stopPropagation(); toggleFollow(uid) };
-            fb.className = `flex-1 py-3 ${isF ? 'bg-gray-100 text-gray-900' : 'bg-[#065fd4] text-white'} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
+            fb.className = `flex-1 py-3 ${isF ? 'bg-gray-100 text-gray-900' : (isRequested ? 'bg-gray-100 text-gray-900' : 'bg-[#065fd4] text-white')} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
         }
         document.getElementById('pp-avatar').src = u.avatar; document.getElementById('pp-banner').style.backgroundImage = `url(${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'})`; document.getElementById('pp-name').innerHTML = `${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}`; document.getElementById('pp-username').innerText = `@${u.username || 'user'}`; const pCount = posts.filter(p => p.authorId === uid && (p.content || p.media)).length; document.getElementById('pp-posts-count').innerText = pCount; document.getElementById('pp-followers-count').innerText = u.followers ? u.followers.length : 0; document.getElementById('pp-following-count').innerText = u.following ? u.following.length : 0;
         
@@ -10572,13 +10580,23 @@
             return window.areFriends(currentUser.id, uid);
         };
 
+        window.hasRequestedFollow = (uid) => {
+            return !!(window.outgoingFollowRequests || []).find(n => n.receiverId === uid && n.type === 'follow_request');
+        };
+
         window.toggleFollow = async (uid) => { 
             const m = doc(db, "users", currentUser.id), 
                   t = doc(db, "users", uid), 
                   u = users.find(x => x.id === uid), 
                   isF = currentUser.following.includes(uid), 
                   priv = u?.settings?.privateNetwork,
-                  isFriend = window.isFriend(uid); 
+                  isFriend = window.isFriend(uid),
+                  hasRequested = !isF && priv && window.hasRequestedFollow(uid);
+
+            if (!isF && hasRequested) {
+                showToast("Follow request already sent");
+                return;
+            }
 
             if (isF) {
                 // Unfollow confirmation
@@ -10607,6 +10625,10 @@
                 if (priv) { 
                     showToast("Request sent"); 
                     sendNotification(uid, 'follow_request', 'wants to follow you');
+                    window.outgoingFollowRequests = window.outgoingFollowRequests || [];
+                    if (!window.hasRequestedFollow(uid)) {
+                        window.outgoingFollowRequests.push({ receiverId: uid, type: 'follow_request' });
+                    }
                 } else { 
                     currentUser.following.push(uid); 
                     showToast("Following"); 
@@ -10621,15 +10643,18 @@
             // Update button label
             const updateButton = (b, isNowF) => {
                 const isNowFriend = window.isFriend(uid);
+                const isNowRequested = !isNowF && priv && window.hasRequestedFollow(uid);
+                const label = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? (isNowRequested ? 'Requested' : 'Request') : 'Follow');
+                const baseClass = isNowF ? 'bg-white text-gray-900 border border-gray-200' : (isNowRequested ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#3D7EEB] text-white');
                 if (b.id === 'profile-follow-btn') {
-                    b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
-                    b.className = `js-follow-btn-${uid} ${isNowF ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#3D7EEB] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
+                    b.innerText = label;
+                    b.className = `js-follow-btn-${uid} ${baseClass} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
                 } else if (b.id === 'pp-follow-btn') {
-                    b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
-                    b.className = `flex-1 py-3 ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
+                    b.innerText = label;
+                    b.className = `flex-1 py-3 ${baseClass} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
                 } else {
-                    b.innerText = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? 'Request' : 'Follow');
-                    b.className = `js-follow-btn-${uid} min-w-[90px] px-4 py-1.5 rounded-lg text-[13px] font-bold ${isNowF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} transition-all hover:opacity-90`;
+                    b.innerText = label;
+                    b.className = `js-follow-btn-${uid} min-w-[90px] px-4 py-1.5 rounded-lg text-[13px] font-bold ${baseClass} transition-all hover:opacity-90`;
                 }
             };
 
@@ -10692,7 +10717,8 @@
                 `;
             }
 
-            let ab = me ? `<div class="flex gap-2"><button onclick="openEditProfile()" class="bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-2 rounded-full font-bold hover:bg-gray-50 transition-all min-w-[95px]">Edit Profile</button><button onclick="openQR()" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>` : `<div class="flex gap-2"><button id="profile-follow-btn" onclick="toggleFollow('${uid}')" class="js-follow-btn-${uid} ${fol ? 'bg-white text-gray-900 border border-gray-200' : 'bg-[#3D7EEB] text-white'} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]">${fol ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? 'Request' : 'Follow')}</button><button onclick="openQR('${uid}')" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>`; const canViewConnections = me || (!u.settings?.hideConnections && !u.settings?.privateNetwork); const clickFollowing = canViewConnections ? `onclick="openUserList('following','${uid}')"` : `onclick="showToast('Connections are private')"`; const clickFollowers = canViewConnections ? `onclick="openUserList('followers','${uid}')"` : `onclick="showToast('Connections are private')"`; const cursorClass = canViewConnections ? 'cursor-pointer hover:underline' : 'cursor-default opacity-80'; let stats = `<div class="flex gap-4 mt-3 text-sm text-gray-500"><span class="${cursorClass}" ${clickFollowing}><strong class="text-gray-900">${u.following?.length || 0}</strong> Following</span><span class="${cursorClass}" ${clickFollowers}><strong class="text-gray-900">${u.followers?.length || 0}</strong> Followers</span></div>`;             const tabList = ['posts', 'reposts', 'liked', 'tagged'];
+            const isRequested = !fol && u.settings?.privateNetwork && window.hasRequestedFollow(uid);
+            let ab = me ? `<div class="flex gap-2"><button onclick="openEditProfile()" class="bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-2 rounded-full font-bold hover:bg-gray-50 transition-all min-w-[95px]">Edit Profile</button><button onclick="openQR()" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>` : `<div class="flex gap-2"><button id="profile-follow-btn" onclick="toggleFollow('${uid}')" class="js-follow-btn-${uid} ${fol ? 'bg-white text-gray-900 border border-gray-200' : (isRequested ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#3D7EEB] text-white')} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]">${fol ? (isFriend ? 'Friends' : 'Following') : (u.settings?.privateNetwork ? (isRequested ? 'Requested' : 'Request') : 'Follow')}</button><button onclick="openQR('${uid}')" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>`; const canViewConnections = me || (!u.settings?.hideConnections && !u.settings?.privateNetwork); const clickFollowing = canViewConnections ? `onclick="openUserList('following','${uid}')"` : `onclick="showToast('Connections are private')"`; const clickFollowers = canViewConnections ? `onclick="openUserList('followers','${uid}')"` : `onclick="showToast('Connections are private')"`; const cursorClass = canViewConnections ? 'cursor-pointer hover:underline' : 'cursor-default opacity-80'; let stats = `<div class="flex gap-4 mt-3 text-sm text-gray-500"><span class="${cursorClass}" ${clickFollowing}><strong class="text-gray-900">${u.following?.length || 0}</strong> Following</span><span class="${cursorClass}" ${clickFollowers}><strong class="text-gray-900">${u.followers?.length || 0}</strong> Followers</span></div>`;             const tabList = ['posts', 'reposts', 'liked', 'tagged'];
             const tabs = tabList.map(t => ((!me && t === 'liked')) ? '' : `<button onclick="switchProfileTab('${t}')" class="tab-btn ${tab === t ? 'active' : ''}"><i data-lucide="${{ posts: 'grid-2x2-check', reposts: 'repeat', liked: 'heart', tagged: 'contact' }[t]}" class="w-[22px] h-[22px]"></i></button>`).join('');
             const urlMatch = u.bio?.match(/(https?:\/\/[^\s]+)/), previewId = `preview-bio-${u.id}`, previewHtml = urlMatch ? `<div id="${previewId}"></div>` : '';
             if (urlMatch) setTimeout(() => window.renderLinkPreview(urlMatch[0], previewId), 100);
@@ -12659,7 +12685,7 @@
                                 <div class="font-bold text-[15px] text-gray-900 flex items-center">
                                     ${u.name}${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}
                                 </div>
-                                <div class="text-[13px] text-gray-500 truncate w-48">@${u.username || 'user'}</div>
+                                <div class="text-[13px] text-gray-500 truncate w-48">${u.username || 'user'}</div>
                             </div>
                         </div>
                         <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center ${isSelected ? 'bg-[#3D7EEB] border-[#3D7EEB]' : ''}">
