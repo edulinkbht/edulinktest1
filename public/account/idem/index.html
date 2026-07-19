@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    
+    <meta name="theme-color" content="#ffffff">
+    
+    <title>Account Settings - Idem</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            /* Light Theme Variables Only - Instagram Inspired */
+            --bg-color: #ffffff;
+            --text-primary: #000000;
+            --text-secondary: #737373;
+            --border-color: #dbdbdb;
+            --input-bg: #fafafa;
+            --input-focus-border: #a8a8a8; 
+            --button-bg: #3D7EEB;          
+            --button-text: #ffffff;
+            --button-hover: #2765CE;       
+            --link-color: #00376b;
+            --placeholder-color: #8e8e8e;
+            --entered-text-color: #262626;
+            --note-bg: #efefef;
+            
+            --health-weak: #ed4956;
+            --status-success: #198754;
+        }
+
+        html {
+            background-color: var(--bg-color) !important;
+            height: 100%;
+            overscroll-behavior: none;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        body {
+            background-color: var(--bg-color) !important;
+            min-height: 100vh;
+            margin: 0;
+            padding: 54px 24px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            overflow-y: auto;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        html::-webkit-scrollbar, body::-webkit-scrollbar {
+            display: none;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: transparent;
+        }
+
+        input, select, button, textarea, option, optgroup {
+            font-family: inherit !important;
+        }
+
+        .main-wrapper {
+            width: 100%;
+            max-width: 480px; 
+        }
+
+        /* Back Button */
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            margin-bottom: 32px;
+            padding: 6px 0;
+            font-size: 16px; 
+            font-weight: 700;
+            transition: opacity 0.2s ease;
+        }
+
+        .back-btn svg {
+            width: 22px;
+            height: 22px;
+            stroke-width: 3.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .back-btn:hover {
+            opacity: 0.7;
+        }
+
+        /* Header Block */
+        .header {
+            text-align: left; 
+            margin-bottom: 36px;
+            padding: 0 4px;
+        }
+
+        .header .logo {
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 10px;
+        }
+
+        .logo-text {
+            font-size: 24px; 
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.03em;
+        }
+
+        .header h1 {
+            font-size: 22px; 
+            font-weight: 600;
+            line-height: 1.25;
+            margin: 0;
+            color: var(--text-secondary);
+            letter-spacing: -0.01em;
+        }
+
+        /* Profile Banner & Avatar Styles */
+        .profile-header {
+            position: relative;
+            margin-bottom: 54px;
+        }
+
+        .banner-container {
+            width: 100%;
+            height: 160px;
+            background-color: var(--note-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+        }
+
+        .banner-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .avatar-container {
+            position: absolute;
+            bottom: -35px;
+            left: 20px;
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 4px solid var(--bg-color);
+            background-color: var(--note-bg);
+            overflow: hidden;
+            cursor: pointer;
+            z-index: 5;
+        }
+
+        .avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .edit-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+            color: white;
+            z-index: 3;
+            border-radius: inherit;
+        }
+
+        .edit-overlay i {
+            width: 24px;
+            height: 24px;
+            color: white;
+        }
+
+        .banner-container:hover .edit-overlay,
+        .avatar-container:hover .edit-overlay {
+            opacity: 1;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px; 
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            padding-left: 4px;
+        }
+
+        .input-container-field {
+            display: flex;
+            align-items: center;
+            width: 100%;
+            border: 1px solid var(--border-color);
+            border-radius: 16px; 
+            background-color: var(--input-bg);
+            transition: border-color 0.15s ease;
+            padding: 0 18px; 
+        }
+
+        .input-container-field:focus-within {
+            border-color: var(--input-focus-border);
+        }
+
+        .input-container-field input, .input-container-field textarea {
+            flex: 1;
+            width: 100%;
+            padding: 15px 0; 
+            font-size: 15px; 
+            border: none;
+            outline: none;
+            color: var(--entered-text-color);
+            background-color: transparent;
+            resize: none;
+        }
+
+        .input-container-field input::placeholder, .input-container-field textarea::placeholder {
+            color: var(--placeholder-color);
+            font-size: 15px;
+        }
+
+        .input-container-field input:disabled {
+            color: var(--text-secondary);
+        }
+
+        .form-control-raw {
+            width: 100%;
+            padding: 15px 18px; 
+            font-size: 15px; 
+            border: 1px solid var(--border-color);
+            border-radius: 16px; 
+            background-color: var(--input-bg);
+            color: var(--entered-text-color);
+            transition: border-color 0.15s ease;
+            outline: none;
+        }
+
+        .form-control-raw:focus {
+            border-color: var(--input-focus-border);
+        }
+
+        .row {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .col {
+            flex: 1;
+            min-width: 110px;
+        }
+
+        select.form-control-raw {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2224%22%20height%3D%2224%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23737373%22%20stroke-width%3D%223.5%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 18px top 50%;
+            background-size: 14px auto;
+            padding-right: 40px;
+        }
+
+        select.form-control-raw::-ms-expand {
+            display: none;
+        }
+
+        .privacy-note {
+            font-size: 13px; 
+            color: var(--text-secondary);
+            margin-top: 8px;
+            line-height: 1.45;
+            text-align: left;
+            padding: 0 4px;
+        }
+
+        .privacy-note strong {
+            color: var(--text-primary);
+            font-weight: 600;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: var(--button-bg);
+            color: var(--button-text);
+            border: none;
+            border-radius: 16px; 
+            padding: 14px 20px; 
+            font-size: 15px; 
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 28px;
+            transition: background-color 0.1s ease;
+        }
+
+        .submit-btn:hover {
+            background-color: var(--button-hover);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: default;
+        }
+
+        .auth-method-badge {
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 16px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 4px;
+            background-color: var(--note-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Loading Spinner */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3.5px solid var(--border-color);
+            border-top-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: spinLoop 1s linear infinite;
+        }
+
+        @keyframes spinLoop {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loading-screen" class="loading-screen">
+    <div class="spinner"></div>
+</div>
+
+<div class="main-wrapper hidden" id="main-content">
+    <button type="button" class="back-btn" onclick="window.history.back()" aria-label="Go back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <line x1="19" y1="12" x2="5" y2="12"></line>
+            <polyline points="12 19 5 12 12 5"></polyline>
+        </svg>
+        <span>Return</span>
+    </button>
+
+    <div class="header">
+        <div class="logo">
+            <img src="https://i.imghippo.com/files/fRGt5603uII.png" alt="Idem Logo" width="32" height="32">
+            <span class="logo-text">Idem Account Center</span>
+        </div>
+        <h1>Manage your profile and account settings.</h1>
+    </div>
+
+    <div class="profile-header">
+        <div class="banner-container" onclick="document.getElementById('banner-input').click()">
+            <img id="profile-banner" src="https://i.imghippo.com/files/vgr8207c.png" alt="Banner">
+            <div class="edit-overlay">
+                <i data-lucide="camera"></i>
+            </div>
+            <input type="file" id="banner-input" class="hidden" accept="image/*">
+        </div>
+        <div class="avatar-container" onclick="document.getElementById('avatar-input').click()">
+            <img id="profile-avatar" src="https://i.imghippo.com/files/fRGt5603uII.png" alt="Avatar">
+            <div class="edit-overlay">
+                <i data-lucide="camera"></i>
+            </div>
+            <input type="file" id="avatar-input" class="hidden" accept="image/*">
+        </div>
+    </div>
+
+    <form id="account-form">
+        <div class="form-group">
+            <label>Login Method</label>
+            <div id="auth-method" class="auth-method-badge">Detecting...</div>
+        </div>
+
+        <div class="form-group">
+            <label>Display name</label>
+            <div class="input-container-field">
+                <input type="text" id="display-name" placeholder="Full name" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Username</label>
+            <div class="input-container-field">
+                <input type="text" id="username" placeholder="Username" maxlength="20" oninput="validateUsername(this)" required>
+            </div>
+            <p class="privacy-note">Usernames can only contain lowercase letters, numbers, underscores, and periods.</p>
+        </div>
+
+        <div class="form-group">
+            <label>Bio</label>
+            <div class="input-container-field">
+                <textarea id="bio" placeholder="Tell us about yourself..." rows="3"></textarea>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Email address</label>
+            <div class="input-container-field">
+                <input type="email" id="email" placeholder="name@example.com" disabled>
+            </div>
+            <p class="privacy-note">Email address cannot be changed here.</p>
+        </div>
+
+        <div class="form-group">
+            <label>Birthday</label>
+            <div class="row">
+                <select id="birth-month" class="form-control-raw col" required>
+                    <option value="" disabled selected>Month</option>
+                    <option value="1">January</option><option value="2">February</option>
+                    <option value="3">March</option><option value="4">April</option>
+                    <option value="5">May</option><option value="6">June</option>
+                    <option value="7">July</option><option value="8">August</option>
+                    <option value="9">September</option><option value="10">October</option>
+                    <option value="11">November</option><option value="12">December</option>
+                </select>
+                <select id="birth-day" class="form-control-raw col" required>
+                    <option value="" disabled selected>Day</option>
+                </select>
+                <select id="birth-year" class="form-control-raw col" required>
+                    <option value="" disabled selected>Year</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Location</label>
+            <div class="input-container-field">
+                <input type="text" id="location" placeholder="City, Country">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Biological Gender</label>
+            <select id="gender" class="form-control-raw" required>
+                <option value="" disabled selected>Select your gender</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Sexual Orientation</label>
+            <select id="sexual-orientation" class="form-control-raw" required>
+                <option value="" disabled selected>Select orientation</option>
+                <option value="Straight">Straight / Heterosexual</option>
+                <option value="Gay/Lesbian">Gay / Lesbian</option>
+                <option value="Bisexual">Bisexual</option>
+                <option value="Pansexual">Pansexual</option>
+                <option value="Asexual">Asexual</option>
+                <option value="Prefer not to say">Prefer not to say</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Account Privacy</label>
+            <select id="privacy" class="form-control-raw" required>
+                <option value="public">Public</option>
+                <option value="private">Private</option>
+            </select>
+            <p class="privacy-note">
+                <strong>Privacy Note:</strong> If set to private, your profile will only be visible to followers.
+            </p>
+        </div>
+
+        <div class="form-group" id="password-section">
+            <label>New Password (Optional)</label>
+            <div class="input-container-field">
+                <input type="password" id="new-password" placeholder="Leave blank to keep current">
+            </div>
+        </div>
+
+        <button type="submit" id="save-btn" class="submit-btn">Save Changes</button>
+    </form>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { getFirestore, doc, getDoc, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+    const firebaseConfig = { 
+        apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno", 
+        authDomain: "edulinki.firebaseapp.com", 
+        projectId: "edulinki", 
+        storageBucket: "edulinki.firebasestorage.app", 
+        messagingSenderId: "248886466474", 
+        appId: "1:248886466474:web:160043201a6b28bafbbdd3", 
+        measurementId: "G-MQBH12VL7N" 
+    }; 
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const storage = getStorage(app);
+
+    // Initialize Lucide Icons
+    lucide.createIcons();
+
+    let currentUser = null;
+
+    // Initialize Date Selects
+    const dayMenu = document.getElementById('birth-day');
+    for (let d = 1; d <= 31; d++) {
+        let option = document.createElement('option');
+        option.value = d;
+        option.textContent = d;
+        dayMenu.appendChild(option);
+    }
+    const yearMenu = document.getElementById('birth-year');
+    const systemYear = new Date().getFullYear();
+    for (let y = systemYear; y >= 1905; y--) {
+        let option = document.createElement('option');
+        option.value = y;
+        option.textContent = y;
+        yearMenu.appendChild(option);
+    }
+
+    window.validateUsername = function(input) {
+        let value = input.value.toLowerCase();
+        value = value.replace(/[^a-z0-9._]/g, '');
+        input.value = value;
+    };
+
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            currentUser = user;
+            await loadUserData(user.uid);
+            detectAuthMethod(user);
+            document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+        } else {
+            window.location.href = 'index.html';
+        }
+    });
+
+    function detectAuthMethod(user) {
+        const provider = user.providerData[0]?.providerId;
+        const badge = document.getElementById('auth-method');
+        if (provider === 'google.com') {
+            badge.textContent = 'Signed in with Google';
+            document.getElementById('password-section').classList.add('hidden');
+        } else {
+            badge.textContent = 'Signed in with Email';
+            document.getElementById('password-section').classList.remove('hidden');
+        }
+    }
+
+    async function loadUserData(uid) {
+        const userDocRef = doc(db, "users", uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+            const data = userDoc.data();
+            document.getElementById('display-name').value = data.name || '';
+            document.getElementById('username').value = data.username || '';
+            document.getElementById('bio').value = data.bio || '';
+            document.getElementById('email').value = currentUser.email;
+            document.getElementById('location').value = data.location || '';
+            document.getElementById('gender').value = data.gender || '';
+            document.getElementById('sexual-orientation').value = data.sexualOrientation || '';
+            document.getElementById('privacy').value = data.privacy || 'public';
+            
+            if (data.dob) {
+                const parts = data.dob.split('-');
+                if (parts.length === 3) {
+                    document.getElementById('birth-year').value = parts[0];
+                    document.getElementById('birth-month').value = parseInt(parts[1]);
+                    document.getElementById('birth-day').value = parseInt(parts[2]);
+                }
+            }
+
+            if (data.avatar) document.getElementById('profile-avatar').src = data.avatar;
+            if (data.banner) document.getElementById('profile-banner').src = data.banner;
+        } else {
+            const initialData = {
+                name: currentUser.displayName || '',
+                email: currentUser.email,
+                username: currentUser.email.split('@')[0],
+                timestamp: new Date(),
+                isOfficial: false,
+                verified: false,
+                followers: [],
+                following: []
+            };
+            await setDoc(userDocRef, initialData);
+            
+            document.getElementById('display-name').value = initialData.name;
+            document.getElementById('username').value = initialData.username;
+            document.getElementById('email').value = initialData.email;
+        }
+    }
+
+    document.getElementById('account-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const saveBtn = document.getElementById('save-btn');
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+
+        try {
+            const dob = `${document.getElementById('birth-year').value}-${document.getElementById('birth-month').value.padStart(2, '0')}-${document.getElementById('birth-day').value.padStart(2, '0')}`;
+            
+            const userData = {
+                name: document.getElementById('display-name').value,
+                username: document.getElementById('username').value,
+                bio: document.getElementById('bio').value,
+                location: document.getElementById('location').value,
+                gender: document.getElementById('gender').value,
+                sexualOrientation: document.getElementById('sexual-orientation').value,
+                privacy: document.getElementById('privacy').value,
+                dob: dob,
+                updatedAt: new Date()
+            };
+
+            await updateDoc(doc(db, "users", currentUser.uid), userData);
+
+            const newPassword = document.getElementById('new-password').value;
+            if (newPassword) {
+                await updatePassword(currentUser, newPassword);
+            }
+
+            alert('Profile updated successfully!');
+        } catch (error) {
+            console.error(error);
+            alert('Error updating profile: ' + error.message);
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save Changes';
+        }
+    });
+
+    async function handleImageUpload(file, type) {
+        const storageRef = ref(storage, `users/${currentUser.uid}/${type}_${Date.now()}`);
+        await uploadBytes(storageRef, file);
+        const url = await getDownloadURL(storageRef);
+        
+        const updateData = {};
+        updateData[type] = url;
+        await updateDoc(doc(db, "users", currentUser.uid), updateData);
+        
+        document.getElementById(`profile-${type}`).src = url;
+    }
+
+    document.getElementById('avatar-input').addEventListener('change', (e) => {
+        if (e.target.files[0]) handleImageUpload(e.target.files[0], 'avatar');
+    });
+
+    document.getElementById('banner-input').addEventListener('change', (e) => {
+        if (e.target.files[0]) handleImageUpload(e.target.files[0], 'banner');
+    });
+</script>
+
+</body>
+</html>
