@@ -8616,7 +8616,7 @@
         window.openFeedFilter = () => { manageHistory('feed-filter-overlay'); toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !0) }; window.closeFeedFilter = () => toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !1); window.switchFeedFilter = f => { window.activeFeedFilter = f; closeFeedFilter(); renderFeed(); const m = { all: 'All Posts', following: 'Following', friends: 'Friends Only' }; showToast(`Filter: ${m[f]}`, false, "Your feed has been updated based on your selection.") };
         let touchStartX = 0, touchEndX = 0; window.handleTouchStart = e => touchStartX = e.changedTouches[0].screenX; window.handleTouchEnd = (e, pid, ov) => { touchEndX = e.changedTouches[0].screenX; const w = e.currentTarget.closest('.post-carousel'); if (w && Math.abs(touchStartX - touchEndX) > 50) moveCarousel(w.id, touchStartX > touchEndX ? 1 : -1) };
         function createPostElement(p, ctx = 'feed') {
-            const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); d.id = `post-card-${ctx}-${p.id}`; d.className = ctx === 'search' ? "post-card group overflow-hidden w-full" : "post-card group overflow-hidden w-full md:max-w-2xl md:mx-auto md:px-4 md:mb-4"; 
+            const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', isOfficial: false, id: p.authorId }, st = p.settings || { privacy: 'public', showComments: true }, d = document.createElement('article'); d.id = `post-card-${ctx}-${p.id}`; d.className = "post-card group overflow-hidden w-full md:max-w-2xl md:mx-auto md:px-4 md:mb-4"; 
             
             // Check if this is a video post
             const isVideoPost = () => {
@@ -8842,6 +8842,43 @@
             const q = (window.currentSearchQuery || '').trim();
             if (q) handleSearch(q);
         };
+
+        window.exploreSearchTabOrder = ['for-you', 'people', 'posts', 'hashtags'];
+        window.exploreSwipeStartX = 0;
+        window.exploreSwipeStartY = 0;
+        window.handleExploreSwipeStart = event => {
+            if (!window.currentViewName || window.currentViewName !== 'explore') return;
+            const tabsVisible = !document.getElementById('explore-search-tabs')?.classList.contains('hidden');
+            if (!tabsVisible) return;
+            const touch = event.touches?.[0];
+            if (!touch) return;
+            window.exploreSwipeStartX = touch.clientX;
+            window.exploreSwipeStartY = touch.clientY;
+        };
+        window.handleExploreSwipeEnd = event => {
+            if (!window.exploreSwipeStartX) return;
+            const touch = event.changedTouches?.[0];
+            if (!touch) return;
+            const dx = touch.clientX - window.exploreSwipeStartX;
+            const dy = touch.clientY - window.exploreSwipeStartY;
+            window.exploreSwipeStartX = 0;
+            window.exploreSwipeStartY = 0;
+            if (Math.abs(dx) < 60 || Math.abs(dx) <= Math.abs(dy)) return;
+            const currentTab = window.activeExploreSearchTab || 'for-you';
+            const currentIndex = window.exploreSearchTabOrder.indexOf(currentTab);
+            if (currentIndex < 0) return;
+            const nextIndex = dx < 0 ? currentIndex + 1 : currentIndex - 1;
+            if (nextIndex < 0 || nextIndex >= window.exploreSearchTabOrder.length) return;
+            window.switchExploreSearchTab(window.exploreSearchTabOrder[nextIndex]);
+        };
+        window.initExploreSearchSwipe = () => {
+            const exploreView = document.getElementById('view-explore');
+            if (!exploreView || exploreView.__exploreSwipeInit) return;
+            exploreView.__exploreSwipeInit = true;
+            exploreView.addEventListener('touchstart', window.handleExploreSwipeStart, { passive: true });
+            exploreView.addEventListener('touchend', window.handleExploreSwipeEnd, { passive: true });
+        };
+        window.initExploreSearchSwipe();
 
         // Ensure double-tap-to-like works for posts rendered as HTML in search results
         window.attachSearchDoubleTap = () => {
