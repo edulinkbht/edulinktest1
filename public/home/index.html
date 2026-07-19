@@ -615,6 +615,50 @@
             transform: none
         }
 
+        /* Tag page grid styles */
+        .tag-page-overlay {
+            position: fixed;
+            inset: 0;
+            background: #fff;
+            z-index: 2200;
+            display: flex;
+            flex-direction: column;
+            overflow: auto;
+        }
+
+        .tag-page-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--outline);
+            background: #fff;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .tag-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            padding: 16px;
+            max-width: 1100px;
+            margin: 0 auto 60px auto;
+            box-sizing: border-box;
+        }
+
+        .tag-grid .grid-card {
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--surface);
+            border: 1px solid var(--outline);
+        }
+
+        @media (min-width: 768px) {
+            .tag-grid { grid-template-columns: repeat(3, 1fr); }
+        }
+
         .post-header {
             display: flex;
             justify-content: space-between;
@@ -6418,7 +6462,79 @@
             if (f) f.style.width = `${percent}%`;
         };
 
-        window.searchTag = t => { closePostView(); switchView('explore'); document.getElementById('mobile-explore-search').value = document.getElementById('global-search').value = `#${t}`; handleSearch(`#${t}`) };
+        window.searchTag = t => {
+            try { closePostView(); } catch (e) {}
+            // Set search inputs for big screen and mobile
+            const mg = document.getElementById('global-search');
+            const me = document.getElementById('mobile-explore-search');
+            if (mg && window.innerWidth >= 768) mg.value = `#${t}`;
+            if (me) me.value = `#${t}`;
+            // For immediate search results update
+            handleSearch(`#${t}`);
+            // Also open a focused tag overlay showing the tag grid
+            window.openTagPage(t);
+        };
+
+        window.openTagPage = (tag) => {
+            if (!tag) return;
+            // Remove existing overlay
+            const existing = document.getElementById('tag-page-overlay');
+            if (existing) existing.remove();
+
+            const o = document.createElement('div');
+            o.id = 'tag-page-overlay';
+            o.className = 'tag-page-overlay';
+            o.innerHTML = `
+                <div class="tag-page-header">
+                    <button class="modal-chevron-btn" id="tag-back-btn" aria-label="Back"><i data-lucide="chevron-left" class="w-6 h-6"></i></button>
+                    <div style="flex:1; text-align:left; font-weight:600; font-size:16px;">#${escapeHtml(tag)}</div>
+                    <div style="width:36px"></div>
+                </div>
+                <div id="tag-page-content" style="flex:1;">
+                    <div class="tag-grid" id="tag-grid"></div>
+                </div>
+                <div style="position:sticky; bottom:0; background:transparent; padding:12px 16px; border-top:1px solid var(--outline);">
+                    <div style="max-width:1100px; margin:0 auto; text-align:center; font-size:13px; color:#6b7280;">Showing results for <strong>#$ {escapeHtml(tag)}</strong></div>
+                </div>
+            `.replace('#$ {escapeHtml(tag)}', `#${escapeHtml(tag)}`);
+
+            document.body.appendChild(o);
+            // bind back
+            document.getElementById('tag-back-btn').addEventListener('click', () => {
+                window.closeTagPage();
+            });
+
+            window.renderTagGrid(tag);
+            refreshIcons();
+        };
+
+        window.closeTagPage = () => {
+            const el = document.getElementById('tag-page-overlay');
+            if (el) el.remove();
+        };
+
+        window.renderTagGrid = (tag) => {
+            const grid = document.getElementById('tag-grid');
+            if (!grid) return;
+            const t = (tag || '').toLowerCase();
+            const matched = posts.filter(p => p && String(p.content || '').toLowerCase().includes(`#${t}`) && window.canSeePost(p));
+            if (!matched.length) {
+                grid.innerHTML = '<div class="text-center py-20 text-gray-400">No posts found for this tag.</div>';
+                return;
+            }
+
+            grid.innerHTML = matched.map(p => {
+                const media = Array.isArray(p.media) ? p.media[0] : (p.media || null);
+                const img = media ? `<img src="${media}" loading="lazy" onerror="this.onerror=null;this.src='https://i.pinimg.com/736x/2c/47/d5/2c47d5dd5b532f83bb55c4cd6f5bd1ef.jpg'" style="width:100%;height:140px;object-fit:cover;display:block">` : `<div style="padding:18px;color:#111">${(p.content||'').substring(0,120)}</div>`;
+                return `
+                    <div class="grid-card" onclick="event.stopPropagation(); openPostView('${p.id}')">
+                        ${img}
+                    </div>
+                `;
+            }).join('');
+        };
+
+        function escapeHtml(s) { return String(s).replace(/[&<>\"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
         window.manageHistory = m => window.history.pushState({ modal: m }, "");
         window.getPostUrl = (authorId, postId) => {
             const u = users.find(x => x.id === authorId);
@@ -14412,20 +14528,47 @@
         }, true);
         document.addEventListener('error', function (e) {
             const el = e.target;
-            if (el.tagName === 'IMG' && el.classList.contains('rounded-full')) {
-                const parent = el.parentElement;
-                if (parent) {
-                    el.style.display = 'none';
-                    if (!parent.querySelector('svg')) {
-                        parent.style.backgroundColor = '#f3f4f6';
-                        parent.style.display = 'flex';
-                        parent.style.alignItems = 'center';
-                        parent.style.justifyContent = 'center';
-                        const icon = document.createElement('i');
-                        icon.setAttribute('data-lucide', 'user-round');
-                        icon.className = 'w-8 h-8 text-gray-400';
-                        parent.appendChild(icon);
-                        if (window.lucide) lucide.createIcons({ nodes: [icon] });
+            if (el.tagName === 'IMG') {
+                const isAvatar = el.classList.contains('rounded-full') || (el.id && el.id.toLowerCase().includes('avatar')) || Boolean(el.closest && el.closest('.post-avatar-container'));
+                if (isAvatar) {
+                    // Use provided fallback avatar image for avatars
+                    try {
+                        el.onerror = null;
+                        el.src = 'https://i.pinimg.com/736x/2c/47/d5/2c47d5dd5b532f83bb55c4cd6f5bd1ef.jpg';
+                    } catch (ex) {
+                        // fallback to icon if setting src fails
+                        const parent = el.parentElement;
+                        if (parent) {
+                            el.style.display = 'none';
+                            if (!parent.querySelector('svg')) {
+                                parent.style.backgroundColor = '#f3f4f6';
+                                parent.style.display = 'flex';
+                                parent.style.alignItems = 'center';
+                                parent.style.justifyContent = 'center';
+                                const icon = document.createElement('i');
+                                icon.setAttribute('data-lucide', 'user-round');
+                                icon.className = 'w-8 h-8 text-gray-400';
+                                parent.appendChild(icon);
+                                if (window.lucide) lucide.createIcons({ nodes: [icon] });
+                            }
+                        }
+                    }
+                } else {
+                    // Non-avatar fallback: hide broken image and leave placeholder behavior
+                    const parent = el.parentElement;
+                    if (parent) {
+                        el.style.display = 'none';
+                        if (!parent.querySelector('svg')) {
+                            parent.style.backgroundColor = '#f3f4f6';
+                            parent.style.display = 'flex';
+                            parent.style.alignItems = 'center';
+                            parent.style.justifyContent = 'center';
+                            const icon = document.createElement('i');
+                            icon.setAttribute('data-lucide', 'image');
+                            icon.className = 'w-8 h-8 text-gray-400';
+                            parent.appendChild(icon);
+                            if (window.lucide) lucide.createIcons({ nodes: [icon] });
+                        }
                     }
                 }
             }
