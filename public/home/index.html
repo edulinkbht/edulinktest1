@@ -6948,8 +6948,17 @@
             document.getElementById('edit-username').value = u.username || "";
             document.getElementById('edit-bio').value = u.bio || "";
             document.getElementById('edit-avatar-preview').src = u.avatar;
-            document.getElementById('edit-banner-preview').src = u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png';
-            document.getElementById('edit-banner-preview').style.objectPosition = `center ${currentBannerPos}%`;
+            const editBannerPreview = document.getElementById('edit-banner-preview');
+            if (u.banner) {
+                editBannerPreview.src = u.banner;
+                editBannerPreview.style.backgroundColor = '';
+                editBannerPreview.style.objectPosition = `center ${currentBannerPos}%`;
+            } else {
+                // No banner: show solid color fill instead of the default image
+                editBannerPreview.src = '';
+                editBannerPreview.style.objectPosition = `center ${currentBannerPos}%`;
+                editBannerPreview.style.backgroundColor = '#3D7EEB';
+            }
             document.getElementById('banner-pos-hint').innerText = `${currentBannerPos}%`;
             const tp = document.getElementById('toggle-privacy');
             if (tp) u.settings?.privateNetwork ? tp.classList.add('active') : tp.classList.remove('active');
@@ -10563,7 +10572,16 @@
             fb.onclick = (e) => { e.stopPropagation(); toggleFollow(uid) };
             fb.className = `flex-1 py-3 ${isF ? 'bg-gray-100 text-gray-900' : (isRequested ? 'bg-gray-100 text-gray-900' : 'bg-[#065fd4] text-white')} font-bold rounded-xl hover:opacity-90 transition-all text-sm js-follow-btn-${uid}`;
         }
-        document.getElementById('pp-avatar').src = u.avatar; document.getElementById('pp-banner').style.backgroundImage = `url(${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'})`; document.getElementById('pp-name').innerHTML = `${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}`; document.getElementById('pp-username').innerText = `@${u.username || 'user'}`; const pCount = posts.filter(p => p.authorId === uid && (p.content || p.media)).length; document.getElementById('pp-posts-count').innerText = pCount; document.getElementById('pp-followers-count').innerText = u.followers ? u.followers.length : 0; document.getElementById('pp-following-count').innerText = u.following ? u.following.length : 0;
+        document.getElementById('pp-avatar').src = u.avatar;
+        const ppBannerEl = document.getElementById('pp-banner');
+        if (u.banner) {
+            ppBannerEl.style.backgroundImage = `url(${u.banner})`;
+            ppBannerEl.style.backgroundColor = '';
+        } else {
+            ppBannerEl.style.backgroundImage = 'none';
+            ppBannerEl.style.backgroundColor = '#3D7EEB';
+        }
+        document.getElementById('pp-name').innerHTML = `${u.name} ${u.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''}`; document.getElementById('pp-username').innerText = `@${u.username || 'user'}`; const pCount = posts.filter(p => p.authorId === uid && (p.content || p.media)).length; document.getElementById('pp-posts-count').innerText = pCount; document.getElementById('pp-followers-count').innerText = u.followers ? u.followers.length : 0; document.getElementById('pp-following-count').innerText = u.following ? u.following.length : 0;
         
         // Update bio
         const ppBioContainer = document.getElementById('pp-bio');
@@ -10800,7 +10818,7 @@
                                     <i data-lucide="search" class="w-6 h-6 text-gray-900"></i>
                                 </button>
                             </header>
-                            <div class="profile-banner-container px-4 md:px-0 bg-white"><img src="${u.banner || 'https://i.imghippo.com/files/dHv4045RXI.png'}" class="profile-banner-img md:rounded-none rounded-xl" style="object-position:center ${u.bannerPos || 50}%" onload="this.classList.add('loaded')"></div><div class="bg-white md:rounded-t-[30px] relative z-10 pt-4 px-4 md:px-6 min-h-[calc(100%-140px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"><div class="flex items-end -mt-12 mb-3 gap-6 md:justify-between md:px-2"><div class="flex items-end gap-3"><div class="rounded-full border-4 border-white bg-gray-100 w-20 h-20 md:w-24 md:h-24 shrink-0 flex items-center justify-center overflow-hidden" id="profile-avatar-wrap"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover cursor-pointer" onclick="openLightbox('${u.avatar}')" onload="this.classList.add('loaded')" onerror="this.style.display='none';this.parentElement.innerHTML='<i data-lucide=\'user-round\' class=\'w-12 h-12 text-gray-400\'></i>';refreshIcons()"></div><div class="hidden md:block">${mutualFriendsHtml}</div></div>
+                            <div class="profile-banner-container px-4 md:px-0 bg-white">${u.banner ? '<img src="'+u.banner+'" class="profile-banner-img md:rounded-none rounded-xl" style="object-position:center '+(u.bannerPos||50)+'%" onload="this.classList.add(\'loaded\')">' : '<div class="profile-banner-img md:rounded-none rounded-xl" style="background-color:#3D7EEB"></div>'}</div><div class="bg-white md:rounded-t-[30px] relative z-10 pt-4 px-4 md:px-6 min-h-[calc(100%-140px)] shadow-[0_-2px_10px_rgba(0,0,0,0.05)]"><div class="flex items-end -mt-12 mb-3 gap-6 md:justify-between md:px-2"><div class="flex items-end gap-3"><div class="rounded-full border-4 border-white bg-gray-100 w-20 h-20 md:w-24 md:h-24 shrink-0 flex items-center justify-center overflow-hidden" id="profile-avatar-wrap"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover cursor-pointer" onclick="openLightbox('${u.avatar}')" onload="this.classList.add('loaded')" onerror="this.style.display='none';this.parentElement.innerHTML='<i data-lucide=\'user-round\' class=\'w-12 h-12 text-gray-400\'></i>';refreshIcons()"></div><div class="hidden md:block">${mutualFriendsHtml}</div></div>
                                 <!-- Mobile only: Following/Followers -->
                                 <div class="flex items-center gap-6 md:hidden">
                                     <div class="text-center ${cursorClass}" ${clickFollowing}>
@@ -14445,6 +14463,27 @@
                 }
             }
         }, true);
+        // Ensure profile banners without images use the solid brand color as fallback
+        document.addEventListener('DOMContentLoaded', () => {
+            document.querySelectorAll('.profile-banner-container').forEach(c => {
+                const img = c.querySelector('img.profile-banner-img');
+                if (!img || !img.src) {
+                    c.style.backgroundImage = 'none';
+                    c.style.backgroundColor = '#3D7EEB';
+                    if (img) img.style.display = 'none';
+                }
+            });
+            const eb = document.getElementById('edit-banner-preview');
+            const LEGACY_BANNER = 'https://i.imghippo.com/files/dHv4045RXI.png';
+            if (eb) {
+                const src = (eb.src || '').toString();
+                if (!src || src.trim() === '' || src.includes(LEGACY_BANNER)) {
+                    eb.style.backgroundColor = '#3D7EEB';
+                    eb.style.display = 'block';
+                }
+            }
+        });
+
         refreshIcons();
     </script>
 </body>
