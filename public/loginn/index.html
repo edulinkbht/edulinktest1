@@ -17,7 +17,6 @@
             --bg-input: #ffffff; 
             --border-color: #dadde1;
             --gradient-accent: linear-gradient(135deg, #ff007f, #ff7a00);
-            --error-red: #ed4956;
         }
 
         * {
@@ -190,21 +189,6 @@
             font-weight: 600;
         }
 
-        /* Instagram-style Error Alert Box */
-        .error-alert {
-            display: none;
-            color: var(--error-red);
-            font-size: 14px;
-            text-align: center;
-            margin-bottom: 1.25rem;
-            line-height: 1.4;
-            font-weight: 400;
-            padding: 10px 14px;
-            background-color: #fff5f5;
-            border: 1px solid #ffe0e0;
-            border-radius: 8px;
-        }
-
         .input-group {
             margin-bottom: 1rem;
             position: relative;
@@ -254,11 +238,6 @@
 
         .password-toggle:hover {
             color: var(--text-dark);
-        }
-
-        .lucide {
-            width: 20px;
-            height: 20px;
         }
 
         .btn {
@@ -340,22 +319,21 @@
             color: var(--text-dark);
         }
 
-        /* --- Modern Custom Success Modal --- */
+        /* --- Instagram-style Dark Error Modal Overlay --- */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(6px);
+            background: rgba(0, 0, 0, 0.65);
             display: flex;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            z-index: 2000;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.25s ease, visibility 0.25s ease;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
         }
 
         .modal-overlay.active {
@@ -364,49 +342,55 @@
         }
 
         .modal-card {
-            background: #ffffff;
-            border-radius: 20px;
-            padding: 2rem;
+            background: #262626;
+            color: #ffffff;
+            border-radius: 14px;
             width: 90%;
-            max-width: 380px;
+            max-width: 320px;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
-            transform: translateY(12px) scale(0.96);
-            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            transform: scale(1.05);
+            transition: transform 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
         }
 
         .modal-overlay.active .modal-card {
-            transform: translateY(0) scale(1);
+            transform: scale(1);
         }
 
-        .modal-icon {
-            width: 56px;
-            height: 56px;
-            background-color: #e6f4ea;
-            color: #137333;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.25rem auto;
+        .modal-body {
+            padding: 24px 20px;
         }
 
-        .modal-icon .lucide {
-            width: 32px;
-            height: 32px;
-        }
-
-        .modal-card h3 {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-            color: var(--text-dark);
-        }
-
-        .modal-card p {
+        .modal-body p {
             font-size: 14px;
-            color: var(--text-muted);
-            margin-bottom: 1.5rem;
+            line-height: 1.45;
+            color: #f5f5f5;
+            font-weight: 400;
+        }
+
+        .modal-footer {
+            border-top: 1px solid #363636;
+        }
+
+        .modal-footer button {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #0095f6;
+            font-weight: 700;
+            font-size: 14px;
+            padding: 14px 0;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .modal-footer button:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .modal-footer button:active {
+            opacity: 0.7;
         }
 
         @media (max-width: 1024px) {
@@ -476,11 +460,6 @@
                 <div class="form-header">
                     <h2>Log into your account</h2>
                 </div>
-                
-                <!-- Instagram-Style Error Alert Box -->
-                <div id="errorAlert" class="error-alert">
-                    Sorry, your password was incorrect. Please double-check your password.
-                </div>
 
                 <form id="loginForm" action="#" method="POST">
                     <div class="input-group">
@@ -524,15 +503,15 @@
         
     </main>
 
-    <!-- Custom Success Modal Overlay -->
-    <div id="successModal" class="modal-overlay">
+    <!-- Instagram-style Error Overlay Modal -->
+    <div id="errorModal" class="modal-overlay">
         <div class="modal-card">
-            <div class="modal-icon">
-                <i data-lucide="check"></i>
+            <div class="modal-body">
+                <p id="errorMessage">The username or password you entered is incorrect. Please try again.</p>
             </div>
-            <h3>Success!</h3>
-            <p>Logged in successfully!</p>
-            <button id="modalConfirmBtn" class="btn btn-primary">Continue</button>
+            <div class="modal-footer">
+                <button id="modalOkBtn" type="button">OK</button>
+            </div>
         </div>
     </div>
 
@@ -565,7 +544,7 @@
             measurementId: "G-MQBH12VL7N"
         };
 
-        // Initialize Firebase services
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         const auth = getAuth(app);
@@ -576,33 +555,29 @@
         const loginForm = document.getElementById('loginForm');
         const userInput = document.getElementById('userInput');
         const passwordInput = document.getElementById('passwordInput');
-        const errorAlert = document.getElementById('errorAlert');
         const googleSsoBtn = document.getElementById('googleSsoBtn');
         const createAccountBtn = document.getElementById('createAccountBtn');
         
-        const successModal = document.getElementById('successModal');
-        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const errorModal = document.getElementById('errorModal');
+        const errorMessage = document.getElementById('errorMessage');
+        const modalOkBtn = document.getElementById('modalOkBtn');
 
-        // Helper: Instagram-style Error Message
-        function showError(message) {
-            errorAlert.textContent = message;
-            errorAlert.style.display = 'block';
+        // Show Dark Error Overlay Modal
+        function showErrorModal(message) {
+            errorMessage.textContent = message || "The username or password you entered is incorrect. Please try again.";
+            errorModal.classList.add('active');
         }
 
-        function hideError() {
-            errorAlert.style.display = 'none';
-        }
+        // Hide Modal
+        modalOkBtn.addEventListener('click', () => {
+            errorModal.classList.remove('active');
+        });
 
-        userInput.addEventListener('input', hideError);
-        passwordInput.addEventListener('input', hideError);
-
-        // Custom Modal Functionality
-        function showSuccessModal() {
-            successModal.classList.add('active');
-        }
-
-        modalConfirmBtn.addEventListener('click', () => {
-            window.location.href = '/home';
+        // Close modal when clicking outside card
+        errorModal.addEventListener('click', (e) => {
+            if (e.target === errorModal) {
+                errorModal.classList.remove('active');
+            }
         });
 
         // Redirect 'Create new account' to /idem
@@ -610,13 +585,13 @@
             window.location.href = '/idem';
         });
 
-        // Helper function: Convert Username to Email if required
+        // Helper function: Query username and return corresponding Email
         async function resolveEmail(inputVal) {
             if (inputVal.includes('@')) {
-                return inputVal; // Input is already an email address
+                return inputVal; // Already an email
             }
             
-            // Search Firestore 'users' collection for matching username
+            // Query Firestore 'users' collection for username match
             const usersRef = collection(db, "users");
             const q = query(usersRef, where("username", "==", inputVal.trim().toLowerCase()));
             const querySnapshot = await getDocs(q);
@@ -632,63 +607,48 @@
             }
         }
 
-        // Handle Form Submission (Email or Username + Password)
+        // Handle Email / Username Login Submit
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            hideError();
 
             const rawUser = userInput.value.trim();
             const password = passwordInput.value;
 
             try {
-                // 1. Resolve email from username if necessary
+                // 1. Resolve email from username if required
                 const email = await resolveEmail(rawUser);
 
-                // 2. Sign in with Firebase Auth
-                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                // 2. Authenticate
+                await signInWithEmailAndPassword(auth, email, password);
                 
-                // Show Custom Modal instead of browser alert
-                showSuccessModal();
+                // 3. Directly redirect on successful login
+                window.location.href = '/home';
 
             } catch (error) {
                 console.error("Login Error:", error);
-                
-                if (
-                    error.message === 'user-not-found' ||
-                    error.code === 'auth/wrong-password' || 
-                    error.code === 'auth/user-not-found' || 
-                    error.code === 'auth/invalid-credential'
-                ) {
-                    showError("Sorry, your username/email or password was incorrect. Please try again.");
-                } else if (error.code === 'auth/invalid-email') {
-                    showError("The email address format is invalid.");
-                } else if (error.code === 'auth/too-many-requests') {
-                    showError("Too many failed attempts. Please try again later.");
-                } else {
-                    showError("There was a problem logging you in. Please check your details.");
-                }
+                showErrorModal("The username or password you entered is incorrect. Please try again.");
             }
         });
 
-        // Handle Google SSO
+        // Handle Google SSO Login
         googleSsoBtn.addEventListener('click', async () => {
-            hideError();
             try {
                 await signInWithPopup(auth, googleProvider);
-                showSuccessModal();
+                // Directly redirect on successful Google sign-in
+                window.location.href = '/home';
             } catch (error) {
                 console.error("Google Auth Error:", error);
-                showError("Could not sign in with Google. Please try again.");
+                showErrorModal("Could not sign in with Google. Please try again.");
             }
         });
     </script>
 
-    <!-- UI Scripts -->
+    <!-- UI Toggle Script -->
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
 
-        // Password Visibility Toggle
+        // Password Show/Hide Toggle
         const passwordInputUI = document.getElementById('passwordInput');
         const togglePasswordBtn = document.getElementById('togglePasswordBtn');
 
