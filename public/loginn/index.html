@@ -28,7 +28,6 @@
             -webkit-font-smoothing: antialiased;
         }
 
-        /* Allow scrolling but hide the visual scrollbar */
         body {
             background-color: var(--bg-body);
             display: flex;
@@ -341,6 +340,75 @@
             color: var(--text-dark);
         }
 
+        /* --- Modern Custom Success Modal --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0.25s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-card {
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 380px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            transform: translateY(12px) scale(0.96);
+            transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .modal-overlay.active .modal-card {
+            transform: translateY(0) scale(1);
+        }
+
+        .modal-icon {
+            width: 56px;
+            height: 56px;
+            background-color: #e6f4ea;
+            color: #137333;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem auto;
+        }
+
+        .modal-icon .lucide {
+            width: 32px;
+            height: 32px;
+        }
+
+        .modal-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text-dark);
+        }
+
+        .modal-card p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
         @media (max-width: 1024px) {
             .container {
                 flex-direction: column;
@@ -416,7 +484,7 @@
 
                 <form id="loginForm" action="#" method="POST">
                     <div class="input-group">
-                        <input type="email" id="emailInput" placeholder="Mobile number, username or email" required>
+                        <input type="text" id="userInput" placeholder="Mobile number, username or email" required>
                     </div>
                     <div class="input-group">
                         <input type="password" id="passwordInput" placeholder="Password" required>
@@ -440,7 +508,7 @@
                     Log in with Google
                 </button>
                 
-                <button type="button" class="btn btn-outline">Create new account</button>
+                <button type="button" id="createAccountBtn" class="btn btn-outline">Create new account</button>
 
                 <!-- Footer content -->
                 <div class="form-footer">
@@ -456,7 +524,19 @@
         
     </main>
 
-    <!-- Firebase Authentication Logic -->
+    <!-- Custom Success Modal Overlay -->
+    <div id="successModal" class="modal-overlay">
+        <div class="modal-card">
+            <div class="modal-icon">
+                <i data-lucide="check"></i>
+            </div>
+            <h3>Success!</h3>
+            <p>Logged in successfully!</p>
+            <button id="modalConfirmBtn" class="btn btn-primary">Continue</button>
+        </div>
+    </div>
+
+    <!-- Firebase Authentication & Logic -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
@@ -466,8 +546,15 @@
             GoogleAuthProvider, 
             signInWithPopup 
         } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            query, 
+            where, 
+            getDocs 
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Your web app's Firebase configuration
+        // Web app Firebase configuration
         const firebaseConfig = {
             apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
             authDomain: "edulinki.firebaseapp.com",
@@ -478,74 +565,117 @@
             measurementId: "G-MQBH12VL7N"
         };
 
-        // Initialize Firebase & Auth
+        // Initialize Firebase services
         const app = initializeApp(firebaseConfig);
         const analytics = getAnalytics(app);
         const auth = getAuth(app);
+        const db = getFirestore(app);
         const googleProvider = new GoogleAuthProvider();
 
-        // DOM elements
+        // DOM Elements
         const loginForm = document.getElementById('loginForm');
-        const emailInput = document.getElementById('emailInput');
+        const userInput = document.getElementById('userInput');
         const passwordInput = document.getElementById('passwordInput');
         const errorAlert = document.getElementById('errorAlert');
         const googleSsoBtn = document.getElementById('googleSsoBtn');
+        const createAccountBtn = document.getElementById('createAccountBtn');
+        
+        const successModal = document.getElementById('successModal');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
 
-        // Helper to show Instagram-style error
+        // Helper: Instagram-style Error Message
         function showError(message) {
             errorAlert.textContent = message;
             errorAlert.style.display = 'block';
         }
 
-        // Helper to clear error
         function hideError() {
             errorAlert.style.display = 'none';
         }
 
-        // Hide alert when user starts typing again
-        emailInput.addEventListener('input', hideError);
+        userInput.addEventListener('input', hideError);
         passwordInput.addEventListener('input', hideError);
 
-        // Handle Email/Password Login
+        // Custom Modal Functionality
+        function showSuccessModal() {
+            successModal.classList.add('active');
+        }
+
+        modalConfirmBtn.addEventListener('click', () => {
+            window.location.href = '/home';
+        });
+
+        // Redirect 'Create new account' to /idem
+        createAccountBtn.addEventListener('click', () => {
+            window.location.href = '/idem';
+        });
+
+        // Helper function: Convert Username to Email if required
+        async function resolveEmail(inputVal) {
+            if (inputVal.includes('@')) {
+                return inputVal; // Input is already an email address
+            }
+            
+            // Search Firestore 'users' collection for matching username
+            const usersRef = collection(db, "users");
+            const q = query(usersRef, where("username", "==", inputVal.trim().toLowerCase()));
+            const querySnapshot = await getDocs(q);
+
+            if (!querySnapshot.empty) {
+                let resolvedEmail = null;
+                querySnapshot.forEach((doc) => {
+                    resolvedEmail = doc.data().email;
+                });
+                return resolvedEmail;
+            } else {
+                throw new Error("user-not-found");
+            }
+        }
+
+        // Handle Form Submission (Email or Username + Password)
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             hideError();
 
-            const email = emailInput.value.trim();
+            const rawUser = userInput.value.trim();
             const password = passwordInput.value;
 
             try {
+                // 1. Resolve email from username if necessary
+                const email = await resolveEmail(rawUser);
+
+                // 2. Sign in with Firebase Auth
                 const userCredential = await signInWithEmailAndPassword(auth, email, password);
-                // Login successful
-                console.log("Logged in successfully:", userCredential.user);
-                alert("Logged in successfully!");
-            } catch (error) {
-                console.error("Firebase Login Error:", error.code);
                 
-                // Instagram-style error messaging
+                // Show Custom Modal instead of browser alert
+                showSuccessModal();
+
+            } catch (error) {
+                console.error("Login Error:", error);
+                
                 if (
+                    error.message === 'user-not-found' ||
                     error.code === 'auth/wrong-password' || 
                     error.code === 'auth/user-not-found' || 
                     error.code === 'auth/invalid-credential'
                 ) {
-                    showError("Sorry, your password was incorrect. Please double-check your password.");
+                    showError("Sorry, your username/email or password was incorrect. Please try again.");
                 } else if (error.code === 'auth/invalid-email') {
-                    showError("The email address you entered is invalid.");
+                    showError("The email address format is invalid.");
                 } else if (error.code === 'auth/too-many-requests') {
                     showError("Too many failed attempts. Please try again later.");
                 } else {
-                    showError("There was a problem logging you in. Please check your credentials.");
+                    showError("There was a problem logging you in. Please check your details.");
                 }
             }
         });
 
-        // Handle Google SSO Login
+        // Handle Google SSO
         googleSsoBtn.addEventListener('click', async () => {
             hideError();
             try {
-                const result = await signInWithPopup(auth, googleProvider);
-                console.log("Google Sign-In success:", result.user);
-                alert("Google Sign-In successful!");
+                await signInWithPopup(auth, googleProvider);
+                showSuccessModal();
             } catch (error) {
                 console.error("Google Auth Error:", error);
                 showError("Could not sign in with Google. Please try again.");
@@ -558,7 +688,7 @@
         // Initialize Lucide icons
         lucide.createIcons();
 
-        // Password Show/Hide Toggle
+        // Password Visibility Toggle
         const passwordInputUI = document.getElementById('passwordInput');
         const togglePasswordBtn = document.getElementById('togglePasswordBtn');
 
