@@ -1114,57 +1114,15 @@
             position: relative; /* For absolute toast positioning */
         }
 
-        #desktop-notifications-panel {
+        #notifications-sidebar {
             display: none;
-        }
-
-        #desktop-notifications-panel .panel-header {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-        }
-
-        #desktop-notifications-panel .panel-header .title {
-            font-size: 1rem;
-            font-weight: 700;
-            color: #111827;
-        }
-
-        #desktop-notifications-panel .panel-header .subtitle {
-            font-size: 0.9rem;
-            color: #6b7280;
-        }
-
-        #desktop-notifications-list {
-            max-height: calc(100vh - 230px);
+            max-height: calc(100vh - 140px);
+            min-height: 0;
             overflow-y: auto;
-            background: #f8fafc;
         }
 
-        #desktop-notifications-list::-webkit-scrollbar {
-            width: 7px;
-        }
-
-        #desktop-notifications-list::-webkit-scrollbar-thumb {
-            background-color: rgba(148, 163, 184, 0.5);
-            border-radius: 9999px;
-        }
-
-        #desktop-notifications-list .desktop-notif-card {
-            padding: 16px;
-            border-bottom: 1px solid rgba(229, 231, 235, 1);
-            background: #ffffff;
-            transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
-        }
-
-        #desktop-notifications-list .desktop-notif-card:hover {
-            background: #f8fafc;
-            transform: translateY(-1px);
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
-        }
-
-        #desktop-notifications-list .desktop-notif-card:last-child {
-            border-bottom: none;
+        #notifications-sidebar .tab-btn {
+            font-size: 13px;
         }
 
         @media (min-width:1280px) {
@@ -1173,7 +1131,8 @@
                 padding: 0 0px 24px 40px;
                 gap: 20px;
             }
-            #desktop-notifications-panel {
+
+            #notifications-sidebar {
                 display: flex;
             }
         }
@@ -5678,7 +5637,7 @@
             </div>
         </main>
         <aside id="trending-panel" class="trending-panel">
-            <div id="trending-default" class="hidden xl:flex flex-col gap-5 w-full">
+            <div class="hidden xl:flex flex-col gap-5 w-full">
                 <div id="background-upload-container" class="w-full"></div>
 
                 <div id="promo-section" class="hidden relative group rounded-[20px] overflow-hidden cursor-pointer border border-gray-100 bg-gray-50">
@@ -5690,33 +5649,16 @@
                     </button>
                 </div>
 
-                <div class="px-6 pt-4 pb-4">
-                    <div class="flex flex-wrap gap-x-3 gap-y-2 text-[#777] text-[12px] font-normal opacity-90">
-                        <span>© 2026 EduLink</span>
-                        <a href="/terms" class="hover:text-blue-600 transition-colors">Terms</a>
-                        <a href="/terms" class="hover:text-blue-600 transition-colors">Privacy</a>
-                        <a href="/report" class="hover:text-blue-600 transition-colors">Report</a>
-                    </div>
-                </div>
-            </div>
-
-            <div id="desktop-notifications-panel" class="hidden xl:flex flex-col gap-4 w-full">
-                <div class="bg-white rounded-3xl border border-gray-100 p-4 shadow-sm">
-                    <div class="flex items-center justify-between gap-3">
+                <div id="notifications-sidebar" class="hidden flex-col w-full h-full overflow-y-auto bg-white rounded-[28px] border border-gray-100 shadow-sm">
+                    <div class="sticky top-0 z-20 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between gap-3">
                         <div>
-                            <div class="text-lg font-bold text-gray-900">Activity</div>
-                            <div class="text-sm text-gray-500">Your notifications on desktop</div>
+                            <div class="text-sm text-gray-500 uppercase tracking-[0.22em] font-semibold">Activity</div>
+                            <div class="text-lg font-bold text-gray-900">Notifications</div>
                         </div>
-                        <button type="button" onclick="confirmDeleteAllActivities()" class="hidden xl:inline-flex items-center gap-2 px-3 py-2 rounded-full border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors">
-                            <i data-lucide="trash-2" class="w-4 h-4"></i>Clear
-                        </button>
+                        <button onclick="switchView(window.lastMainView || 'feed');" class="text-[13px] text-blue-600 font-semibold hover:text-blue-700 transition-colors">Back</button>
                     </div>
-                    <div class="mt-4">
-                        <input id="desktop-notifications-search" type="text" placeholder="Search notifications" oninput="handleNotifSearch(this.value)" class="w-full bg-[#f3f4f6] rounded-full py-3 pl-4 pr-4 outline-none border border-gray-200 focus:border-gray-300 transition-all text-sm text-gray-900" />
-                    </div>
+                    <div id="notifications-sidebar-content" class="px-0 py-0"></div>
                 </div>
-                <div id="desktop-notifications-list" class="flex flex-col w-full bg-white rounded-3xl border border-gray-100 overflow-hidden"></div>
-            </div>
 
                 <div class="px-6 pt-4 pb-4">
                     <div class="flex flex-wrap gap-x-3 gap-y-2 text-[#777] text-[12px] font-normal opacity-90">
@@ -5815,6 +5757,7 @@
         const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), storage = getStorage(app); window.auth = auth; window.db = db; window.increment = increment;
         window.APP_CONFIG = config; // Store globally for other functions
         let currentUser = null, users = [], posts = [], notifications = [], outgoingFollowRequests = [], savedPosts = [], activeNotifTab = 'all', activeNetworkTab = 'people';
+        window.lastMainView = 'feed';
         window.replyingToCommentId = null; window.currentViewingProfileId = null; window.activeExploreTab = 'top'; window.activeExploreCategory = 'For You'; window.activeExploreSearchTab = 'for-you'; window.currentProfileTab = 'posts';
         window.postViewStartTime = null; window.viewedPostsInSession = new Set();
         window.addEventListener('beforeunload', () => {
@@ -7221,28 +7164,21 @@
             `;
             refreshIcons();
         };
-        window.previousDesktopMainView = 'feed';
         window.switchView = async (v, direction = 'none') => {
-            const previousViewName = window.currentViewName;
             ['feed', 'events', 'saved', 'network', 'profile', 'explore', 'blog', 'reels', 'notifications', 'settings', 'notification-settings', 'mute-friends', 'create'].forEach(n => { const e = document.getElementById(`view-${n}`); if (e) e.classList.add('hidden', 'slide-in-right', 'slide-in-left') }); 
             
             const ms = document.getElementById('main-sidebar'); // Left sidebar
             const tp = document.getElementById('trending-panel'); // Right sidebar
+            const notifSidebar = document.getElementById('notifications-sidebar');
+            const promoSection = document.getElementById('promo-section');
             const wl = document.getElementById('workspace-layout'); // The whole layout container
             const mh = document.getElementById('main-header'), 
                   mbn = document.getElementById('mobile-bottom-nav'), 
                   mnh = document.getElementById('mobile-notifications-header'), 
                   mp = document.getElementById('main-panel'); 
-            const trendingDefault = document.getElementById('trending-default');
-            const desktopNotifPanel = document.getElementById('desktop-notifications-panel');
-            const notificationsView = document.getElementById('view-notifications');
             
-            if (v === 'notifications' && window.innerWidth >= 1280) {
-                if (previousViewName && previousViewName !== 'notifications') {
-                    window.previousDesktopMainView = previousViewName;
-                }
-            }
-            
+            const showNotificationsOnSidebar = (v === 'notifications' && window.innerWidth >= 1280);
+            if (v !== 'notifications') window.lastMainView = v;
             window.currentViewName = v; 
             
             // Only show sidebar on desktop
@@ -7267,22 +7203,16 @@
             if ((v === 'profile' || v === 'reels') && mh) mh.classList.add('hidden'); 
             if ((v === 'settings' || v === 'notification-settings' || v === 'mute-friends' || v === 'create') && mh && window.innerWidth < 768) mh.classList.add('hidden'); 
             if (v === 'notifications') { 
-                if (window.innerWidth < 1280) {
-                    if (mh) mh.classList.add('hidden'); 
-                    if (mnh) { 
-                        if (window.innerWidth < 768) {
-                            mnh.classList.add('hidden'); 
-                        } else {
-                            mnh.classList.remove('hidden'); 
-                            mnh.classList.add('flex'); 
-                        }
-                    } 
-                    if (mbn && window.innerWidth < 768) mbn.classList.add('hidden'); 
-                } else {
-                    if (mh) mh.classList.remove('hidden');
-                    if (mnh) mnh.classList.add('hidden');
-                    if (mbn) mbn.classList.remove('hidden');
-                }
+                if (mh) mh.classList.add('hidden'); 
+                if (mnh) { 
+                    if (window.innerWidth < 768) {
+                        mnh.classList.add('hidden'); 
+                    } else {
+                        mnh.classList.remove('hidden'); 
+                        mnh.classList.add('flex'); 
+                    }
+                } 
+                if (mbn && window.innerWidth < 768) mbn.classList.add('hidden'); 
             } 
             else if (window.innerWidth < 768 && v === 'explore' && mh) mh.classList.add('hidden'); 
             
@@ -7318,31 +7248,33 @@
                 mp.style.width = '';
             }
             
-            if (window.innerWidth >= 1280 && v !== 'explore') tp.classList.remove('hidden'), tp.classList.add('xl:flex'); 
-            else tp.classList.add('hidden'), tp.classList.remove('xl:flex'); 
-            
-            if (v === 'notifications' && window.innerWidth >= 1280) {
-                if (trendingDefault) trendingDefault.classList.add('hidden');
-                if (desktopNotifPanel) desktopNotifPanel.classList.remove('hidden');
-                const mainViewName = window.previousDesktopMainView || 'feed';
-                const mainView = document.getElementById(`view-${mainViewName}`);
-                if (mainView) {
-                    mainView.classList.remove('hidden');
-                }
+            if (window.innerWidth >= 1280 && v !== 'explore') {
+                tp.classList.remove('hidden');
+                tp.classList.add('xl:flex');
             } else {
-                if (trendingDefault) trendingDefault.classList.remove('hidden');
-                if (desktopNotifPanel) desktopNotifPanel.classList.add('hidden');
+                tp.classList.add('hidden');
+                tp.classList.remove('xl:flex');
             }
-            
-            const renderFullView = !(v === 'notifications' && window.innerWidth >= 1280);
-            if (v !== 'ai' && renderFullView) { 
-                const el = document.getElementById(`view-${v}`); 
-                if (el) { 
-                    el.classList.remove('hidden'); 
-                    if (direction === 'left') el.classList.add('slide-in-left'); 
-                    if (direction === 'right') el.classList.add('slide-in-right'); 
-                } 
-            } 
+
+            if (notifSidebar) {
+                if (showNotificationsOnSidebar) {
+                    notifSidebar.classList.remove('hidden');
+                    if (promoSection) promoSection.classList.add('hidden');
+                } else {
+                    notifSidebar.classList.add('hidden');
+                    if (promoSection) promoSection.classList.remove('hidden');
+                }
+            }
+
+            if (v !== 'ai') {
+                const mainViewName = showNotificationsOnSidebar ? (window.lastMainView || 'feed') : v;
+                const el = document.getElementById(`view-${mainViewName}`);
+                if (el) {
+                    el.classList.remove('hidden');
+                    if (direction === 'left') el.classList.add('slide-in-left');
+                    if (direction === 'right') el.classList.add('slide-in-right');
+                }
+            }
             
             // Show/hide create footer
             const createFooter = document.getElementById('create-mobile-footer');
@@ -10424,18 +10356,17 @@
         window.expandedNotifSections = { today: false, lastweek: false, earlier: false };
         window.toggleNotifSection = s => { window.expandedNotifSections[s] = !window.expandedNotifSections[s]; renderNotifications(); };
         window.renderNotifications = () => {
-            const useDesktopPanel = window.innerWidth >= 1280 && window.currentViewName === 'notifications';
-            const c = document.getElementById(useDesktopPanel ? 'desktop-notifications-list' : 'notification-list'), term = window.notifSearchTerm;
-            if (!c) return;
-            const desktopSearchInput = document.getElementById('desktop-notifications-search');
-            if (desktopSearchInput) desktopSearchInput.value = term || '';
+            const c = document.getElementById('notification-list');
+            const notifSidebar = document.getElementById('notifications-sidebar');
+            const notifSidebarContent = document.getElementById('notifications-sidebar-content');
+            const term = window.notifSearchTerm;
             let fl = notifications.filter(n => {
                 const s = users.find(u => u.id === n.senderId) || { name: 'Admin', isOfficial: !1 };
                 const matchesSearch = (!term || n.content.toLowerCase().includes(term) || (s.name || '').toLowerCase().includes(term) || (s.username || '').toLowerCase().includes(term));
                 return matchesSearch;
             });
             
-            const headerHtml = useDesktopPanel ? '' : `
+            const headerHtml = `
                 <div class="md:max-w-2xl md:mx-auto w-full md:px-4 pt-6 md:pt-8">
                     <h2 class="hidden md:block text-[16px] font-bold text-gray-900 mb-4 px-1">User's preference</h2>
                     <div class="hidden md:block bg-white md:rounded-2xl md:border md:border-gray-100 divide-y divide-gray-100 mb-6 overflow-hidden">
@@ -10449,10 +10380,13 @@
                     </div>
                 </div>
             `;
-            const cardClass = useDesktopPanel ? 'desktop-notif-card' : '';
             
+            const useSidebar = window.innerWidth >= 1280 && window.currentViewName === 'notifications' && notifSidebar && notifSidebarContent;
+            const target = useSidebar ? notifSidebarContent : c;
+            if (!target) return;
             if (!fl.length) {
-                c.innerHTML = headerHtml + '<div class="text-center text-xs text-gray-400 py-4">No notifications</div>';
+                if (c) c.classList.toggle('hidden', useSidebar);
+                target.innerHTML = headerHtml + '<div class="text-center text-xs text-gray-400 py-4">No notifications</div>';
                 refreshIcons();
                 return;
             }
@@ -10528,7 +10462,7 @@
                     if (count === 1) text = `<span class="font-bold text-gray-900 inline-flex items-center">@${senders[0].username || 'user'}${senders[0].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span> ${actionText}.`;
                     else if (count === 2) text = `<span class="font-bold text-gray-900 inline-flex items-center">@${senders[0].username || 'user'}${senders[0].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span> and <span class="font-bold text-gray-900 inline-flex items-center">@${senders[1].username || 'user'}${senders[1].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span> ${actionText}.`;
                     else text = `<span class="font-bold text-gray-900 inline-flex items-center">@${senders[0].username || 'user'}${senders[0].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span>, <span class="font-bold text-gray-900 inline-flex items-center">@${senders[1].username || 'user'}${senders[1].isOfficial ? '<i data-lucide="badge-check" class="w-3 h-3 official-badge ml-1"></i>' : ''}</span> and ${count - 2} others ${actionText}.`;
-                    return `<div class="${cardClass} w-full p-4 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="openPostView('${pid}',true)">
+                    return `<div class="w-full p-4 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="openPostView('${pid}',true)">
                         <div class="flex items-start justify-between mb-3">
                             <div class="flex items-start gap-2.5">
                                 <div class="relative flex items-center shrink-0">
@@ -10598,7 +10532,7 @@
                         rightHtml = `<button onclick="event.stopPropagation(); toggleFollow('${s.id}')" class="js-follow-btn-${s.id} shrink-0 bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-1.5 rounded-lg font-bold hover:bg-gray-50 transition-all active:scale-95 min-w-[85px]">Follow back</button>`;
                     }
                     const chk = window.notifSelectionMode ? `<div class="pt-1 mr-3"><input type="checkbox" ${window.selectedNotifs.has(n.id) ? 'checked' : ''} onchange="toggleNotifSelect('${n.id}')" class="w-4 h-4 accent-blue-600 cursor-pointer rounded"></div>` : '';
-                    return `<div class="${cardClass} w-full p-4 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="${click}">
+                    return `<div class="w-full p-4 border-b border-gray-100 bg-white hover:bg-gray-50 transition-colors cursor-pointer" onclick="${click}">
                         <div class="flex items-start justify-between mb-3">
                             <div class="flex items-start gap-2.5">
                                 ${chk}
@@ -10678,7 +10612,9 @@
                     <div class="h-20"></div>
                 </div>` : '';
             
-            c.innerHTML = headerHtml + sectionsHtml + footer;
+            if (!target) return;
+            if (c) c.classList.toggle('hidden', useSidebar);
+            target.innerHTML = headerHtml + sectionsHtml + footer;
             refreshIcons();
         };
 
