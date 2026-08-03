@@ -1123,15 +1123,15 @@
             display: none;
             flex-direction: column;
             background-color: #ffffff !important;
-            border-right: 1px solid #e5e7eb;
-            box-shadow: 12px 0 40px rgba(15, 23, 42, 0.06);
+            border-left: 1px solid #e5e7eb;
+            box-shadow: -12px 0 40px rgba(15, 23, 42, 0.06);
             overflow: hidden;
             position: fixed;
             top: 0;
-            left: 0;
+            right: 0;
             bottom: 0;
             z-index: 999;
-            transform: translateX(-100%);
+            transform: translateX(100%);
             opacity: 0;
             transition: transform 0.24s ease, opacity 0.24s ease;
         }
@@ -1216,13 +1216,22 @@
     padding: 14px 16px; 
     align-items: flex-start; 
     cursor: pointer; 
-    border-bottom: none; 
+    border-bottom: 1px solid #edf2f7; 
     background: #ffffff; 
-    transition: background 0.15s ease; 
+    color: #0f172a; 
+    transition: background 0.2s ease, transform 0.12s ease; 
 }
 
-.notif-item:hover {
-    background: #f8fafc;
+.notif-item:hover { 
+    background: #f8fafc; 
+    transform: translateX(1px); 
+}
+
+.notif-avatar { 
+    width: 44px; 
+    height: 44px; 
+    border-radius: 50%; 
+    object-fit: cover; 
     flex-shrink: 0; 
     background: #ffffff; 
     border: 1px solid #e5e7eb; 
@@ -1278,34 +1287,12 @@
     background: #1d4ed8; 
 }
 
-.notif-action-group {
-    margin-top: 6px;
-}
-
-.notif-preview {
-    margin-top: 8px;
-    width: 100%;
-}
-
-.notif-preview-img {
-    width: 100%;
-    max-height: 110px;
-    object-fit: cover;
-    border-radius: 12px;
-    display: block;
-}
-
-/* "Following" button state - light outlined style, clickable for unfollow */
+/* "Following" button state - distinct dark border & text */
 .notif-action-btn.following { 
-    background: #ffffff; 
-    color: #334155; 
+    background: #e2e8f0; 
+    color: #1e293b; 
     border: 1px solid #cbd5e1; 
-    cursor: pointer; 
-}
-
-.notif-action-btn.following:hover { 
-    background: #f8fafc; 
-    color: #0f172a; 
+    cursor: default; 
 }
         @media (min-width:1280px) {
             .trending-panel {
@@ -10872,7 +10859,7 @@
                     let actionButtons = '';
                     if (n.type === 'follow' && currentUser) {
                         if (currentUser.following?.includes(user.id)) {
-                            actionButtons = `<button onclick="event.stopPropagation(); toggleFollow('${user.id}')" class="notif-action-btn following js-follow-btn-${user.id}">Following</button>`;
+                            actionButtons = `<button class="notif-action-btn following js-follow-btn-${user.id}" disabled>Following</button>`;
                         } else {
                             actionButtons = `<button onclick="event.stopPropagation(); toggleFollow('${user.id}')" class="notif-action-btn js-follow-btn-${user.id}">Follow back</button>`;
                         }
@@ -11063,14 +11050,6 @@
                 const isNowRequested = !isNowF && priv && window.hasRequestedFollow(uid);
                 const label = isNowF ? (isNowFriend ? 'Friends' : 'Following') : (priv ? (isNowRequested ? 'Requested' : 'Request') : 'Follow');
                 const baseClass = isNowF ? 'bg-white text-gray-900 border border-gray-200' : (isNowRequested ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#3D7EEB] text-white');
-
-                if (b.classList.contains('notif-action-btn')) {
-                    b.innerText = isNowF ? 'Following' : 'Follow back';
-                    b.classList.toggle('following', isNowF);
-                    b.className = `notif-action-btn${isNowF ? ' following' : ''} js-follow-btn-${uid}`;
-                    return;
-                }
-
                 if (b.id === 'profile-follow-btn') {
                     b.innerText = label;
                     b.className = `js-follow-btn-${uid} ${baseClass} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]`;
