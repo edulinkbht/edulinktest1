@@ -1114,11 +1114,86 @@
             position: relative; /* For absolute toast positioning */
         }
 
+        .notification-sidebar {
+            width: 360px;
+            flex-shrink: 0;
+            display: none;
+            flex-direction: column;
+            background-color: #ffffff;
+            border-left: 1px solid #e5e7eb;
+            box-shadow: -4px 0 28px rgba(15, 23, 42, 0.08);
+            overflow: hidden;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 25;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: transform 0.24s ease, opacity 0.24s ease;
+        }
+        .notification-sidebar.active {
+            transform: translateX(0);
+            opacity: 1;
+            display: flex;
+        }
+
+        .notification-sidebar-header {
+            display: flex;
+            align-items: center;
+            position: relative;
+            padding: 16px;
+            z-index: 26;
+            flex-direction: column;
+            gap: 0.125rem;
+        }
+
+        .notification-sidebar-title h2 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .notification-sidebar-title p {
+            margin: 0;
+            font-size: 0.825rem;
+            color: #6b7280;
+        }
+
+        .notification-sidebar-close-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 999px;
+            border: none;
+            background: #f9fafb;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .notification-sidebar-close-btn:hover {
+            background: #f3f4f6;
+        }
+
+        .notification-sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 0;
+            background-color: #ffffff;
+        }
+
         @media (min-width:1280px) {
             .trending-panel {
                 width: 320px;
                 padding: 0 0px 24px 40px;
                 gap: 20px;
+            }
+            .notification-sidebar {
+                display: flex;
             }
         }
         .upload-widget {
@@ -4859,7 +4934,7 @@
                      <line x1="8" y1="12" x2="16" y2="12" />
                  </svg>
                 <span class="sidebar-label hidden lg:block">Create</span></a><a href="#"
-                onclick="switchView('notifications');return false;" id="nav-notifications" class="nav-item relative">
+                onclick="toggleNotificationSidebar();return false;" id="nav-notifications" class="nav-item relative">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24"
                     class="custom-icon custom-icon-outline" id="nav-notifications-icon">
                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -5621,6 +5696,18 @@
                 </div>
             </div>
         </main>
+        <div id="notification-sidebar" class="notification-sidebar hidden xl:flex">
+            <div class="notification-sidebar-header">
+                <div class="notification-sidebar-title">
+                    <h2>Activity</h2>
+                    <p>Notifications and updates</p>
+                </div>
+                <button class="notification-sidebar-close-btn" onclick="closeNotificationSidebar();">
+                    <i data-lucide="x" class="w-4 h-4 text-gray-700"></i>
+                </button>
+            </div>
+            <div id="notification-sidebar-content" class="notification-sidebar-content"></div>
+        </div>
         <aside id="trending-panel" class="trending-panel">
             <div class="hidden xl:flex flex-col gap-5 w-full">
                 <div id="background-upload-container" class="w-full"></div>
@@ -7148,7 +7235,13 @@
                   mnh = document.getElementById('mobile-notifications-header'), 
                   mp = document.getElementById('main-panel'); 
             
-            window.currentViewName = v; 
+            window.currentViewName = v;
+            if (v !== 'notifications') {
+                const sidebar = document.getElementById('notification-sidebar');
+                if (sidebar && sidebar.classList.contains('active')) {
+                    closeNotificationSidebar();
+                }
+            }
             
             // Only show sidebar on desktop
             if (ms && window.innerWidth >= 1024) {
@@ -10560,6 +10653,61 @@
             
             c.innerHTML = headerHtml + sectionsHtml + footer;
             refreshIcons();
+        };
+
+        window.openNotificationSidebar = async () => {
+            const sidebar = document.getElementById('notification-sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('hidden');
+            sidebar.classList.add('active');
+            renderNotificationSidebar();
+        };
+        window.closeNotificationSidebar = () => {
+            const sidebar = document.getElementById('notification-sidebar');
+            if (!sidebar) return;
+            sidebar.classList.remove('active');
+            sidebar.classList.add('hidden');
+        };
+        window.toggleNotificationSidebar = () => {
+            if (window.innerWidth < 1280) {
+                return switchView('notifications');
+            }
+            const sidebar = document.getElementById('notification-sidebar');
+            if (!sidebar) return;
+            if (sidebar.classList.contains('hidden')) {
+                openNotificationSidebar();
+            } else {
+                closeNotificationSidebar();
+            }
+        };
+        window.renderNotificationSidebar = () => {
+            const content = document.getElementById('notification-sidebar-content');
+            if (!content) return;
+            const sorted = [...notifications].sort((a, b) => {
+                const ta = a.timestamp?.toDate ? a.timestamp.toDate().getTime() : a.timestamp || 0;
+                const tb = b.timestamp?.toDate ? b.timestamp.toDate().getTime() : b.timestamp || 0;
+                return tb - ta;
+            }).slice(0, 12);
+            if (!sorted.length) {
+                content.innerHTML = `<div class="p-6 text-center text-sm text-gray-500">Your latest activity will appear here.</div>`;
+                return;
+            }
+            content.innerHTML = sorted.map(n => {
+                const sender = users.find(u => u.id === n.senderId) || { avatar: 'https://i.imghippo.com/files/dHv4045RXI.png', username: 'EduLink' };
+                const timeText = window.formatDate ? window.formatDate(n.timestamp?.toDate ? n.timestamp.toDate().getTime() : n.timestamp || Date.now()) : '';
+                return `<div class="px-4 py-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer" onclick="switchView('notifications')">
+                            <div class="flex items-start gap-3">
+                                <div class="w-11 h-11 rounded-full overflow-hidden bg-gray-100 border border-gray-200 flex-shrink-0">
+                                    <img src="${sender.avatar}" class="w-full h-full object-cover">
+                                </div>
+                                <div class="min-w-0">
+                                    <div class="text-sm font-semibold text-gray-900 truncate">@${sender.username || 'user'}</div>
+                                    <div class="text-sm text-gray-600 leading-snug mt-1">${n.content || 'Notification received'}</div>
+                                    <div class="text-[12px] text-gray-400 mt-2">${timeText}</div>
+                                </div>
+                            </div>
+                        </div>`;
+            }).join('');
         };
 
         window.openProfilePreview = (uid) => { const u = users.find(x => x.id === uid); if (!u) return; manageHistory('profile-preview-overlay'); 
