@@ -14826,6 +14826,27 @@
         });
 
         refreshIcons();
+
+        // Auto-close notification sidebar when any overlay/modal becomes visible
+        try {
+            const overlayOpenObserver = new MutationObserver((mutations) => {
+                for (const m of mutations) {
+                    if (m.type !== 'attributes' || m.attributeName !== 'class') continue;
+                    const el = m.target;
+                    const oldVal = (m.oldValue || '').toString();
+                    const newVal = (el.className || '').toString();
+                    if (oldVal.includes('hidden') && !newVal.includes('hidden')) {
+                        const id = (el.id || '').toLowerCase();
+                        const cls = (el.className || '').toLowerCase();
+                        // Treat overlays/modals as elements with 'overlay' or 'modal' in id/class
+                        if (id.endsWith('-overlay') || id.includes('overlay') || cls.includes('overlay') || id.endsWith('-modal') || cls.includes('modal')) {
+                            try { if (document.getElementById('notification-sidebar')?.classList.contains('active')) closeNotificationSidebar(); } catch (e) { }
+                        }
+                    }
+                }
+            });
+            overlayOpenObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'], attributeOldValue: true });
+        } catch (e) { }
     </script>
 </body>
 
