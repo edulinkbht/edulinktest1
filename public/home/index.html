@@ -1119,7 +1119,7 @@
             flex-shrink: 0;
             display: none;
             flex-direction: column;
-            background-color: #ffffff;
+            background-color: #ffffff !important;
             border-left: 1px solid #e5e7eb;
             box-shadow: -4px 0 28px rgba(15, 23, 42, 0.08);
             overflow: hidden;
@@ -1189,16 +1189,16 @@
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             padding: 0;
-            background-color: #ffffff;
+            background-color: #ffffff !important;
         }
 
         /* Notification sections and items */
-        .notif-section { padding: 8px 0 12px; }
+        .notif-section { padding: 8px 0 12px; background: #ffffff !important; }
         .notif-section-title { padding: 12px 16px; font-weight: 700; color: #111827; font-size: 0.95rem; }
 
-        .notif-item { display: flex; gap: 12px; padding: 14px 16px; align-items: flex-start; cursor: pointer; border-bottom: 1px solid #edf2f7; background: #ffffff; transition: background 0.2s ease, transform 0.12s ease; }
-        .notif-item:hover { background: #ffffff; transform: translateX(1px); }
-        .notif-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #ffffff; border: 1px solid #e5e7eb; }
+        .notif-item { display: flex; gap: 12px; padding: 14px 16px; align-items: flex-start; cursor: pointer; border-bottom: 1px solid #edf2f7; background: #ffffff !important; transition: background 0.2s ease, transform 0.12s ease; }
+        .notif-item:hover { background: #ffffff !important; transform: translateX(1px); }
+        .notif-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; background: #ffffff !important; border: 1px solid #e5e7eb; }
         .notif-avatar.placeholder { background: #f9fafb; }
         .notif-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
         .notif-title { font-size: 14px; font-weight: 700; color: #111827; margin: 0; line-height: 1.3; display: flex; align-items: center; gap: 6px; }
@@ -6858,6 +6858,10 @@
             onSnapshot(collection(db, "users"), s => {
                 users = s.docs.map(d => ({ id: d.id, ...d.data() }));
                 const me = users.find(u => u.id === currentUser.id);
+                if (me) {
+                    currentUser = { ...currentUser, ...me };
+                    window.currentUser = currentUser;
+                }
                 if (me && me.banned) { document.getElementById('banned-overlay').classList.remove('hidden') }
                 
                 if (!initialUsersLoaded && users.length > 0) {
@@ -6886,8 +6890,9 @@
                         if (u.settings.hideConnections) ht.classList.add('active'); else ht.classList.remove('active')
                     }
                 }
-                // Only render sidebar if suggestions are missing or need explicit refresh
-                // Suggestions removed
+                if (document.getElementById('notification-sidebar')?.classList.contains('active')) {
+                    renderNotificationSidebar();
+                }
                 refreshIcons()
             });
             onSnapshot(doc(db, "global", "promo"), s => {
@@ -10842,8 +10847,8 @@
         }
         
         document.getElementById('pp-visit-btn').onclick = () => { closeProfilePreview(); showProfile(uid) }; document.getElementById('pp-share-btn').onclick = (e) => { e.stopPropagation(); closeProfilePreview(); manageHistory('share-overlay'); window.currentSharePid = null; const url = `${window.location.origin}/profile/${u.username || 'user'}`; document.getElementById('share-link-input').value = url; document.getElementById('share-link-text').innerText = url; document.getElementById('share-owner-avatar').src = u.avatar; const pc = document.getElementById('share-post-preview'); pc.innerHTML = `<div class="bg-white border border-gray-200 rounded-xl p-3 mb-6 flex items-center gap-3"><div class="w-12 h-12 rounded-full border border-gray-100 flex-shrink-0 bg-gray-100"><img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div class="flex-1 min-w-0"><div class="font-bold text-gray-900">${u.name}</div><div class="text-xs text-gray-500">@${u.username}</div></div><button class="bg-blue-600 text-white text-xs px-3 py-1.5 rounded-full font-bold">View</button></div>`; pc.classList.remove('hidden'); toggleModalAnim('share-overlay', 'share-modal', !0) }; toggleModalAnim('profile-preview-overlay', 'profile-preview-modal', true); refreshIcons() };
-        window.closeProfilePreview = () => { toggleModalAnim('profile-preview-overlay', 'profile-preview-modal', false) }; window.deleteNotification = async id => showAlert("Delete?", async () => await deleteDoc(doc(db, "notifications", id))); window.performClearAllNotifications = async () => { const b = writeBatch(db), s = await getDocs(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id))); s.forEach(d => b.delete(d.ref)); await b.commit(); showToast("Cleared") }; window.confirmDeleteAllActivities = () => showAlert("Are you sure you want to delete all of your activities?", async () => { await window.performClearAllNotifications() }); window.clearAllNotifications = () => window.confirmDeleteAllActivities(); window.toggleNotifications = () => switchView('notifications');
-        window.acceptCollab = async (nid, pid) => { const r = doc(db, "posts", pid), s = await getDoc(r); if (s.exists()) { const c = s.data().collaborators || [], i = c.findIndex(x => x.id === currentUser.id); if (i > -1) { c[i].status = 'accepted'; await updateDoc(r, { collaborators: c }); showToast("Accepted!") } } await deleteDoc(doc(db, "notifications", nid)) }; window.declineCollab = async (nid, pid) => { const r = doc(db, "posts", pid), s = await getDoc(r); if (s.exists()) await updateDoc(r, { collaborators: (s.data().collaborators || []).filter(x => x.id !== currentUser.id) }); showToast("Declined"); await deleteDoc(doc(db, "notifications", nid)) }; window.acceptFollow = async (nid, sid) => { await Promise.all([updateDoc(doc(db, "users", currentUser.id), { followers: arrayUnion(sid) }), updateDoc(doc(db, "users", sid), { following: arrayUnion(currentUser.id) }), deleteDoc(doc(db, "notifications", nid)), sendNotification(sid, 'follow', 'accepted follow')]); showToast("Accepted") };
+        window.closeProfilePreview = () => { toggleModalAnim('profile-preview-overlay', 'profile-preview-modal', false) }; window.deleteNotification = async id => showAlert("Delete?", async () => { await deleteDoc(doc(db, "notifications", id)); if (document.getElementById('notification-sidebar')?.classList.contains('active')) renderNotificationSidebar(); }); window.performClearAllNotifications = async () => { const b = writeBatch(db), s = await getDocs(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id))); s.forEach(d => b.delete(d.ref)); await b.commit(); showToast("Cleared"); if (document.getElementById('notification-sidebar')?.classList.contains('active')) renderNotificationSidebar(); }; window.confirmDeleteAllActivities = () => showAlert("Are you sure you want to delete all of your activities?", async () => { await window.performClearAllNotifications() }); window.clearAllNotifications = () => window.confirmDeleteAllActivities(); window.toggleNotifications = () => switchView('notifications');
+        window.acceptCollab = async (nid, pid) => { const r = doc(db, "posts", pid), s = await getDoc(r); if (s.exists()) { const c = s.data().collaborators || [], i = c.findIndex(x => x.id === currentUser.id); if (i > -1) { c[i].status = 'accepted'; await updateDoc(r, { collaborators: c }); showToast("Accepted!") } } await deleteDoc(doc(db, "notifications", nid)); if (document.getElementById('notification-sidebar')?.classList.contains('active')) renderNotificationSidebar(); }; window.declineCollab = async (nid, pid) => { const r = doc(db, "posts", pid), s = await getDoc(r); if (s.exists()) await updateDoc(r, { collaborators: (s.data().collaborators || []).filter(x => x.id !== currentUser.id) }); showToast("Declined"); await deleteDoc(doc(db, "notifications", nid)); if (document.getElementById('notification-sidebar')?.classList.contains('active')) renderNotificationSidebar(); }; window.acceptFollow = async (nid, sid) => { await Promise.all([updateDoc(doc(db, "users", currentUser.id), { followers: arrayUnion(sid) }), updateDoc(doc(db, "users", sid), { following: arrayUnion(currentUser.id) }), deleteDoc(doc(db, "notifications", nid)), sendNotification(sid, 'follow', 'accepted follow')]); showToast("Accepted"); if (document.getElementById('notification-sidebar')?.classList.contains('active')) renderNotificationSidebar(); };
         window.wishBirthday = async (fid, nid) => {
             const f = users.find(u => u.id === fid);
             if (!f) return;
@@ -10987,6 +10992,9 @@
             if (frameFollowIcon) {
                 frameFollowIcon.setAttribute('data-lucide', !isF ? 'check' : 'plus');
                 refreshIcons();
+            }
+            if (document.getElementById('notification-sidebar')?.classList.contains('active')) {
+                renderNotificationSidebar();
             }
 
             if (!document.getElementById('view-network').classList.contains('hidden')) renderNetwork(); 
