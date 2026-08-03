@@ -3135,11 +3135,32 @@
             background: transparent;
         }
 
+        .post-carousel,
+        .post-carousel-item,
+        .post-carousel-item img,
+        .post-carousel-item video {
+            border-radius: 0 !important;
+        }
+
         .post-carousel-item img,
         .post-carousel-item video {
             width: 100%;
             height: 100%;
             object-fit: contain;
+        }
+
+        #post-view-scroll-area {
+            min-height: 0;
+            overflow-y: auto;
+        }
+
+        #post-view-caption,
+        #post-view-caption *,
+        #post-view-comments,
+        #post-view-comments * {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            hyphens: auto;
         }
 
         .carousel-dots-outside {
@@ -10387,7 +10408,7 @@
             };
             // Find first non-video media for background
             const bgMedia = ma.find(m => !m.includes('video') && !m.includes('.mp4') && !m.startsWith('data:video')) || ma[0];
-            return `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel shadow-sm max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${pid}',true)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`
+            return `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none overflow-hidden post-carousel shadow-sm max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${pid}',true)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`
         }
         window.sharePost = pid => { manageHistory('share-overlay'); window.currentSharePid = pid; const p = posts.find(x => x.id === pid); if (!p) return; const url = window.getPostUrl(p.authorId, pid), pc = document.getElementById('share-post-preview'); document.getElementById('share-link-input').value = url; document.getElementById('share-link-text').innerText = url; const isRep = currentUser.reposts?.includes(pid); const rb = document.getElementById('share-repost-btn'), rt = document.getElementById('share-repost-text'), ri = document.getElementById('share-repost-icon'); if (rb && rt && ri) { rt.innerText = isRep ? 'Un-Repost' : 'Repost'; ri.className = `share-icon-circle ${isRep ? 'bg-green-600' : 'bg-green-500'} text-white` } if (p) { const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '' }; document.getElementById('share-owner-avatar').src = a.avatar; const m = p.media ? (Array.isArray(p.media) ? p.media[0] : p.media) : null, isV = (m && (m.includes('video') || m.endsWith('.mp4'))) || p.embedVideo, mh = m ? (isV ? `<div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center shrink-0"><i data-lucide="clapperboard" class="w-6 h-6 text-white"></i></div>` : `<div class="w-16 h-16 rounded-lg shrink-0 bg-gray-100"><img src="${m}" class="w-full h-full rounded-lg object-cover" onload="this.classList.add('loaded')"></div>`) : (p.embedVideo ? `<div class="w-16 h-16 bg-black rounded-lg flex items-center justify-center shrink-0"><i data-lucide="clapperboard" class="w-6 h-6 text-white"></i></div>` : ''); pc.innerHTML = `<div class="bg-white border border-gray-200 rounded-xl p-3 mb-6"><div class="flex items-center gap-2 mb-2"><div class="w-5 h-5 rounded-full bg-gray-100"><img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><span class="text-xs font-bold text-gray-900 truncate">${a.name}</span></div><div class="flex gap-3 items-center"><div class="flex-1 min-w-0"><p class="text-xs text-gray-600 line-clamp-2 mb-2 leading-relaxed">${p.content || (m || p.embedVideo ? 'Shared a post' : '')}</p><div class="flex items-center gap-3 text-gray-400"><div class="flex items-center gap-1 text-[10px] font-medium"><i data-lucide="heart" class="w-3 h-3"></i> ${p.likes?.length || 0}</div><div class="flex items-center gap-1 text-[10px] font-medium"><i data-lucide="message-circle" class="w-3 h-3"></i> ${p.comments?.length || 0}</div></div></div>${mh}</div></div>`; pc.classList.remove('hidden'); const dl = document.getElementById('share-dl-btn'); if (dl) dl.remove(); if (m && !isV) { const g = document.getElementById('share-grid-options'); if (!document.getElementById(`share-dl-${pid}`)) { const d = document.createElement('div'); d.id = `share-dl-${pid}`; d.className = "share-icon-btn"; d.onclick = () => triggerShare('download'); d.innerHTML = `<div class="share-icon-circle bg-gray-100 text-gray-800 border border-gray-200" id="dl-icon-${pid}"><i data-lucide="download" class="w-6 h-6"></i></div><span class="text-xs font-medium text-gray-700" id="dl-text-${pid}">Download</span>`; g.appendChild(d) } } refreshIcons() } else pc.classList.add('hidden'); toggleModalAnim('share-overlay', 'share-modal', !0) };
         window.closeShareMenu = () => { const o = document.getElementById('share-overlay'), m = document.getElementById('share-modal'); o.classList.add('opacity-0'); m.classList.add('translate-y-full', 'md:scale-95'); m.classList.remove('translate-y-0', 'md:scale-100'); setTimeout(() => { o.classList.add('hidden'); window.currentSharePid = null; document.querySelectorAll('[id^="share-dl-"]').forEach(e => e.remove()) }, 200) };
@@ -11811,11 +11832,13 @@
                                 </button>
                             </div>
                         </div>
-                        <div id="post-view-caption" class="px-6 py-4 border-b border-gray-100">
-                            <div class="text-sm text-gray-800 leading-6 break-words js-post-body-${p.id}">${postBodyHtml}</div>
-                            ${previewHtmlD}
+                        <div id="post-view-scroll-area" class="flex-1 overflow-y-auto min-h-0">
+                            <div id="post-view-caption" class="px-6 py-4 border-b border-gray-100">
+                                <div class="text-sm text-gray-800 leading-6 break-words js-post-body-${p.id}">${postBodyHtml}</div>
+                                ${previewHtmlD}
+                            </div>
+                            <div id="post-view-comments" class="px-0"></div>
                         </div>
-                        <div id="post-view-comments" class="flex-1 overflow-y-auto"></div>
                         <div class="px-6 h-[72px] flex items-center border-t border-gray-100 bg-white shrink-0">
                             <div class="w-full">
                                 ${commentInputDesktop}
