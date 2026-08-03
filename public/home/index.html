@@ -1119,6 +1119,13 @@
             max-height: calc(100vh - 140px);
             min-height: 0;
             overflow-y: auto;
+            width: 100%;
+            border-radius: 28px;
+            box-shadow: 0 28px 70px rgba(15, 23, 42, 0.08);
+        }
+
+        #notifications-sidebar.hidden {
+            display: none !important;
         }
 
         #notifications-sidebar .tab-btn {
@@ -1127,12 +1134,12 @@
 
         @media (min-width:1280px) {
             .trending-panel {
-                width: 320px;
-                padding: 0 0px 24px 40px;
-                gap: 20px;
+                width: 380px;
+                padding: 0 0px 28px 32px;
+                gap: 24px;
             }
 
-            #notifications-sidebar {
+            #notifications-sidebar:not(.hidden) {
                 display: flex;
             }
         }
@@ -7181,17 +7188,20 @@
             if (v !== 'notifications') window.lastMainView = v;
             window.currentViewName = v; 
             
-            // Only show sidebar on desktop
+            // Only show left sidebar on desktop
             if (ms && window.innerWidth >= 1024) {
                 ms.classList.remove('hidden');
             }
             if (wl) wl.classList.remove('hidden');
-            if (tp && window.innerWidth >= 1280 && v !== 'explore') {
-                tp.classList.remove('hidden');
-                tp.classList.add('xl:flex');
-            } else if (tp) {
-                tp.classList.add('hidden');
-                tp.classList.remove('xl:flex');
+            
+            if (tp) {
+                if (showNotificationsOnSidebar) {
+                    tp.classList.remove('hidden');
+                    tp.classList.add('xl:flex');
+                } else {
+                    tp.classList.add('hidden');
+                    tp.classList.remove('xl:flex');
+                }
             }
             
             if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } 
@@ -7248,7 +7258,7 @@
                 mp.style.width = '';
             }
             
-            if (window.innerWidth >= 1280 && v !== 'explore') {
+            if (window.innerWidth >= 1280 && showNotificationsOnSidebar) {
                 tp.classList.remove('hidden');
                 tp.classList.add('xl:flex');
             } else {
