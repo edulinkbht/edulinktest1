@@ -1114,33 +1114,11 @@
             position: relative; /* For absolute toast positioning */
         }
 
-        #notifications-sidebar {
-            display: none;
-            max-height: calc(100vh - 140px);
-            min-height: 0;
-            overflow-y: auto;
-            width: 100%;
-            border-radius: 28px;
-            box-shadow: 0 28px 70px rgba(15, 23, 42, 0.08);
-        }
-
-        #notifications-sidebar.hidden {
-            display: none !important;
-        }
-
-        #notifications-sidebar .tab-btn {
-            font-size: 13px;
-        }
-
         @media (min-width:1280px) {
             .trending-panel {
-                width: 380px;
-                padding: 0 0px 28px 32px;
-                gap: 24px;
-            }
-
-            #notifications-sidebar:not(.hidden) {
-                display: flex;
+                width: 320px;
+                padding: 0 0px 24px 40px;
+                gap: 20px;
             }
         }
         .upload-widget {
@@ -5656,17 +5634,6 @@
                     </button>
                 </div>
 
-                <div id="notifications-sidebar" class="hidden flex-col w-full h-full overflow-y-auto bg-white rounded-[28px] border border-gray-100 shadow-sm">
-                    <div class="sticky top-0 z-20 bg-white border-b border-gray-100 px-5 py-4 flex items-center justify-between gap-3">
-                        <div>
-                            <div class="text-sm text-gray-500 uppercase tracking-[0.22em] font-semibold">Activity</div>
-                            <div class="text-lg font-bold text-gray-900">Notifications</div>
-                        </div>
-                        <button onclick="switchView(window.lastMainView || 'feed');" class="text-[13px] text-blue-600 font-semibold hover:text-blue-700 transition-colors">Back</button>
-                    </div>
-                    <div id="notifications-sidebar-content" class="px-0 py-0"></div>
-                </div>
-
                 <div class="px-6 pt-4 pb-4">
                     <div class="flex flex-wrap gap-x-3 gap-y-2 text-[#777] text-[12px] font-normal opacity-90">
                         <span>© 2026 EduLink</span>
@@ -5764,7 +5731,6 @@
         const app = initializeApp(firebaseConfig), auth = getAuth(app), db = getFirestore(app), storage = getStorage(app); window.auth = auth; window.db = db; window.increment = increment;
         window.APP_CONFIG = config; // Store globally for other functions
         let currentUser = null, users = [], posts = [], notifications = [], outgoingFollowRequests = [], savedPosts = [], activeNotifTab = 'all', activeNetworkTab = 'people';
-        window.lastMainView = 'feed';
         window.replyingToCommentId = null; window.currentViewingProfileId = null; window.activeExploreTab = 'top'; window.activeExploreCategory = 'For You'; window.activeExploreSearchTab = 'for-you'; window.currentProfileTab = 'posts';
         window.postViewStartTime = null; window.viewedPostsInSession = new Set();
         window.addEventListener('beforeunload', () => {
@@ -7176,32 +7142,25 @@
             
             const ms = document.getElementById('main-sidebar'); // Left sidebar
             const tp = document.getElementById('trending-panel'); // Right sidebar
-            const notifSidebar = document.getElementById('notifications-sidebar');
-            const promoSection = document.getElementById('promo-section');
             const wl = document.getElementById('workspace-layout'); // The whole layout container
             const mh = document.getElementById('main-header'), 
                   mbn = document.getElementById('mobile-bottom-nav'), 
                   mnh = document.getElementById('mobile-notifications-header'), 
                   mp = document.getElementById('main-panel'); 
             
-            const showNotificationsOnSidebar = (v === 'notifications' && window.innerWidth >= 1280);
-            if (v !== 'notifications') window.lastMainView = v;
             window.currentViewName = v; 
             
-            // Only show left sidebar on desktop
+            // Only show sidebar on desktop
             if (ms && window.innerWidth >= 1024) {
                 ms.classList.remove('hidden');
             }
             if (wl) wl.classList.remove('hidden');
-            
-            if (tp) {
-                if (showNotificationsOnSidebar) {
-                    tp.classList.remove('hidden');
-                    tp.classList.add('xl:flex');
-                } else {
-                    tp.classList.add('hidden');
-                    tp.classList.remove('xl:flex');
-                }
+            if (tp && window.innerWidth >= 1280 && v !== 'explore') {
+                tp.classList.remove('hidden');
+                tp.classList.add('xl:flex');
+            } else if (tp) {
+                tp.classList.add('hidden');
+                tp.classList.remove('xl:flex');
             }
             
             if (mh) { mh.classList.remove('hidden'); mh.style.transform = 'translateY(0)' } 
@@ -7258,33 +7217,17 @@
                 mp.style.width = '';
             }
             
-            if (window.innerWidth >= 1280 && showNotificationsOnSidebar) {
-                tp.classList.remove('hidden');
-                tp.classList.add('xl:flex');
-            } else {
-                tp.classList.add('hidden');
-                tp.classList.remove('xl:flex');
-            }
-
-            if (notifSidebar) {
-                if (showNotificationsOnSidebar) {
-                    notifSidebar.classList.remove('hidden');
-                    if (promoSection) promoSection.classList.add('hidden');
-                } else {
-                    notifSidebar.classList.add('hidden');
-                    if (promoSection) promoSection.classList.remove('hidden');
-                }
-            }
-
-            if (v !== 'ai') {
-                const mainViewName = showNotificationsOnSidebar ? (window.lastMainView || 'feed') : v;
-                const el = document.getElementById(`view-${mainViewName}`);
-                if (el) {
-                    el.classList.remove('hidden');
-                    if (direction === 'left') el.classList.add('slide-in-left');
-                    if (direction === 'right') el.classList.add('slide-in-right');
-                }
-            }
+            if (window.innerWidth >= 1280 && v !== 'explore') tp.classList.remove('hidden'), tp.classList.add('xl:flex'); 
+            else tp.classList.add('hidden'), tp.classList.remove('xl:flex'); 
+            
+            if (v !== 'ai') { 
+                const el = document.getElementById(`view-${v}`); 
+                if (el) { 
+                    el.classList.remove('hidden'); 
+                    if (direction === 'left') el.classList.add('slide-in-left'); 
+                    if (direction === 'right') el.classList.add('slide-in-right'); 
+                } 
+            } 
             
             // Show/hide create footer
             const createFooter = document.getElementById('create-mobile-footer');
@@ -10366,10 +10309,7 @@
         window.expandedNotifSections = { today: false, lastweek: false, earlier: false };
         window.toggleNotifSection = s => { window.expandedNotifSections[s] = !window.expandedNotifSections[s]; renderNotifications(); };
         window.renderNotifications = () => {
-            const c = document.getElementById('notification-list');
-            const notifSidebar = document.getElementById('notifications-sidebar');
-            const notifSidebarContent = document.getElementById('notifications-sidebar-content');
-            const term = window.notifSearchTerm;
+            const c = document.getElementById('notification-list'), term = window.notifSearchTerm;
             let fl = notifications.filter(n => {
                 const s = users.find(u => u.id === n.senderId) || { name: 'Admin', isOfficial: !1 };
                 const matchesSearch = (!term || n.content.toLowerCase().includes(term) || (s.name || '').toLowerCase().includes(term) || (s.username || '').toLowerCase().includes(term));
@@ -10391,12 +10331,8 @@
                 </div>
             `;
             
-            const useSidebar = window.innerWidth >= 1280 && window.currentViewName === 'notifications' && notifSidebar && notifSidebarContent;
-            const target = useSidebar ? notifSidebarContent : c;
-            if (!target) return;
             if (!fl.length) {
-                if (c) c.classList.toggle('hidden', useSidebar);
-                target.innerHTML = headerHtml + '<div class="text-center text-xs text-gray-400 py-4">No notifications</div>';
+                c.innerHTML = headerHtml + '<div class="text-center text-xs text-gray-400 py-4">No notifications</div>';
                 refreshIcons();
                 return;
             }
@@ -10622,9 +10558,7 @@
                     <div class="h-20"></div>
                 </div>` : '';
             
-            if (!target) return;
-            if (c) c.classList.toggle('hidden', useSidebar);
-            target.innerHTML = headerHtml + sectionsHtml + footer;
+            c.innerHTML = headerHtml + sectionsHtml + footer;
             refreshIcons();
         };
 
