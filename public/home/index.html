@@ -4013,7 +4013,7 @@
             <div class="modal-standard-header">
                 <div class="flex items-center justify-between w-full">
                     <div class="flex items-center">
-                        <button onclick="event.preventDefault(); event.stopPropagation(); closeThread();" class="modal-chevron-btn">
+                        <button onclick="closeThread()" class="modal-chevron-btn">
                             <i data-lucide="arrow-left" class="w-6 h-6"></i>
                         </button>
                         <span class="modal-standard-title">Thread</span>
@@ -4032,8 +4032,7 @@
                     <div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all">
                         <input type="text" id="thread-input" placeholder="Add a reply..."
                             class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500"
-                            onkeydown="handleMentionKeydown(event,'thread-input','mention-suggestions-thread');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitThreadReply();}"
-                            onkeyup="handleMentionInput('thread-input','mention-suggestions-thread')">
+                            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitThreadReply();}">
                         <button
                             onclick="submitThreadReply()"
                             class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm">
@@ -10837,12 +10836,8 @@
             if (window.innerWidth < 1280) return switchView('notifications');
             const sidebar = document.getElementById('notification-sidebar');
             if (!sidebar) return;
-            const wasActive = sidebar.classList.contains('active');
             sidebar.classList.toggle('active');
-            if (!wasActive) {
-                renderNotificationSidebar();
-                window.clearAllNotificationsRead();
-            }
+            if (sidebar.classList.contains('active')) renderNotificationSidebar();
         }
 
         // Click handler: on small screens navigate to full notifications view; on desktop mark read and keep in-context
@@ -11749,7 +11744,7 @@
                     mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id);
                     mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id)
                 }
-            } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), rawContent = p.content, hasContent = rawContent && rawContent.trim().length > 0, postBodyHtml = hasContent ? window.renderTextWithReadMore(rawContent, `post-${p.id}`) : '<span class="text-gray-500 italic font-normal text-sm">No caption</span>', allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500" onkeydown="handleMentionKeydown(event,'comment-input-desktop','mention-suggestions-desktop');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCommentDesktop();}" onkeyup="handleMentionInput('comment-input-desktop','mention-suggestions-desktop')"><button onclick="submitCommentDesktop()" class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm"><i data-lucide="arrow-right" class="w-4.5 h-4.5"></i></button></div></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500" onkeydown="handleMentionKeydown(event,'mobile-comment-input','mention-suggestions-mobile')" onkeyup="handleMentionInput('mobile-comment-input','mention-suggestions-mobile')"><button onclick="submitCommentMobile()" class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm"><i data-lucide="arrow-right" class="w-4.5 h-4.5"></i></button></div></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button></div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
+            } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), postBodyHtml = window.renderTextWithReadMore(p.content, `post-${p.id}`), allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500" onkeydown="handleMentionKeydown(event,'comment-input-desktop','mention-suggestions-desktop');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCommentDesktop();}" onkeyup="handleMentionInput('comment-input-desktop','mention-suggestions-desktop')"><button onclick="submitCommentDesktop()" class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm"><i data-lucide="arrow-right" class="w-4.5 h-4.5"></i></button></div></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500" onkeydown="handleMentionKeydown(event,'mobile-comment-input','mention-suggestions-mobile')" onkeyup="handleMentionInput('mobile-comment-input','mention-suggestions-mobile')"><button onclick="submitCommentMobile()" class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm"><i data-lucide="arrow-right" class="w-4.5 h-4.5"></i></button></div></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button></div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
             let desktopAction = '', mobileAction = ''; if (p.claimLink) { const cb = `<button class="action-btn text-black border-gray-100 bg-gray-50 hover:bg-gray-100 !px-4 !py-2.5 !rounded-full border border-gray-100" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`; desktopAction = cb; mobileAction = cb } else { desktopAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''} !p-2.5 !rounded-full border border-gray-100 hover:bg-gray-50" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>`; mobileAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>` }
             
             let lh = '';
@@ -12023,13 +12018,7 @@
                 if (postViewComments) postViewComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
                 if (mobilePostComments) mobilePostComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
             }, 100);
-            refreshIcons();
-            setTimeout(() => {
-                const headerEl = document.getElementById('post-view-comments-header');
-                if (headerEl) {
-                    window._savedPostViewHeaderHtml = headerEl.innerHTML;
-                }
-            }, 50);
+            refreshIcons()
         };
         window.toggleCommentSearch = () => { window.isCommentSearchOpen = !window.isCommentSearchOpen; window.commentSearchTerm = ''; const dhd = document.getElementById('comment-header-default'), dhs = document.getElementById('comment-header-search'); if (dhd && dhs) { if (window.isCommentSearchOpen) { dhd.classList.add('hidden'); dhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-desktop')?.focus(), 100) } else { dhd.classList.remove('hidden'); dhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } const mhd = document.getElementById('mobile-comment-header-default'), mhs = document.getElementById('mobile-comment-header-search'); if (mhd && mhs) { if (window.isCommentSearchOpen) { mhd.classList.add('hidden'); mhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-mobile')?.focus(), 100) } else { mhd.classList.remove('hidden'); mhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } };
         window.toggleVideoPostComments = () => {
@@ -12066,7 +12055,7 @@
                 iframe.src = src;
             });
 
-            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null; window._savedPostViewHeaderHtml = null;
+            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null;
         };
         window.doLogout = async () => { 
             await auth.signOut(); 
@@ -12572,46 +12561,30 @@
         }; window.closeThread = () => { 
   const savedThreadPostId = window.threadPostId; 
   toggleModalAnim('thread-overlay', 'thread-modal', false); 
-
-  if (window.innerWidth >= 768 && window.currentViewingPostId) {
-    window.isDesktopThreadMode = false;
-    window.threadPostId = null;
-    window.threadParentCommentId = null;
-    window.replyingToCommentId = null;
-
-    if (window._savedPostViewHeaderHtml) {
-      const header = document.getElementById('post-view-comments-header');
-      if (header) {
-        header.innerHTML = window._savedPostViewHeaderHtml;
-      }
-    }
-    refreshIcons();
-    renderCommentsInModal(window.currentViewingPostId);
-  } else {
-    window.replyingToCommentId = null;
-    window.isDesktopThreadMode = false;
-    if (savedThreadPostId && window.innerWidth < 768) {
-      setTimeout(() => {
-        openComments(savedThreadPostId);
-      }, 300);
-    }
-    if (!window.currentViewingPostId) {
-      window.threadPostId = null;
-      window.threadParentCommentId = null;
-    }
-  }
+  window.replyingToCommentId = null; 
+  window.isDesktopThreadMode = false; 
+  if (window.currentViewingPostId && window.innerWidth >= 768) { 
+    renderCommentsInModal(window.currentViewingPostId); 
+  } else if (savedThreadPostId && window.innerWidth < 768) { 
+    setTimeout(() => { 
+      openComments(savedThreadPostId); 
+    }, 300); 
+  } 
+  if (!window.currentViewingPostId) { 
+    window.threadPostId = null; 
+    window.threadParentCommentId = null; 
+  } 
 };
         window.renderDesktopThread = (pid, cid) => {
             const p = posts.find(x => x.id === pid);
             if (!p) return;
             const parent = p.comments.find(x => x.id === cid);
             if (!parent) return;
-
-            const header = document.getElementById('post-view-comments-header');
-
+            
+            // Flatten the thread for desktop discussion panel
             const allComments = p.comments || [];
             const descendants = [];
-
+            
             function findDescendants(parentId) {
                 const children = allComments.filter(c => c.parentId === parentId);
                 children.sort((a, b) => a.timestamp - b.timestamp);
@@ -12620,23 +12593,21 @@
                     findDescendants(child.id);
                 });
             }
-
+            
             findDescendants(cid);
-
+            
             const rootHtml = createCommentHTML(parent, pid, descendants.length);
             const repliesHtml = descendants.map(d => {
                 const replyCount = allComments.filter(c => c.parentId === d.id).length;
                 return `<div class="comment-thread-item ml-6 md:ml-12 border-l-2 border-gray-200 pl-3 md:pl-4">${createCommentHTML(d, pid, replyCount)}</div>`;
             }).join('');
-
+            
             const html = `<div class="pt-2 pb-0 relative">${rootHtml}${repliesHtml}</div>`;
             const pa = users.find(u => u.id === parent.authorId) || { name: 'Unknown', avatar: '', username: 'user' };
-            if (header) {
-                header.innerHTML = `<div class="flex items-center gap-3"><button onclick="event.preventDefault(); event.stopPropagation(); closeThread();" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i></button><span class="font-semibold text-gray-900">Replies to @${pa.username || 'user'}</span></div>`;
-            }
-            const pc = document.getElementById('post-view-comments');
-            if (pc) pc.innerHTML = html;
-            refreshIcons();
+            const header = document.getElementById('post-view-comments-header');
+            if (header) header.innerHTML = `<div class="flex items-center gap-3"><button onclick="closeThread()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i></button><span>Replies to @${pa.username || 'user'}</span></div>`;
+            document.getElementById('post-view-comments').innerHTML = html;
+            refreshIcons()
         };
         window.renderThreadContent = (pid, cid) => {
             const p = posts.find(x => x.id === pid);
@@ -12671,54 +12642,45 @@
             c.innerHTML = html;
             refreshIcons()
         };
-        window.submitThreadReply = function () {
+        window.submitThreadReply = async () => {
             const input = document.getElementById('thread-input');
-            if (!input) return;
             const t = input.value.trim();
-            const pid = window.threadPostId;
-            const pcid = window.threadParentCommentId;
-            if (!t || !pid || !pcid) { if(input) input.focus(); return; }
+            if (!t || !window.threadPostId || !window.threadParentCommentId) return;
+            const r = doc(db, "posts", window.threadPostId),
+                nc = {
+                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                    authorId: currentUser.id,
+                    content: t,
+                    timestamp: Date.now(),
+                    likes: [],
+                    parentId: window.replyingToCommentId || window.threadParentCommentId
+                };
 
-            const parentCid = window.replyingToCommentId || pcid;
-            const nc = {
-                id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-                authorId: currentUser.id,
-                content: t,
-                timestamp: Date.now(),
-                likes: [],
-                parentId: parentCid
-            };
-
-            const p = posts.find(x => x.id === pid);
+            // Optimistic update
+            const p = posts.find(x => x.id === window.threadPostId);
             if (p) {
                 if (!p.comments) p.comments = [];
                 p.comments.push(nc);
-                if (window.isDesktopThreadMode) renderDesktopThread(pid, pcid);
-                else renderThreadContent(pid, pcid);
+                if (window.isDesktopThreadMode) renderDesktopThread(window.threadPostId, window.threadParentCommentId);
+                else renderThreadContent(window.threadPostId, window.threadParentCommentId);
             }
 
             input.value = "";
-            input.focus();
-            window.replyingToCommentId = pcid;
+            window.replyingToCommentId = window.threadParentCommentId;
 
-            updateDoc(doc(db, "posts", pid), { comments: arrayUnion(nc) })
-                .catch(() => {});
+            await updateDoc(r, {
+                comments: arrayUnion(nc)
+            });
 
-            if (p) {
-                const pc = p.comments.find(x => x.id === parentCid);
-                if (pc && pc.authorId !== currentUser.id) {
-                    sendNotification(pc.authorId, 'reply', 'replied to your comment', pid);
-                }
-            }
+            const pc = p.comments.find(x => x.id === (window.replyingToCommentId || window.threadParentCommentId));
+            if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.threadPostId);
             const mm = t.match(/@([a-zA-Z0-9._]+)/g);
             if (mm) {
                 mm.forEach(m => {
-                    const uname = m.substring(1).toLowerCase();
-                    const found = users.find(u => (u.username || "").toLowerCase() === uname);
-                    if (found && found.id !== currentUser.id) {
-                        sendNotification(found.id, 'mention', 'mentioned you in a reply', pid);
-                    }
-                });
+                    const uname = m.substring(1).toLowerCase(),
+                        found = users.find(u => (u.username || "").toLowerCase() === uname);
+                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a reply', window.threadPostId)
+                })
             }
         };
         window.deleteComment = async (pid, cid) => { showAlert("Delete comment?", async () => { const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid), nc = p.comments.filter(x => x.id !== cid && x.parentId !== cid); await updateDoc(r, { comments: nc }); showToast("Deleted") }) };
@@ -12930,21 +12892,22 @@
             window.postViewCommentState.loading = false;
         };
 
-        window.submitOverlayComment = function () {
+        window.submitOverlayComment = async () => {
             const input = document.getElementById('comments-overlay-input');
-            if (!input) return;
             const t = input.value.trim();
             const pid = window.currentPostIdForComments;
-            if (!t || !pid) { if(input) input.focus(); return; }
-            const nc = {
-                id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-                authorId: currentUser.id,
-                content: t,
-                timestamp: Date.now(),
-                likes: [],
-                parentId: null
-            };
+            if (!t || !pid) return;
+            const r = doc(db, "posts", pid),
+                nc = {
+                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                    authorId: currentUser.id,
+                    content: t,
+                    timestamp: Date.now(),
+                    likes: [],
+                    parentId: null
+                };
 
+            // Optimistic update
             const p = posts.find(x => x.id === pid);
             if (p) {
                 if (!p.comments) p.comments = [];
@@ -12953,98 +12916,49 @@
             }
 
             input.value = "";
-            input.focus();
-
-            updateDoc(doc(db, "posts", pid), { comments: arrayUnion(nc) })
-                .catch(() => {});
+            await updateDoc(r, {
+                comments: arrayUnion(nc)
+            });
 
             if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', pid);
         };
-        window.submitCommentDesktop = function () {
-            const input = document.getElementById('comment-input-desktop');
-            if (!input) return;
-            const t = input.value.trim();
-            if (!t) { input.focus(); return; }
-            if (!window.currentViewingPostId) return;
+        window.submitCommentDesktop = async () => { const t = document.getElementById('comment-input-desktop').value.trim(); if (!t || !window.currentViewingPostId) return; if (window.isDesktopThreadMode && window.threadParentCommentId) { window.replyingToCommentId = window.replyingToCommentId || window.threadParentCommentId; await postCommentCommon(t); window.replyingToCommentId = window.threadParentCommentId; } else await postCommentCommon(t); document.getElementById('comment-input-desktop').value = "" }; window.submitCommentMobile = async () => { const t = document.getElementById('mobile-comment-input').value.trim(); if (!t || !window.currentViewingPostId) return; await postCommentCommon(t); document.getElementById('mobile-comment-input').value = "" };
+        async function postCommentCommon(t) {
+            const r = doc(db, "posts", window.currentViewingPostId),
+                nc = {
+                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                    authorId: currentUser.id,
+                    content: t,
+                    timestamp: Date.now(),
+                    likes: [],
+                    parentId: window.replyingToCommentId
+                };
 
-            if (window.isDesktopThreadMode && window.threadParentCommentId) {
-                window.replyingToCommentId = window.threadParentCommentId;
-            }
-
-            postCommentCommon(t);
-
-            if (window.isDesktopThreadMode && window.threadPostId && window.threadParentCommentId) {
-                window.replyingToCommentId = window.threadParentCommentId;
-            }
-            input.value = "";
-            input.focus();
-        };
-
-        window.submitCommentMobile = function () {
-            const input = document.getElementById('mobile-comment-input');
-            if (!input) return;
-            const t = input.value.trim();
-            if (!t) { input.focus(); return; }
-            if (!window.currentViewingPostId) return;
-            postCommentCommon(t);
-            input.value = "";
-            input.focus();
-        };
-
-        function postCommentCommon(t) {
-            const pid = window.currentViewingPostId;
-            if (!pid) return;
-            const parentCid = window.replyingToCommentId || null;
-
-            const nc = {
-                id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-                authorId: currentUser.id,
-                content: t,
-                timestamp: Date.now(),
-                likes: [],
-                parentId: parentCid
-            };
-
-            const p = posts.find(x => x.id === pid);
+            // Optimistic update
+            const p = posts.find(x => x.id === window.currentViewingPostId);
             if (p) {
                 if (!p.comments) p.comments = [];
                 p.comments.push(nc);
+                renderCommentsInModal(window.currentViewingPostId);
             }
 
-            if (window.isDesktopThreadMode && window.threadPostId && window.threadParentCommentId) {
-                renderDesktopThread(window.threadPostId, window.threadParentCommentId);
-            } else {
-                renderCommentsInModal(pid);
-            }
+            await updateDoc(r, {
+                comments: arrayUnion(nc)
+            });
 
-            updateDoc(doc(db, "posts", pid), { comments: arrayUnion(nc) })
-                .catch(() => {});
-
-            if (p) {
-                if (parentCid) {
-                    const pc = p.comments.find(x => x.id === parentCid);
-                    if (pc && pc.authorId !== currentUser.id) {
-                        sendNotification(pc.authorId, 'reply', 'replied to your comment', pid);
-                    }
-                } else if (p.authorId !== currentUser.id) {
-                    sendNotification(p.authorId, 'comment', 'commented on your post', pid);
-                }
-            }
-
+            if (window.replyingToCommentId) {
+                const pc = p.comments.find(x => x.id === window.replyingToCommentId);
+                if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.currentViewingPostId)
+            } else if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', window.currentViewingPostId);
             const mm = t.match(/@([a-zA-Z0-9._]+)/g);
             if (mm) {
                 mm.forEach(m => {
-                    const uname = m.substring(1).toLowerCase();
-                    const found = users.find(u => (u.username || "").toLowerCase() === uname);
-                    if (found && found.id !== currentUser.id) {
-                        sendNotification(found.id, 'mention', 'mentioned you in a comment', pid);
-                    }
-                });
+                    const uname = m.substring(1).toLowerCase(),
+                        found = users.find(u => (u.username || "").toLowerCase() === uname);
+                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', window.currentViewingPostId)
+                })
             }
-
-            if (!window.isDesktopThreadMode) {
-                window.replyingToCommentId = null;
-            }
+            window.replyingToCommentId = null
         }
         // Global state for mention functionality
         window.selectedMentionUsers = [];
@@ -14799,20 +14713,6 @@
             });
         };
 
-        window.clearAllNotificationsRead = async function () {
-            try {
-                const qSnap = await getDocs(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id), where("read", "==", !1)));
-                if (qSnap.empty) return;
-                const batch = writeBatch(db);
-                qSnap.forEach(d => { batch.update(d.ref, { read: true }); });
-                await batch.commit();
-            } catch (e) {}
-            const bd = document.getElementById('nav-notif-badge');
-            const bm = document.getElementById('mobile-footer-badge');
-            if (bd) { bd.style.display = 'none'; bd.innerText = '0'; }
-            if (bm) { bm.style.display = 'none'; bm.innerText = '0'; }
-        };
-
         // Override switchView to include icon updates
         const originalSwitchView = window.switchView;
         window.switchView = function (view) {
@@ -14820,7 +14720,6 @@
                 window.pauseActiveReel();
             }
             if (originalSwitchView) originalSwitchView(view);
-            if (view === 'notifications') window.clearAllNotificationsRead();
             updateNavIcons(view);
         };
 
@@ -14935,58 +14834,6 @@
                     eb.style.display = 'block';
                 }
             }
-
-            // Fallback delegated submit handler for desktop comment inputs
-            document.addEventListener('keydown', (e) => {
-                const target = e.target;
-                if (!target || !(target instanceof HTMLInputElement)) return;
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    if (target.id === 'comment-input-desktop' || target.id === 'mobile-comment-input') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.submitCommentDesktop();
-                    } else if (target.id === 'thread-input') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.submitThreadReply();
-                    } else if (target.id === 'comments-overlay-input') {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        window.submitOverlayComment();
-                    }
-                }
-            }, true);
-
-            // Fallback delegated click handler for submit arrows & thread back buttons
-            document.addEventListener('click', (e) => {
-                let el = e.target;
-                let depth = 0;
-                while (el && depth < 5) {
-                    if (el instanceof HTMLElement) {
-                        const onclick = (el.getAttribute && el.getAttribute('onclick')) ? el.getAttribute('onclick') : '';
-                        if (onclick && onclick.includes('submitCommentDesktop()')) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            window.submitCommentDesktop();
-                            return;
-                        }
-                        if (onclick && onclick.includes('submitThreadReply()')) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            window.submitThreadReply();
-                            return;
-                        }
-                        if (onclick && onclick.includes('submitOverlayComment()')) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            window.submitOverlayComment();
-                            return;
-                        }
-                    }
-                    el = el.parentElement;
-                    depth++;
-                }
-            }, true);
         });
 
         refreshIcons();
