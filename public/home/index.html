@@ -2914,9 +2914,10 @@
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
-                border-right: 1px solid rgba(229,231,235,0.9);
+                border-right: 1px solid rgba(55,65,81,0.9);
                 position: relative;
                 min-width: 52%;
+                background: #000000;
             }
 
             .desktop-comments-container {
@@ -2931,6 +2932,7 @@
                 width: 100%;
                 height: 100%;
                 min-height: 0;
+                background: #000000;
             }
 
             .stage-content {
@@ -4196,7 +4198,7 @@
                     placeholder="Search users..."
                     class="w-full bg-gray-100 border-none rounded-lg md:rounded-full px-4 py-2 text-sm outline-none focus:outline-none">
             </div>
-            <div id="tag-list-content" class="flex-1 overflow-y-auto p-2"></div>
+            <div id="tag-list-content" class="flex-1 overflow-y-auto p-2 flex flex-col"></div>
         </div>
     </div>
 
@@ -11775,22 +11777,18 @@
 
             let desktopHTML = '';
             if (p.media || p.embedVideo) {
-                // Standard media-post overlay layout for both images and videos
                 desktopHTML = `
-                <div class="desktop-split-view hidden md:flex w-full h-full bg-white flex-row overflow-hidden">
-                    <!-- Left Column: Post Content & Actions -->
-                    <div class="desktop-post-container flex flex-col h-full overflow-hidden">
-                        <div class="h-6 shrink-0"></div>
+                <div class="desktop-split-view hidden md:flex w-full h-full bg-black flex-row overflow-hidden">
+                    <div class="desktop-post-container flex flex-col h-full overflow-hidden bg-black">
+                        <div class="h-6 shrink-0 bg-black"></div>
                         
-                                <!-- Post Media -->
-                        <div class="flex-1 overflow-hidden">
-                            <div class="w-full h-full relative overflow-hidden" id="post-view-media-container">
+                        <div class="flex-1 overflow-hidden bg-black">
+                            <div class="w-full h-full relative overflow-hidden bg-black" id="post-view-media-container">
                                 ${mhDesktop}
                             </div>
                         </div>
 
-                        <!-- Post Actions (Footer) -->
-                        <div class="px-6 h-[72px] flex items-center border-t border-gray-100 bg-white shrink-0">
+                        <div class="px-6 h-[72px] flex items-center border-t border-gray-200 bg-white shrink-0">
                             <div class="flex items-center justify-between w-full">
                                 <div class="flex items-center gap-2">
                                     <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''} hover:bg-red-50 !px-4 !py-2 !rounded-full border border-gray-100" onclick="toggleLike('${p.id}')">
@@ -11811,8 +11809,7 @@
                         </div>
                     </div>
 
-                    <!-- Right Column: Comments -->
-                    <div class="desktop-comments-container flex-1 flex flex-col bg-white h-full border-l border-gray-100">
+                    <div class="desktop-comments-container flex-1 flex flex-col bg-white h-full border-l border-gray-200">
                         <div id="post-view-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0">
                             <div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
                                 <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden">
@@ -12017,7 +12014,11 @@
                 const mobilePostComments = document.getElementById('mobile-post-comments');
                 if (postViewComments) postViewComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
                 if (mobilePostComments) mobilePostComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
-            }, 100);
+                window.bindDesktopCommentInputEvents();
+                window.bindMobileCommentInputEvents();
+                const header = document.getElementById('post-view-comments-header');
+                if (header) window._savedPostViewHeaderHtml = header.innerHTML;
+            }, 50);
             refreshIcons()
         };
         window.toggleCommentSearch = () => { window.isCommentSearchOpen = !window.isCommentSearchOpen; window.commentSearchTerm = ''; const dhd = document.getElementById('comment-header-default'), dhs = document.getElementById('comment-header-search'); if (dhd && dhs) { if (window.isCommentSearchOpen) { dhd.classList.add('hidden'); dhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-desktop')?.focus(), 100) } else { dhd.classList.remove('hidden'); dhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } const mhd = document.getElementById('mobile-comment-header-default'), mhs = document.getElementById('mobile-comment-header-search'); if (mhd && mhs) { if (window.isCommentSearchOpen) { mhd.classList.add('hidden'); mhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-mobile')?.focus(), 100) } else { mhd.classList.remove('hidden'); mhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } };
@@ -12055,7 +12056,7 @@
                 iframe.src = src;
             });
 
-            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null;
+            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null; window._savedPostViewHeaderHtml = null; window.threadPostId = null; window.threadParentCommentId = null;
         };
         window.doLogout = async () => { 
             await auth.signOut(); 
@@ -12535,7 +12536,16 @@
                 window.isDesktopThreadMode = true;
                 window.threadPostId = pid;
                 window.threadParentCommentId = cid;
+                const header = document.getElementById('post-view-comments-header');
+                if (header && !window._savedPostViewHeaderHtml) {
+                    window._savedPostViewHeaderHtml = header.innerHTML;
+                }
                 renderDesktopThread(pid, cid);
+                setTimeout(() => {
+                    window.bindDesktopCommentInputEvents();
+                    const input = document.getElementById('comment-input-desktop');
+                    if (input) input.focus();
+                }, 50);
                 return
             }
             manageHistory('thread-overlay');
@@ -12544,7 +12554,6 @@
             renderThreadContent(pid, cid);
             toggleModalAnim('thread-overlay', 'thread-modal', true);
             
-            // Re-bind mentions for thread input
             const input = document.getElementById('thread-input');
             if (input) {
                 input.onkeyup = () => handleMentionInput('thread-input', 'mention-suggestions-thread');
@@ -12556,7 +12565,8 @@
             
             setTimeout(() => {
                 if (input && window.innerWidth >= 768) input.focus();
-                document.getElementById('thread-input-avatar').src = currentUser.avatar
+                const avatar = document.getElementById('thread-input-avatar');
+                if (avatar) avatar.src = currentUser.avatar;
             }, 100)
         }; window.closeThread = () => { 
   const savedThreadPostId = window.threadPostId; 
@@ -12564,7 +12574,15 @@
   window.replyingToCommentId = null; 
   window.isDesktopThreadMode = false; 
   if (window.currentViewingPostId && window.innerWidth >= 768) { 
+    const header = document.getElementById('post-view-comments-header');
+    if (header && window._savedPostViewHeaderHtml) {
+        header.innerHTML = window._savedPostViewHeaderHtml;
+        refreshIcons();
+    }
     renderCommentsInModal(window.currentViewingPostId); 
+    setTimeout(() => {
+        window.bindDesktopCommentInputEvents();
+    }, 50);
   } else if (savedThreadPostId && window.innerWidth < 768) { 
     setTimeout(() => { 
       openComments(savedThreadPostId); 
@@ -12644,7 +12662,7 @@
         };
         window.submitThreadReply = async () => {
             const input = document.getElementById('thread-input');
-            const t = input.value.trim();
+            const t = input ? input.value.trim() : '';
             if (!t || !window.threadPostId || !window.threadParentCommentId) return;
             const r = doc(db, "posts", window.threadPostId),
                 nc = {
@@ -12656,7 +12674,6 @@
                     parentId: window.replyingToCommentId || window.threadParentCommentId
                 };
 
-            // Optimistic update
             const p = posts.find(x => x.id === window.threadPostId);
             if (p) {
                 if (!p.comments) p.comments = [];
@@ -12665,22 +12682,25 @@
                 else renderThreadContent(window.threadPostId, window.threadParentCommentId);
             }
 
-            input.value = "";
+            if (input) {
+                input.value = "";
+                setTimeout(() => input.focus(), 0);
+            }
             window.replyingToCommentId = window.threadParentCommentId;
 
-            await updateDoc(r, {
+            updateDoc(r, {
                 comments: arrayUnion(nc)
             });
 
-            const pc = p.comments.find(x => x.id === (window.replyingToCommentId || window.threadParentCommentId));
+            const pc = p ? p.comments.find(x => x.id === (window.replyingToCommentId || window.threadParentCommentId)) : null;
             if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.threadPostId);
             const mm = t.match(/@([a-zA-Z0-9._]+)/g);
             if (mm) {
                 mm.forEach(m => {
                     const uname = m.substring(1).toLowerCase(),
                         found = users.find(u => (u.username || "").toLowerCase() === uname);
-                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a reply', window.threadPostId)
-                })
+                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a reply', window.threadPostId);
+                });
             }
         };
         window.deleteComment = async (pid, cid) => { showAlert("Delete comment?", async () => { const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid), nc = p.comments.filter(x => x.id !== cid && x.parentId !== cid); await updateDoc(r, { comments: nc }); showToast("Deleted") }) };
@@ -12922,7 +12942,33 @@
 
             if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', pid);
         };
-        window.submitCommentDesktop = async () => { const t = document.getElementById('comment-input-desktop').value.trim(); if (!t || !window.currentViewingPostId) return; if (window.isDesktopThreadMode && window.threadParentCommentId) { window.replyingToCommentId = window.replyingToCommentId || window.threadParentCommentId; await postCommentCommon(t); window.replyingToCommentId = window.threadParentCommentId; } else await postCommentCommon(t); document.getElementById('comment-input-desktop').value = "" }; window.submitCommentMobile = async () => { const t = document.getElementById('mobile-comment-input').value.trim(); if (!t || !window.currentViewingPostId) return; await postCommentCommon(t); document.getElementById('mobile-comment-input').value = "" };
+        window.submitCommentDesktop = async () => { const t = document.getElementById('comment-input-desktop').value.trim(); if (!t || !window.currentViewingPostId) return; if (window.isDesktopThreadMode && window.threadParentCommentId) { window.replyingToCommentId = window.replyingToCommentId || window.threadParentCommentId; await postCommentCommon(t); window.replyingToCommentId = window.threadParentCommentId; } else await postCommentCommon(t); const input = document.getElementById('comment-input-desktop'); input.value = ""; setTimeout(() => input.focus(), 0); }; window.submitCommentMobile = async () => { const t = document.getElementById('mobile-comment-input').value.trim(); if (!t || !window.currentViewingPostId) return; await postCommentCommon(t); const input = document.getElementById('mobile-comment-input'); input.value = ""; setTimeout(() => input.focus(), 0); };
+
+        window.bindDesktopCommentInputEvents = () => {
+            const input = document.getElementById('comment-input-desktop');
+            if (!input) return;
+            input.onkeydown = (e) => {
+                handleMentionKeydown(e, 'comment-input-desktop', 'mention-suggestions-desktop');
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitCommentDesktop();
+                }
+            };
+            input.onkeyup = () => handleMentionInput('comment-input-desktop', 'mention-suggestions-desktop');
+        };
+
+        window.bindMobileCommentInputEvents = () => {
+            const input = document.getElementById('mobile-comment-input');
+            if (!input) return;
+            input.onkeydown = (e) => {
+                handleMentionKeydown(e, 'mobile-comment-input', 'mention-suggestions-mobile');
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitCommentMobile();
+                }
+            };
+            input.onkeyup = () => handleMentionInput('mobile-comment-input', 'mention-suggestions-mobile');
+        };
         async function postCommentCommon(t) {
             const r = doc(db, "posts", window.currentViewingPostId),
                 nc = {
@@ -12934,31 +12980,34 @@
                     parentId: window.replyingToCommentId
                 };
 
-            // Optimistic update
             const p = posts.find(x => x.id === window.currentViewingPostId);
             if (p) {
                 if (!p.comments) p.comments = [];
                 p.comments.push(nc);
-                renderCommentsInModal(window.currentViewingPostId);
+                if (window.isDesktopThreadMode && window.threadParentCommentId) {
+                    renderDesktopThread(window.currentViewingPostId, window.threadParentCommentId);
+                } else {
+                    renderCommentsInModal(window.currentViewingPostId);
+                }
             }
 
-            await updateDoc(r, {
+            updateDoc(r, {
                 comments: arrayUnion(nc)
             });
 
             if (window.replyingToCommentId) {
-                const pc = p.comments.find(x => x.id === window.replyingToCommentId);
-                if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.currentViewingPostId)
+                const pc = p ? p.comments.find(x => x.id === window.replyingToCommentId) : null;
+                if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.currentViewingPostId);
             } else if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', window.currentViewingPostId);
             const mm = t.match(/@([a-zA-Z0-9._]+)/g);
             if (mm) {
                 mm.forEach(m => {
                     const uname = m.substring(1).toLowerCase(),
                         found = users.find(u => (u.username || "").toLowerCase() === uname);
-                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', window.currentViewingPostId)
-                })
+                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', window.currentViewingPostId);
+                });
             }
-            window.replyingToCommentId = null
+            window.replyingToCommentId = null;
         }
         // Global state for mention functionality
         window.selectedMentionUsers = [];
@@ -13110,7 +13159,7 @@
             container.innerHTML = displayUsers.map(u => {
                 const isSelected = window.tagOverlayState.selectedUserIds.includes(u.id);
                 return `
-                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer" onclick="event.stopPropagation(); toggleTagUser('${u.id}')">
+                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer w-full" onclick="event.stopPropagation(); toggleTagUser('${u.id}')">
                         <div class="flex items-center gap-3">
                             <div class="rounded-full w-12 h-12 shrink-0 overflow-hidden">
                                 <img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
@@ -13121,7 +13170,8 @@
                                 </div>
                                 <div class="text-sm font-normal text-gray-500 truncate w-48">${u.username || 'user'}</div>
                             </div>
-                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center ${isSelected ? 'bg-[#3D7EEB] border-[#3D7EEB]' : ''}">
+                        </div>
+                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#3D7EEB] border-[#3D7EEB]' : ''}">
                             ${isSelected ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
                         </div>
                     </div>
