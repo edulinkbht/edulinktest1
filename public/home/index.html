@@ -12018,7 +12018,13 @@
                 if (postViewComments) postViewComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
                 if (mobilePostComments) mobilePostComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
             }, 100);
-            refreshIcons()
+            refreshIcons();
+            setTimeout(() => {
+                const headerEl = document.getElementById('post-view-comments-header');
+                if (headerEl) {
+                    window._savedPostViewHeaderHtml = headerEl.innerHTML;
+                }
+            }, 50);
         };
         window.toggleCommentSearch = () => { window.isCommentSearchOpen = !window.isCommentSearchOpen; window.commentSearchTerm = ''; const dhd = document.getElementById('comment-header-default'), dhs = document.getElementById('comment-header-search'); if (dhd && dhs) { if (window.isCommentSearchOpen) { dhd.classList.add('hidden'); dhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-desktop')?.focus(), 100) } else { dhd.classList.remove('hidden'); dhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } const mhd = document.getElementById('mobile-comment-header-default'), mhs = document.getElementById('mobile-comment-header-search'); if (mhd && mhs) { if (window.isCommentSearchOpen) { mhd.classList.add('hidden'); mhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-mobile')?.focus(), 100) } else { mhd.classList.remove('hidden'); mhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } };
         window.toggleVideoPostComments = () => {
@@ -12561,25 +12567,34 @@
         }; window.closeThread = () => { 
   const savedThreadPostId = window.threadPostId; 
   toggleModalAnim('thread-overlay', 'thread-modal', false); 
-  window.replyingToCommentId = null; 
-  window.isDesktopThreadMode = false; 
-  if (window.currentViewingPostId && window.innerWidth >= 768) { 
+
+  if (window.innerWidth >= 768 && window.currentViewingPostId) {
+    window.isDesktopThreadMode = false;
+    window.threadPostId = null;
+    window.threadParentCommentId = null;
+    window.replyingToCommentId = null;
+
     if (window._savedPostViewHeaderHtml) {
       const header = document.getElementById('post-view-comments-header');
-      if (header) header.innerHTML = window._savedPostViewHeaderHtml;
-      window._savedPostViewHeaderHtml = null;
-      refreshIcons();
+      if (header) {
+        header.innerHTML = window._savedPostViewHeaderHtml;
+      }
     }
-    renderCommentsInModal(window.currentViewingPostId); 
-  } else if (savedThreadPostId && window.innerWidth < 768) { 
-    setTimeout(() => { 
-      openComments(savedThreadPostId); 
-    }, 300); 
-  } 
-  if (!window.currentViewingPostId) { 
-    window.threadPostId = null; 
-    window.threadParentCommentId = null; 
-  } 
+    refreshIcons();
+    renderCommentsInModal(window.currentViewingPostId);
+  } else {
+    window.replyingToCommentId = null;
+    window.isDesktopThreadMode = false;
+    if (savedThreadPostId && window.innerWidth < 768) {
+      setTimeout(() => {
+        openComments(savedThreadPostId);
+      }, 300);
+    }
+    if (!window.currentViewingPostId) {
+      window.threadPostId = null;
+      window.threadParentCommentId = null;
+    }
+  }
 };
         window.renderDesktopThread = (pid, cid) => {
             const p = posts.find(x => x.id === pid);
@@ -12588,14 +12603,10 @@
             if (!parent) return;
 
             const header = document.getElementById('post-view-comments-header');
-            if (header && !window._savedPostViewHeaderHtml) {
-                window._savedPostViewHeaderHtml = header.innerHTML;
-            }
-            
-            // Flatten the thread for desktop discussion panel
+
             const allComments = p.comments || [];
             const descendants = [];
-            
+
             function findDescendants(parentId) {
                 const children = allComments.filter(c => c.parentId === parentId);
                 children.sort((a, b) => a.timestamp - b.timestamp);
@@ -12604,20 +12615,23 @@
                     findDescendants(child.id);
                 });
             }
-            
+
             findDescendants(cid);
-            
+
             const rootHtml = createCommentHTML(parent, pid, descendants.length);
             const repliesHtml = descendants.map(d => {
                 const replyCount = allComments.filter(c => c.parentId === d.id).length;
                 return `<div class="comment-thread-item ml-6 md:ml-12 border-l-2 border-gray-200 pl-3 md:pl-4">${createCommentHTML(d, pid, replyCount)}</div>`;
             }).join('');
-            
+
             const html = `<div class="pt-2 pb-0 relative">${rootHtml}${repliesHtml}</div>`;
             const pa = users.find(u => u.id === parent.authorId) || { name: 'Unknown', avatar: '', username: 'user' };
-            if (header) header.innerHTML = `<div class="flex items-center gap-3"><button onclick="closeThread()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i></button><span>Replies to @${pa.username || 'user'}</span></div>`;
-            document.getElementById('post-view-comments').innerHTML = html;
-            refreshIcons()
+            if (header) {
+                header.innerHTML = `<div class="flex items-center gap-3"><button onclick="event.preventDefault(); event.stopPropagation(); closeThread();" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i></button><span class="font-semibold text-gray-900">Replies to @${pa.username || 'user'}</span></div>`;
+            }
+            const pc = document.getElementById('post-view-comments');
+            if (pc) pc.innerHTML = html;
+            refreshIcons();
         };
         window.renderThreadContent = (pid, cid) => {
             const p = posts.find(x => x.id === pid);
@@ -12652,45 +12666,54 @@
             c.innerHTML = html;
             refreshIcons()
         };
-        window.submitThreadReply = async () => {
+        window.submitThreadReply = function () {
             const input = document.getElementById('thread-input');
+            if (!input) return;
             const t = input.value.trim();
-            if (!t || !window.threadPostId || !window.threadParentCommentId) return;
-            const r = doc(db, "posts", window.threadPostId),
-                nc = {
-                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-                    authorId: currentUser.id,
-                    content: t,
-                    timestamp: Date.now(),
-                    likes: [],
-                    parentId: window.replyingToCommentId || window.threadParentCommentId
-                };
+            const pid = window.threadPostId;
+            const pcid = window.threadParentCommentId;
+            if (!t || !pid || !pcid) { if(input) input.focus(); return; }
 
-            // Optimistic update
-            const p = posts.find(x => x.id === window.threadPostId);
+            const parentCid = window.replyingToCommentId || pcid;
+            const nc = {
+                id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                authorId: currentUser.id,
+                content: t,
+                timestamp: Date.now(),
+                likes: [],
+                parentId: parentCid
+            };
+
+            const p = posts.find(x => x.id === pid);
             if (p) {
                 if (!p.comments) p.comments = [];
                 p.comments.push(nc);
-                if (window.isDesktopThreadMode) renderDesktopThread(window.threadPostId, window.threadParentCommentId);
-                else renderThreadContent(window.threadPostId, window.threadParentCommentId);
+                if (window.isDesktopThreadMode) renderDesktopThread(pid, pcid);
+                else renderThreadContent(pid, pcid);
             }
 
             input.value = "";
-            window.replyingToCommentId = window.threadParentCommentId;
+            input.focus();
+            window.replyingToCommentId = pcid;
 
-            await updateDoc(r, {
-                comments: arrayUnion(nc)
-            });
+            updateDoc(doc(db, "posts", pid), { comments: arrayUnion(nc) })
+                .catch(() => {});
 
-            const pc = p.comments.find(x => x.id === (window.replyingToCommentId || window.threadParentCommentId));
-            if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.threadPostId);
+            if (p) {
+                const pc = p.comments.find(x => x.id === parentCid);
+                if (pc && pc.authorId !== currentUser.id) {
+                    sendNotification(pc.authorId, 'reply', 'replied to your comment', pid);
+                }
+            }
             const mm = t.match(/@([a-zA-Z0-9._]+)/g);
             if (mm) {
                 mm.forEach(m => {
-                    const uname = m.substring(1).toLowerCase(),
-                        found = users.find(u => (u.username || "").toLowerCase() === uname);
-                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a reply', window.threadPostId)
-                })
+                    const uname = m.substring(1).toLowerCase();
+                    const found = users.find(u => (u.username || "").toLowerCase() === uname);
+                    if (found && found.id !== currentUser.id) {
+                        sendNotification(found.id, 'mention', 'mentioned you in a reply', pid);
+                    }
+                });
             }
         };
         window.deleteComment = async (pid, cid) => { showAlert("Delete comment?", async () => { const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid), nc = p.comments.filter(x => x.id !== cid && x.parentId !== cid); await updateDoc(r, { comments: nc }); showToast("Deleted") }) };
@@ -12902,22 +12925,21 @@
             window.postViewCommentState.loading = false;
         };
 
-        window.submitOverlayComment = async () => {
+        window.submitOverlayComment = function () {
             const input = document.getElementById('comments-overlay-input');
+            if (!input) return;
             const t = input.value.trim();
             const pid = window.currentPostIdForComments;
-            if (!t || !pid) return;
-            const r = doc(db, "posts", pid),
-                nc = {
-                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-                    authorId: currentUser.id,
-                    content: t,
-                    timestamp: Date.now(),
-                    likes: [],
-                    parentId: null
-                };
+            if (!t || !pid) { if(input) input.focus(); return; }
+            const nc = {
+                id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                authorId: currentUser.id,
+                content: t,
+                timestamp: Date.now(),
+                likes: [],
+                parentId: null
+            };
 
-            // Optimistic update
             const p = posts.find(x => x.id === pid);
             if (p) {
                 if (!p.comments) p.comments = [];
@@ -12926,52 +12948,98 @@
             }
 
             input.value = "";
-            await updateDoc(r, {
-                comments: arrayUnion(nc)
-            });
+            input.focus();
+
+            updateDoc(doc(db, "posts", pid), { comments: arrayUnion(nc) })
+                .catch(() => {});
 
             if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', pid);
         };
-        window.submitCommentDesktop = async () => { const input = document.getElementById('comment-input-desktop'); if (!input) return; const t = input.value.trim(); if (!t || !window.currentViewingPostId) return; if (window.isDesktopThreadMode && window.threadParentCommentId) { window.replyingToCommentId = window.replyingToCommentId || window.threadParentCommentId; await postCommentCommon(t); window.replyingToCommentId = window.threadParentCommentId; if (window.threadPostId && window.threadParentCommentId) { renderDesktopThread(window.threadPostId, window.threadParentCommentId); refreshIcons(); } } else { await postCommentCommon(t); } input.value = ""; input.focus() }; window.submitCommentMobile = async () => { const input = document.getElementById('mobile-comment-input'); if (!input) return; const t = input.value.trim(); if (!t || !window.currentViewingPostId) return; await postCommentCommon(t); input.value = ""; input.focus() };
-        async function postCommentCommon(t) {
-            const r = doc(db, "posts", window.currentViewingPostId),
-                nc = {
-                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-                    authorId: currentUser.id,
-                    content: t,
-                    timestamp: Date.now(),
-                    likes: [],
-                    parentId: window.replyingToCommentId
-                };
+        window.submitCommentDesktop = function () {
+            const input = document.getElementById('comment-input-desktop');
+            if (!input) return;
+            const t = input.value.trim();
+            if (!t) { input.focus(); return; }
+            if (!window.currentViewingPostId) return;
 
-            // Optimistic update
-            const p = posts.find(x => x.id === window.currentViewingPostId);
+            if (window.isDesktopThreadMode && window.threadParentCommentId) {
+                window.replyingToCommentId = window.threadParentCommentId;
+            }
+
+            postCommentCommon(t);
+
+            if (window.isDesktopThreadMode && window.threadPostId && window.threadParentCommentId) {
+                window.replyingToCommentId = window.threadParentCommentId;
+            }
+            input.value = "";
+            input.focus();
+        };
+
+        window.submitCommentMobile = function () {
+            const input = document.getElementById('mobile-comment-input');
+            if (!input) return;
+            const t = input.value.trim();
+            if (!t) { input.focus(); return; }
+            if (!window.currentViewingPostId) return;
+            postCommentCommon(t);
+            input.value = "";
+            input.focus();
+        };
+
+        function postCommentCommon(t) {
+            const pid = window.currentViewingPostId;
+            if (!pid) return;
+            const parentCid = window.replyingToCommentId || null;
+
+            const nc = {
+                id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                authorId: currentUser.id,
+                content: t,
+                timestamp: Date.now(),
+                likes: [],
+                parentId: parentCid
+            };
+
+            const p = posts.find(x => x.id === pid);
             if (p) {
                 if (!p.comments) p.comments = [];
                 p.comments.push(nc);
-                renderCommentsInModal(window.currentViewingPostId);
-                if (window.isDesktopThreadMode && window.threadPostId && window.threadParentCommentId) {
-                    renderDesktopThread(window.threadPostId, window.threadParentCommentId);
+            }
+
+            if (window.isDesktopThreadMode && window.threadPostId && window.threadParentCommentId) {
+                renderDesktopThread(window.threadPostId, window.threadParentCommentId);
+            } else {
+                renderCommentsInModal(pid);
+            }
+
+            updateDoc(doc(db, "posts", pid), { comments: arrayUnion(nc) })
+                .catch(() => {});
+
+            if (p) {
+                if (parentCid) {
+                    const pc = p.comments.find(x => x.id === parentCid);
+                    if (pc && pc.authorId !== currentUser.id) {
+                        sendNotification(pc.authorId, 'reply', 'replied to your comment', pid);
+                    }
+                } else if (p.authorId !== currentUser.id) {
+                    sendNotification(p.authorId, 'comment', 'commented on your post', pid);
                 }
             }
 
-            await updateDoc(r, {
-                comments: arrayUnion(nc)
-            });
-
-            if (window.replyingToCommentId) {
-                const pc = p.comments.find(x => x.id === window.replyingToCommentId);
-                if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.currentViewingPostId)
-            } else if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', window.currentViewingPostId);
             const mm = t.match(/@([a-zA-Z0-9._]+)/g);
             if (mm) {
                 mm.forEach(m => {
-                    const uname = m.substring(1).toLowerCase(),
-                        found = users.find(u => (u.username || "").toLowerCase() === uname);
-                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', window.currentViewingPostId)
-                })
+                    const uname = m.substring(1).toLowerCase();
+                    const found = users.find(u => (u.username || "").toLowerCase() === uname);
+                    if (found && found.id !== currentUser.id) {
+                        sendNotification(found.id, 'mention', 'mentioned you in a comment', pid);
+                    }
+                });
             }
-            window.replyingToCommentId = null
+
+            if (!window.isDesktopThreadMode) {
+                window.replyingToCommentId = null;
+            }
         }
         // Global state for mention functionality
         window.selectedMentionUsers = [];
