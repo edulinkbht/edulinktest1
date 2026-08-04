@@ -12009,16 +12009,31 @@
                 </div>
             </div>`; c.innerHTML = desktopHTML + mobileHTML; 
             renderCommentsInModal(pid);
+            
+            // Sync saves and immediate binding
+            try {
+                const header = document.getElementById('post-view-comments-header');
+                if (header) window._savedPostViewHeaderHtml = header.innerHTML;
+            } catch (e) { console.error(e); }
+            try { window.bindDesktopCommentInputEvents(); } catch (e) { console.error(e); }
+            try { window.bindMobileCommentInputEvents(); } catch (e) { console.error(e); }
+
+            // 10ms fallback bind + scroll listener setup
             setTimeout(() => {
                 const postViewComments = document.getElementById('post-view-comments');
                 const mobilePostComments = document.getElementById('mobile-post-comments');
                 if (postViewComments) postViewComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
                 if (mobilePostComments) mobilePostComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
-                window.bindDesktopCommentInputEvents();
-                window.bindMobileCommentInputEvents();
-                const header = document.getElementById('post-view-comments-header');
-                if (header) window._savedPostViewHeaderHtml = header.innerHTML;
-            }, 50);
+                try { window.bindDesktopCommentInputEvents(); } catch (e) { console.error(e); }
+                try { window.bindMobileCommentInputEvents(); } catch (e) { console.error(e); }
+            }, 10);
+            
+            // 100ms final fallback bind (catches any late re-renders from optimistic updates etc)
+            setTimeout(() => {
+                try { window.bindDesktopCommentInputEvents(); } catch (e) {}
+                try { window.bindMobileCommentInputEvents(); } catch (e) {}
+            }, 100);
+            
             refreshIcons()
         };
         window.toggleCommentSearch = () => { window.isCommentSearchOpen = !window.isCommentSearchOpen; window.commentSearchTerm = ''; const dhd = document.getElementById('comment-header-default'), dhs = document.getElementById('comment-header-search'); if (dhd && dhs) { if (window.isCommentSearchOpen) { dhd.classList.add('hidden'); dhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-desktop')?.focus(), 100) } else { dhd.classList.remove('hidden'); dhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } const mhd = document.getElementById('mobile-comment-header-default'), mhs = document.getElementById('mobile-comment-header-search'); if (mhd && mhs) { if (window.isCommentSearchOpen) { mhd.classList.add('hidden'); mhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-mobile')?.focus(), 100) } else { mhd.classList.remove('hidden'); mhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } };
@@ -12529,24 +12544,37 @@
         window.closeCommentOptions = () => toggleModalAnim('comment-options-overlay', 'comment-options-modal', !1);
         window.openThread = (pid, cid) => {
             if (window.innerWidth < 768) {
-                window.closeComments();
+                try { window.closeComments(); } catch (e) { console.error(e); }
             }
             window.replyingToCommentId = cid;
             if (window.innerWidth >= 768) {
                 window.isDesktopThreadMode = true;
                 window.threadPostId = pid;
                 window.threadParentCommentId = cid;
+                
+                // SAVE HEADER IMMEDIATELY BEFORE ANY MODIFICATIONS
                 const header = document.getElementById('post-view-comments-header');
-                if (header && !window._savedPostViewHeaderHtml) {
-                    window._savedPostViewHeaderHtml = header.innerHTML;
-                }
+                if (header) window._savedPostViewHeaderHtml = header.innerHTML;
+                
                 renderDesktopThread(pid, cid);
+                
+                // Bind TWICE to ensure it sticks: sync + async
+                try { window.bindDesktopCommentInputEvents(); } catch (e) { console.error(e); }
                 setTimeout(() => {
-                    window.bindDesktopCommentInputEvents();
-                    const input = document.getElementById('comment-input-desktop');
-                    if (input) input.focus();
-                }, 50);
-                return
+                    try {
+                        window.bindDesktopCommentInputEvents();
+                        const input = document.getElementById('comment-input-desktop');
+                        if (input) { input.focus(); input.select(); }
+                    } catch (e) { console.error('Thread bind focus error:', e); }
+                }, 10);
+                setTimeout(() => {
+                    try {
+                        window.bindDesktopCommentInputEvents();
+                        const input = document.getElementById('comment-input-desktop');
+                        if (input) input.focus();
+                    } catch (e) {}
+                }, 100);
+                return;
             }
             manageHistory('thread-overlay');
             window.threadPostId = pid;
@@ -12556,43 +12584,82 @@
             
             const input = document.getElementById('thread-input');
             if (input) {
-                input.onkeyup = () => handleMentionInput('thread-input', 'mention-suggestions-thread');
+                input.onkeyup = (e) => {
+                    try { handleMentionInput('thread-input', 'mention-suggestions-thread'); }
+                    catch (err) { console.error('Thread input keyup error:', err); }
+                };
                 input.onkeydown = (e) => {
-                    handleMentionKeydown(e, 'thread-input', 'mention-suggestions-thread');
-                    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submitThreadReply();}
+                    try {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            submitThreadReply();
+                            return;
+                        }
+                    } catch (err) {
+                        console.error('Thread enter error:', err);
+                    }
+                    try { handleMentionKeydown(e, 'thread-input', 'mention-suggestions-thread'); }
+                    catch (err) { console.error('Thread mention keydown error:', err); }
                 };
             }
             
             setTimeout(() => {
-                if (input && window.innerWidth >= 768) input.focus();
-                const avatar = document.getElementById('thread-input-avatar');
-                if (avatar) avatar.src = currentUser.avatar;
-            }, 100)
-        }; window.closeThread = () => { 
-  const savedThreadPostId = window.threadPostId; 
-  toggleModalAnim('thread-overlay', 'thread-modal', false); 
-  window.replyingToCommentId = null; 
-  window.isDesktopThreadMode = false; 
-  if (window.currentViewingPostId && window.innerWidth >= 768) { 
-    const header = document.getElementById('post-view-comments-header');
-    if (header && window._savedPostViewHeaderHtml) {
-        header.innerHTML = window._savedPostViewHeaderHtml;
-        refreshIcons();
-    }
-    renderCommentsInModal(window.currentViewingPostId); 
-    setTimeout(() => {
-        window.bindDesktopCommentInputEvents();
-    }, 50);
-  } else if (savedThreadPostId && window.innerWidth < 768) { 
-    setTimeout(() => { 
-      openComments(savedThreadPostId); 
-    }, 300); 
-  } 
-  if (!window.currentViewingPostId) { 
-    window.threadPostId = null; 
-    window.threadParentCommentId = null; 
-  } 
-};
+                try {
+                    if (input) input.focus();
+                    const avatar = document.getElementById('thread-input-avatar');
+                    if (avatar) avatar.src = currentUser.avatar;
+                } catch (e) { console.error('Thread init error:', e); }
+            }, 50);
+        };
+
+        window.closeThread = () => { 
+            const savedThreadPostId = window.threadPostId;
+            const savedViewingPostId = window.currentViewingPostId;
+            const isDesktop = window.innerWidth >= 768;
+
+            try { toggleModalAnim('thread-overlay', 'thread-modal', false); } catch (e) { console.error(e); }
+            
+            // COMPLETE STATE RESET (ALWAYS, regardless of conditions)
+            window.replyingToCommentId = null; 
+            window.isDesktopThreadMode = false; 
+            window.threadPostId = null; 
+            window.threadParentCommentId = null;
+            
+            if (savedViewingPostId && isDesktop) { 
+                // Restore header FIRST from saved copy
+                const header = document.getElementById('post-view-comments-header');
+                if (header && window._savedPostViewHeaderHtml) {
+                    header.innerHTML = window._savedPostViewHeaderHtml;
+                    try { refreshIcons(); } catch (e) { console.error(e); }
+                }
+                window._savedPostViewHeaderHtml = null;
+                
+                // Render comments fresh
+                try { renderCommentsInModal(savedViewingPostId); } catch (e) { console.error(e); }
+                
+                // BIND INPUT 3 TIMES to ensure nothing can unbind it: sync, 10ms, 100ms
+                try { window.bindDesktopCommentInputEvents(); } catch (e) { console.error(e); }
+                setTimeout(() => {
+                    try {
+                        window.bindDesktopCommentInputEvents();
+                        const input = document.getElementById('comment-input-desktop');
+                        if (input) input.focus();
+                    } catch (e) { console.error('Close thread bind 1 error:', e); }
+                }, 10);
+                setTimeout(() => {
+                    try {
+                        window.bindDesktopCommentInputEvents();
+                        const input = document.getElementById('comment-input-desktop');
+                        if (input) input.focus();
+                    } catch (e) { console.error('Close thread bind 2 error:', e); }
+                }, 100);
+            } else if (savedThreadPostId && !isDesktop) { 
+                setTimeout(() => { 
+                    try { openComments(savedThreadPostId); } catch (e) { console.error(e); }
+                }, 300); 
+            } 
+        };
         window.renderDesktopThread = (pid, cid) => {
             const p = posts.find(x => x.id === pid);
             if (!p) return;
@@ -12868,10 +12935,23 @@
             // Re-bind mentions for the new input if it exists
             const input = document.getElementById('comments-overlay-input');
             if (input) {
-                input.onkeyup = () => handleMentionInput('comments-overlay-input', 'mention-suggestions-comments-overlay');
+                input.onkeyup = (e) => {
+                    try { handleMentionInput('comments-overlay-input', 'mention-suggestions-comments-overlay'); }
+                    catch (err) { console.error('Comments overlay input keyup error:', err); }
+                };
                 input.onkeydown = (e) => {
-                    handleMentionKeydown(e, 'comments-overlay-input', 'mention-suggestions-comments-overlay');
-                    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submitOverlayComment();}
+                    try {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            submitOverlayComment();
+                            return;
+                        }
+                    } catch (err) {
+                        console.error('Comments overlay enter error:', err);
+                    }
+                    try { handleMentionKeydown(e, 'comments-overlay-input', 'mention-suggestions-comments-overlay'); }
+                    catch (err) { console.error('Comments overlay mention keydown error:', err); }
                 };
             }
         };
@@ -12914,7 +12994,7 @@
 
         window.submitOverlayComment = async () => {
             const input = document.getElementById('comments-overlay-input');
-            const t = input.value.trim();
+            const t = input ? input.value.trim() : '';
             const pid = window.currentPostIdForComments;
             if (!t || !pid) return;
             const r = doc(db, "posts", pid),
@@ -12927,7 +13007,6 @@
                     parentId: null
                 };
 
-            // Optimistic update
             const p = posts.find(x => x.id === pid);
             if (p) {
                 if (!p.comments) p.comments = [];
@@ -12935,8 +13014,13 @@
                 renderOverlayComments(pid);
             }
 
-            input.value = "";
-            await updateDoc(r, {
+            // Find NEW input (since renderOverlayComments replaced the DOM)
+            setTimeout(() => {
+                const newInput = document.getElementById('comments-overlay-input');
+                if (newInput) { newInput.value = ""; newInput.focus(); }
+            }, 0);
+
+            updateDoc(r, {
                 comments: arrayUnion(nc)
             });
 
@@ -12948,26 +13032,58 @@
             const input = document.getElementById('comment-input-desktop');
             if (!input) return;
             input.onkeydown = (e) => {
-                handleMentionKeydown(e, 'comment-input-desktop', 'mention-suggestions-desktop');
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    submitCommentDesktop();
+                try {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        submitCommentDesktop();
+                        return;
+                    }
+                } catch (err) {
+                    console.error('Desktop comment enter error:', err);
+                }
+                try {
+                    handleMentionKeydown(e, 'comment-input-desktop', 'mention-suggestions-desktop');
+                } catch (err) {
+                    console.error('Desktop mention keydown error:', err);
                 }
             };
-            input.onkeyup = () => handleMentionInput('comment-input-desktop', 'mention-suggestions-desktop');
+            input.onkeyup = (e) => {
+                try {
+                    handleMentionInput('comment-input-desktop', 'mention-suggestions-desktop');
+                } catch (err) {
+                    console.error('Desktop mention input error:', err);
+                }
+            };
         };
 
         window.bindMobileCommentInputEvents = () => {
             const input = document.getElementById('mobile-comment-input');
             if (!input) return;
             input.onkeydown = (e) => {
-                handleMentionKeydown(e, 'mobile-comment-input', 'mention-suggestions-mobile');
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    submitCommentMobile();
+                try {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        submitCommentMobile();
+                        return;
+                    }
+                } catch (err) {
+                    console.error('Mobile comment enter error:', err);
+                }
+                try {
+                    handleMentionKeydown(e, 'mobile-comment-input', 'mention-suggestions-mobile');
+                } catch (err) {
+                    console.error('Mobile mention keydown error:', err);
                 }
             };
-            input.onkeyup = () => handleMentionInput('mobile-comment-input', 'mention-suggestions-mobile');
+            input.onkeyup = (e) => {
+                try {
+                    handleMentionInput('mobile-comment-input', 'mention-suggestions-mobile');
+                } catch (err) {
+                    console.error('Mobile mention input error:', err);
+                }
+            };
         };
         async function postCommentCommon(t) {
             const r = doc(db, "posts", window.currentViewingPostId),
@@ -13031,30 +13147,40 @@
 
         // Handle keydown for mention navigation
         window.handleMentionKeydown = (e, inputId, suggestionsId) => {
-            const suggestions = document.getElementById(suggestionsId);
-            if (!suggestions || suggestions.classList.contains('hidden')) return;
+            try {
+                const suggestions = document.getElementById(suggestionsId);
+                if (!suggestions || suggestions.classList.contains('hidden')) return;
 
-            const items = suggestions.querySelectorAll('.mention-item');
-            if (items.length === 0) return;
+                const items = suggestions.querySelectorAll('.mention-item');
+                if (items.length === 0) return;
 
-            if (e.key === 'ArrowDown') {
-                e.preventDefault();
-                items[window.highlightedMentionIndex].classList.remove('highlighted');
-                window.highlightedMentionIndex = (window.highlightedMentionIndex + 1) % items.length;
-                items[window.highlightedMentionIndex].classList.add('highlighted');
-            } else if (e.key === 'ArrowUp') {
-                e.preventDefault();
-                items[window.highlightedMentionIndex].classList.remove('highlighted');
-                window.highlightedMentionIndex = window.highlightedMentionIndex === 0 ? items.length - 1 : window.highlightedMentionIndex - 1;
-                items[window.highlightedMentionIndex].classList.add('highlighted');
-            } else if (e.key === 'Enter') {
-                e.preventDefault();
-                const selectedItem = items[window.highlightedMentionIndex];
-                const userId = selectedItem.dataset.userId;
-                const username = selectedItem.dataset.username;
-                selectMention(userId, username, inputId, suggestionsId);
-            } else if (e.key === 'Escape') {
-                suggestions.classList.add('hidden');
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    if (window.highlightedMentionIndex >= items.length) window.highlightedMentionIndex = 0;
+                    const oldIdx = window.highlightedMentionIndex;
+                    if (items[oldIdx]) items[oldIdx].classList.remove('highlighted');
+                    window.highlightedMentionIndex = (window.highlightedMentionIndex + 1) % items.length;
+                    if (items[window.highlightedMentionIndex]) items[window.highlightedMentionIndex].classList.add('highlighted');
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    if (window.highlightedMentionIndex >= items.length) window.highlightedMentionIndex = 0;
+                    if (items[window.highlightedMentionIndex]) items[window.highlightedMentionIndex].classList.remove('highlighted');
+                    window.highlightedMentionIndex = window.highlightedMentionIndex === 0 ? items.length - 1 : window.highlightedMentionIndex - 1;
+                    if (items[window.highlightedMentionIndex]) items[window.highlightedMentionIndex].classList.add('highlighted');
+                } else if (e.key === 'Enter' && !e.shiftKey) {
+                    if (window.highlightedMentionIndex >= items.length) window.highlightedMentionIndex = 0;
+                    const selectedItem = items[window.highlightedMentionIndex];
+                    if (!selectedItem || !selectedItem.dataset) return;
+                    const userId = selectedItem.dataset.userId;
+                    const username = selectedItem.dataset.username;
+                    if (!username) return;
+                    e.preventDefault();
+                    selectMention(userId, username, inputId, suggestionsId);
+                } else if (e.key === 'Escape') {
+                    suggestions.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error('Mention keydown safe error:', err);
             }
         };
 
