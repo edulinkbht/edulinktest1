@@ -4013,7 +4013,7 @@
             <div class="modal-standard-header">
                 <div class="flex items-center justify-between w-full">
                     <div class="flex items-center">
-                        <button onclick="closeThread()" class="modal-chevron-btn">
+                        <button onclick="event.preventDefault(); event.stopPropagation(); closeThread();" class="modal-chevron-btn">
                             <i data-lucide="arrow-left" class="w-6 h-6"></i>
                         </button>
                         <span class="modal-standard-title">Thread</span>
@@ -4032,7 +4032,8 @@
                     <div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all">
                         <input type="text" id="thread-input" placeholder="Add a reply..."
                             class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500"
-                            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitThreadReply();}">
+                            onkeydown="handleMentionKeydown(event,'thread-input','mention-suggestions-thread');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitThreadReply();}"
+                            onkeyup="handleMentionInput('thread-input','mention-suggestions-thread')">
                         <button
                             onclick="submitThreadReply()"
                             class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm">
@@ -10836,8 +10837,12 @@
             if (window.innerWidth < 1280) return switchView('notifications');
             const sidebar = document.getElementById('notification-sidebar');
             if (!sidebar) return;
+            const wasActive = sidebar.classList.contains('active');
             sidebar.classList.toggle('active');
-            if (sidebar.classList.contains('active')) renderNotificationSidebar();
+            if (!wasActive) {
+                renderNotificationSidebar();
+                window.clearAllNotificationsRead();
+            }
         }
 
         // Click handler: on small screens navigate to full notifications view; on desktop mark read and keep in-context
@@ -14794,6 +14799,20 @@
             });
         };
 
+        window.clearAllNotificationsRead = async function () {
+            try {
+                const qSnap = await getDocs(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id), where("read", "==", !1)));
+                if (qSnap.empty) return;
+                const batch = writeBatch(db);
+                qSnap.forEach(d => { batch.update(d.ref, { read: true }); });
+                await batch.commit();
+            } catch (e) {}
+            const bd = document.getElementById('nav-notif-badge');
+            const bm = document.getElementById('mobile-footer-badge');
+            if (bd) { bd.style.display = 'none'; bd.innerText = '0'; }
+            if (bm) { bm.style.display = 'none'; bm.innerText = '0'; }
+        };
+
         // Override switchView to include icon updates
         const originalSwitchView = window.switchView;
         window.switchView = function (view) {
@@ -14801,6 +14820,7 @@
                 window.pauseActiveReel();
             }
             if (originalSwitchView) originalSwitchView(view);
+            if (view === 'notifications') window.clearAllNotificationsRead();
             updateNavIcons(view);
         };
 
@@ -14915,6 +14935,58 @@
                     eb.style.display = 'block';
                 }
             }
+
+            // Fallback delegated submit handler for desktop comment inputs
+            document.addEventListener('keydown', (e) => {
+                const target = e.target;
+                if (!target || !(target instanceof HTMLInputElement)) return;
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    if (target.id === 'comment-input-desktop' || target.id === 'mobile-comment-input') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.submitCommentDesktop();
+                    } else if (target.id === 'thread-input') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.submitThreadReply();
+                    } else if (target.id === 'comments-overlay-input') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        window.submitOverlayComment();
+                    }
+                }
+            }, true);
+
+            // Fallback delegated click handler for submit arrows & thread back buttons
+            document.addEventListener('click', (e) => {
+                let el = e.target;
+                let depth = 0;
+                while (el && depth < 5) {
+                    if (el instanceof HTMLElement) {
+                        const onclick = (el.getAttribute && el.getAttribute('onclick')) ? el.getAttribute('onclick') : '';
+                        if (onclick && onclick.includes('submitCommentDesktop()')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.submitCommentDesktop();
+                            return;
+                        }
+                        if (onclick && onclick.includes('submitThreadReply()')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.submitThreadReply();
+                            return;
+                        }
+                        if (onclick && onclick.includes('submitOverlayComment()')) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.submitOverlayComment();
+                            return;
+                        }
+                    }
+                    el = el.parentElement;
+                    depth++;
+                }
+            }, true);
         });
 
         refreshIcons();
