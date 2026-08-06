@@ -3689,6 +3689,74 @@
             margin-left: 12px;
         }
 
+        /* Post options specific styling: remove default header border and
+           render grouped grey containers inside the modal for a TikTok-like look */
+        #post-options-modal .modal-standard-header {
+            border-bottom: none;
+            padding-top: 10px;
+            padding-bottom: 6px;
+            background: transparent;
+            height: auto;
+        }
+
+        #post-options-content {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        #post-options-content .po-group {
+            background: #f3f4f6;
+            border-radius: 14px;
+            padding: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        #post-options-content .po-action {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            border-radius: 12px;
+            background: transparent;
+            cursor: pointer;
+            transition: background-color .12s ease, transform .06s ease;
+        }
+
+        #post-options-content .po-action:hover {
+            background: rgba(0,0,0,0.03);
+            transform: translateY(-1px);
+        }
+
+        #post-options-content .po-action .po-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        #post-options-content .po-footer {
+            padding-top: 6px;
+            text-align: center;
+        }
+
+        #post-options-content .po-cancel-btn {
+            background: white;
+            padding: 10px 16px;
+            border-radius: 12px;
+            border: 1px solid #e6e6e6;
+            display: inline-block;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
         .modal-chevron-btn {
             width: 36px;
             height: 36px;
@@ -13478,64 +13546,43 @@
             const canEdit = me && (Date.now() - postTime.getTime() < 604800000);
             const isReposted = currentUser.reposts?.includes(pid);
             
-            let h = '';
-            
-            const btnClass = "flex items-center gap-4 w-full p-4 hover:bg-gray-50 rounded-2xl transition-all duration-200 text-gray-700 text-left group";
-            const iconClass = "w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center group-hover:bg-white group-hover:shadow-sm transition-all duration-200";
+                        // Build grouped layout: primary group (important/destructive actions)
+                        // and secondary group (utility actions) so it looks like a modern app
+                        const iconClass = "w-5 h-5 text-gray-600";
+                        let primary = '';
+                        let secondary = '';
 
-            if (isReposted) {
-                h += `<button onclick="toggleRepost('${pid}'); hidePostMenu()" class="${btnClass}">
-                        <div class="${iconClass}"><i data-lucide="repeat" class="w-5 h-5 text-blue-600"></i></div>
-                        <span class="font-bold text-[15px]">Remove Repost</span>
-                      </button>`;
-            }
+                        if (isReposted) {
+                                primary += `<div class="po-action" onclick="toggleRepost('${pid}'); hidePostMenu()"><div class="po-icon"><i data-lucide=\"repeat\" class=\"${iconClass} text-blue-600\"></i></div><div class=\"po-label font-bold text-[15px]\">Remove Repost</div></div>`;
+                        }
 
-            if (me) {
-                if (canEdit) {
-                    h += `<button onclick="closePostView(); editPost('${pid}'); hidePostMenu()" class="${btnClass}">
-                            <div class="${iconClass}"><i data-lucide="edit-2" class="w-5 h-5 text-gray-600"></i></div>
-                            <span class="font-bold text-[15px]">Edit Post</span>
-                          </button>`;
-                }
-                h += `<button onclick="showEngagementMetrics('${pid}'); hidePostMenu()" class="${btnClass}">
-                        <div class="${iconClass}"><i data-lucide="bar-chart-2" class="w-5 h-5 text-gray-600"></i></div>
-                        <span class="font-bold text-[15px]">Engagement</span>
-                      </button>`;
-            }
+                        if (me) {
+                                if (canEdit) {
+                                        primary += `<div class="po-action" onclick="closePostView(); editPost('${pid}'); hidePostMenu()"><div class="po-icon"><i data-lucide=\"edit-2\" class=\"${iconClass}\"></i></div><div class=\"po-label font-bold text-[15px]\">Edit Post</div></div>`;
+                                }
+                                primary += `<div class="po-action" onclick="showEngagementMetrics('${pid}'); hidePostMenu()"><div class="po-icon"><i data-lucide=\"bar-chart-2\" class=\"${iconClass}\"></i></div><div class=\"po-label font-bold text-[15px]\">Engagement</div></div>`;
+                        }
 
-            if (me || adm) {
-                h += `<button onclick="deletePost('${pid}'); hidePostMenu()" class="${btnClass} hover:bg-red-50 group/del">
-                        <div class="${iconClass} group-hover/del:bg-red-100"><i data-lucide="trash-2" class="w-5 h-5 text-gray-600 group-hover/del:text-red-600"></i></div>
-                        <span class="font-bold text-[15px] group-hover/del:text-red-600">Delete Post</span>
-                      </button>`;
-            }
+                        if (me || adm) {
+                                primary += `<div class="po-action" onclick="deletePost('${pid}'); hidePostMenu()"><div class="po-icon"><i data-lucide=\"trash-2\" class=\"${iconClass} text-red-600\"></i></div><div class=\"po-label font-bold text-[15px] text-red-600\">Delete Post</div></div>`;
+                        }
 
-            if (!me) {
-                const s = savedPosts.includes(pid);
-                h += `<button onclick="toggleSave('${pid}'); hidePostMenu()" class="${btnClass}">
-                        <div class="${iconClass}"><i data-lucide="bookmark" class="w-5 h-5 ${s ? 'fill-yellow-500 text-yellow-500' : 'text-gray-600'}"></i></div>
-                        <span class="font-bold text-[15px]">${s ? 'Unsave' : 'Save'} Post</span>
-                      </button>`;
-                h += `<button onclick="trackInteraction('${pid}','not_interested'); hidePostMenu()" class="${btnClass}">
-                        <div class="${iconClass}"><i data-lucide="eye-off" class="w-5 h-5 text-gray-600"></i></div>
-                        <span class="font-bold text-[15px]">Not Interested</span>
-                      </button>`;
-                h += `<button onclick="trackInteraction('${pid}','show_more',10); hidePostMenu()" class="${btnClass}">
-                        <div class="${iconClass}"><i data-lucide="trending-up" class="w-5 h-5 text-gray-600"></i></div>
-                        <span class="font-bold text-[15px]">Show more like this</span>
-                      </button>`;
-                h += `<button onclick="showToast('Reported'); hidePostMenu()" class="${btnClass} hover:bg-red-50 group/rep">
-                        <div class="${iconClass} group-hover/rep:bg-red-100"><i data-lucide="flag" class="w-5 h-5 text-gray-600 group-hover/rep:text-red-600"></i></div>
-                        <span class="font-bold text-[15px] group-hover/rep:text-red-600">Report Post</span>
-                      </button>`;
-            }
+                        // Secondary actions for non-owners
+                        if (!me) {
+                                const s = savedPosts.includes(pid);
+                                secondary += `<div class="po-action" onclick="toggleSave('${pid}'); hidePostMenu()"><div class="po-icon"><i data-lucide=\"bookmark\" class=\"${iconClass} ${s ? 'fill-yellow-500 text-yellow-500' : ''}\"></i></div><div class=\"po-label font-bold text-[15px]\">${s ? 'Unsave' : 'Save'} Post</div></div>`;
+                                secondary += `<div class="po-action" onclick="trackInteraction('${pid}','not_interested'); hidePostMenu()"><div class="po-icon"><i data-lucide=\"eye-off\" class=\"${iconClass}\"></i></div><div class=\"po-label font-bold text-[15px]\">Not Interested</div></div>`;
+                                secondary += `<div class="po-action" onclick="trackInteraction('${pid}','show_more',10); hidePostMenu()"><div class="po-icon"><i data-lucide=\"trending-up\" class=\"${iconClass}\"></i></div><div class=\"po-label font-bold text-[15px]\">Show more like this</div></div>`;
+                                secondary += `<div class="po-action" onclick="showToast('Reported'); hidePostMenu()"><div class="po-icon"><i data-lucide=\"flag\" class=\"${iconClass} text-red-600\"></i></div><div class=\"po-label font-bold text-[15px] text-red-600\">Report Post</div></div>`;
+                        }
 
-            h += `<button onclick="sharePost('${pid}'); hidePostMenu()" class="${btnClass}">
-                    <div class="${iconClass}"><i data-lucide="link" class="w-5 h-5 text-gray-600"></i></div>
-                    <span class="font-bold text-[15px]">Copy Link</span>
-                  </button>`;
+                        secondary += `<div class="po-action" onclick="sharePost('${pid}'); hidePostMenu()"><div class="po-icon"><i data-lucide=\"link\" class=\"${iconClass}\"></i></div><div class=\"po-label font-bold text-[15px]\">Copy Link</div></div>`;
 
-            c.innerHTML = h; 
+                        c.innerHTML = `
+                                <div class="po-group">${primary}</div>
+                                <div class="po-group">${secondary}</div>
+                                <div class="po-footer"><div class="po-cancel-btn" onclick="hidePostMenu()">Cancel</div></div>
+                        `;
             refreshIcons(); 
             
             // Animation Reset
