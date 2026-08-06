@@ -2931,6 +2931,7 @@
                 width: 100%;
                 height: 100%;
                 min-height: 0;
+                background-color: #000;
             }
 
             .stage-content {
@@ -10841,11 +10842,19 @@
         }
 
         // Click handler: on small screens navigate to full notifications view; on desktop mark read and keep in-context
-        window.handleNotificationItemClick = (id) => {
+        window.handleNotificationItemClick = async (id) => {
             if (window.innerWidth < 1280) return switchView('notifications');
             const el = document.getElementById('notif-item-' + id);
             if (el) el.classList.add('notif-read');
-            // Optionally perform more actions for desktop (open post, show detail overlay)...
+            if (!id) return;
+            try {
+                await updateDoc(doc(db, "notifications", id), { read: true });
+                const notificationList = window.notifications || notifications || [];
+                const notif = notificationList.find(n => n.id === id);
+                if (notif) notif.read = true;
+            } catch (e) {
+                console.error('Failed to mark notification as read:', e);
+            }
         }
 
         window.renderNotificationSidebar = () => {
@@ -10913,7 +10922,8 @@
                     } else if (n.type === 'collab_request') {
                         actionButtons = `<div class="notif-action-row"><button onclick="event.stopPropagation(); acceptCollab('${n.id}','${n.postId}')" class="notif-action-btn">Accept</button><button onclick="event.stopPropagation(); declineCollab('${n.id}','${n.postId}')" class="notif-action-btn notif-action-btn-secondary">Decline</button></div>`;
                     }
-                    const click = window.notifSelectionMode ? '' : ((['like', 'repost_like', 'comment', 'reply', 'mention', 'share'].includes(n.type) && n.postId) ? `openPostView('${n.postId}',true)` : `showProfile('${user.id}')`);
+                    const clickAction = (['like', 'repost_like', 'comment', 'reply', 'mention', 'share'].includes(n.type) && n.postId) ? `openPostView('${n.postId}',true)` : `showProfile('${user.id}')`;
+                    const click = window.notifSelectionMode ? '' : `handleNotificationItemClick('${id}'); ${clickAction}`;
                     return `<div id="notif-item-${id}" class="notif-item${n.read ? ' notif-read' : ''}" onclick="${click}">${avatar}<div class="notif-body"><div class="notif-title">${titleText}${userBadge}</div><div class="notif-text">${message}</div>${showImg ? `<div class="notif-preview"><img src="${showImg}" class="notif-preview-img" onload="this.classList.add('loaded')"></div>` : ''}${actionButtons ? `<div class="notif-action-group">${actionButtons}</div>` : ''}</div><div class="notif-time">${formatDate(getTimestamp(n))}</div></div>`;
                 }).join('')}</div>`;
             };
