@@ -2914,10 +2914,9 @@
                 display: flex;
                 flex-direction: column;
                 overflow: hidden;
-                border-right: 1px solid rgba(55,65,81,0.9);
+                border-right: 1px solid rgba(229,231,235,0.9);
                 position: relative;
                 min-width: 52%;
-                background: #000000;
             }
 
             .desktop-comments-container {
@@ -2932,7 +2931,6 @@
                 width: 100%;
                 height: 100%;
                 min-height: 0;
-                background: #000000;
             }
 
             .stage-content {
@@ -4074,7 +4072,8 @@
                     </div>
                     <div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all">
                         <input type="text" id="comments-overlay-input" placeholder="Add a comment..."
-                            class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500">
+                            class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500"
+                            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitOverlayComment();}">
                         <button
                             onclick="submitOverlayComment()"
                             class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm">
@@ -4096,7 +4095,7 @@
             <i data-lucide="chevron-right" class="w-6 h-6 text-gray-900"></i>
         </button>
 
-        <div id="post-view-container" class="post-modal-layout scale-in relative z-10" onclick="event.stopPropagation()"></div>
+        <div id="post-view-container" class="post-modal-layout scale-in relative z-10"></div>
     </div>
     <div id="feed-filter-overlay"
         class="fixed inset-0 z-[70] flex items-end md:items-center justify-center bg-black/40 backdrop-blur-sm hidden opacity-0 transition-opacity duration-200"
@@ -4197,7 +4196,7 @@
                     placeholder="Search users..."
                     class="w-full bg-gray-100 border-none rounded-lg md:rounded-full px-4 py-2 text-sm outline-none focus:outline-none">
             </div>
-            <div id="tag-list-content" class="flex-1 overflow-y-auto p-2 flex flex-col"></div>
+            <div id="tag-list-content" class="flex-1 overflow-y-auto p-2"></div>
         </div>
     </div>
 
@@ -11660,6 +11659,7 @@
             }
 
             manageHistory('post-view-overlay'); 
+            window.currentViewingPostId = pid;
             const o = document.getElementById('post-view-overlay'), c = document.getElementById('post-view-container'); 
             if (postList) {
                 window.currentViewingPostList = postList;
@@ -11745,7 +11745,7 @@
                     mhDesktop = createCarouselHTML(ma, 'overlay-carousel-desktop', p.id);
                     mhMobile = createCarouselHTML(ma, 'overlay-carousel-mobile', p.id)
                 }
-            } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), postBodyHtml = window.renderTextWithReadMore(p.content, `post-${p.id}`), allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative" onclick="event.stopPropagation()"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2" onclick="event.stopPropagation()"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0" onclick="event.stopPropagation()"><div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all" onclick="event.stopPropagation()"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." autocomplete="off" tabindex="0" class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500" onclick="event.stopPropagation()"><button onclick="event.stopPropagation(); submitCommentDesktop(); return false;" class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm"><i data-lucide="arrow-right" class="w-4.5 h-4.5"></i></button></div></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative" onclick="event.stopPropagation()"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2" onclick="event.stopPropagation()"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0" onclick="event.stopPropagation()"><div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all" onclick="event.stopPropagation()"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." autocomplete="off" tabindex="0" class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500" onclick="event.stopPropagation()"><button onclick="event.stopPropagation(); submitCommentMobile(); return false;" class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm"><i data-lucide="arrow-right" class="w-4.5 h-4.5"></i></button></div></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button></div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
+            } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id), postBodyHtml = window.renderTextWithReadMore(p.content, `post-${p.id}`), allowComments = p.settings?.allowComments !== false, commentInputDesktop = allowComments ? `<div class="relative"><div id="mention-suggestions-desktop" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all"><input type="text" id="comment-input-desktop" placeholder="Add a comment..." class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500" onkeydown="handleMentionKeydown(event,'comment-input-desktop','mention-suggestions-desktop');if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();submitCommentDesktop();}" onkeyup="handleMentionInput('comment-input-desktop','mention-suggestions-desktop')"><button onclick="submitCommentDesktop()" class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm"><i data-lucide="arrow-right" class="w-4.5 h-4.5"></i></button></div></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-4 text-center italic border-t border-gray-100">Creator turned off commenting.</div>`, commentInputMobile = allowComments ? `<div class="relative"><div id="mention-suggestions-mobile" class="mention-suggestions hidden"></div><div class="flex items-center gap-2"><img src="${currentUser.avatar}" class="w-8 h-8 rounded-full bg-gray-200 object-cover shrink-0"><div class="flex-1 flex items-center bg-gray-100 border border-gray-200 rounded-[24px] px-4 py-1 pr-1 focus-within:bg-white focus-within:border-gray-300 transition-all"><input type="text" id="mobile-comment-input" placeholder="Add a comment..." class="flex-1 bg-transparent text-[15px] outline-none text-gray-900 placeholder-gray-500" onkeydown="handleMentionKeydown(event,'mobile-comment-input','mention-suggestions-mobile')" onkeyup="handleMentionInput('mobile-comment-input','mention-suggestions-mobile')"><button onclick="submitCommentMobile()" class="w-9 h-9 bg-[#3D7EEB] rounded-full flex items-center justify-center text-white shrink-0 hover:bg-[#2a5ebd] transition-colors shadow-sm"><i data-lucide="arrow-right" class="w-4.5 h-4.5"></i></button></div></div></div>` : `<div class="bg-gray-50 text-gray-500 text-sm p-3 text-center italic rounded-xl mt-2">Creator turned off commenting.</div>`; const fromN = !!fromNotifications; const badge = a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge ml-1"></i>' : ''; const headerHtml = `<div class="px-4 py-3 bg-white sticky top-0 z-10 border-t border-b border-gray-300 transition-all"><div id="mobile-comment-header-default" class="flex items-center justify-between"><h3 class="font-bold text-gray-900 text-[15px]">Comments</h3><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="icon-btn w-8 h-8 bg-gray-50 hover:bg-gray-100"><i data-lucide="search" class="w-4 h-4 text-gray-600"></i></button></div></div><div id="mobile-comment-header-search" class="hidden flex items-center gap-2 w-full"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-mobile" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search..."></div><button onclick="toggleCommentSearch()" class="p-2 bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div>`;
             let desktopAction = '', mobileAction = ''; if (p.claimLink) { const cb = `<button class="action-btn text-black border-gray-100 bg-gray-50 hover:bg-gray-100 !px-4 !py-2.5 !rounded-full border border-gray-100" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`; desktopAction = cb; mobileAction = cb } else { desktopAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''} !p-2.5 !rounded-full border border-gray-100 hover:bg-gray-50" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>`; mobileAction = `<button class="action-btn bookmark js-save-btn-${p.id} ${isSaved ? 'active' : ''}" onclick="event.stopPropagation(); toggleSave('${p.id}')"><i data-lucide="bookmark"></i></button>` }
             
             let lh = '';
@@ -11776,25 +11776,29 @@
 
             let desktopHTML = '';
             if (p.media || p.embedVideo) {
+                // Standard media-post overlay layout for both images and videos
                 desktopHTML = `
-                <div class="desktop-split-view hidden md:flex w-full h-full bg-black flex-row overflow-hidden" onclick="event.stopPropagation()">
-                    <div class="desktop-post-container flex flex-col h-full overflow-hidden bg-black">
-                        <div class="h-6 shrink-0 bg-black"></div>
+                <div class="desktop-split-view hidden md:flex w-full h-full bg-white flex-row overflow-hidden">
+                    <!-- Left Column: Post Content & Actions -->
+                    <div class="desktop-post-container flex flex-col h-full overflow-hidden">
+                        <div class="h-6 shrink-0"></div>
                         
-                        <div class="flex-1 overflow-hidden bg-black">
-                            <div class="w-full h-full relative overflow-hidden bg-black" id="post-view-media-container">
+                                <!-- Post Media -->
+                        <div class="flex-1 overflow-hidden">
+                            <div class="w-full h-full relative overflow-hidden" id="post-view-media-container">
                                 ${mhDesktop}
                             </div>
                         </div>
 
-                        <div class="px-6 h-[72px] flex items-center border-t border-gray-200 bg-white shrink-0">
+                        <!-- Post Actions (Footer) -->
+                        <div class="px-6 h-[72px] flex items-center border-t border-gray-100 bg-white shrink-0">
                             <div class="flex items-center justify-between w-full">
                                 <div class="flex items-center gap-2">
                                     <button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''} hover:bg-red-50 !px-4 !py-2 !rounded-full border border-gray-100" onclick="toggleLike('${p.id}')">
                                         <i data-lucide="heart" class="w-5 h-5"></i>
                                         <span class="js-like-count-${p.id} font-bold text-sm cursor-pointer" onclick="event.stopPropagation(); openLikes('${p.id}')">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
                                     </button>
-                                    <button class="action-btn comment hover:bg-blue-50 !px-4 !py-2 !rounded-full border border-gray-100" onclick="event.stopPropagation(); ${allowComments ? 'document.getElementById(\'comment-input-desktop\').focus()' : ''}">
+                                    <button class="action-btn comment hover:bg-blue-50 !px-4 !py-2 !rounded-full border border-gray-100" onclick="${allowComments ? 'document.getElementById(\'comment-input-desktop\').focus()' : ''}">
                                         <i data-lucide="message-circle" class="w-5 h-5"></i>
                                         <span class="js-comment-count-${p.id} font-bold text-sm">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
                                     </button>
@@ -11808,7 +11812,8 @@
                         </div>
                     </div>
 
-                    <div class="desktop-comments-container flex-1 flex flex-col bg-white h-full border-l border-gray-200">
+                    <!-- Right Column: Comments -->
+                    <div class="desktop-comments-container flex-1 flex flex-col bg-white h-full border-l border-gray-100">
                         <div id="post-view-comments-header" class="h-16 flex items-center justify-between px-6 border-b border-gray-100 bg-white z-10 shrink-0">
                             <div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
                                 <div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden">
@@ -11845,7 +11850,7 @@
             } else {
                 // Original layout for text-only posts
                 desktopHTML = `
-                <div class="desktop-split-view hidden md:flex w-full h-full bg-white flex-row overflow-hidden" onclick="event.stopPropagation()">
+                <div class="desktop-split-view hidden md:flex w-full h-full bg-white flex-row overflow-hidden">
                     <div class="flex-[1.3] flex flex-col h-full overflow-hidden">
                         <div class="h-16 px-6 flex items-center justify-between shrink-0 border-b border-gray-100">
                             <div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')">
@@ -11875,7 +11880,7 @@
                                         <i data-lucide="heart" class="w-5 h-5"></i>
                                         <span class="js-like-count-${p.id} font-bold text-sm cursor-pointer" onclick="event.stopPropagation(); openLikes('${p.id}')">${(p.likes?.length > 0) ? p.likes.length : '0'}</span>
                                     </button>
-                                    <button class="action-btn comment hover:bg-blue-50 !px-4 !py-2 !rounded-full border border-gray-100" onclick="event.stopPropagation(); ${allowComments ? 'document.getElementById(\'comment-input-desktop\').focus()' : ''}">
+                                    <button class="action-btn comment hover:bg-blue-50 !px-4 !py-2 !rounded-full border border-gray-100" onclick="${allowComments ? 'document.getElementById(\'comment-input-desktop\').focus()' : ''}">
                                         <i data-lucide="message-circle" class="w-5 h-5"></i>
                                         <span class="js-comment-count-${p.id} font-bold text-sm">${(p.comments?.length > 0) ? p.comments.length : '0'}</span>
                                     </button>
@@ -12008,51 +12013,12 @@
                 </div>
             </div>`; c.innerHTML = desktopHTML + mobileHTML; 
             renderCommentsInModal(pid);
-            
-            // Sync saves and immediate binding
-            try {
-                const header = document.getElementById('post-view-comments-header');
-                if (header) window._savedPostViewHeaderHtml = header.innerHTML;
-            } catch (e) { console.error(e); }
-            try { window.bindDesktopCommentInputEvents(); } catch (e) { console.error(e); }
-            try { window.bindMobileCommentInputEvents(); } catch (e) { console.error(e); }
-
-            // 10ms fallback bind + scroll listener setup
             setTimeout(() => {
                 const postViewComments = document.getElementById('post-view-comments');
                 const mobilePostComments = document.getElementById('mobile-post-comments');
                 if (postViewComments) postViewComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
                 if (mobilePostComments) mobilePostComments.addEventListener('scroll', window.handlePostViewCommentsScroll);
-                try { window.bindDesktopCommentInputEvents(); } catch (e) { console.error(e); }
-                try { window.bindMobileCommentInputEvents(); } catch (e) { console.error(e); }
-                if (window.innerWidth >= 768) {
-                    try { const d = document.getElementById('comment-input-desktop'); if (d) d.focus(); } catch (e) {}
-                }
-            }, 10);
-            
-            // 100ms final fallback bind (catches any late re-renders from optimistic updates etc)
-            setTimeout(() => {
-                try { window.bindDesktopCommentInputEvents(); } catch (e) {}
-                try { window.bindMobileCommentInputEvents(); } catch (e) {}
-                if (window.innerWidth >= 768) {
-                    try { const d = document.getElementById('comment-input-desktop'); if (d) d.focus(); } catch (e) {}
-                }
             }, 100);
-
-            // AGGRESSIVE LONG-DELAY RETRIES (200ms - 2s) to absolutely guarantee input works
-            [200, 500, 1000, 2000].forEach(delay => {
-                setTimeout(() => {
-                    try { window.bindDesktopCommentInputEvents(); } catch (e) {}
-                    try { window.bindMobileCommentInputEvents(); } catch (e) {}
-                    if (window.innerWidth >= 768) {
-                        try {
-                            const d = document.getElementById('comment-input-desktop');
-                            if (d && !document.activeElement) { d.focus(); }
-                        } catch (e) {}
-                    }
-                }, delay);
-            });
-            
             refreshIcons()
         };
         window.toggleCommentSearch = () => { window.isCommentSearchOpen = !window.isCommentSearchOpen; window.commentSearchTerm = ''; const dhd = document.getElementById('comment-header-default'), dhs = document.getElementById('comment-header-search'); if (dhd && dhs) { if (window.isCommentSearchOpen) { dhd.classList.add('hidden'); dhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-desktop')?.focus(), 100) } else { dhd.classList.remove('hidden'); dhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } const mhd = document.getElementById('mobile-comment-header-default'), mhs = document.getElementById('mobile-comment-header-search'); if (mhd && mhs) { if (window.isCommentSearchOpen) { mhd.classList.add('hidden'); mhs.classList.remove('hidden'); setTimeout(() => document.getElementById('comment-search-input-mobile')?.focus(), 100) } else { mhd.classList.remove('hidden'); mhs.classList.add('hidden'); renderCommentsInModal(window.currentViewingPostId) } } };
@@ -12090,7 +12056,7 @@
                 iframe.src = src;
             });
 
-            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null; window._savedPostViewHeaderHtml = null; window.threadPostId = null; window.threadParentCommentId = null;
+            o.classList.add('hidden'); o.classList.remove('flex'); document.body.classList.remove('reel-mode'); document.querySelector('.discussion-panel')?.classList.remove('open'); window.currentViewingPostId = window.replyingToCommentId = null; window.isDesktopThreadMode = false; window.postViewOpenedFromNotifications = false; window.currentViewingPostList = null;
         };
         window.doLogout = async () => { 
             await auth.signOut(); 
@@ -12477,10 +12443,6 @@
             // Stable update check to prevent "tweaking"
             if (desktopC && !window.isDesktopThreadMode && desktopC.innerHTML !== finalHtml) desktopC.innerHTML = finalHtml;
             if (mobileC && mobileC.innerHTML !== finalHtml) mobileC.innerHTML = finalHtml;
-            
-            try { window.bindDesktopCommentInputEvents(); } catch (e) {}
-            try { window.bindMobileCommentInputEvents(); } catch (e) {}
-            
             refreshIcons();
         }
         function createCommentHTML(c, pid, replyCount) {
@@ -12567,37 +12529,15 @@
         window.closeCommentOptions = () => toggleModalAnim('comment-options-overlay', 'comment-options-modal', !1);
         window.openThread = (pid, cid) => {
             if (window.innerWidth < 768) {
-                try { window.closeComments(); } catch (e) { console.error(e); }
+                window.closeComments();
             }
             window.replyingToCommentId = cid;
             if (window.innerWidth >= 768) {
                 window.isDesktopThreadMode = true;
                 window.threadPostId = pid;
                 window.threadParentCommentId = cid;
-                
-                // SAVE HEADER IMMEDIATELY BEFORE ANY MODIFICATIONS
-                const header = document.getElementById('post-view-comments-header');
-                if (header) window._savedPostViewHeaderHtml = header.innerHTML;
-                
                 renderDesktopThread(pid, cid);
-                
-                // Bind TWICE to ensure it sticks: sync + async
-                try { window.bindDesktopCommentInputEvents(); } catch (e) { console.error(e); }
-                setTimeout(() => {
-                    try {
-                        window.bindDesktopCommentInputEvents();
-                        const input = document.getElementById('comment-input-desktop');
-                        if (input) { input.focus(); input.select(); }
-                    } catch (e) { console.error('Thread bind focus error:', e); }
-                }, 10);
-                setTimeout(() => {
-                    try {
-                        window.bindDesktopCommentInputEvents();
-                        const input = document.getElementById('comment-input-desktop');
-                        if (input) input.focus();
-                    } catch (e) {}
-                }, 100);
-                return;
+                return
             }
             manageHistory('thread-overlay');
             window.threadPostId = pid;
@@ -12605,84 +12545,37 @@
             renderThreadContent(pid, cid);
             toggleModalAnim('thread-overlay', 'thread-modal', true);
             
+            // Re-bind mentions for thread input
             const input = document.getElementById('thread-input');
             if (input) {
-                input.onkeyup = (e) => {
-                    try { handleMentionInput('thread-input', 'mention-suggestions-thread'); }
-                    catch (err) { console.error('Thread input keyup error:', err); }
-                };
+                input.onkeyup = () => handleMentionInput('thread-input', 'mention-suggestions-thread');
                 input.onkeydown = (e) => {
-                    try {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            submitThreadReply();
-                            return;
-                        }
-                    } catch (err) {
-                        console.error('Thread enter error:', err);
-                    }
-                    try { handleMentionKeydown(e, 'thread-input', 'mention-suggestions-thread'); }
-                    catch (err) { console.error('Thread mention keydown error:', err); }
+                    handleMentionKeydown(e, 'thread-input', 'mention-suggestions-thread');
+                    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submitThreadReply();}
                 };
             }
             
             setTimeout(() => {
-                try {
-                    if (input) input.focus();
-                    const avatar = document.getElementById('thread-input-avatar');
-                    if (avatar) avatar.src = currentUser.avatar;
-                } catch (e) { console.error('Thread init error:', e); }
-            }, 50);
-        };
-
-        window.closeThread = () => { 
-            const savedThreadPostId = window.threadPostId;
-            const savedViewingPostId = window.currentViewingPostId;
-            const isDesktop = window.innerWidth >= 768;
-
-            try { toggleModalAnim('thread-overlay', 'thread-modal', false); } catch (e) { console.error(e); }
-            
-            // COMPLETE STATE RESET (ALWAYS, regardless of conditions)
-            window.replyingToCommentId = null; 
-            window.isDesktopThreadMode = false; 
-            window.threadPostId = null; 
-            window.threadParentCommentId = null;
-            
-            if (savedViewingPostId && isDesktop) { 
-                // Restore header FIRST from saved copy
-                const header = document.getElementById('post-view-comments-header');
-                if (header && window._savedPostViewHeaderHtml) {
-                    header.innerHTML = window._savedPostViewHeaderHtml;
-                    try { refreshIcons(); } catch (e) { console.error(e); }
-                }
-                window._savedPostViewHeaderHtml = null;
-                
-                // Render comments fresh
-                try { renderCommentsInModal(savedViewingPostId); } catch (e) { console.error(e); }
-                
-                // BIND INPUT 3 TIMES to ensure nothing can unbind it: sync, 10ms, 100ms
-                try { window.bindDesktopCommentInputEvents(); } catch (e) { console.error(e); }
-                setTimeout(() => {
-                    try {
-                        window.bindDesktopCommentInputEvents();
-                        const input = document.getElementById('comment-input-desktop');
-                        if (input) input.focus();
-                    } catch (e) { console.error('Close thread bind 1 error:', e); }
-                }, 10);
-                setTimeout(() => {
-                    try {
-                        window.bindDesktopCommentInputEvents();
-                        const input = document.getElementById('comment-input-desktop');
-                        if (input) input.focus();
-                    } catch (e) { console.error('Close thread bind 2 error:', e); }
-                }, 100);
-            } else if (savedThreadPostId && !isDesktop) { 
-                setTimeout(() => { 
-                    try { openComments(savedThreadPostId); } catch (e) { console.error(e); }
-                }, 300); 
-            } 
-        };
+                if (input && window.innerWidth >= 768) input.focus();
+                document.getElementById('thread-input-avatar').src = currentUser.avatar
+            }, 100)
+        }; window.closeThread = () => { 
+  const savedThreadPostId = window.threadPostId; 
+  toggleModalAnim('thread-overlay', 'thread-modal', false); 
+  window.replyingToCommentId = null; 
+  window.isDesktopThreadMode = false; 
+  if (window.currentViewingPostId && window.innerWidth >= 768) { 
+    renderCommentsInModal(window.currentViewingPostId); 
+  } else if (savedThreadPostId && window.innerWidth < 768) { 
+    setTimeout(() => { 
+      openComments(savedThreadPostId); 
+    }, 300); 
+  } 
+  if (!window.currentViewingPostId) { 
+    window.threadPostId = null; 
+    window.threadParentCommentId = null; 
+  } 
+};
         window.renderDesktopThread = (pid, cid) => {
             const p = posts.find(x => x.id === pid);
             if (!p) return;
@@ -12715,8 +12608,6 @@
             const header = document.getElementById('post-view-comments-header');
             if (header) header.innerHTML = `<div class="flex items-center gap-3"><button onclick="closeThread()" class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200"><i data-lucide="arrow-left" class="w-5 h-5 text-gray-600"></i></button><span>Replies to @${pa.username || 'user'}</span></div>`;
             document.getElementById('post-view-comments').innerHTML = html;
-            try { window.bindDesktopCommentInputEvents(); } catch (e) {}
-            try { window.bindMobileCommentInputEvents(); } catch (e) {}
             refreshIcons()
         };
         window.renderThreadContent = (pid, cid) => {
@@ -12754,7 +12645,7 @@
         };
         window.submitThreadReply = async () => {
             const input = document.getElementById('thread-input');
-            const t = input ? input.value.trim() : '';
+            const t = input.value.trim();
             if (!t || !window.threadPostId || !window.threadParentCommentId) return;
             const r = doc(db, "posts", window.threadPostId),
                 nc = {
@@ -12766,6 +12657,7 @@
                     parentId: window.replyingToCommentId || window.threadParentCommentId
                 };
 
+            // Optimistic update
             const p = posts.find(x => x.id === window.threadPostId);
             if (p) {
                 if (!p.comments) p.comments = [];
@@ -12774,25 +12666,22 @@
                 else renderThreadContent(window.threadPostId, window.threadParentCommentId);
             }
 
-            if (input) {
-                input.value = "";
-                setTimeout(() => input.focus(), 0);
-            }
+            input.value = "";
             window.replyingToCommentId = window.threadParentCommentId;
 
-            updateDoc(r, {
+            await updateDoc(r, {
                 comments: arrayUnion(nc)
             });
 
-            const pc = p ? p.comments.find(x => x.id === (window.replyingToCommentId || window.threadParentCommentId)) : null;
+            const pc = p.comments.find(x => x.id === (window.replyingToCommentId || window.threadParentCommentId));
             if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.threadPostId);
             const mm = t.match(/@([a-zA-Z0-9._]+)/g);
             if (mm) {
                 mm.forEach(m => {
                     const uname = m.substring(1).toLowerCase(),
                         found = users.find(u => (u.username || "").toLowerCase() === uname);
-                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a reply', window.threadPostId);
-                });
+                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a reply', window.threadPostId)
+                })
             }
         };
         window.deleteComment = async (pid, cid) => { showAlert("Delete comment?", async () => { const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid), nc = p.comments.filter(x => x.id !== cid && x.parentId !== cid); await updateDoc(r, { comments: nc }); showToast("Deleted") }) };
@@ -12960,23 +12849,10 @@
             // Re-bind mentions for the new input if it exists
             const input = document.getElementById('comments-overlay-input');
             if (input) {
-                input.onkeyup = (e) => {
-                    try { handleMentionInput('comments-overlay-input', 'mention-suggestions-comments-overlay'); }
-                    catch (err) { console.error('Comments overlay input keyup error:', err); }
-                };
+                input.onkeyup = () => handleMentionInput('comments-overlay-input', 'mention-suggestions-comments-overlay');
                 input.onkeydown = (e) => {
-                    try {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            submitOverlayComment();
-                            return;
-                        }
-                    } catch (err) {
-                        console.error('Comments overlay enter error:', err);
-                    }
-                    try { handleMentionKeydown(e, 'comments-overlay-input', 'mention-suggestions-comments-overlay'); }
-                    catch (err) { console.error('Comments overlay mention keydown error:', err); }
+                    handleMentionKeydown(e, 'comments-overlay-input', 'mention-suggestions-comments-overlay');
+                    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();submitOverlayComment();}
                 };
             }
         };
@@ -13019,7 +12895,7 @@
 
         window.submitOverlayComment = async () => {
             const input = document.getElementById('comments-overlay-input');
-            const t = input ? input.value.trim() : '';
+            const t = input.value.trim();
             const pid = window.currentPostIdForComments;
             if (!t || !pid) return;
             const r = doc(db, "posts", pid),
@@ -13032,6 +12908,7 @@
                     parentId: null
                 };
 
+            // Optimistic update
             const p = posts.find(x => x.id === pid);
             if (p) {
                 if (!p.comments) p.comments = [];
@@ -13039,197 +12916,50 @@
                 renderOverlayComments(pid);
             }
 
-            // Find NEW input (since renderOverlayComments replaced the DOM)
-            setTimeout(() => {
-                const newInput = document.getElementById('comments-overlay-input');
-                if (newInput) { newInput.value = ""; newInput.focus(); }
-            }, 0);
-
-            updateDoc(r, {
+            input.value = "";
+            await updateDoc(r, {
                 comments: arrayUnion(nc)
             });
 
             if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', pid);
         };
-        window.bindDesktopCommentInputEvents = () => {
-            const input = document.getElementById('comment-input-desktop');
-            if (!input) { console.warn('bindDesktop: input not found'); return; }
-            console.log('bindDesktop: binding input', input.value);
-            input.onkeyup = null;
-            input.onkeydown = null;
-            input.onkeyup = (e) => {
-                try { handleMentionInput('comment-input-desktop', 'mention-suggestions-desktop'); }
-                catch (err) { console.error('Desktop input keyup error:', err); }
-            };
-            input.onkeydown = (e) => {
-                try {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('bindDesktop: ENTER pressed');
-                        submitCommentDesktop();
-                        return;
-                    }
-                } catch (err) {
-                    console.error('Desktop enter error:', err);
-                }
-                try { handleMentionKeydown(e, 'comment-input-desktop', 'mention-suggestions-desktop'); }
-                catch (err) { console.error('Desktop mention keydown error:', err); }
-            };
-        };
-        window.bindMobileCommentInputEvents = () => {
-            const input = document.getElementById('mobile-comment-input');
-            if (!input) { console.warn('bindMobile: input not found'); return; }
-            console.log('bindMobile: binding input', input.value);
-            input.onkeyup = null;
-            input.onkeydown = null;
-            input.onkeyup = (e) => {
-                try { handleMentionInput('mobile-comment-input', 'mention-suggestions-mobile'); }
-                catch (err) { console.error('Mobile input keyup error:', err); }
-            };
-            input.onkeydown = (e) => {
-                try {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('bindMobile: ENTER pressed');
-                        submitCommentMobile();
-                        return;
-                    }
-                } catch (err) {
-                    console.error('Mobile enter error:', err);
-                }
-                try { handleMentionKeydown(e, 'mobile-comment-input', 'mention-suggestions-mobile'); }
-                catch (err) { console.error('Mobile mention keydown error:', err); }
-            };
-        };
-        window.submitCommentDesktop = () => { 
-            try {
-                console.log('submitCommentDesktop called');
-                const input = document.getElementById('comment-input-desktop');
-                if (!input) { console.error('submitCommentDesktop: NO INPUT'); return; }
-                const t = input.value.trim(); 
-                console.log('submitCommentDesktop: text=', t, ' pid=', window.currentViewingPostId);
-                if (!t || !window.currentViewingPostId) return; 
-                const desktopThreadMode = !!(window.isDesktopThreadMode && window.threadParentCommentId);
-                const parentForThisComment = desktopThreadMode ? (window.replyingToCommentId || window.threadParentCommentId) : window.replyingToCommentId;
-                
-                input.value = "";
-                try { input.blur(); } catch(e) {}
-                setTimeout(() => { 
-                    try { 
-                        const ii = document.getElementById('comment-input-desktop'); 
-                        if (ii) { ii.focus(); window.bindDesktopCommentInputEvents(); } 
-                    } catch (e) { console.error('refocus err:', e); } 
-                }, 0);
-                setTimeout(() => { 
-                    try { 
-                        const ii = document.getElementById('comment-input-desktop'); 
-                        if (ii) { ii.focus(); window.bindDesktopCommentInputEvents(); } 
-                    } catch (e) {} 
-                }, 50);
-                setTimeout(() => { 
-                    try { 
-                        const ii = document.getElementById('comment-input-desktop'); 
-                        if (ii) { ii.focus(); window.bindDesktopCommentInputEvents(); } 
-                    } catch (e) {} 
-                }, 100);
-                
-                postCommentCommon(t, parentForThisComment);
-                
-                if (desktopThreadMode) window.replyingToCommentId = window.threadParentCommentId;
-            } catch (err) {
-                console.error('submitCommentDesktop FATAL error:', err);
-                showToast('Comment error - try again', true);
+        window.submitCommentDesktop = async () => { const t = document.getElementById('comment-input-desktop').value.trim(); if (!t || !window.currentViewingPostId) return; if (window.isDesktopThreadMode && window.threadParentCommentId) { window.replyingToCommentId = window.replyingToCommentId || window.threadParentCommentId; await postCommentCommon(t); window.replyingToCommentId = window.threadParentCommentId; } else await postCommentCommon(t); document.getElementById('comment-input-desktop').value = "" }; window.submitCommentMobile = async () => { const t = document.getElementById('mobile-comment-input').value.trim(); if (!t || !window.currentViewingPostId) return; await postCommentCommon(t); document.getElementById('mobile-comment-input').value = "" };
+        async function postCommentCommon(t) {
+            const r = doc(db, "posts", window.currentViewingPostId),
+                nc = {
+                    id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
+                    authorId: currentUser.id,
+                    content: t,
+                    timestamp: Date.now(),
+                    likes: [],
+                    parentId: window.replyingToCommentId
+                };
+
+            // Optimistic update
+            const p = posts.find(x => x.id === window.currentViewingPostId);
+            if (p) {
+                if (!p.comments) p.comments = [];
+                p.comments.push(nc);
+                renderCommentsInModal(window.currentViewingPostId);
             }
-        }; 
-        
-        window.submitCommentMobile = () => { 
-            try {
-                console.log('submitCommentMobile called');
-                const input = document.getElementById('mobile-comment-input');
-                if (!input) { console.error('submitCommentMobile: NO INPUT'); return; }
-                const t = input.value.trim(); 
-                console.log('submitCommentMobile: text=', t, ' pid=', window.currentViewingPostId);
-                if (!t || !window.currentViewingPostId) return; 
-                input.value = "";
-                try { input.blur(); } catch(e) {}
-                setTimeout(() => { 
-                    try { 
-                        const ii = document.getElementById('mobile-comment-input'); 
-                        if (ii) { ii.focus(); window.bindMobileCommentInputEvents(); } 
-                    } catch (e) { console.error('mobile refocus err:', e); } 
-                }, 0);
-                setTimeout(() => { 
-                    try { 
-                        const ii = document.getElementById('mobile-comment-input'); 
-                        if (ii) { ii.focus(); window.bindMobileCommentInputEvents(); } 
-                    } catch (e) {} 
-                }, 50);
-                postCommentCommon(t, window.replyingToCommentId);
-            } catch (err) {
-                console.error('submitCommentMobile FATAL error:', err);
-                showToast('Comment error - try again', true);
+
+            await updateDoc(r, {
+                comments: arrayUnion(nc)
+            });
+
+            if (window.replyingToCommentId) {
+                const pc = p.comments.find(x => x.id === window.replyingToCommentId);
+                if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', window.currentViewingPostId)
+            } else if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', window.currentViewingPostId);
+            const mm = t.match(/@([a-zA-Z0-9._]+)/g);
+            if (mm) {
+                mm.forEach(m => {
+                    const uname = m.substring(1).toLowerCase(),
+                        found = users.find(u => (u.username || "").toLowerCase() === uname);
+                    if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', window.currentViewingPostId)
+                })
             }
-        };
-
-        function postCommentCommon(t, explicitParentId) {
-            try {
-                const parentCommentId = (explicitParentId !== undefined) ? explicitParentId : window.replyingToCommentId;
-                const pid = window.currentViewingPostId;
-                const threadMode = !!(window.isDesktopThreadMode && window.threadParentCommentId);
-                
-                const r = doc(db, "posts", pid),
-                    nc = {
-                        id: "c-" + Date.now() + "-" + Math.floor(Math.random() * 1000),
-                        authorId: currentUser.id,
-                        content: t,
-                        timestamp: Date.now(),
-                        likes: [],
-                        parentId: parentCommentId || null
-                    };
-
-                const p = posts.find(x => x.id === pid);
-                if (p) {
-                    if (!p.comments) p.comments = [];
-                    p.comments.push(nc);
-                    
-                    if (threadMode) {
-                        try { renderDesktopThread(pid, window.threadParentCommentId); } catch (e) { console.error(e); }
-                    } else {
-                        try { renderCommentsInModal(pid); } catch (e) { console.error(e); }
-                    }
-                    
-                    // Bind again after re-render (sync + 10ms)
-                    try { window.bindDesktopCommentInputEvents(); } catch (e) {}
-                    try { window.bindMobileCommentInputEvents(); } catch (e) {}
-                    setTimeout(() => {
-                        try { window.bindDesktopCommentInputEvents(); } catch (e) {}
-                        try { window.bindMobileCommentInputEvents(); } catch (e) {}
-                    }, 10);
-                }
-
-                updateDoc(r, {
-                    comments: arrayUnion(nc)
-                });
-
-                if (parentCommentId) {
-                    const pc = p ? p.comments.find(x => x.id === parentCommentId) : null;
-                    if (pc && pc.authorId !== currentUser.id) sendNotification(pc.authorId, 'reply', 'replied to your comment', pid);
-                } else if (p && p.authorId !== currentUser.id) sendNotification(p.authorId, 'comment', 'commented on your post', pid);
-                const mm = t.match(/@([a-zA-Z0-9._]+)/g);
-                if (mm) {
-                    mm.forEach(m => {
-                        const uname = m.substring(1).toLowerCase(),
-                            found = users.find(u => (u.username || "").toLowerCase() === uname);
-                        if (found && found.id !== currentUser.id) sendNotification(found.id, 'mention', 'mentioned you in a comment', pid);
-                    });
-                }
-                
-                if (!threadMode) window.replyingToCommentId = null;
-            } catch (err) {
-                console.error('postCommentCommon fatal error:', err);
-            }
+            window.replyingToCommentId = null
         }
         // Global state for mention functionality
         window.selectedMentionUsers = [];
@@ -13253,40 +12983,30 @@
 
         // Handle keydown for mention navigation
         window.handleMentionKeydown = (e, inputId, suggestionsId) => {
-            try {
-                const suggestions = document.getElementById(suggestionsId);
-                if (!suggestions || suggestions.classList.contains('hidden')) return;
+            const suggestions = document.getElementById(suggestionsId);
+            if (!suggestions || suggestions.classList.contains('hidden')) return;
 
-                const items = suggestions.querySelectorAll('.mention-item');
-                if (items.length === 0) return;
+            const items = suggestions.querySelectorAll('.mention-item');
+            if (items.length === 0) return;
 
-                if (e.key === 'ArrowDown') {
-                    e.preventDefault();
-                    if (window.highlightedMentionIndex >= items.length) window.highlightedMentionIndex = 0;
-                    const oldIdx = window.highlightedMentionIndex;
-                    if (items[oldIdx]) items[oldIdx].classList.remove('highlighted');
-                    window.highlightedMentionIndex = (window.highlightedMentionIndex + 1) % items.length;
-                    if (items[window.highlightedMentionIndex]) items[window.highlightedMentionIndex].classList.add('highlighted');
-                } else if (e.key === 'ArrowUp') {
-                    e.preventDefault();
-                    if (window.highlightedMentionIndex >= items.length) window.highlightedMentionIndex = 0;
-                    if (items[window.highlightedMentionIndex]) items[window.highlightedMentionIndex].classList.remove('highlighted');
-                    window.highlightedMentionIndex = window.highlightedMentionIndex === 0 ? items.length - 1 : window.highlightedMentionIndex - 1;
-                    if (items[window.highlightedMentionIndex]) items[window.highlightedMentionIndex].classList.add('highlighted');
-                } else if (e.key === 'Enter' && !e.shiftKey) {
-                    if (window.highlightedMentionIndex >= items.length) window.highlightedMentionIndex = 0;
-                    const selectedItem = items[window.highlightedMentionIndex];
-                    if (!selectedItem || !selectedItem.dataset) return;
-                    const userId = selectedItem.dataset.userId;
-                    const username = selectedItem.dataset.username;
-                    if (!username) return;
-                    e.preventDefault();
-                    selectMention(userId, username, inputId, suggestionsId);
-                } else if (e.key === 'Escape') {
-                    suggestions.classList.add('hidden');
-                }
-            } catch (err) {
-                console.error('Mention keydown safe error:', err);
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                items[window.highlightedMentionIndex].classList.remove('highlighted');
+                window.highlightedMentionIndex = (window.highlightedMentionIndex + 1) % items.length;
+                items[window.highlightedMentionIndex].classList.add('highlighted');
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                items[window.highlightedMentionIndex].classList.remove('highlighted');
+                window.highlightedMentionIndex = window.highlightedMentionIndex === 0 ? items.length - 1 : window.highlightedMentionIndex - 1;
+                items[window.highlightedMentionIndex].classList.add('highlighted');
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const selectedItem = items[window.highlightedMentionIndex];
+                const userId = selectedItem.dataset.userId;
+                const username = selectedItem.dataset.username;
+                selectMention(userId, username, inputId, suggestionsId);
+            } else if (e.key === 'Escape') {
+                suggestions.classList.add('hidden');
             }
         };
 
@@ -13391,7 +13111,7 @@
             container.innerHTML = displayUsers.map(u => {
                 const isSelected = window.tagOverlayState.selectedUserIds.includes(u.id);
                 return `
-                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer w-full" onclick="event.stopPropagation(); toggleTagUser('${u.id}')">
+                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer" onclick="event.stopPropagation(); toggleTagUser('${u.id}')">
                         <div class="flex items-center gap-3">
                             <div class="rounded-full w-12 h-12 shrink-0 overflow-hidden">
                                 <img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
@@ -13402,8 +13122,7 @@
                                 </div>
                                 <div class="text-sm font-normal text-gray-500 truncate w-48">${u.username || 'user'}</div>
                             </div>
-                        </div>
-                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center shrink-0 ${isSelected ? 'bg-[#3D7EEB] border-[#3D7EEB]' : ''}">
+                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center ${isSelected ? 'bg-[#3D7EEB] border-[#3D7EEB]' : ''}">
                             ${isSelected ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
                         </div>
                     </div>
@@ -15140,44 +14859,6 @@
             });
             overlayOpenObserver.observe(document.body, { attributes: true, subtree: true, attributeFilter: ['class'], attributeOldValue: true });
         } catch (e) { }
-
-        // ==============================================
-        // GLOBAL ENTER KEY CAPTURE — FINAL SAFETY NET
-        // Uses capture phase so NOTHING can prevent it.
-        // Catches Enter on ALL comment inputs regardless of element-level binding state.
-        // ==============================================
-        try {
-            document.addEventListener('keydown', (e) => {
-                if (e.key !== 'Enter' || e.shiftKey) return;
-                const tgt = e.target;
-                if (!tgt || !tgt.id) return;
-                const id = tgt.id;
-                
-                if (id === 'comment-input-desktop') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    try { submitCommentDesktop(); } catch (err) { console.error('Global desktop submit error:', err); }
-                } else if (id === 'mobile-comment-input') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    try { submitCommentMobile(); } catch (err) { console.error('Global mobile submit error:', err); }
-                } else if (id === 'comments-overlay-input') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    try { submitOverlayComment(); } catch (err) { console.error('Global overlay submit error:', err); }
-                } else if (id === 'thread-input') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    try { submitThreadReply(); } catch (err) { console.error('Global thread submit error:', err); }
-                }
-            }, true); // capture: true = fires FIRST before element handlers and cannot be stopped by them
-        } catch (globalErr) {
-            console.error('Global keydown setup failed:', globalErr);
-        }
     </script>
 </body>
 
