@@ -7152,19 +7152,7 @@
                 window.notifications = notifications;
                 const sidebar = document.getElementById('notification-sidebar');
                 if (sidebar && sidebar.classList.contains('active')) renderNotificationSidebar();
-                // Count unique unread notifications (group by type + postId/commentId to avoid duplicates for multiple likes on same post)
-                const uniqueUnreadKeys = new Set();
-                notifications.filter(n => !n.read).forEach(n => {
-                    // Create a unique key based on notification type and target ID
-                    let key = n.type || 'unknown';
-                    if (n.postId) key += `_post_${n.postId}`;
-                    if (n.commentId) key += `_comment_${n.commentId}`;
-                    if (n.senderId) key += `_sender_${n.senderId}`;
-                    uniqueUnreadKeys.add(key);
-                });
-                const u = uniqueUnreadKeys.size, t = u > 99 ? '99+' : u, d = document.getElementById('nav-notif-badge'), m = document.getElementById('mobile-footer-badge');
-                if (d) { d.style.display = u ? 'flex' : 'none'; d.innerText = t }
-                if (m) { m.style.display = u ? 'flex' : 'none'; m.innerText = t }
+                window.updateNotificationBadges();
                 if (!document.getElementById('view-notifications').classList.contains('hidden')) renderNotifications();
                 refreshIcons()
             })
@@ -10819,11 +10807,30 @@
             refreshIcons();
         };
 
+        window.updateNotificationBadges = () => {
+            const notificationList = window.notifications || notifications || [];
+            const uniqueUnreadKeys = new Set();
+            notificationList.filter(n => !n.read).forEach(n => {
+                let key = n.type || 'unknown';
+                if (n.postId) key += `_post_${n.postId}`;
+                if (n.commentId) key += `_comment_${n.commentId}`;
+                if (n.senderId) key += `_sender_${n.senderId}`;
+                uniqueUnreadKeys.add(key);
+            });
+            const u = uniqueUnreadKeys.size;
+            const t = u > 99 ? '99+' : u;
+            const d = document.getElementById('nav-notif-badge');
+            const m = document.getElementById('mobile-footer-badge');
+            if (d) { d.style.display = u ? 'flex' : 'none'; d.innerText = t; }
+            if (m) { m.style.display = u ? 'flex' : 'none'; m.innerText = t; }
+        };
+
         window.openNotificationSidebar = () => {
             if (window.innerWidth < 1280) return switchView('notifications');
             const sidebar = document.getElementById('notification-sidebar');
             if (!sidebar) return;
             sidebar.classList.add('active');
+            window.updateNotificationBadges();
             renderNotificationSidebar();
         }
 
@@ -10838,20 +10845,25 @@
             const sidebar = document.getElementById('notification-sidebar');
             if (!sidebar) return;
             sidebar.classList.toggle('active');
-            if (sidebar.classList.contains('active')) renderNotificationSidebar();
+            if (sidebar.classList.contains('active')) {
+                window.updateNotificationBadges();
+                renderNotificationSidebar();
+            }
         }
 
         // Click handler: on small screens navigate to full notifications view; on desktop mark read and keep in-context
         window.handleNotificationItemClick = async (id) => {
             if (window.innerWidth < 1280) return switchView('notifications');
+            if (!id) return;
             const el = document.getElementById('notif-item-' + id);
             if (el) el.classList.add('notif-read');
-            if (!id) return;
             try {
                 await updateDoc(doc(db, "notifications", id), { read: true });
                 const notificationList = window.notifications || notifications || [];
                 const notif = notificationList.find(n => n.id === id);
                 if (notif) notif.read = true;
+                window.updateNotificationBadges();
+                if (document.getElementById('notification-sidebar')?.classList.contains('active')) renderNotificationSidebar();
             } catch (e) {
                 console.error('Failed to mark notification as read:', e);
             }
@@ -12426,6 +12438,9 @@
                     searchTerm: window.commentSearchTerm || ''
                 };
             }
+            if (!window.isDesktopThreadMode) {
+                window.restorePostViewCommentsHeader(pid);
+            }
 
             let topLevel = p.comments?.filter(x => !x.parentId) || [];
             if (window.commentSearchTerm) {
@@ -12586,6 +12601,19 @@
     window.threadParentCommentId = null; 
   } 
 };
+        window.restorePostViewCommentsHeader = (pid) => {
+            const postId = pid || window.currentViewingPostId;
+            const p = posts.find(x => x.id === postId);
+            if (!p) return;
+            const a = users.find(u => u.id === p.authorId) || { name: 'Unknown', avatar: '', username: 'user' };
+            const header = document.getElementById('post-view-comments-header');
+            if (!header) return;
+            if (p.media || p.embedVideo) {
+                header.innerHTML = `<div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')"><div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden"><img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-gray-900 text-sm">${a.name}</div><div class="text-xs text-gray-500">@${a.username || ''}</div></div></div><div class="flex items-center gap-2"><button onclick="showPostOptions(event, '${p.id}', '${p.authorId}')" class="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="more-vertical" class="w-5 h-5 text-gray-600"></i></button><button onclick="closePostView()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div>`;
+            } else {
+                header.innerHTML = `<div id="comment-header-default" class="flex items-center justify-between w-full"><span class="font-bold text-xl text-gray-900">Comments (${p.comments?.length || 0})</span><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="search" class="w-5 h-5 text-gray-600"></i></button><button onclick="closePostView()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div><div id="comment-header-search" class="hidden w-full flex items-center gap-2"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-desktop" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search comments..."></div><button onclick="toggleCommentSearch()" class="p-2 hover:bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div>`;
+            }
+        };
         window.renderDesktopThread = (pid, cid) => {
             const p = posts.find(x => x.id === pid);
             if (!p) return;
