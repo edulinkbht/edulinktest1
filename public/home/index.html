@@ -10825,12 +10825,29 @@
             if (m) { m.style.display = u ? 'flex' : 'none'; m.innerText = t; }
         };
 
-        window.openNotificationSidebar = () => {
+        window.markAllNotificationsRead = async () => {
+            const notificationList = window.notifications || notifications || [];
+            const unreadNotifications = notificationList.filter(n => !n.read);
+            if (!unreadNotifications.length) return;
+            try {
+                const batch = writeBatch(db);
+                unreadNotifications.forEach(n => {
+                    batch.update(doc(db, "notifications", n.id), { read: true });
+                    n.read = true;
+                });
+                await batch.commit();
+                window.updateNotificationBadges();
+            } catch (e) {
+                console.error('Failed to mark all notifications as read:', e);
+            }
+        };
+
+        window.openNotificationSidebar = async () => {
             if (window.innerWidth < 1280) return switchView('notifications');
             const sidebar = document.getElementById('notification-sidebar');
             if (!sidebar) return;
             sidebar.classList.add('active');
-            window.updateNotificationBadges();
+            await window.markAllNotificationsRead();
             renderNotificationSidebar();
         }
 
@@ -10840,13 +10857,13 @@
             sidebar.classList.remove('active');
         }
 
-        window.toggleNotificationSidebar = () => {
+        window.toggleNotificationSidebar = async () => {
             if (window.innerWidth < 1280) return switchView('notifications');
             const sidebar = document.getElementById('notification-sidebar');
             if (!sidebar) return;
             sidebar.classList.toggle('active');
             if (sidebar.classList.contains('active')) {
-                window.updateNotificationBadges();
+                await window.markAllNotificationsRead();
                 renderNotificationSidebar();
             }
         }
