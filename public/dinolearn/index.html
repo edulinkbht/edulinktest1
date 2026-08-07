@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Pi - DinoLearns</title>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonts: Plus Jakarta Sans, JetBrains Mono, Patrick Hand (Notebook style) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Patrick+Hand&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #ffffff;
+            --card-border: #e2e8f0;
+            --text-primary: #334155;
+            --text-dark: #1e293b;
+            --text-secondary: #64748b;
+            
+            /* Complementary Color Scheme: Emerald Green & Warm Amber */
+            --accent-green: #10b981;
+            --accent-green-hover: #059669;
+            --accent-green-light: #ecfdf5;
+            --accent-amber: #f59e0b;
+            --accent-amber-dark: #d97706;
+            --accent-amber-light: #fffbebfb;
+            --accent-red: #f43f5e;
+            --accent-red-light: #fff1f2;
+            
+            --disabled-bg: #f8fafc;
+            --disabled-text: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            position: relative;
+        }
+
+        /* Brand Header */
+        .brand-container {
+            position: absolute;
+            top: 1rem;
+            left: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 10;
+        }
+
+        .brand-logo {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+            border-radius: 10px;
+        }
+
+        .brand-text {
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            letter-spacing: -0.03em;
+            line-height: 1;
+            user-select: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .brand-text span {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 800;
+        }
+
+        .brand-text::after {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background-color: var(--accent-green);
+            border-radius: 50%;
+            margin-left: 4px;
+        }
+
+        /* App Layout Wrapper */
+        .app-wrapper {
+            width: 100%;
+            max-width: 880px;
+            height: calc(100vh - 5.5rem);
+            min-height: 580px;
+            max-height: 740px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.75rem;
+            margin-top: 3.5rem;
+        }
+
+        /* Top Navigation */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 0.25rem;
+            width: 100%;
+            gap: 1rem;
+        }
+
+        .icon-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.15s ease, background 0.15s ease;
+            box-shadow: none !important;
+        }
+
+        .icon-btn:hover {
+            color: var(--text-dark);
+            background: #f1f5f9;
+        }
+
+        .progress-title-wrapper {
+            flex-grow: 1;
+            max-width: 500px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .top-step-title {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            text-align: center;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 6px;
+            background-color: #f1f5f9;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 25%;
+            background-color: var(--accent-green);
+            border-radius: 999px;
+            transition: width 0.35s ease;
+        }
+
+        .top-actions-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            border-radius: 999px;
+            padding: 0.25rem 0.5rem;
+        }
+
+        /* Main Outer Card Container */
+        .main-card {
+            background: #ffffff;
+            border: 1.5px solid var(--card-border);
+            border-radius: 20px;
+            padding: 0;
+            flex: 1;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: none; /* Removed shadow */
+        }
+
+        .content-body {
+            width: 100%;
+            height: 100%;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .content-body.fade-out {
+            opacity: 0;
+            transform: translateY(4px);
+        }
+
+        /* Video Container */
+        .video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #1e293b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .video-container video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .video-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.25rem;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 5;
+        }
+
+        .video-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .action-chip-btn {
+            background: #ffffff;
+            color: var(--text-dark);
+            border: 1px solid var(--card-border);
+            padding: 0.75rem 1.4rem;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: none !important; /* Removed shadow */
+            transition: all 0.2s ease;
+        }
+
+        .action-chip-btn.primary {
+            background: var(--accent-green);
+            color: #ffffff;
+            border: none;
+        }
+
+        /* Clean Notebook Inner Layout */
+        .card-inner-container {
+            width: 100%;
+            height: 100%;
+            padding: 2.25rem 2.25rem 1.75rem 2.25rem;
+            background: #ffffff; /* Clean white, NO dot grid */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            text-align: center;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Notebook Top-Right Page Indicator */
+        .page-badge {
+            position: absolute;
+            top: 1.25rem;
+            right: 1.5rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            font-family: 'Patrick Hand', cursive, sans-serif;
+            color: var(--accent-amber-dark);
+            background: #fffbeb;
+            border: 1.5px dashed #fde68a;
+            padding: 0.25rem 0.75rem;
+            border-radius: 8px;
+            letter-spacing: 0.03em;
+            user-select: none;
+        }
+
+        /* Title Area */
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--text-dark);
+            line-height: 1.35;
+            letter-spacing: -0.02em;
+            margin-top: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Notebook Written Style Equations & Annotations */
+        .notebook-note {
+            font-family: 'Patrick Hand', cursive, sans-serif;
+            font-size: 1.25rem;
+            color: var(--accent-amber-dark);
+        }
+
+        .math-eq {
+            font-family: 'Patrick Hand', cursive, Georgia, serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--accent-amber-dark);
+            padding: 0 2px;
+        }
+
+        .explanation-text {
+            font-size: 0.92rem;
+            color: var(--text-secondary);
+            max-width: 650px;
+            line-height: 1.55;
+        }
+
+        .explanation-text strong {
+            color: var(--text-dark);
+        }
+
+        /* Interactive Canvas & Stage */
+        .interactive-stage {
+            width: 100%;
+            max-width: 700px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.85rem;
+            margin: 0.25rem 0;
+        }
+
+        .legend-bar {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.outer { background-color: var(--accent-red); }
+        .legend-dot.inner { background-color: var(--accent-green); }
+        .legend-dot.circle { border: 2px solid var(--text-dark); background-color: transparent; }
+
+        .interactive-canvas-box {
+            width: 100%;
+            height: 200px;
+            background: #ffffff;
+            border: 1.5px solid var(--card-border);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Minimal Slider - NO Borders, NO Focus Outlines, NO Shadows */
+        .control-panel {
+            width: 100%;
+            max-width: 580px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 1rem;
+            background: transparent;
+            padding: 0.1rem 0;
+        }
+
+        .slider-group {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            flex: 1;
+        }
+
+        .slider-group label {
+            font-size: 0.88rem;
+            font-weight: 700;
+            color: var(--text-dark);
+            white-space: nowrap;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            outline: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        input[type="range"]:focus, 
+        input[type="range"]:active {
+            outline: none !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            cursor: pointer;
+            border: none !important;
+            box-shadow: none !important;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: var(--accent-green-hover);
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            cursor: pointer;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        .btn-toggle {
+            background: var(--text-dark);
+            color: #ffffff;
+            border: none;
+            padding: 0.55rem 1.15rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: background 0.15s ease;
+            box-shadow: none !important;
+        }
+
+        .btn-toggle:hover {
+            background: #0f172a;
+        }
+
+        /* Metric Badges (Complementary Palette) */
+        .metrics-badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.6rem;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .metric-pill {
+            background: #ffffff;
+            border: 1px solid var(--card-border);
+            padding: 0.4rem 0.9rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .metric-pill span {
+            color: var(--accent-green-hover);
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .metric-pill.highlight {
+            background: var(--accent-amber-light);
+            border-color: #fde68a;
+            color: var(--accent-amber-dark);
+        }
+
+        .metric-pill.highlight span {
+            color: var(--accent-amber-dark);
+        }
+
+        /* Quiz Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.75rem;
+            width: 100%;
+            max-width: 620px;
+        }
+
+        .option-card {
+            background: #ffffff;
+            border: 1.5px solid var(--card-border);
+            border-radius: 16px;
+            padding: 1rem 1.15rem;
+            font-size: 0.98rem;
+            font-weight: 600;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            box-shadow: none !important;
+        }
+
+        .option-card:hover {
+            border-color: #cbd5e1;
+            background-color: #f8fafc;
+        }
+
+        .option-card.selected {
+            border-color: var(--accent-green);
+            background-color: var(--accent-green-light);
+            color: var(--accent-green-hover);
+        }
+
+        .option-card.correct {
+            border-color: var(--accent-green);
+            background-color: #dcfce7;
+            color: #15803d;
+        }
+
+        .option-card.wrong {
+            border-color: var(--accent-red);
+            background-color: var(--accent-red-light);
+            color: #b91c1c;
+        }
+
+        /* Action Button - Completely Flat, NO Shadow */
+        .primary-action-btn {
+            background-color: var(--accent-green);
+            color: #ffffff;
+            border: none;
+            border-radius: 999px;
+            padding: 0.75rem 3.5rem;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: background 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: none !important; /* Guaranteed NO SHADOW */
+        }
+
+        .primary-action-btn:hover {
+            background-color: var(--accent-green-hover);
+        }
+
+        .primary-action-btn:disabled {
+            background-color: var(--disabled-bg);
+            color: var(--disabled-text);
+            cursor: not-allowed;
+            border: 1px solid var(--card-border);
+        }
+
+        /* Responsive Breakpoints */
+        @media (max-width: 640px) {
+            .brand-container { left: 1rem; top: 0.75rem; }
+            .brand-logo { height: 34px; }
+            .brand-text { font-size: 1.2rem; }
+            .app-wrapper { margin-top: 3rem; height: calc(100vh - 4.5rem); }
+            .card-inner-container { padding: 1.5rem 1.25rem; }
+            .page-badge { top: 0.85rem; right: 1rem; font-size: 0.8rem; padding: 0.15rem 0.5rem; }
+            .card-title { font-size: 1.15rem; }
+            .explanation-text { font-size: 0.85rem; }
+            .options-grid { grid-template-columns: 1fr; }
+            .interactive-canvas-box { height: 180px; }
+            .primary-action-btn { padding: 0.7rem 2.5rem; font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Brand Header -->
+    <div class="brand-container">
+        <img src="https://i.pinimg.com/736x/8d/4c/c2/8d4cc2a6a6efd4ae598887fe1d068f45.jpg" alt="Logo" class="brand-logo">
+        <div class="brand-text">Dino<span>Learns</span></div>
+    </div>
+
+    <div class="app-wrapper">
+        <!-- Top Navigation Bar -->
+        <div class="top-bar">
+            <button class="icon-btn" title="Back" id="backBtn">
+                <i data-lucide="arrow-left" style="width: 22px; height: 22px;"></i>
+            </button>
+            
+            <div class="progress-title-wrapper">
+                <div class="top-step-title" id="topStepTitle"></div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <div class="top-actions-pill">
+                <button class="icon-btn" title="Comment"><i data-lucide="message-square" style="width: 18px; height: 18px;"></i></button>
+                <button class="icon-btn" title="Voice"><i data-lucide="mic" style="width: 18px; height: 18px;"></i></button>
+            </div>
+        </div>
+
+        <!-- Main Outer Card Container -->
+        <div class="main-card">
+            <div class="content-body" id="contentBody">
+                <!-- Dynamic Content Injected Here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const moduleSteps = [
+            {
+                type: "video",
+                title: "Watch: The Story of Pi",
+                videoUrl: "https://res.cloudinary.com/dcpuyfslg/video/upload/v1777438588/s_rugwfl.mp4"
+            },
+            {
+                type: "unroll_explorer",
+                title: 'What is Pi? The Circle Ratio (<span class="math-eq">C</span> ÷ <span class="math-eq">d</span>)',
+                explanation: 'Pi (<span class="math-eq">π</span>) is the constant relationship between a circle\'s perimeter (<strong>Circumference, <span class="math-eq">C</span></strong>) and its width (<strong>Diameter, <span class="math-eq">d</span></strong>). Unroll any circle, and its perimeter is always exactly <span class="notebook-note">3.14159...</span> times longer than its width!'
+            },
+            {
+                type: "polygon_explorer",
+                title: 'How Ancient Mathematicians Found Pi',
+                explanation: 'Archimedes trapped a circle between an <strong>Inner Polygon</strong> (underestimate) and an <strong>Outer Polygon</strong> (overestimate). Drag the slider to add sides—watch how both shapes squeeze together onto <span class="math-eq">π</span>!'
+            },
+            {
+                type: "quiz",
+                title: "Which ancient civilization recorded one of the earliest approximations of π as 3.125 on clay tablets around 1900 BC?",
+                svg: `
+                    <svg viewBox="0 0 360 110" style="width:100%; max-height:110px;">
+                        <rect x="100" y="8" width="160" height="94" rx="14" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+                        <circle cx="180" cy="48" r="24" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="4,3"/>
+                        <line x1="156" y1="48" x2="204" y2="48" stroke="#b45309" stroke-width="2"/>
+                        <text x="180" y="88" font-family="'Patrick Hand', cursive" font-size="16" font-weight="700" fill="#b45309" text-anchor="middle">Clay Tablet: π ≈ 3.125</text>
+                    </svg>
+                `,
+                options: ["Babylonians", "Greeks", "Mayans", "Romans"],
+                correctIndex: 0
+            }
+        ];
+
+        let currentStep = 0;
+        let selectedIndex = null;
+        let isChecked = false;
+        let isUnrolled = false;
+
+        const progressFill = document.getElementById('progressFill');
+        const topStepTitle = document.getElementById('topStepTitle');
+        const contentBody = document.getElementById('contentBody');
+        const backBtn = document.getElementById('backBtn');
+
+        function renderStep() {
+            const step = moduleSteps[currentStep];
+            selectedIndex = null;
+            isChecked = false;
+            isUnrolled = false;
+
+            progressFill.style.width = `${((currentStep + 1) / moduleSteps.length) * 100}%`;
+
+            if (step.type === "video") {
+                topStepTitle.innerText = step.title;
+                topStepTitle.style.display = "block";
+                renderVideoStep(step);
+            } else {
+                topStepTitle.innerText = "";
+                topStepTitle.style.display = "none";
+                if (step.type === "unroll_explorer") renderUnrollExplorer(step);
+                else if (step.type === "polygon_explorer") renderPolygonExplorer(step);
+                else if (step.type === "quiz") renderQuizStep(step);
+            }
+
+            lucide.createIcons();
+        }
+
+        /* Page Badge Generator (Top Right of Inside Container) */
+        function getPageBadgeHTML() {
+            return `<div class="page-badge">Page ${currentStep + 1} of ${moduleSteps.length}</div>`;
+        }
+
+        /* 1. Video Step */
+        function renderVideoStep(step) {
+            contentBody.innerHTML = `
+                <div class="video-container">
+                    <video id="lessonVideo" controls playsinline autoplay muted preload="metadata">
+                        <source src="${step.videoUrl}" type="video/mp4">
+                    </video>
+                    <div class="video-overlay" id="videoOverlay">
+                        <button class="action-chip-btn" id="replayBtn">
+                            <i data-lucide="rotate-ccw" style="width: 18px; height: 18px;"></i> Replay
+                        </button>
+                        <button class="action-chip-btn primary" id="nextOverlayBtn">
+                            Next <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const video = document.getElementById('lessonVideo');
+            const overlay = document.getElementById('videoOverlay');
+
+            video.onended = () => overlay.classList.add('show');
+            document.getElementById('replayBtn').onclick = () => {
+                overlay.classList.remove('show');
+                video.currentTime = 0;
+                video.play();
+            };
+            document.getElementById('nextOverlayBtn').onclick = advanceStep;
+        }
+
+        /* 2. Unrolling Circle Explorer */
+        function renderUnrollExplorer(step) {
+            contentBody.innerHTML = `
+                <div class="card-inner-container">
+                    ${getPageBadgeHTML()}
+                    
+                    <h2 class="card-title">${step.title}</h2>
+                    <p class="explanation-text">${step.explanation}</p>
+
+                    <div class="interactive-stage">
+                        <div class="interactive-canvas-box" id="unrollCanvas"></div>
+
+                        <div class="control-panel">
+                            <div class="slider-group">
+                                <label for="dSlider">Diameter (<span class="math-eq">d</span>):</label>
+                                <input type="range" id="dSlider" min="20" max="60" value="40">
+                            </div>
+                            <button class="btn-toggle" id="toggleUnrollBtn">
+                                <i data-lucide="scissors" style="width: 15px; height: 15px;"></i>
+                                <span id="btnLabel">Unroll Circle</span>
+                            </button>
+                        </div>
+
+                        <div class="metrics-badge-row">
+                            <div class="metric-pill">Diameter (<span class="math-eq">d</span>): <span id="dVal">40</span>px</div>
+                            <div class="metric-pill">Circumference (<span class="math-eq">C</span>): <span id="cVal">125.7</span>px</div>
+                            <div class="metric-pill highlight"><span class="math-eq">C</span> ÷ <span class="math-eq">d</span> = <span id="ratioVal">3.14159</span></div>
+                        </div>
+                    </div>
+
+                    <button class="primary-action-btn" id="nextBtn">
+                        Continue <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+                    </button>
+                </div>
+            `;
+
+            const dSlider = document.getElementById('dSlider');
+            const canvas = document.getElementById('unrollCanvas');
+            const dVal = document.getElementById('dVal');
+            const cVal = document.getElementById('cVal');
+            const toggleBtn = document.getElementById('toggleUnrollBtn');
+            const btnLabel = document.getElementById('btnLabel');
+
+            function draw() {
+                const d = parseFloat(dSlider.value);
+                const r = d / 2;
+                const c = Math.PI * d;
+
+                dVal.innerText = d;
+                cVal.innerText = c.toFixed(1);
+
+                if (!isUnrolled) {
+                    const circleTop = 150 - (2 * r);
+                    canvas.innerHTML = `
+                        <svg viewBox="0 0 500 190" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%;">
+                            <!-- Ground Line -->
+                            <line x1="20" y1="150" x2="480" y2="150" stroke="#cbd5e1" stroke-width="2"/>
+                            
+                            <!-- Main Circle -->
+                            <circle cx="250" cy="${150 - r}" r="${r}" fill="#ecfdf5" stroke="#10b981" stroke-width="2.5"/>
+                            
+                            <!-- Center Diameter Line -->
+                            <line x1="${250 - r}" y1="${150 - r}" x2="${250 + r}" y2="${150 - r}" stroke="#334155" stroke-width="2" stroke-dasharray="3,3"/>
+                            
+                            <!-- Handwritten Note Label cleanly positioned above circle -->
+                            <text x="250" y="${Math.max(circleTop - 12, 22)}" font-family="'Patrick Hand', cursive" font-size="16" font-weight="700" fill="#d97706" text-anchor="middle">d = ${d}px</text>
+                            
+                            <!-- Cut Point -->
+                            <circle cx="250" cy="150" r="4" fill="#f43f5e"/>
+                        </svg>
+                    `;
+                } else {
+                    const startX = 40;
+                    const scaleC = 330; 
+                    const segD = scaleC / Math.PI;
+
+                    canvas.innerHTML = `
+                        <svg viewBox="0 0 500 190" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%;">
+                            <!-- Ground Line -->
+                            <line x1="20" y1="150" x2="480" y2="150" stroke="#cbd5e1" stroke-width="2"/>
+                            
+                            <!-- Unrolled Circumference Line -->
+                            <line x1="${startX}" y1="140" x2="${startX + scaleC}" y2="140" stroke="#10b981" stroke-width="4.5" stroke-linecap="round"/>
+                            
+                            <!-- Markers -->
+                            <line x1="${startX}" y1="128" x2="${startX}" y2="152" stroke="#334155" stroke-width="2"/>
+                            <line x1="${startX + segD}" y1="128" x2="${startX + segD}" y2="152" stroke="#334155" stroke-width="2"/>
+                            <line x1="${startX + segD * 2}" y1="128" x2="${startX + segD * 2}" y2="152" stroke="#334155" stroke-width="2"/>
+                            <line x1="${startX + segD * 3}" y1="128" x2="${startX + segD * 3}" y2="152" stroke="#334155" stroke-width="2"/>
+                            <line x1="${startX + scaleC}" y1="128" x2="${startX + scaleC}" y2="152" stroke="#f43f5e" stroke-width="2"/>
+
+                            <!-- Segment Annotations -->
+                            <text x="${startX + segD/2}" y="118" font-family="'Patrick Hand', cursive" font-size="15" font-weight="700" fill="#059669" text-anchor="middle">1 × d</text>
+                            <text x="${startX + segD * 1.5}" y="118" font-family="'Patrick Hand', cursive" font-size="15" font-weight="700" fill="#059669" text-anchor="middle">2 × d</text>
+                            <text x="${startX + segD * 2.5}" y="118" font-family="'Patrick Hand', cursive" font-size="15" font-weight="700" fill="#059669" text-anchor="middle">3 × d</text>
+                            <text x="${startX + segD * 3 + (scaleC - segD*3)/2}" y="118" font-family="'Patrick Hand', cursive" font-size="14" font-weight="700" fill="#f43f5e" text-anchor="middle">+0.14159d</text>
+                            
+                            <text x="250" y="175" font-family="'Patrick Hand', cursive" font-size="16" font-weight="700" fill="#334155" text-anchor="middle">Unrolled Length = 3.14159 × Diameter</text>
+                        </svg>
+                    `;
+                }
+            }
+
+            dSlider.oninput = draw;
+            toggleBtn.onclick = () => {
+                isUnrolled = !isUnrolled;
+                btnLabel.innerText = isUnrolled ? "Roll into Circle" : "Unroll Circle";
+                draw();
+            };
+
+            draw();
+            document.getElementById('nextBtn').onclick = advanceStep;
+        }
+
+        /* 3. Archimedes Polygon Explorer */
+        function renderPolygonExplorer(step) {
+            contentBody.innerHTML = `
+                <div class="card-inner-container">
+                    ${getPageBadgeHTML()}
+
+                    <h2 class="card-title">${step.title}</h2>
+                    <p class="explanation-text">${step.explanation}</p>
+
+                    <div class="interactive-stage">
+                        <div class="legend-bar">
+                            <div class="legend-item"><span class="legend-dot outer"></span> Outer Polygon (Overestimate)</div>
+                            <div class="legend-item"><span class="legend-dot circle"></span> True Circle</div>
+                            <div class="legend-item"><span class="legend-dot inner"></span> Inner Polygon (Underestimate)</div>
+                        </div>
+
+                        <div class="interactive-canvas-box" id="polyCanvas"></div>
+
+                        <div class="control-panel">
+                            <div class="slider-group">
+                                <label for="nSlider">Polygon Sides (<span class="math-eq">n</span>): <strong id="sideCountDisplay" class="notebook-note" style="font-size:1.4rem;">4</strong></label>
+                                <input type="range" id="nSlider" min="3" max="48" value="4" step="1">
+                            </div>
+                        </div>
+
+                        <div class="metrics-badge-row">
+                            <div class="metric-pill">Inner Bound: <span id="innerVal">2.8284</span></div>
+                            <div class="metric-pill highlight"><span class="math-eq">π</span> ≈ <span>3.14159</span></div>
+                            <div class="metric-pill">Outer Bound: <span id="outerVal">4.0000</span></div>
+                        </div>
+                    </div>
+
+                    <button class="primary-action-btn" id="nextBtn">
+                        Test Your Knowledge <i data-lucide="arrow-right" style="width: 18px; height: 18px;"></i>
+                    </button>
+                </div>
+            `;
+
+            const nSlider = document.getElementById('nSlider');
+            const canvas = document.getElementById('polyCanvas');
+            const sideCountDisplay = document.getElementById('sideCountDisplay');
+            const innerVal = document.getElementById('innerVal');
+            const outerVal = document.getElementById('outerVal');
+
+            function draw() {
+                const n = parseInt(nSlider.value);
+                sideCountDisplay.innerText = n;
+
+                const r = 48; 
+                const cx = 250, cy = 100;
+
+                let inPoints = [];
+                for (let i = 0; i < n; i++) {
+                    const angle = (i * 2 * Math.PI / n) - Math.PI / 2;
+                    inPoints.push(`${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`);
+                }
+
+                const rOut = r / Math.cos(Math.PI / n);
+                let outPoints = [];
+                for (let i = 0; i < n; i++) {
+                    const angle = (i * 2 * Math.PI / n) - Math.PI / 2;
+                    outPoints.push(`${cx + rOut * Math.cos(angle)},${cy + rOut * Math.sin(angle)}`);
+                }
+
+                const lowerPi = (n * Math.sin(Math.PI / n)).toFixed(4);
+                const upperPi = (n * Math.tan(Math.PI / n)).toFixed(4);
+
+                canvas.innerHTML = `
+                    <svg viewBox="0 0 500 200" preserveAspectRatio="xMidYMid meet" style="width:100%; height:100%;">
+                        <!-- Outer Polygon -->
+                        <polygon points="${outPoints.join(' ')}" fill="none" stroke="#f43f5e" stroke-width="2" stroke-dasharray="4,4"/>
+                        
+                        <!-- Reference Circle -->
+                        <circle cx="${cx}" cy="${cy}" r="${r}" fill="#ffffff" stroke="#1e293b" stroke-width="2"/>
+                        
+                        <!-- Inner Polygon -->
+                        <polygon points="${inPoints.join(' ')}" fill="rgba(16, 185, 129, 0.18)" stroke="#10b981" stroke-width="2.5"/>
+                    </svg>
+                `;
+
+                innerVal.innerText = lowerPi;
+                outerVal.innerText = upperPi;
+            }
+
+            nSlider.oninput = draw;
+            draw();
+            document.getElementById('nextBtn').onclick = advanceStep;
+        }
+
+        /* 4. Quiz Step */
+        function renderQuizStep(q) {
+            contentBody.innerHTML = `
+                <div class="card-inner-container">
+                    ${getPageBadgeHTML()}
+
+                    <h2 class="card-title" style="max-width:620px;">${q.title}</h2>
+                    <div style="width: 100%; display: flex; justify-content: center; margin: 0.25rem 0;">${q.svg}</div>
+                    <div class="options-grid" id="optionsGrid"></div>
+                    <button class="primary-action-btn" id="checkBtn" disabled>Check Answer</button>
+                </div>
+            `;
+
+            const optionsGrid = document.getElementById('optionsGrid');
+            const checkBtn = document.getElementById('checkBtn');
+
+            q.options.forEach((optText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-card';
+                btn.innerText = optText;
+                btn.onclick = () => handleSelectOption(index, checkBtn);
+                optionsGrid.appendChild(btn);
+            });
+
+            checkBtn.onclick = () => handleCheckClick(q, checkBtn);
+        }
+
+        function handleSelectOption(index, checkBtn) {
+            if (isChecked) return;
+            selectedIndex = index;
+            document.querySelectorAll('.option-card').forEach((btn, i) => {
+                btn.classList.toggle('selected', i === index);
+            });
+            checkBtn.disabled = false;
+        }
+
+        function handleCheckClick(q, checkBtn) {
+            if (selectedIndex === null) return;
+            const buttons = document.querySelectorAll('.option-card');
+
+            if (!isChecked) {
+                isChecked = true;
+                if (selectedIndex === q.correctIndex) {
+                    buttons[selectedIndex].classList.remove('selected');
+                    buttons[selectedIndex].classList.add('correct');
+                } else {
+                    buttons[selectedIndex].classList.remove('selected');
+                    buttons[selectedIndex].classList.add('wrong');
+                    buttons[q.correctIndex].classList.add('correct');
+                }
+                checkBtn.innerText = currentStep < moduleSteps.length - 1 ? "Continue" : "Finish Module";
+            } else {
+                advanceStep();
+            }
+        }
+
+        function advanceStep() {
+            if (currentStep < moduleSteps.length - 1) {
+                contentBody.classList.add('fade-out');
+                setTimeout(() => {
+                    currentStep++;
+                    renderStep();
+                    contentBody.classList.remove('fade-out');
+                }, 200);
+            } else {
+                alert("🎉 Lesson Complete! You've mastered the fundamentals of Pi!");
+            }
+        }
+
+        backBtn.onclick = () => {
+            if (currentStep > 0) {
+                contentBody.classList.add('fade-out');
+                setTimeout(() => {
+                    currentStep--;
+                    renderStep();
+                    contentBody.classList.remove('fade-out');
+                }, 200);
+            }
+        };
+
+        // Initialize
+        renderStep();
+    </script>
+</body>
+</html>
