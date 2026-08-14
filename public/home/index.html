@@ -7158,15 +7158,21 @@
                 }
             }
         };
+        window.isBlockedRelation = (otherUserId) => {
+            if (!otherUserId || !currentUser || otherUserId === currentUser.id) return false;
+            const otherUser = users.find(u => u.id === otherUserId);
+            if (!otherUser) return false;
+            const iBlockedThem = (currentUser.settings?.blockedUsers || []).includes(otherUserId);
+            const theyBlockedMe = (otherUser.settings?.blockedUsers || []).includes(currentUser.id) || (otherUser.settings?.blockedBy || []).includes(currentUser.id);
+            return iBlockedThem || theyBlockedMe;
+        };
         window.canSeePost = (p) => { 
             if (!p || !currentUser) return false; 
             if (p.archived && p.authorId !== currentUser.id) return false;
             if (p.authorId === currentUser.id) return true; 
             const author = users.find(u => u.id === p.authorId); 
             if (!author) return false; 
-            const blockedUsers = currentUser.settings?.blockedUsers || [];
-            const blockedBy = author.settings?.blockedBy || [];
-            if (blockedUsers.includes(p.authorId) || blockedBy.includes(currentUser.id)) return false;
+            if (window.isBlockedRelation(p.authorId)) return false;
             const isFollowing = currentUser.following.includes(p.authorId); 
             const isAccountPrivate = author.settings?.privateNetwork; 
             const isPostPrivate = p.settings?.privacy === 'private'; 
@@ -9874,6 +9880,7 @@
             v.innerHTML = '';
 
             const peopleResults = users
+                .filter(u => u.id !== currentUser.id && !window.isBlockedRelation(u.id))
                 .map(u => {
                     const exactName = String(u.name || '').toLowerCase() === t;
                     const exactUsername = String(u.username || '').toLowerCase() === t;
@@ -11389,7 +11396,7 @@
                   priv = u?.settings?.privateNetwork,
                   isFriend = window.isFriend(uid),
                   hasRequested = !isF && priv && window.hasRequestedFollow(uid),
-                  relationshipBlocked = u && (currentUser.settings?.blockedUsers?.includes(uid) || u.settings?.blockedBy?.includes(currentUser.id));
+                  relationshipBlocked = u && window.isBlockedRelation(uid);
 
             if (relationshipBlocked) {
                 showToast('You can’t follow this user because the account is blocked.');
@@ -11497,7 +11504,7 @@
                  window.isProfileLoadingMore = false; // Reset loading state
              }
             closePostView(); closeThread(); window.currentViewingProfileId = uid; window.currentProfileTab = tab; const u = users.find(x => x.id === uid); if (!u) return; const c = document.getElementById('view-profile'), me = uid === currentUser.id, fol = currentUser.following?.includes(uid), isFriend = window.isFriend(uid);
-            const relationshipBlocked = !me && (currentUser.settings?.blockedUsers?.includes(uid) || u.settings?.blockedBy?.includes(currentUser.id));
+            const relationshipBlocked = !me && window.isBlockedRelation(uid);
             const blockedUsers = currentUser.settings?.blockedUsers || [];
             const blockedBy = u.settings?.blockedBy || [];
             
@@ -11675,7 +11682,11 @@
                 await updateDoc(doc(db, 'users', currentUser.id), { settings: currentSettings });
                 currentUser.settings = currentSettings;
 
-                const targetSettings = { ...(target.settings || {}), blockedBy: shouldBlock ? [...new Set([...(target.settings?.blockedBy || []), currentUser.id])] : (target.settings?.blockedBy || []).filter(id => id !== currentUser.id) };
+                const targetBlockedUsers = [...(target.settings?.blockedUsers || [])];
+                const nextTargetBlockedUsers = shouldBlock ? [...new Set([...targetBlockedUsers, currentUser.id])] : targetBlockedUsers.filter(id => id !== currentUser.id);
+                const targetBlockedBy = [...(target.settings?.blockedBy || [])];
+                const nextTargetBlockedBy = shouldBlock ? [...new Set([...targetBlockedBy, currentUser.id])] : targetBlockedBy.filter(id => id !== currentUser.id);
+                const targetSettings = { ...(target.settings || {}), blockedUsers: nextTargetBlockedUsers, blockedBy: nextTargetBlockedBy };
                 await updateDoc(doc(db, 'users', uid), { settings: targetSettings });
                 document.getElementById('profile-menu-block-toggle')?.classList.toggle('active', shouldBlock);
                 if (shouldBlock) {
@@ -11721,7 +11732,7 @@
             const c = document.getElementById('profile-content-area'), u = users.find(x => x.id === uid);
             if (!c) return;
             if (!u) return;
-            const relationshipBlocked = uid !== currentUser.id && (currentUser.settings?.blockedUsers?.includes(uid) || u.settings?.blockedBy?.includes(currentUser.id));
+            const relationshipBlocked = uid !== currentUser.id && window.isBlockedRelation(uid);
             if (relationshipBlocked) {
                 c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="message-circle-warning" class="w-16 h-16 mb-2"></i><p>Content unavailable.</p></div>';
                 refreshIcons();
