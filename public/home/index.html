@@ -3881,7 +3881,7 @@
         /* Close (X) button in header */
         #post-options-modal .po-close-btn {
             margin-left: auto;
-            background: #f3f4f6;
+            background: transparent;
             width: 40px;
             height: 40px;
             border-radius: 10px;
@@ -3894,11 +3894,11 @@
             cursor: pointer;
             box-shadow: none;
             color: #6b7280;
-            transition: background 0.2s ease, color 0.2s ease;
+            transition: color 0.2s ease;
         }
 
         #post-options-modal .po-close-btn:hover {
-            background: #e5e7eb;
+            background: transparent;
             color: #374151;
         }
 
@@ -5459,9 +5459,14 @@
             <div id="ptr-spinner"><i data-lucide="arrow-down" class="w-5 h-5"></i></div>
             <div id="view-feed" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20">
                 <div id="feed-container"></div>
-                <div id="feed-sentinel" class="h-10 flex items-center justify-center">
-                    <div id="feed-loader" class="hidden">
-                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                <div id="feed-sentinel" class="h-16 flex items-center justify-center">
+                    <div id="feed-loader" class="hidden flex flex-col items-center gap-3">
+                        <div class="flex gap-1">
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms;"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 150ms;"></div>
+                            <div class="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 300ms;"></div>
+                        </div>
+                        <div class="text-xs text-gray-500">Loading posts...</div>
                     </div>
                 </div>
             </div>
@@ -6237,7 +6242,14 @@
         window.profileSort = 'latest'; window.isDesktopThreadMode = false;
         window.currentDownloadImages = []; window.selectedDownloadIndices = new Set();
         window.sessionSeenPosts = new Set();
-        window.feedPagination = { cursor: 0, limit: 10, loading: false, hasMore: true, allCandidates: [] };
+        window.feedPagination = { 
+            cursor: 0, 
+            limit: 6, 
+            loading: false, 
+            hasMore: true, 
+            allCandidates: [],
+            initialLoadCount: 6
+        };
         window.exploreSearchState = {
             query: '',
             people: [],
@@ -9039,6 +9051,86 @@
             }
         };
 
+            // Lazy load videos in feed - only load when user clicks play
+            window.initFeedVideoPlayer = (element, videoSrc) => {
+                // Don't reload if already initialized
+                if (element.querySelector('video')) return;
+            
+                // Remove the thumbnail and play button
+                const poster = element.querySelector('img');
+                const overlay = element.querySelector('[role="button"]') || element.querySelector('div:has(i[data-lucide="play"])');
+            
+                // Create video element
+                let poster_url = '';
+                if (videoSrc.includes('cloudinary.com')) {
+                    poster_url = videoSrc.replace(/\.[^.]+$/, '.jpg');
+                }
+            
+                const video = document.createElement('video');
+                video.src = videoSrc;
+                if (poster_url) video.poster = poster_url;
+                video.className = 'w-full h-full object-contain';
+                video.muted = true;
+                video.autoplay = true;
+                video.loop = true;
+                video.playsinline = true;
+                video.preload = 'metadata';
+                video.onclick = (e) => e.stopPropagation();
+            
+                // Remove old content
+                element.innerHTML = '';
+                element.appendChild(video);
+            
+                // Add mute toggle button
+                const muteBtn = document.createElement('button');
+                muteBtn.type = 'button';
+                muteBtn.className = 'video-mute-toggle';
+                muteBtn.setAttribute('aria-label', 'Toggle sound');
+                muteBtn.innerHTML = '<i data-lucide="volume-x" class="w-4 h-4"></i>';
+                muteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    video.muted = !video.muted;
+                    const icon = muteBtn.querySelector('i');
+                    if (icon) {
+                        icon.dataset.lucide = video.muted ? 'volume-x' : 'volume-2';
+                        window.lucide?.createIcons?.();
+                    }
+                };
+                element.appendChild(muteBtn);
+                window.lucide?.createIcons?.();
+            };
+
+            // Observe videos for intersection and auto-pause offscreen
+            window.observeVideoContainers = () => {
+                if (!('IntersectionObserver' in window)) return;
+            
+                const videoObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        const video = entry.target.querySelector('video');
+                        if (!video) return;
+                    
+                        if (entry.isIntersecting) {
+                            // Video is in view - allow autoplay
+                            if (video.paused) {
+                                video.play().catch(() => {});
+                            }
+                        } else {
+                            // Video is out of view - pause to save data
+                            if (!video.paused) {
+                                video.pause();
+                            }
+                        }
+                    });
+                }, { threshold: 0.25 });
+            
+                // Observe all video containers
+                document.querySelectorAll('.video-player-wrapper video').forEach(video => {
+                    if (video.parentElement) {
+                        videoObserver.observe(video.parentElement);
+                    }
+                });
+            };
+
         window.loadNextFeedBatch = () => {
             if (window.feedPagination.loading || !window.feedPagination.hasMore) return;
 
@@ -9218,9 +9310,17 @@
                         if (s.includes('cloudinary.com')) {
                             poster = s.replace(/\.[^.]+$/, '.jpg');
                         }
-                        videoHtml = `<div class="video-player-wrapper"><video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" muted autoplay loop playsinline preload="metadata" onclick="event.stopPropagation()"></video><button type="button" class="video-mute-toggle" aria-label="Toggle sound" onclick="event.stopPropagation(); const vid=this.parentElement.querySelector('video'); vid.muted=!vid.muted; const icon=this.querySelector('i'); if(icon){ icon.dataset.lucide = vid.muted ? 'volume-x' : 'volume-2'; window.lucide?.createIcons(); }"><i data-lucide="volume-x" class="w-4 h-4"></i></button></div>`;
+                        // In feed: use thumbnail with play button, lazy load video
+                        videoHtml = `<div class="video-player-wrapper relative group cursor-pointer" data-video-src="${s}" data-video-id="feed-${p.id}" onclick="event.stopPropagation(); window.initFeedVideoPlayer(this, '${s}')">
+                            ${poster ? `<img src="${poster}" class="w-full h-full object-contain" loading="lazy" decoding="async">` : `<div class="w-full h-full bg-black"></div>`}
+                            <div class="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                                <div class="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center group-hover:bg-white transition-colors">
+                                    <i data-lucide="play" class="w-6 h-6 text-gray-900 ml-0.5"></i>
+                                </div>
+                            </div>
+                        </div>`;
                     }
-                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : ''} post-media-container">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
+                    mh = `<div class="mt-3 rounded-none md:rounded-xl -mx-4 md:mx-0 overflow-hidden max-h-[600px] flex items-center justify-center bg-gray-50 ${iv ? 'bg-black' : ''} post-media-container">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" loading="lazy" decoding="async" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`
                 } else {
                     const cid = `carousel-${ctx}-${p.id}`,
                         iid = `inner-${ctx}-${p.id}`,
@@ -9236,9 +9336,18 @@
                             if (s.includes('cloudinary.com')) {
                                 poster = s.replace(/\.[^.]+$/, '.jpg');
                             }
-                            videoHtml = `<div class="video-player-wrapper"><video src="${s}" ${poster ? `poster="${poster}"` : ''} class="w-full h-full object-contain" muted autoplay loop playsinline preload="metadata" onclick="event.stopPropagation()" onvolumechange="const icon=this.parentElement.querySelector('.video-mute-toggle i'); if(icon){ icon.dataset.lucide=this.muted ? 'volume-x' : 'volume-2'; window.lucide?.createIcons(); }"></video><button type="button" class="video-mute-toggle" aria-label="Toggle sound" onclick="event.stopPropagation(); const vid=this.parentElement.querySelector('video'); vid.muted=!vid.muted; const icon=this.querySelector('i'); if(icon){ icon.dataset.lucide = vid.muted ? 'volume-x' : 'volume-2'; window.lucide?.createIcons(); }"><i data-lucide="volume-x" class="w-4 h-4"></i></button></div>`;
+                            // In feed carousel: lazy load video with thumbnail
+                            videoHtml = `<div class="video-player-wrapper relative group cursor-pointer w-full h-full" data-video-src="${s}" data-video-id="feed-carousel-${p.id}-${i}" onclick="event.stopPropagation(); window.initFeedVideoPlayer(this, '${s}')">
+                                ${poster ? `<img src="${poster}" class="w-full h-full object-contain" loading="lazy" decoding="async">` : `<div class="w-full h-full bg-black"></div>`}
+                                <div class="absolute inset-0 flex items-center justify-center bg-black/30 group-hover:bg-black/40 transition-colors">
+                                    <div class="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center group-hover:bg-white transition-colors">
+                                        <i data-lucide="play" class="w-5 h-5 text-gray-900 ml-0.5"></i>
+                                    </div>
+                                </div>
+                            </div>`;
                         }
                         sl += `<div class="post-carousel-item bg-transparent flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
+                            sl += `<div class="post-carousel-item bg-transparent flex items-center justify-center">${iv ? videoHtml : `<div class="img-placeholder w-full h-full flex items-center justify-center"><img src="${s}" class="w-full h-full object-cover ${isCached ? 'loaded' : ''}" loading="lazy" decoding="async" onload="window.imageLoadCache.add('${s}'); this.classList.add('loaded')"></div>`}</div>`;
                         dt += `<div class="carousel-dot ${i === 0 ? 'active' : ''}" id="dot-${ctx}-${p.id}-${i}"></div>`
                     });
                     mh = `<div class="carousel-wrapper mt-3 -mx-4 md:mx-0"><div class="rounded-none md:rounded-xl overflow-hidden post-carousel touch-pan-y max-h-[600px]" id="${cid}" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event,'${p.id}',false)"><div class="post-carousel-inner" id="${iid}">${sl}</div><button class="carousel-nav-btn prev hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',-1)"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><button class="carousel-nav-btn next hidden md:flex" onclick="event.stopPropagation();moveCarousel('${cid}',1)"><i data-lucide="chevron-right" class="w-4 h-4"></i></button></div><div class="carousel-dots-outside">${dt}</div></div>`;
@@ -9324,7 +9433,7 @@
             const isFriend = window.isFriend(a.id);
             const followBtn = (a.id !== currentUser.id) ? `<button onclick="event.stopPropagation(); toggleFollow('${a.id}')" class="js-follow-btn-${a.id} text-[13px] font-bold ${isF ? 'bg-white border border-gray-200 text-gray-500' : 'bg-[#3D7EEB] text-white'} px-4 py-1.5 rounded-lg transition-all hover:opacity-90">${isF ? (isFriend ? 'Friends' : 'Following') : 'Follow'}</button>` : '';
             const desktopSearchBadge = '';
-            d.innerHTML = `<div class="bg-white md:rounded-2xl md:border md:border-gray-100 md:overflow-hidden">${rh}<div class="p-3 md:p-4"><div class="post-header"><div class="flex gap-3"><div class="post-avatar-container w-9 h-9 rounded-full"><img src="${a.avatar}" loading="lazy" decoding="async" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')"></div><div><div class="flex items-center"><span class="post-author-name" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}</div><div class="post-meta flex items-center">${formatDate(p.timestamp)}</div></div></div><div class="flex items-center gap-1">${followBtn}<button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')"><i data-lucide="menu" class="w-[26px] h-[26px]"></i></button></div></div><div class="post-content"><div class="post-body js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>${previewHtml}${(p.media || p.embedVideo) ? `${mh}${tagsHtml}` : `${tagsHtml}`}</div><div class="post-actions"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id} cursor-pointer" onclick="event.stopPropagation(); openLikes('${p.id}')">${likeText}</span></button><button class="action-btn comment" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }"><i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}"></i> <span class="js-comment-count-${p.id}">${commentText}</span></button><button class="action-btn share-btn" onclick="event.stopPropagation(); sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${rightActionBtn}</div></div>${lh}</div>`; return d
+            d.innerHTML = `<div class="bg-white md:rounded-2xl md:border md:border-gray-100 md:overflow-hidden">${rh}<div class="p-3 md:p-4"><div class="post-header"><div class="flex gap-3"><div class="post-avatar-container w-9 h-9 rounded-full"><img src="${a.avatar}" loading="lazy" decoding="async" class="post-avatar cursor-pointer w-full h-full" onclick="event.stopPropagation();openProfilePreview('${a.id}')" onload="this.classList.add('loaded')"></div><div><div class="flex items-center"><span class="post-author-name" onclick="event.stopPropagation(); showProfile('${a.id}')">${a.username || 'user'}</span>${a.isOfficial ? '<i data-lucide="badge-check" class="w-4 h-4 official-badge"></i>' : ''}${a.banned ? '<i data-lucide="ban" class="w-3 h-3 text-red-500 ml-1"></i>' : ''}${(!isV && st.privacy === 'private') ? '<i data-lucide="lock" class="w-3 h-3 text-gray-400 ml-1"></i>' : ''}</div><div class="post-meta flex items-center">${formatDate(p.timestamp)}</div></div></div><div class="flex items-center gap-1">${followBtn}<button class="icon-btn w-9 h-9 -mr-2 hover:bg-gray-50 flex items-center justify-center rounded-full transition-colors" onclick="showPostOptions(event,'${p.id}','${p.authorId}')"><i data-lucide="more-vertical" class="w-[26px] h-[26px]"></i></button></div></div><div class="post-content"><div class="post-body js-post-body-${p.id}">${window.renderTextWithReadMore(p.content, `post-${p.id}`)}</div>${previewHtml}${(p.media || p.embedVideo) ? `${mh}${tagsHtml}` : `${tagsHtml}`}</div><div class="post-actions"><button class="action-btn like js-like-btn-${p.id} ${isLiked ? 'active' : ''}" onclick="event.stopPropagation(); toggleLike('${p.id}')"><i data-lucide="heart"></i> <span class="js-like-count-${p.id} cursor-pointer" onclick="event.stopPropagation(); openLikes('${p.id}')">${likeText}</span></button><button class="action-btn comment" onclick="event.stopPropagation(); if(window.innerWidth < 768) { openComments('${p.id}'); } else { openPostView('${p.id}'); }"><i data-lucide="${st.allowComments === false ? 'message-circle-off' : 'message-circle'}"></i> <span class="js-comment-count-${p.id}">${commentText}</span></button><button class="action-btn share-btn" onclick="event.stopPropagation(); sharePost('${p.id}')"><i data-lucide="redo-2"></i> <span class="hidden sm:inline">Share</span></button><div class="flex-1"></div>${rightActionBtn}</div></div>${lh}</div>`; return d
         }
         window.moveCarousel = (cid, dir) => { const s = window.carouselStates[cid]; if (!s) return; let n = s.index + dir; if (n < 0) n = 0; if (n >= s.total) n = s.total - 1; s.index = n; const outer = document.getElementById(cid), inner = outer ? outer.querySelector('.post-carousel-inner') : null; if (inner) inner.style.transform = `translateX(-${n * 100}%)`; const dc = document.getElementById(cid).nextElementSibling; if (dc) dc.querySelectorAll('.carousel-dot').forEach((d, i) => d.classList.toggle('active', i === n)); const ctid = cid.replace('carousel-', 'counter-'), cnt = document.getElementById(ctid); if (cnt) cnt.innerText = n + 1 };
         window.updateExploreSearchTabs = (tab = 'for-you', show = false) => {
@@ -12887,7 +12996,7 @@
             const header = document.getElementById('post-view-comments-header');
             if (!header) return;
             if (p.media || p.embedVideo) {
-                header.innerHTML = `<div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')"><div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden"><img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-gray-900 text-sm">${a.name}</div><div class="text-xs text-gray-500">@${a.username || ''}</div></div></div><div class="flex items-center gap-2"><button onclick="showPostOptions(event, '${p.id}', '${p.authorId}')" class="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="menu" class="w-5 h-5 text-gray-600"></i></button><button onclick="closePostView()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div>`;
+                header.innerHTML = `<div class="flex items-center gap-3 cursor-pointer" onclick="closePostView();showProfile('${a.id}')"><div class="img-placeholder rounded-full w-10 h-10 border border-gray-100 overflow-hidden"><img src="${a.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')"></div><div><div class="font-bold text-gray-900 text-sm">${a.name}</div><div class="text-xs text-gray-500">@${a.username || ''}</div></div></div><div class="flex items-center gap-2"><button onclick="showPostOptions(event, '${p.id}', '${p.authorId}')" class="w-9 h-9 rounded-full bg-gray-50 hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="more-vertical" class="w-5 h-5 text-gray-600"></i></button><button onclick="closePostView()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div>`;
             } else {
                 header.innerHTML = `<div id="comment-header-default" class="flex items-center justify-between w-full"><span class="font-bold text-xl text-gray-900">Comments (${p.comments?.length || 0})</span><div class="flex items-center gap-2"><button onclick="toggleCommentSearch()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="search" class="w-5 h-5 text-gray-600"></i></button><button onclick="closePostView()" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div></div><div id="comment-header-search" class="hidden w-full flex items-center gap-2"><div class="relative flex-1"><i data-lucide="search" class="absolute left-3 top-2.5 w-4 h-4 text-gray-400"></i><input type="text" id="comment-search-input-desktop" oninput="handleCommentSearch(this.value)" class="w-full bg-gray-100 rounded-full py-2 pl-9 pr-4 text-sm outline-none" placeholder="Search comments..."></div><button onclick="toggleCommentSearch()" class="p-2 hover:bg-gray-100 rounded-full"><i data-lucide="x" class="w-5 h-5 text-gray-600"></i></button></div>`;
             }
