@@ -10738,10 +10738,14 @@
         };
         async function sendNotification(rid, t, c, pid = null) { 
             const rUser = users.find(u => u.id === rid);
+            if (!currentUser) return;
+            if (currentUser.settings?.blockedUsers?.includes(rid)) return;
             if (rUser && rUser.settings) {
                 if (rUser.settings.muteFriends && (rUser.settings.mutedFriends || []).includes(currentUser.id)) return;
                 if (rUser.settings.muteComments && (t === 'comment' || t === 'reply' || t === 'comment_like')) return;
                 if (rUser.settings.muteReposts && (t === 'repost' || t === 'repost_like')) return;
+                if ((rUser.settings.blockedUsers || []).includes(currentUser.id)) return;
+                if ((rUser.settings.blockedBy || []).includes(currentUser.id)) return;
             }
             await setDoc(doc(db, "notifications", `${t}_${currentUser.id}_${pid || 'general'}_${rid}`), { receiverId: rid, senderId: currentUser.id, type: t, content: c, timestamp: serverTimestamp(), read: !1, postId: pid }, { merge: !0 }) 
         }
@@ -11606,7 +11610,7 @@
                             <div class="font-bold text-gray-900 text-[15px]">Do not get notifications</div>
                             <div class="text-[12px] text-gray-500">Mute notifications from ${u.name || 'this user'}</div>
                         </div>
-                        <div id="profile-menu-mute-toggle" class="toggle-switch ${muted ? 'active' : ''}" onclick="toggleMuteFromProfile('${uid}', ${!muted}); event.stopPropagation();"></div>
+                        <div id="profile-menu-mute-toggle" class="toggle-switch ${muted ? 'active' : ''}" onclick="event.stopPropagation(); toggleMuteFromProfile('${uid}', ${!muted});"></div>
                     </div>
                     <div class="border-t border-gray-100 my-1"></div>
                     <div class="flex items-center justify-between gap-3 rounded-2xl p-3 hover:bg-gray-50 transition-colors">
@@ -11614,7 +11618,7 @@
                             <div class="font-bold text-gray-900 text-[15px]">Block this user</div>
                             <div class="text-[12px] text-gray-500">They won’t see your posts, and you won’t see theirs.</div>
                         </div>
-                        <div id="profile-menu-block-toggle" class="toggle-switch ${blocked ? 'active' : ''}" onclick="toggleBlockFromProfile('${uid}', ${!blocked}); event.stopPropagation();"></div>
+                        <div id="profile-menu-block-toggle" class="toggle-switch ${blocked ? 'active' : ''}" onclick="event.stopPropagation(); toggleBlockFromProfile('${uid}', ${!blocked});"></div>
                     </div>
                 </div>
             `;
@@ -11649,27 +11653,29 @@
         window.toggleBlockFromProfile = async (uid, shouldBlock) => {
             const target = users.find(u => u.id === uid);
             if (!target) return;
-            const blockedUsers = [...(currentUser.settings?.blockedUsers || [])];
-            const nextBlocked = shouldBlock ? [...new Set([...blockedUsers, uid])] : blockedUsers.filter(id => id !== uid);
-            const currentSettings = { ...(currentUser.settings || {}), blockedUsers: nextBlocked };
-            await updateDoc(doc(db, 'users', currentUser.id), { settings: currentSettings });
-            currentUser.settings = currentSettings;
+            const confirmText = shouldBlock
+                ? `Block ${target.username || 'this user'}? They won’t see your profile or posts, and you won’t see theirs.`
+                : `Unblock ${target.username || 'this user'}? They will be able to view your profile again.`;
+            showAlert(confirmText, async () => {
+                const blockedUsers = [...(currentUser.settings?.blockedUsers || [])];
+                const nextBlocked = shouldBlock ? [...new Set([...blockedUsers, uid])] : blockedUsers.filter(id => id !== uid);
+                const currentSettings = { ...(currentUser.settings || {}), blockedUsers: nextBlocked };
+                await updateDoc(doc(db, 'users', currentUser.id), { settings: currentSettings });
+                currentUser.settings = currentSettings;
 
-            const targetSettings = { ...(target.settings || {}), blockedBy: shouldBlock ? [...new Set([...(target.settings?.blockedBy || []), currentUser.id])] : (target.settings?.blockedBy || []).filter(id => id !== currentUser.id) };
-            await updateDoc(doc(db, 'users', uid), { settings: targetSettings });
-            document.getElementById('profile-menu-block-toggle')?.classList.toggle('active', shouldBlock);
-            if (shouldBlock) {
-                showAlert(`Block ${target.username || 'this user'}? They won’t see your posts, and you won’t see theirs.`, async () => {
+                const targetSettings = { ...(target.settings || {}), blockedBy: shouldBlock ? [...new Set([...(target.settings?.blockedBy || []), currentUser.id])] : (target.settings?.blockedBy || []).filter(id => id !== currentUser.id) };
+                await updateDoc(doc(db, 'users', uid), { settings: targetSettings });
+                document.getElementById('profile-menu-block-toggle')?.classList.toggle('active', shouldBlock);
+                if (shouldBlock) {
                     showToast(`${target.username || 'This user'} has been blocked`);
-                    closeProfileMenuOverlay();
-                });
-            } else {
-                showToast(`${target.username || 'This user'} has been unblocked`);
+                } else {
+                    showToast(`${target.username || 'This user'} has been unblocked`);
+                }
+                if (window.currentViewingProfileId === uid) {
+                    renderProfileContent(uid, window.currentProfileTab || 'posts');
+                }
                 closeProfileMenuOverlay();
-            }
-            if (window.currentViewingProfileId === uid) {
-                renderProfileContent(uid, window.currentProfileTab || 'posts');
-            }
+            });
         };
         window.shareProfile = async (uid) => {
             const u = users.find(x => x.id === uid);
