@@ -11384,7 +11384,13 @@
                   isF = currentUser.following.includes(uid), 
                   priv = u?.settings?.privateNetwork,
                   isFriend = window.isFriend(uid),
-                  hasRequested = !isF && priv && window.hasRequestedFollow(uid);
+                  hasRequested = !isF && priv && window.hasRequestedFollow(uid),
+                  relationshipBlocked = u && (currentUser.settings?.blockedUsers?.includes(uid) || u.settings?.blockedBy?.includes(currentUser.id));
+
+            if (relationshipBlocked) {
+                showToast('You can’t follow this user because the account is blocked.');
+                return;
+            }
 
             if (!isF && hasRequested) {
                 showToast("Follow request already sent");
@@ -11487,13 +11493,9 @@
                  window.isProfileLoadingMore = false; // Reset loading state
              }
             closePostView(); closeThread(); window.currentViewingProfileId = uid; window.currentProfileTab = tab; const u = users.find(x => x.id === uid); if (!u) return; const c = document.getElementById('view-profile'), me = uid === currentUser.id, fol = currentUser.following?.includes(uid), isFriend = window.isFriend(uid);
+            const relationshipBlocked = !me && (currentUser.settings?.blockedUsers?.includes(uid) || u.settings?.blockedBy?.includes(currentUser.id));
             const blockedUsers = currentUser.settings?.blockedUsers || [];
             const blockedBy = u.settings?.blockedBy || [];
-            if (!me && (blockedUsers.includes(uid) || blockedBy.includes(currentUser.id))) {
-                c.innerHTML = `<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="shield-off" class="w-16 h-16 mb-2"></i><p>This profile is unavailable.</p></div>`;
-                refreshIcons();
-                return;
-            }
             
             // Calculate mutual friends (people who are friends with both)
              const mutuals = !me ? users.filter(user => 
@@ -11521,7 +11523,9 @@
 
             const isRequested = !fol && u.settings?.privateNetwork && window.hasRequestedFollow(uid);
             const followLabel = window.getFollowButtonLabel(uid, fol, isFriend, u.settings?.privateNetwork);
-            let ab = me ? `<div class="flex gap-2"><button onclick="openEditProfile()" class="bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-2 rounded-full font-bold hover:bg-gray-50 transition-all min-w-[95px]">Edit Profile</button><button onclick="openQR()" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>` : `<div class="flex gap-2"><button id="profile-follow-btn" onclick="toggleFollow('${uid}')" class="js-follow-btn-${uid} ${fol ? 'bg-white text-gray-900 border border-gray-200' : (followLabel === 'Requested' ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#3D7EEB] text-white')} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]">${followLabel}</button><button onclick="openQR('${uid}')" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>`; const canViewConnections = me || (!u.settings?.hideConnections && !u.settings?.privateNetwork); const clickFollowing = canViewConnections ? `onclick="openUserList('following','${uid}')"` : `onclick="showToast('Connections are private')"`; const clickFollowers = canViewConnections ? `onclick="openUserList('followers','${uid}')"` : `onclick="showToast('Connections are private')"`; const postCount = posts.filter(p => p.authorId === uid && !p.archived).length; const cursorClass = canViewConnections ? 'cursor-pointer hover:underline' : 'cursor-default opacity-80'; let stats = `<div class="flex gap-4 mt-3 text-sm text-gray-500"><span class="${cursorClass}" ${clickFollowing}><strong class="text-gray-900">${u.following?.length || 0}</strong> Following</span><span class="cursor-default"><strong class="text-gray-900">${postCount}</strong> Posts</span><span class="${cursorClass}" ${clickFollowers}><strong class="text-gray-900">${u.followers?.length || 0}</strong> Followers</span></div>`;             const tabList = ['posts', 'reposts', 'liked', 'tagged'];
+            const blockedFollowLabel = relationshipBlocked ? 'Blocked' : followLabel;
+            const blockedFollowClass = relationshipBlocked ? 'bg-gray-100 text-gray-500 border border-gray-200 cursor-not-allowed opacity-80' : (fol ? 'bg-white text-gray-900 border border-gray-200' : (followLabel === 'Requested' ? 'bg-gray-100 text-gray-500 border border-gray-200' : 'bg-[#3D7EEB] text-white'));
+            let ab = me ? `<div class="flex gap-2"><button onclick="openEditProfile()" class="bg-white text-gray-900 border border-gray-200 text-[13px] px-5 py-2 rounded-full font-bold hover:bg-gray-50 transition-all min-w-[95px]">Edit Profile</button><button onclick="openQR()" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>` : `<div class="flex gap-2"><button id="profile-follow-btn" ${relationshipBlocked ? 'disabled' : `onclick="toggleFollow('${uid}')"`} class="js-follow-btn-${uid} ${blockedFollowClass} text-[13px] px-5 py-2 rounded-full font-bold hover:opacity-90 transition-all min-w-[95px]">${blockedFollowLabel}</button><button onclick="openQR('${uid}')" class="bg-white text-gray-900 border border-gray-200 px-5 py-2 rounded-full hover:bg-gray-50 transition-all"><i data-lucide="layout-panel-left" class="w-5 h-5 fill-gray-900"></i></button></div>`; const canViewConnections = me || (!u.settings?.hideConnections && !u.settings?.privateNetwork); const clickFollowing = canViewConnections ? `onclick="openUserList('following','${uid}')"` : `onclick="showToast('Connections are private')"`; const clickFollowers = canViewConnections ? `onclick="openUserList('followers','${uid}')"` : `onclick="showToast('Connections are private')"`; const postCount = posts.filter(p => p.authorId === uid && !p.archived).length; const cursorClass = canViewConnections ? 'cursor-pointer hover:underline' : 'cursor-default opacity-80'; let stats = `<div class="flex gap-4 mt-3 text-sm text-gray-500"><span class="${cursorClass}" ${clickFollowing}><strong class="text-gray-900">${u.following?.length || 0}</strong> Following</span><span class="cursor-default"><strong class="text-gray-900">${postCount}</strong> Posts</span><span class="${cursorClass}" ${clickFollowers}><strong class="text-gray-900">${u.followers?.length || 0}</strong> Followers</span></div>`;             const tabList = ['posts', 'reposts', 'liked', 'tagged'];
             const tabs = tabList.map(t => ((!me && t === 'liked')) ? '' : `<button onclick="switchProfileTab('${t}')" class="tab-btn ${tab === t ? 'active' : ''}"><i data-lucide="${{ posts: 'grid-2x2-check', reposts: 'repeat', liked: 'heart', tagged: 'contact' }[t]}" class="w-[22px] h-[22px]"></i></button>`).join('');
             const urlMatch = u.bio?.match(/(https?:\/\/[^\s]+)/), previewId = `preview-bio-${u.id}`, previewHtml = urlMatch ? `<div id="${previewId}"></div>` : '';
             if (urlMatch) setTimeout(() => window.renderLinkPreview(urlMatch[0], previewId), 100);
@@ -11709,8 +11713,9 @@
             const c = document.getElementById('profile-content-area'), u = users.find(x => x.id === uid);
             if (!c) return;
             if (!u) return;
-            if (currentUser.settings?.blockedUsers?.includes(uid) || u.settings?.blockedBy?.includes(currentUser.id)) {
-                c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="shield-off" class="w-16 h-16 mb-2"></i><p>This profile is unavailable.</p></div>';
+            const relationshipBlocked = uid !== currentUser.id && (currentUser.settings?.blockedUsers?.includes(uid) || u.settings?.blockedBy?.includes(currentUser.id));
+            if (relationshipBlocked) {
+                c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="shield-off" class="w-16 h-16 mb-2"></i><p>Content unavailable.</p></div>';
                 refreshIcons();
                 return;
             }
