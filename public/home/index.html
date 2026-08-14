@@ -6841,7 +6841,18 @@
             }, { passive: true });
         }
         if (exploreView) exploreView.addEventListener('scroll', () => { const c = exploreView.scrollTop, h = document.getElementById('explore-header-shell'); if (h) { h.style.transform = 'translateY(0)'; } lastExploreScrollTop = Math.max(0, c) }, { passive: true });
-        const formatDate = t => { if (!t) return ''; const d = t.toDate ? t.toDate() : new Date(t); if (isNaN(d.getTime())) return ''; const now = new Date(), s = (now - d) / 1000; if (s < 60) return 'Now'; if (s < 3600) return Math.floor(s / 60) + 'm ago'; if (s < 86400) return Math.floor(s / 3600) + 'h ago'; if (s < 604800) return Math.floor(s / 86400) + 'd ago'; return d.toLocaleDateString() };
+        const formatDate = t => {
+            if (!t) return '';
+            const d = t.toDate ? t.toDate() : new Date(t);
+            if (isNaN(d.getTime())) return '';
+            const now = new Date();
+            const isThisYear = d.getFullYear() === now.getFullYear();
+            if (isThisYear) {
+                const month = d.toLocaleDateString(undefined, { month: 'long' });
+                return `${d.getDate()} ${month}`;
+            }
+            return `${d.getDate()}/${d.getMonth() + 1}/${d.getFullYear()}`;
+        };
         
         const formatJoinedDate = t => {
             if (!t) return '';
@@ -13713,7 +13724,7 @@
             container.innerHTML = displayUsers.map(u => {
                 const isSelected = window.tagOverlayState.selectedUserIds.includes(u.id);
                 return `
-                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100" onclick="event.stopPropagation(); toggleTagUser('${u.id}')">
+                    <div class="flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer last:border-b-0" onclick="event.stopPropagation(); toggleTagUser('${u.id}')">
                         <div class="flex items-center gap-3">
                             <div class="rounded-full w-12 h-12 shrink-0 overflow-hidden">
                                 <img src="${u.avatar}" class="w-full h-full rounded-full object-cover" onload="this.classList.add('loaded')">
@@ -13724,7 +13735,8 @@
                                 </div>
                                 <div class="text-sm font-normal text-gray-500 truncate w-48">${u.username || 'user'}</div>
                             </div>
-                        <div class="w-6 h-6 rounded-full border-2 border-gray-300 flex items-center justify-center ${isSelected ? 'bg-[#3D7EEB] border-[#3D7EEB]' : ''}">
+                        </div>
+                        <div class="w-7 h-7 rounded-full border-2 ${isSelected ? 'border-[#3D7EEB] bg-[#3D7EEB]' : 'border-gray-300 bg-white'} flex items-center justify-center transition-all shrink-0">
                             ${isSelected ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
                         </div>
                     </div>
