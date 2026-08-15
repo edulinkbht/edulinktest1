@@ -3389,7 +3389,6 @@
             position: absolute;
             top: 62px;
             left: 50%;
-            transform: translateX(-50%) translateY(-18px);
             width: 22px;
             height: 22px;
             border-radius: 50%;
@@ -3400,8 +3399,8 @@
             z-index: 15;
             opacity: 0;
             pointer-events: none;
+            transform: translateX(-50%) translateY(-18px) scale(0.7);
             transition: transform .2s ease, opacity .2s ease;
-            color: #000000;
             box-shadow: none;
         }
 
@@ -5547,7 +5546,7 @@
                     </div>
                 </div>
             </header>
-            <div id="ptr-spinner"><i data-lucide="arrow-down" class="w-5 h-5"></i></div>
+            <div id="ptr-spinner" aria-hidden="true"></div>
             <div id="view-feed" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20">
                 <div id="feed-container"></div>
                 <div id="feed-sentinel" class="h-10 flex items-center justify-center">
@@ -6772,14 +6771,14 @@
         const hidePtrSpinner = () => {
             if (!ptrSpinner) return;
             ptrSpinner.style.opacity = '0';
-            ptrSpinner.style.transform = 'translateX(-50%) translateY(-18px)';
+            ptrSpinner.style.transform = 'translateX(-50%) translateY(-18px) scale(0.7)';
         };
         const refreshFeedWithSpinner = async () => {
             if (!feedView || isRefreshing) return;
             isRefreshing = true;
             if (ptrSpinner) {
                 ptrSpinner.style.opacity = '1';
-                ptrSpinner.style.transform = 'translateX(-50%) translateY(10px)';
+                ptrSpinner.style.transform = 'translateX(-50%) translateY(10px) scale(1)';
             }
             try {
                 await renderFeed();
@@ -6807,8 +6806,9 @@
                 if (e.cancelable) e.preventDefault();
                 const y = Math.min(ptrPullDistance * 0.7, 54);
                 if (ptrSpinner) {
-                    ptrSpinner.style.opacity = String(Math.min(ptrPullDistance / 40, 1));
-                    ptrSpinner.style.transform = `translateX(-50%) translateY(${Math.max(-18, y - 18)}px)`;
+                    const visibleProgress = Math.min(ptrPullDistance / 40, 1);
+                    ptrSpinner.style.opacity = String(visibleProgress);
+                    ptrSpinner.style.transform = `translateX(-50%) translateY(${Math.max(-18, y - 18)}px) scale(${0.7 + visibleProgress * 0.3})`;
                 }
             }, { passive: false });
             feedView.addEventListener('touchend', async () => {
