@@ -3388,21 +3388,21 @@
 
         #ptr-spinner {
             position: absolute;
-            top: 70px;
+            top: 74px;
             left: 50%;
             transform: translateX(-50%) translateY(-20px);
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             background: #f3f4f6;
             border-radius: 50%;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, .1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, .12);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 15;
+            z-index: 12;
             opacity: 0;
             pointer-events: none;
-            transition: transform .2s, opacity .2s;
+            transition: transform .2s ease, opacity .2s ease, background .2s ease;
             color: #000000;
             border: 1px solid #e5e7eb;
         }
@@ -6482,7 +6482,7 @@
             const rootEl = document.getElementById('view-profile');
             window.profileObserver = new IntersectionObserver((entries) => {
                 if (entries[0].isIntersecting && !window.isProfileLoadingMore) {
-                    const currentCount = window.currentProfileVisibleCount || 9;
+                    const currentCount = window.currentProfileVisibleCount || 12;
                     if (currentCount >= allPosts.length) return;
 
                     window.isProfileLoadingMore = true;
@@ -6493,7 +6493,7 @@
                     }
 
                     setTimeout(() => {
-                        const nextBatch = allPosts.slice(currentCount, currentCount + 9);
+                        const nextBatch = allPosts.slice(currentCount, currentCount + 12);
                         const container = document.getElementById('profile-grid-container');
                         
                         if (container) {
@@ -6507,7 +6507,7 @@
                             refreshIcons();
                         }
 
-                        window.currentProfileVisibleCount = currentCount + 9;
+                        window.currentProfileVisibleCount = currentCount + 12;
                         window.isProfileLoadingMore = false;
 
                         if (trigger) {
@@ -6520,7 +6520,7 @@
                                 trigger.classList.add('hidden');
                             }
                         }
-                    }, 600);
+                    }, 500);
                 }
             }, { 
                 root: rootEl,
@@ -11977,16 +11977,27 @@
                 console.error('Error sharing:', err);
             }
         };
+        window.fetchProfilePosts = async (uid) => {
+            try {
+                const qRef = query(collection(db, 'posts'), where('authorId', '==', uid), orderBy('timestamp', 'desc'));
+                const snap = await getDocs(qRef);
+                return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            } catch (error) {
+                console.error('fetchProfilePosts error:', error);
+                return posts.filter(p => p.authorId === uid);
+            }
+        };
+
         window.switchProfileTab = t => {
             if (t === 'posts' && window.currentProfileTab === 'posts') { openProfileFilter(); return }
             document.querySelectorAll('#view-profile .tab-btn').forEach(b => b.classList.toggle('active', b.getAttribute('onclick').includes(`'${t}'`)));
             window.currentProfileTab = t;
-            window.currentProfileVisibleCount = 9; // Reset count for new tab
-            window.isProfileLoadingMore = false; // Reset loading state
+            window.currentProfileVisibleCount = 12;
+            window.isProfileLoadingMore = false;
             renderProfileContent(window.currentViewingProfileId, t);
             syncURLState()
         };
-        window.renderProfileContent = (uid, t) => {
+        window.renderProfileContent = async (uid, t) => {
             const c = document.getElementById('profile-content-area'), u = users.find(x => x.id === uid);
             if (!c) return;
             if (!u) return;
@@ -12004,8 +12015,8 @@
                 return;
             }
             if (t === 'liked' && uid !== currentUser.id) return c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="lock" class="w-16 h-16 mb-2"></i><p>This user\'s likes are private.</p></div>', refreshIcons();
-            
-            let tp = posts.filter(p => {
+
+            let profilePool = posts.filter(p => {
                 if (t === 'posts') return p.authorId === uid && !p.archived;
                 if (t === 'archived') return p.authorId === uid && p.archived;
                 if (t === 'saved') return savedPosts.includes(p.id);
@@ -12013,6 +12024,20 @@
                 if (t === 'reposts') return u && u.reposts?.includes(p.id);
                 return (p.collaborators?.some(x => x.id === uid && x.status === 'accepted') || p.mentions?.includes(uid));
             });
+
+            if (t === 'posts' || t === 'archived' || t === 'reposts') {
+                const allUserPosts = await window.fetchProfilePosts(uid);
+                if (allUserPosts.length) {
+                    profilePool = allUserPosts.filter(p => {
+                        if (t === 'posts') return !p.archived;
+                        if (t === 'archived') return p.archived;
+                        if (t === 'reposts') return u && (u.reposts || []).includes(p.id);
+                        return true;
+                    });
+                }
+            }
+            
+            let tp = profilePool;
             if (uid !== currentUser.id) {
                 const isF = currentUser.following.includes(uid);
                 if (u.settings?.privateNetwork && !isF) {
@@ -12030,8 +12055,8 @@
                         c.innerHTML = '<div class="text-center py-20 text-gray-400"><i data-lucide="heart" class="w-12 h-12 mb-2 opacity-20 mx-auto"></i><p>No liked posts yet</p></div>';
                     }
                 } else {
-                    tp.sort((a, b) => b.timestamp - a.timestamp);
-                    const limit = window.currentProfileVisibleCount || 9;
+                    tp.sort((a, b) => (b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp || 0).getTime()) - (a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp || 0).getTime()));
+                    const limit = window.currentProfileVisibleCount || 12;
                     const visiblePosts = tp.slice(0, limit);
                     const hasMore = tp.length > limit;
 
@@ -12046,8 +12071,8 @@
                 refreshIcons();
                 return;
             }
-            if (window.profileSort === 'latest') tp.sort((a, b) => b.timestamp - a.timestamp);
-            else if (window.profileSort === 'oldest') tp.sort((a, b) => a.timestamp - b.timestamp);
+            if (window.profileSort === 'latest') tp.sort((a, b) => (b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp || 0).getTime()) - (a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp || 0).getTime()));
+            else if (window.profileSort === 'oldest') tp.sort((a, b) => (a.timestamp?.toDate ? a.timestamp.toDate().getTime() : new Date(a.timestamp || 0).getTime()) - (b.timestamp?.toDate ? b.timestamp.toDate().getTime() : new Date(b.timestamp || 0).getTime()));
             else if (window.profileSort === 'popular') tp.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
 
             if (tp.length === 0) {
@@ -12056,7 +12081,7 @@
                 return;
             }
 
-            const limit = window.currentProfileVisibleCount || 9;
+            const limit = window.currentProfileVisibleCount || 12;
             const visiblePosts = tp.slice(0, limit);
             const hasMore = tp.length > limit;
 
@@ -12066,9 +12091,8 @@
             if (hasMore) {
                 setupProfileInfiniteScroll(uid, t, tp);
             }
-            window.currentViewingPostList = tp; // Store the full list for navigation
+            window.currentViewingPostList = tp;
             refreshIcons();
-            // Observe new video containers
             window.observeVideoContainers();
         };
 
