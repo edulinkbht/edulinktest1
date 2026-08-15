@@ -3393,9 +3393,10 @@
             transform: translateX(-50%) translateY(-20px);
             width: 40px;
             height: 40px;
-            background: #fff;
+            background: #f3f4f6;
+            border: 1px solid #e5e7eb;
             border-radius: 50%;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, .1);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, .08);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -3403,7 +3404,20 @@
             opacity: 0;
             pointer-events: none;
             transition: transform .2s, opacity .2s;
-            color: #000000
+            color: #111827;
+        }
+
+        #ptr-spinner .ptr-loader {
+            width: 18px;
+            height: 18px;
+            border-radius: 9999px;
+            border: 2px solid #e5e7eb;
+            border-top-color: #374151;
+            animation: ptr-spin .8s linear infinite;
+        }
+
+        @keyframes ptr-spin {
+            to { transform: rotate(360deg); }
         }
 
         @media(max-width:768px) {
@@ -5532,7 +5546,7 @@
                     </div>
                 </div>
             </header>
-            <div id="ptr-spinner"><i data-lucide="arrow-down" class="w-5 h-5"></i></div>
+            <div id="ptr-spinner"><div class="ptr-loader"></div></div>
             <div id="view-feed" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20 pb-24 md:pb-20">
                 <div id="feed-container"></div>
                 <div id="feed-sentinel" class="h-12 flex items-center justify-center">
@@ -6767,6 +6781,56 @@
         window.commentSearchTerm = ''; window.isCommentSearchOpen = false;
         window.currentClaimLink = null;
         const feedView = document.getElementById('view-feed'), exploreView = document.getElementById('view-explore'), blogView = document.getElementById('view-blog'), ptrSpinner = document.getElementById('ptr-spinner'), refreshIcons = () => window.lucide?.createIcons();
+        const setupPullToRefresh = () => {
+            if (!feedView || !ptrSpinner) return;
+
+            let pullStartY = 0;
+            let pullDistance = 0;
+            let isPulling = false;
+
+            const updatePTR = () => {
+                const progress = Math.min(1, pullDistance / 90);
+                ptrSpinner.style.opacity = pullDistance > 0 ? '1' : '0';
+                ptrSpinner.style.transform = `translateX(-50%) translateY(${Math.max(-20, Math.min(40, pullDistance - 6))}px)`;
+                const loader = ptrSpinner.querySelector('.ptr-loader');
+                if (loader) loader.style.transform = `scale(${0.8 + (progress * 0.8)})`;
+            };
+
+            feedView.addEventListener('touchstart', (event) => {
+                if (window.currentViewName !== 'feed' || feedView.scrollTop > 0 || window.homeFeedState.isLoading) return;
+                pullStartY = event.touches[0].clientY;
+                pullDistance = 0;
+                isPulling = true;
+            }, { passive: true });
+
+            feedView.addEventListener('touchmove', (event) => {
+                if (!isPulling || window.currentViewName !== 'feed' || feedView.scrollTop > 0) return;
+                const delta = event.touches[0].clientY - pullStartY;
+                if (delta <= 0) return;
+                pullDistance = Math.min(120, delta);
+                event.preventDefault();
+                updatePTR();
+            }, { passive: false });
+
+            const finishPull = async () => {
+                if (!isPulling) return;
+                isPulling = false;
+                if (pullDistance > 60 && !window.homeFeedState.isLoading) {
+                    await window.refreshHomeFeed();
+                }
+                pullDistance = 0;
+                const loader = ptrSpinner.querySelector('.ptr-loader');
+                if (loader) loader.style.transform = 'scale(1)';
+                ptrSpinner.style.opacity = '0';
+                ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)';
+            };
+
+            feedView.addEventListener('touchend', finishPull, { passive: true });
+            feedView.addEventListener('touchcancel', finishPull, { passive: true });
+        };
+
+        setupPullToRefresh();
+
         if (feedView) { 
             feedView.addEventListener('scroll', () => { 
                 const c = feedView.scrollTop, h = document.getElementById('main-header'); 
@@ -7993,6 +8057,37 @@
                 </div>
             </div>
         `;
+        window.refreshHomeFeed = async () => {
+            const c = document.getElementById('feed-container');
+            if (!c) return;
+            const loader = document.getElementById('feed-loader');
+            const spinner = document.getElementById('ptr-spinner');
+            if (spinner) {
+                spinner.style.opacity = '1';
+                spinner.style.transform = 'translateX(-50%) translateY(10px)';
+            }
+            if (loader) loader.classList.remove('hidden');
+            c.innerHTML = '';
+            window.homeFeedState.lastDoc = null;
+            window.homeFeedState.hasMore = true;
+            window.homeFeedState.isLoading = true;
+            window.feedPagination.cursor = 0;
+            window.feedPagination.hasMore = true;
+            window.feedPagination.loading = false;
+            window.feedPagination.allCandidates = [];
+            posts = [];
+            try {
+                await window.loadHomePostsPage(false);
+            } finally {
+                window.homeFeedState.isLoading = false;
+                if (loader) loader.classList.add('hidden');
+                if (spinner) {
+                    spinner.style.opacity = '0';
+                    spinner.style.transform = 'translateX(-50%) translateY(-20px)';
+                }
+            }
+        };
+
         window.renderFeed = async (t) => {
             const c = document.getElementById('feed-container');
             if (!c) return;
@@ -8025,9 +8120,7 @@
             window.currentViewingPostList = window.feedPagination.allCandidates;
 
             if (window.feedPagination.allCandidates.length === 0) {
-                if (!cachedVisible.length && !hasExistingContent) {
-                    c.innerHTML = '<div class="text-center py-12 text-gray-400">No posts yet</div>';
-                }
+                c.innerHTML = '';
                 window.feedPagination.hasMore = false;
             } else {
                 if (!hasExistingContent || c.children.length === 0) {
