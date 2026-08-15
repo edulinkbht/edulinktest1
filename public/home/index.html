@@ -8027,11 +8027,21 @@
             const c = document.getElementById('feed-container');
             if (!c) return;
 
+            const cachedVisible = (posts || []).filter(p => window.canSeePost ? window.canSeePost(p) : true).slice(0, 12);
+            if (cachedVisible.length > 0 && c.children.length === 0) {
+                c.innerHTML = '';
+                cachedVisible.forEach(p => c.appendChild(createPostElement(p, 'feed')));
+                refreshIcons();
+            } else if (cachedVisible.length > 0 && c.innerHTML.trim() === '') {
+                c.innerHTML = '';
+                cachedVisible.forEach(p => c.appendChild(createPostElement(p, 'feed')));
+                refreshIcons();
+            }
+
             // Reset pagination for new load
             window.feedPagination.cursor = 0;
             window.feedPagination.hasMore = true;
             window.feedPagination.loading = false;
-            c.innerHTML = "";
             document.getElementById('feed-loader')?.classList.add('hidden');
 
             const context = window.hydrateUserContext();
@@ -8040,16 +8050,22 @@
             const candidates = await window.sourceCandidates(context, t);
             const ranked = window.scoreAndRankCandidates(candidates, context);
             window.feedPagination.allCandidates = window.filterAndPolish(ranked, context);
-            window.currentViewingPostList = window.feedPagination.allCandidates; // Store candidates for navigation
+            window.currentViewingPostList = window.feedPagination.allCandidates;
 
             if (window.feedPagination.allCandidates.length === 0) {
                 let msg = "No posts found", sub = "Try adjusting filters", icon = "inbox";
                 if (window.activeFeedFilter === 'following') { msg = "Follow someone"; sub = "You aren't following anyone yet."; icon = "user-plus" }
                 else if (window.activeFeedFilter === 'all') { msg = "Welcome to EduLink"; sub = "Be the first to share!"; icon = "pen-tool" }
-                c.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-center"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400"><i data-lucide="${icon}" class="w-8 h-8"></i></div><h3 class="text-gray-900 font-bold text-lg">${msg}</h3><p class="text-gray-500 text-sm mt-1 max-w-xs">${sub}</p></div>`;
+                if (!cachedVisible.length) {
+                    c.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-center"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400"><i data-lucide="${icon}" class="w-8 h-8"></i></div><h3 class="text-gray-900 font-bold text-lg">${msg}</h3><p class="text-gray-500 text-sm mt-1 max-w-xs">${sub}</p></div>`;
+                }
                 window.feedPagination.hasMore = false;
             } else {
-                window.loadNextFeedBatch();
+                if (cachedVisible.length === 0) {
+                    window.loadNextFeedBatch();
+                } else {
+                    window.loadNextFeedBatch();
+                }
             }
             refreshIcons();
         };
@@ -10983,12 +10999,8 @@
         window.toggleNotifSection = s => { window.expandedNotifSections[s] = !window.expandedNotifSections[s]; renderNotifications(); };
         window.renderNotifications = () => {
             const c = document.getElementById('notification-list'), term = window.notifSearchTerm;
-            let fl = notifications.filter(n => {
-                const s = users.find(u => u.id === n.senderId) || { name: 'Admin', isOfficial: !1 };
-                const matchesSearch = (!term || n.content.toLowerCase().includes(term) || (s.name || '').toLowerCase().includes(term) || (s.username || '').toLowerCase().includes(term));
-                return matchesSearch;
-            });
-            
+            if (!c) return;
+
             const headerHtml = `
                 <div class="md:max-w-2xl md:mx-auto w-full md:px-4 pt-6 md:pt-8">
                     <h2 class="hidden md:block text-[16px] font-bold text-gray-900 mb-4 px-1">User's preference</h2>
@@ -11003,6 +11015,27 @@
                     </div>
                 </div>
             `;
+
+            let fl = notifications.filter(n => {
+                const s = users.find(u => u.id === n.senderId) || { name: 'Admin', isOfficial: !1 };
+                const matchesSearch = (!term || n.content.toLowerCase().includes(term) || (s.name || '').toLowerCase().includes(term) || (s.username || '').toLowerCase().includes(term));
+                return matchesSearch;
+            });
+
+            if (notifications.length === 0 && c.innerHTML.trim() === '') {
+                c.innerHTML = headerHtml + Array.from({ length: 4 }, (_, i) => `
+                    <div class="animate-pulse px-4 py-4 border-b border-gray-100">
+                        <div class="flex items-center gap-3">
+                            <div class="w-11 h-11 rounded-full bg-gray-200"></div>
+                            <div class="flex-1 space-y-2">
+                                <div class="h-3 w-32 bg-gray-200 rounded-full"></div>
+                                <div class="h-3 w-44 bg-gray-200 rounded-full"></div>
+                            </div>
+                        </div>
+                    </div>`).join('');
+                refreshIcons();
+                return;
+            }
             
             if (!fl.length) {
                 c.innerHTML = headerHtml + '<div class="text-center text-xs text-gray-400 py-4">No notifications</div>';
