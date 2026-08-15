@@ -3387,32 +3387,31 @@
         }
 
         #ptr-spinner {
-            position: absolute;
-            top: 70px;
+            position: sticky;
+            top: 64px;
             left: 50%;
-            transform: translateX(-50%) translateY(-20px);
-            width: 40px;
-            height: 40px;
-            background: #f3f4f6;
-            border: 1px solid #e5e7eb;
+            width: 28px;
+            height: 28px;
+            margin: 0 auto 8px auto;
+            background: rgba(255,255,255,0.88);
             border-radius: 50%;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, .08);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 15;
+            z-index: 12;
             opacity: 0;
             pointer-events: none;
-            transition: transform .2s, opacity .2s;
-            color: #111827;
+            transition: opacity .2s ease;
+            backdrop-filter: blur(4px);
         }
 
         #ptr-spinner .ptr-loader {
-            width: 18px;
-            height: 18px;
+            width: 22px;
+            height: 22px;
             border-radius: 9999px;
             border: 2px solid #e5e7eb;
             border-top-color: #374151;
+            border-right-color: #374151;
             animation: ptr-spin .8s linear infinite;
         }
 
@@ -5546,8 +5545,8 @@
                     </div>
                 </div>
             </header>
-            <div id="ptr-spinner"><div class="ptr-loader"></div></div>
             <div id="view-feed" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20 pb-24 md:pb-20">
+                <div id="ptr-spinner"><div class="ptr-loader"></div></div>
                 <div id="feed-container"></div>
                 <div id="feed-sentinel" class="h-12 flex items-center justify-center">
                     <div id="feed-loader" class="hidden py-2">
@@ -6791,7 +6790,6 @@
             const updatePTR = () => {
                 const progress = Math.min(1, pullDistance / 90);
                 ptrSpinner.style.opacity = pullDistance > 0 ? '1' : '0';
-                ptrSpinner.style.transform = `translateX(-50%) translateY(${Math.max(-20, Math.min(40, pullDistance - 6))}px)`;
                 const loader = ptrSpinner.querySelector('.ptr-loader');
                 if (loader) loader.style.transform = `scale(${0.8 + (progress * 0.8)})`;
             };
@@ -6822,7 +6820,6 @@
                 const loader = ptrSpinner.querySelector('.ptr-loader');
                 if (loader) loader.style.transform = 'scale(1)';
                 ptrSpinner.style.opacity = '0';
-                ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)';
             };
 
             feedView.addEventListener('touchend', finishPull, { passive: true });
@@ -8062,12 +8059,13 @@
             if (!c) return;
             const loader = document.getElementById('feed-loader');
             const spinner = document.getElementById('ptr-spinner');
-            if (spinner) {
-                spinner.style.opacity = '1';
-                spinner.style.transform = 'translateX(-50%) translateY(10px)';
-            }
+            if (spinner) spinner.style.opacity = '1';
             if (loader) loader.classList.remove('hidden');
-            c.innerHTML = '';
+
+            const holdCurrent = c.innerHTML;
+            c.innerHTML = window.getFeedSkeleton ? window.getFeedSkeleton() : '<div class="p-4 space-y-3 animate-pulse">...</div>';
+            c.style.background = '#f9fafb';
+            c.style.minHeight = '200px';
             window.homeFeedState.lastDoc = null;
             window.homeFeedState.hasMore = true;
             window.homeFeedState.isLoading = true;
@@ -8078,13 +8076,15 @@
             posts = [];
             try {
                 await window.loadHomePostsPage(false);
+                if (c.children.length === 0 && !holdCurrent) {
+                    c.innerHTML = '';
+                }
             } finally {
                 window.homeFeedState.isLoading = false;
+                c.style.background = '';
+                c.style.minHeight = '';
                 if (loader) loader.classList.add('hidden');
-                if (spinner) {
-                    spinner.style.opacity = '0';
-                    spinner.style.transform = 'translateX(-50%) translateY(-20px)';
-                }
+                if (spinner) spinner.style.opacity = '0';
             }
         };
 
