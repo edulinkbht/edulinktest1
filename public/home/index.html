@@ -7068,9 +7068,9 @@
 
             if (window.currentViewName === 'feed') {
                 if (searchVal) {
-                    path = `/feed/search/${encodeURIComponent(searchVal.trim().replace(/\s+/g, '-'))}`;
+                    path = `/home/search/${encodeURIComponent(searchVal.trim().replace(/\s+/g, '-'))}`;
                 } else {
-                    path = '/feed';
+                    path = '/home';
                 }
             } else if (window.currentViewName === 'explore') {
                 if (searchVal) {
@@ -7125,15 +7125,14 @@
                 }
             }
 
-            // Handle /feed, /saved, /search, /notifications paths
-            if (pathname === '/feed' || pathname.startsWith('/feed/search/')) {
+            // Handle /home, /feed, /saved, /search, /notifications paths
+            if ((pathname === '/home' || pathname === '/feed') || pathname.startsWith('/home/search/') || pathname.startsWith('/feed/search/')) {
                 switchView('feed');
-                if (pathname.startsWith('/feed/search/')) {
-                    const q = decodeURIComponent(pathname.split('/feed/search/')[1]).replace(/-/g, ' ');
+                if (pathname.startsWith('/home/search/') || pathname.startsWith('/feed/search/')) {
+                    const route = pathname.startsWith('/home/search/') ? '/home/search/' : '/feed/search/';
+                    const q = decodeURIComponent(pathname.split(route)[1]).replace(/-/g, ' ');
                     const gs = document.getElementById('global-search');
                     if (gs) gs.value = q;
-                    // For feed search, we might want to trigger a search if it's implemented for feed
-                    // But usually EduLink search is global/explore focused.
                 }
                 return;
             }
@@ -7484,7 +7483,7 @@
                     const v = window.currentViewName;
                     if (v === 'feed') {
                         const c = document.getElementById('feed-container');
-                        if (c && (c.children.length === 0 || c.innerHTML.includes('Welcome to EduLink'))) renderFeed();
+                        if (c && c.children.length === 0) renderFeed();
                     } else if (v === 'saved') {
                         const c = document.getElementById('saved-container');
                         if (c && (c.children.length === 0 || c.innerHTML.includes('No saved posts'))) renderSaved();
@@ -8027,12 +8026,10 @@
             const c = document.getElementById('feed-container');
             if (!c) return;
 
+            const hasExistingContent = c.children.length > 0 || c.innerHTML.trim().length > 0;
             const cachedVisible = (posts || []).filter(p => window.canSeePost ? window.canSeePost(p) : true).slice(0, 12);
-            if (cachedVisible.length > 0 && c.children.length === 0) {
-                c.innerHTML = '';
-                cachedVisible.forEach(p => c.appendChild(createPostElement(p, 'feed')));
-                refreshIcons();
-            } else if (cachedVisible.length > 0 && c.innerHTML.trim() === '') {
+
+            if (cachedVisible.length > 0 && (!hasExistingContent || c.innerHTML.includes('No posts found') || c.innerHTML.includes('Welcome to EduLink'))) {
                 c.innerHTML = '';
                 cachedVisible.forEach(p => c.appendChild(createPostElement(p, 'feed')));
                 refreshIcons();
@@ -8053,19 +8050,15 @@
             window.currentViewingPostList = window.feedPagination.allCandidates;
 
             if (window.feedPagination.allCandidates.length === 0) {
-                let msg = "No posts found", sub = "Try adjusting filters", icon = "inbox";
-                if (window.activeFeedFilter === 'following') { msg = "Follow someone"; sub = "You aren't following anyone yet."; icon = "user-plus" }
-                else if (window.activeFeedFilter === 'all') { msg = "Welcome to EduLink"; sub = "Be the first to share!"; icon = "pen-tool" }
-                if (!cachedVisible.length) {
-                    c.innerHTML = `<div class="flex flex-col items-center justify-center py-12 text-center"><div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400"><i data-lucide="${icon}" class="w-8 h-8"></i></div><h3 class="text-gray-900 font-bold text-lg">${msg}</h3><p class="text-gray-500 text-sm mt-1 max-w-xs">${sub}</p></div>`;
+                if (!cachedVisible.length && !hasExistingContent) {
+                    c.innerHTML = '';
                 }
                 window.feedPagination.hasMore = false;
             } else {
-                if (cachedVisible.length === 0) {
-                    window.loadNextFeedBatch();
-                } else {
-                    window.loadNextFeedBatch();
+                if (!hasExistingContent || c.children.length === 0) {
+                    c.innerHTML = '';
                 }
+                window.loadNextFeedBatch();
             }
             refreshIcons();
         };
@@ -11655,7 +11648,28 @@
                  window.currentProfileVisibleCount = 9; // Reset count for new profile
                  window.isProfileLoadingMore = false; // Reset loading state
              }
-            closePostView(); closeThread(); window.currentViewingProfileId = uid; window.currentProfileTab = tab; const u = users.find(x => x.id === uid); if (!u) return; const c = document.getElementById('view-profile'), me = uid === currentUser.id, fol = currentUser.following?.includes(uid), isFriend = window.isFriend(uid);
+            closePostView(); closeThread(); window.currentViewingProfileId = uid; window.currentProfileTab = tab; const u = users.find(x => x.id === uid); if (!u) return; const c = document.getElementById('view-profile'), profileArea = document.getElementById('profile-content-area'); if (profileArea && (profileArea.innerHTML.trim() === '' || profileArea.innerHTML.includes('animate-pulse'))) { profileArea.innerHTML = `
+                <div class="animate-pulse px-4 pt-5 pb-10">
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="w-16 h-16 rounded-full bg-gray-200"></div>
+                        <div class="flex-1 space-y-2">
+                            <div class="h-4 w-28 bg-gray-200 rounded-full"></div>
+                            <div class="h-3 w-20 bg-gray-100 rounded-full"></div>
+                        </div>
+                    </div>
+                    <div class="space-y-2 mb-6">
+                        <div class="h-3 w-full bg-gray-200 rounded-full"></div>
+                        <div class="h-3 w-5/6 bg-gray-200 rounded-full"></div>
+                        <div class="h-3 w-2/3 bg-gray-100 rounded-full"></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="h-24 bg-gray-200 rounded-xl"></div>
+                        <div class="h-24 bg-gray-200 rounded-xl"></div>
+                        <div class="h-24 bg-gray-200 rounded-xl"></div>
+                    </div>
+                </div>
+            `; refreshIcons(); }
+            const me = uid === currentUser.id, fol = currentUser.following?.includes(uid), isFriend = window.isFriend(uid);
             const relationshipBlocked = !me && window.isBlockedRelation(uid);
             const blockedUsers = currentUser.settings?.blockedUsers || [];
             const blockedBy = u.settings?.blockedBy || [];
@@ -11884,6 +11898,33 @@
             const c = document.getElementById('profile-content-area'), u = users.find(x => x.id === uid);
             if (!c) return;
             if (!u) return;
+
+            const isEmptyShell = c.innerHTML.trim() === '' || c.innerHTML.includes('animate-pulse');
+            if (isEmptyShell) {
+                c.innerHTML = `
+                    <div class="animate-pulse px-4 pt-5 pb-10">
+                        <div class="flex items-center gap-3 mb-5">
+                            <div class="w-16 h-16 rounded-full bg-gray-200"></div>
+                            <div class="flex-1 space-y-2">
+                                <div class="h-4 w-28 bg-gray-200 rounded-full"></div>
+                                <div class="h-3 w-20 bg-gray-100 rounded-full"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2 mb-6">
+                            <div class="h-3 w-full bg-gray-200 rounded-full"></div>
+                            <div class="h-3 w-5/6 bg-gray-200 rounded-full"></div>
+                            <div class="h-3 w-2/3 bg-gray-100 rounded-full"></div>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="h-24 bg-gray-200 rounded-xl"></div>
+                            <div class="h-24 bg-gray-200 rounded-xl"></div>
+                            <div class="h-24 bg-gray-200 rounded-xl"></div>
+                        </div>
+                    </div>
+                `;
+                refreshIcons();
+            }
+
             const relationshipBlocked = uid !== currentUser.id && window.isBlockedRelation(uid);
             if (relationshipBlocked) {
                 c.innerHTML = '<div class="flex flex-col items-center justify-center py-20 text-gray-400 opacity-60"><i data-lucide="message-circle-warning" class="w-16 h-16 mb-2"></i><p>Content unavailable.</p></div>';
