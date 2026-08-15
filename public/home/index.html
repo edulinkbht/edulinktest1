@@ -261,6 +261,20 @@
             display: block;
         }
 
+        @keyframes ig-spinner {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        img, video {
+            -webkit-user-drag: none;
+            user-drag: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
         .img-placeholder {
             background-color: #f3f4f6;
             background-size: cover;
@@ -274,6 +288,23 @@
             align-items: center;
             justify-content: center;
             transition: filter 0.3s ease, opacity 0.3s ease;
+        }
+
+        .img-placeholder::before {
+            content: "";
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(156, 163, 175, 0.75);
+            border-top-color: rgba(75, 85, 99, 0.95);
+            border-radius: 50%;
+            animation: ig-spinner 0.8s linear infinite;
+            position: relative;
+            z-index: 0;
+            display: block;
+        }
+
+        .img-placeholder.loaded::before {
+            display: none;
         }
 
         /* Show neutral grey when avatar image is broken */
@@ -5896,7 +5927,7 @@
                     <h2 class="hidden md:block text-[16px] font-bold text-gray-900 mb-4 px-1">User's Preference</h2>
                     <!-- Mobile section header -->
                     <h2 class="md:hidden text-[15px] font-semibold text-gray-500 px-4 mb-2">User's Preference</h2>
-                    <div class="bg-white md:rounded-2xl md:border md:border-gray-100 divide-y divide-gray-100 mb-8 md:mb-10 overflow-hidden">
+                    <div class="bg-white md:rounded-2xl md:border md:border-gray-100 mb-8 md:mb-10 overflow-hidden">
                         <div class="px-4 md:px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors" onclick="switchView('notification-settings')">
                             <div class="flex items-center gap-4">
                                 <i data-lucide="bell" class="w-6 h-6 text-gray-900 shrink-0"></i>
@@ -5930,7 +5961,7 @@
                             <i data-lucide="chevron-right" class="w-5 h-5 text-gray-400"></i>
                         </div>
 
-                        <div class="px-4 md:px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors" onclick="event.stopPropagation(); window.logoutWithConfirm()">
+                        <div class="px-4 md:px-4 py-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors border-t border-gray-200 md:hidden" onclick="event.stopPropagation(); window.logoutWithConfirm()">
                             <div class="flex items-center gap-4">
                                 <i data-lucide="log-out" class="w-6 h-6 text-red-600 shrink-0"></i>
                                 <div class="flex flex-col justify-center">
@@ -5946,7 +5977,7 @@
                     <h2 class="hidden md:block text-[16px] font-bold text-gray-900 mb-4 px-1">Payments and Informations</h2>
                     <!-- Mobile section header -->
                     <h2 class="md:hidden text-[15px] font-semibold text-gray-500 px-4 mb-2">Payments and Informations</h2>
-                    <div class="mb-8 md:mb-10">
+                    <div class="mb-8 md:mb-10 border-t border-gray-200 md:border-none pt-4 md:pt-0">
                         <div class="px-4 md:px-4 py-4 bg-white md:rounded-2xl md:border md:border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors">
                             <div class="flex items-center gap-4">
                                 <i data-lucide="info" class="w-6 h-6 text-gray-900 shrink-0"></i>
@@ -5963,7 +5994,7 @@
                     <h2 class="hidden md:block text-[16px] font-bold text-gray-900 mb-4 px-1">Login Methods</h2>
                     <!-- Mobile section header -->
                     <h2 class="md:hidden text-[15px] font-semibold text-gray-500 px-4 mb-2">Login Methods</h2>
-                    <div class="mb-8 md:mb-10">
+                    <div class="mb-8 md:mb-10 border-t border-gray-200 md:border-none pt-4 md:pt-0">
                         <div class="px-4 md:px-4 py-4 bg-white md:rounded-2xl md:border md:border-gray-100 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors" onclick="openScanner()">
                             <div class="flex items-center gap-4">
                                 <i data-lucide="scan-line" class="w-6 h-6 text-gray-900 shrink-0"></i>
@@ -15420,35 +15451,34 @@
             const el = e.target;
             if (!el || el.tagName !== 'IMG') return;
 
-            // Provide a fallback avatar for profile pictures (pfp) when the image fails to load
-            const id = (el.id || '').toLowerCase();
-            const cls = (el.className || '').toLowerCase();
-            const looksLikePfp = id.includes('avatar') || cls.includes('post-avatar') || cls.includes('pp-avatar') || cls.includes('profile-avatar') || Boolean(el.closest && (el.closest('.post-header') || el.closest('.profile-view') || el.closest('.img-placeholder')));
-
-            if (looksLikePfp) {
-                if (!window.DEFAULT_AVATAR) window.DEFAULT_AVATAR = 'https://i.pinimg.com/736x/2c/47/d5/2c47d5dd5b532f83bb55c4cd6f5bd1ef.jpg';
+            // Keep the grey loading state instead of replacing media with the default stock image.
+            if (el.closest('.img-placeholder')) {
+                el.style.display = 'none';
                 el.onerror = null;
-                el.src = window.DEFAULT_AVATAR;
+                const placeholder = el.closest('.img-placeholder');
+                if (placeholder) placeholder.classList.add('loaded');
                 return;
             }
 
-            // Fall back to the previous behavior for generic rounded images (show user icon)
-            if (el.classList && el.classList.contains('rounded-full')) {
-                const parent = el.parentElement;
-                if (parent) {
-                    el.style.display = 'none';
-                    if (!parent.querySelector('svg')) {
-                        parent.style.backgroundColor = '#f3f4f6';
-                        parent.style.display = 'flex';
-                        parent.style.alignItems = 'center';
-                        parent.style.justifyContent = 'center';
-                        const icon = document.createElement('i');
-                        icon.setAttribute('data-lucide', 'user-round');
-                        icon.className = 'w-8 h-8 text-gray-400';
-                        parent.appendChild(icon);
-                        if (window.lucide) lucide.createIcons({ nodes: [icon] });
-                    }
-                }
+            // For non-placeholder images, keep the neutral grey fallback and do not swap in the stock pin image.
+            const parent = el.parentElement;
+            if (parent && parent.classList.contains('img-placeholder')) {
+                el.style.display = 'none';
+                parent.classList.add('loaded');
+            }
+        }, true);
+
+        document.addEventListener('contextmenu', function (event) {
+            const target = event.target;
+            if (target && (target.closest('img') || target.closest('video'))) {
+                event.preventDefault();
+            }
+        }, true);
+
+        document.addEventListener('dragstart', function (event) {
+            const target = event.target;
+            if (target && (target.closest('img') || target.closest('video'))) {
+                event.preventDefault();
             }
         }, true);
         // Ensure profile banners without images use the solid brand color as fallback
