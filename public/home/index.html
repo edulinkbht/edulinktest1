@@ -5461,7 +5461,7 @@
                 
                 <!-- Center: "EduLink" (mobile only, bigger) -->
                 <div class="md:hidden absolute left-1/2 -translate-x-1/2 bottom-3">
-                    <h1 class="text-2xl font-bold text-[#1f1f1f] tracking-tight">EduLink</h1>
+                    <h1 class="text-2xl font-bold text-[#1f1f1f] tracking-tight cursor-pointer" onclick="window.location.reload()">EduLink</h1>
                 </div>
                 
                 <div class="flex-1 relative group hidden md:block pl-5 pr-2 transition-all duration-300" id="global-search-container">
@@ -6722,122 +6722,17 @@
         window.currentClaimLink = null;
         const feedView = document.getElementById('view-feed'), exploreView = document.getElementById('view-explore'), blogView = document.getElementById('view-blog'), ptrSpinner = document.getElementById('ptr-spinner'), refreshIcons = () => window.lucide?.createIcons();
         if (feedView) { 
-            feedView.addEventListener('touchstart', e => { 
-                if (!feedView.scrollTop && !isRefreshing) { 
-                    ptrStartY = e.touches[0].pageY; 
-                    isPtr = true; 
-                    ptrSpinner.style.transition = 'none';
-                } 
-            }, { passive: true }); 
-            feedView.addEventListener('touchmove', e => { 
-                if (!isPtr || isRefreshing) return; 
-                const d = e.touches[0].pageY - ptrStartY; 
-                if (d > 0 && !feedView.scrollTop) { 
-                    if (e.cancelable) e.preventDefault(); 
-                    ptrDist = d; 
-                    // Smoother spring-like damping (sqrt(d) for less resistance as you pull)
-                    const y = Math.min(Math.sqrt(d) * 4, 80); 
-                    Object.assign(ptrSpinner.style, { 
-                        transform: `translateX(-50%) translateY(${y}px) rotate(${y * 2}deg)`, 
-                        opacity: Math.min(y / 40, 1) 
-                    }); 
-                } else { 
-                    isPtr = false; 
-                    ptrSpinner.style.opacity = '0'; 
-                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)';
-                } 
-            }, { passive: false }); 
-            feedView.addEventListener('touchend', async () => { 
-                if (!isPtr || isRefreshing) return; 
-                isPtr = false; 
-                ptrSpinner.style.transition = 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; 
-                if (ptrDist > 100) { 
-                    isRefreshing = true; 
-                    Object.assign(ptrSpinner.style, { 
-                        transform: 'translateX(-50%) translateY(50px)', 
-                        opacity: '1' 
-                    }); 
-                    ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; 
-                    refreshIcons(); 
-                    await new Promise(r => setTimeout(r, 800)); 
-                    renderFeed(); 
-                    showToast("Feed updated"); 
-                    isRefreshing = false; 
-                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; 
-                    ptrSpinner.style.opacity = '0'; 
-                    setTimeout(() => { 
-                        ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; 
-                        refreshIcons(); 
-                    }, 300);
-                } else { 
-                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; 
-                    ptrSpinner.style.opacity = '0';
-                } 
-                ptrDist = 0; 
-            }); 
             feedView.addEventListener('scroll', () => { 
                 const c = feedView.scrollTop, h = document.getElementById('main-header'); 
-                h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; 
-                lastScrollTop = Math.max(0, c); 
+                if (h) h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)';
+                lastScrollTop = Math.max(0, c);
             }, { passive: true });
         }
         if (blogView) { 
-            blogView.addEventListener('touchstart', e => { 
-                if (!blogView.scrollTop && !isRefreshing) { 
-                    ptrStartY = e.touches[0].pageY; 
-                    isPtr = true; 
-                    ptrSpinner.style.transition = 'none';
-                } 
-            }, { passive: true }); 
-            blogView.addEventListener('touchmove', e => { 
-                if (!isPtr || isRefreshing) return; 
-                const d = e.touches[0].pageY - ptrStartY; 
-                if (d > 0 && !blogView.scrollTop) { 
-                    if (e.cancelable) e.preventDefault(); 
-                    ptrDist = d; 
-                    const y = Math.min(Math.sqrt(d) * 4, 80); 
-                    Object.assign(ptrSpinner.style, { 
-                        transform: `translateX(-50%) translateY(${y}px) rotate(${y * 2}deg)`, 
-                        opacity: Math.min(y / 40, 1) 
-                    }); 
-                } else { 
-                    isPtr = false; 
-                    ptrSpinner.style.opacity = '0'; 
-                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)';
-                } 
-            }, { passive: false }); 
-            blogView.addEventListener('touchend', async () => { 
-                if (!isPtr || isRefreshing) return; 
-                isPtr = false; 
-                ptrSpinner.style.transition = 'all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)'; 
-                if (ptrDist > 100) { 
-                    isRefreshing = true; 
-                    Object.assign(ptrSpinner.style, { 
-                        transform: 'translateX(-50%) translateY(50px)', 
-                        opacity: '1' 
-                    }); 
-                    ptrSpinner.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-blue-600"></i>'; 
-                    refreshIcons(); 
-                    await new Promise(r => setTimeout(r, 800)); 
-                    renderBlog(); 
-                    showToast("Blog updated"); 
-                    isRefreshing = false; 
-                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; 
-                    ptrSpinner.style.opacity = '0'; 
-                    setTimeout(() => { 
-                        ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5 text-blue-600"></i>'; 
-                        refreshIcons(); 
-                    }, 300);
-                } else { 
-                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)'; 
-                    ptrSpinner.style.opacity = '0';
-                } 
-                ptrDist = 0; 
-            }); 
             blogView.addEventListener('scroll', () => { 
                 const c = blogView.scrollTop, h = document.getElementById('main-header'); 
-                h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)'; 
-                lastScrollTop = Math.max(0, c); 
+                if (h) h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)';
+                lastScrollTop = Math.max(0, c);
             }, { passive: true });
         }
         if (exploreView) exploreView.addEventListener('scroll', () => { const c = exploreView.scrollTop, h = document.getElementById('explore-header-shell'); if (h) { h.style.transform = 'translateY(0)'; } lastExploreScrollTop = Math.max(0, c) }, { passive: true });
