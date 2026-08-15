@@ -6355,7 +6355,7 @@
         window.profileSort = 'latest'; window.isDesktopThreadMode = false;
         window.currentDownloadImages = []; window.selectedDownloadIndices = new Set();
         window.sessionSeenPosts = new Set();
-        window.feedPagination = { cursor: 0, limit: 10, loading: false, hasMore: true, allCandidates: [] };
+        window.feedPagination = { cursor: 0, limit: 1, loading: false, hasMore: true, allCandidates: [] };
         window.exploreSearchState = {
             query: '',
             people: [],
@@ -8073,17 +8073,7 @@
 
             if (window.feedPagination.allCandidates.length === 0) {
                 if (!cachedVisible.length && !hasExistingContent) {
-                    c.innerHTML = `
-                        <div class="flex min-h-[320px] items-center justify-center px-6 py-16 text-center">
-                            <div class="w-full max-w-sm rounded-2xl border border-gray-100 bg-gray-50 p-6">
-                                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-100">
-                                    <i data-lucide="image-off" class="h-7 w-7 text-gray-400"></i>
-                                </div>
-                                <div class="text-base font-bold text-gray-900">No posts yet</div>
-                                <div class="mt-1 text-sm text-gray-500">Follow people or check back later for fresh updates.</div>
-                            </div>
-                        </div>
-                    `;
+                    c.innerHTML = '<div class="text-center py-12 text-gray-400">No posts yet</div>';
                 }
                 window.feedPagination.hasMore = false;
             } else {
@@ -11680,7 +11670,27 @@
                  window.currentProfileVisibleCount = 9; // Reset count for new profile
                  window.isProfileLoadingMore = false; // Reset loading state
              }
-            closePostView(); closeThread(); window.currentViewingProfileId = uid; window.currentProfileTab = tab; const u = users.find(x => x.id === uid); if (!u) return; const c = document.getElementById('view-profile'), profileArea = document.getElementById('profile-content-area'); if (profileArea && (profileArea.innerHTML.trim() === '' || profileArea.innerHTML.includes('animate-pulse'))) { profileArea.innerHTML = `
+            closePostView(); closeThread(); window.currentViewingProfileId = uid; 
+            
+            const u = users.find(x => x.id === uid); if (!u) return;
+            
+            // Smart tab detection: show reposts/tagged if available, otherwise posts
+            if (!tab || tab === 'posts') {
+                const hasReposts = u && u.reposts && u.reposts.length > 0;
+                const hasTagged = posts.filter(p => p.mentions?.includes(uid)).length > 0;
+                const hasPosts = posts.filter(p => p.authorId === uid && !p.archived).length > 0;
+                
+                if (hasReposts) {
+                    tab = 'reposts';
+                } else if (hasTagged) {
+                    tab = 'tagged';
+                } else if (hasPosts) {
+                    tab = 'posts';
+                } else {
+                    tab = 'posts';
+                }
+            }
+            window.currentProfileTab = tab; const c = document.getElementById('view-profile'), profileArea = document.getElementById('profile-content-area'); if (profileArea && (profileArea.innerHTML.trim() === '' || profileArea.innerHTML.includes('animate-pulse'))) { profileArea.innerHTML = `
                 <div class="animate-pulse px-4 pt-5 pb-10">
                     <div class="flex items-center gap-3 mb-5">
                         <div class="w-16 h-16 rounded-full bg-gray-200"></div>
@@ -11991,17 +12001,7 @@
             else if (window.profileSort === 'popular') tp.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
 
             if (tp.length === 0) {
-                c.innerHTML = `
-                    <div class="flex min-h-[260px] items-center justify-center px-6 py-16 text-center">
-                        <div class="w-full max-w-sm rounded-2xl border border-gray-100 bg-gray-50 p-6">
-                            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-100">
-                                <i data-lucide="image-off" class="h-7 w-7 text-gray-400"></i>
-                            </div>
-                            <div class="text-base font-bold text-gray-900">No posts yet</div>
-                            <div class="mt-1 text-sm text-gray-500">This profile has not shared anything yet.</div>
-                        </div>
-                    </div>
-                `;
+                c.innerHTML = '<div class="text-center py-12 text-gray-400">No posts yet</div>';
                 refreshIcons();
                 return;
             }
