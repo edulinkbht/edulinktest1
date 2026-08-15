@@ -269,6 +269,7 @@
 
         img, video {
             -webkit-user-drag: none;
+            user-drag: none;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
@@ -8062,7 +8063,17 @@
 
             if (window.feedPagination.allCandidates.length === 0) {
                 if (!cachedVisible.length && !hasExistingContent) {
-                    c.innerHTML = '';
+                    c.innerHTML = `
+                        <div class="flex min-h-[320px] items-center justify-center px-6 py-16 text-center">
+                            <div class="w-full max-w-sm rounded-2xl border border-gray-100 bg-gray-50 p-6">
+                                <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-100">
+                                    <i data-lucide="image-off" class="h-7 w-7 text-gray-400"></i>
+                                </div>
+                                <div class="text-base font-bold text-gray-900">No posts yet</div>
+                                <div class="mt-1 text-sm text-gray-500">Follow people or check back later for fresh updates.</div>
+                            </div>
+                        </div>
+                    `;
                 }
                 window.feedPagination.hasMore = false;
             } else {
@@ -10289,11 +10300,10 @@
                     ).map(user => user.id);
                 }
 
-                const fullListForSelf = me;
                 // Initialize user list state
                 window.userListState = {
                     allIds: ids,
-                    displayedCount: fullListForSelf ? ids.length : 30,
+                    displayedCount: 10,
                     searchTerm: '',
                     isLoading: false
                 };
@@ -10596,14 +10606,11 @@
                 toggleModalAnim('likes-overlay', 'likes-modal', true); 
                 return; 
             }
-
-            const fullListForSelf = p.authorId === currentUser.id;
-            const initialLikeCount = fullListForSelf ? (p.likes || []).length : 30;
             
             // Initialize likes state
             window.likesState = {
                 allIds: p.likes || [],
-                displayedCount: initialLikeCount,
+                displayedCount: 10,
                 searchTerm: '',
                 isLoading: false
             };
@@ -11974,7 +11981,18 @@
             else if (window.profileSort === 'popular') tp.sort((a, b) => (b.likes?.length || 0) - (a.likes?.length || 0));
 
             if (tp.length === 0) {
-                c.innerHTML = '<div class="text-center py-20 text-gray-400">No posts yet</div>';
+                c.innerHTML = `
+                    <div class="flex min-h-[260px] items-center justify-center px-6 py-16 text-center">
+                        <div class="w-full max-w-sm rounded-2xl border border-gray-100 bg-gray-50 p-6">
+                            <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-gray-100">
+                                <i data-lucide="image-off" class="h-7 w-7 text-gray-400"></i>
+                            </div>
+                            <div class="text-base font-bold text-gray-900">No posts yet</div>
+                            <div class="mt-1 text-sm text-gray-500">This profile has not shared anything yet.</div>
+                        </div>
+                    </div>
+                `;
+                refreshIcons();
                 return;
             }
 
