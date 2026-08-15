@@ -6327,7 +6327,7 @@
     <input type="file" id="grid-upload-input" class="hidden" accept="image/*,video/*"
         onchange="onGridFileSelect(event)">
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"; import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, addDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, writeBatch, increment } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; import { getStorage, ref, uploadString, getDownloadURL, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js"; import { getAuth, onAuthStateChanged, signOut, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js"; import { getFirestore, collection, doc, getDoc, setDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, addDoc, onSnapshot, query, orderBy, where, serverTimestamp, getDocs, writeBatch, increment, limit, startAfter } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js"; import { getStorage, ref, uploadString, getDownloadURL, uploadBytes } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
         const configResponse = await fetch('/api/api');
         const config = await configResponse.json();
         const firebaseConfig = config.firebaseConfig;
@@ -6356,6 +6356,7 @@
         window.currentDownloadImages = []; window.selectedDownloadIndices = new Set();
         window.sessionSeenPosts = new Set();
         window.feedPagination = { cursor: 0, limit: 10, loading: false, hasMore: true, allCandidates: [] };
+        window.homeFeedState = { lastDoc: null, hasMore: true, isLoading: false, pageSize: 10 };
         window.exploreSearchState = {
             query: '',
             people: [],
@@ -7271,8 +7272,44 @@
             const modals = [{ id: 'thread-overlay', close: window.closeThread }, { id: 'comments-overlay', close: window.closeComments }, { id: 'post-view-overlay', close: window.closePostView }, { id: 'edit-profile-overlay', close: window.closeEditProfile }, { id: 'likes-overlay', close: window.closeLikes }, { id: 'user-list-overlay', close: window.closeUserList }, { id: 'feed-filter-overlay', close: window.closeFeedFilter }, { id: 'compose-overlay', close: window.attemptCloseCompose }, { id: 'share-overlay', close: window.closeShareMenu }, { id: 'post-options-overlay', close: window.hidePostMenu }, { id: 'settings-overlay', close: window.closeSettings }, { id: 'notif-options-overlay', close: window.closeNotifOptions }, { id: 'qr-overlay', close: window.closeQR }, { id: 'privacy-overlay', close: window.closePrivacySettings }, { id: 'profile-filter-overlay', close: window.closeProfileFilter }, { id: 'download-select-overlay', close: window.closeDownloadSelect }, { id: 'comment-options-overlay', close: window.closeCommentOptions }, { id: 'create-menu-overlay', close: window.closeCreateMenu }, { id: 'announcement-overlay', close: window.closeAnnouncement }, { id: 'profile-preview-overlay', close: window.closeProfilePreview }, { id: 'claim-link-overlay', close: window.closeClaimOverlay }, { id: 'view-profile', close: () => window.switchView('feed') }]; let closedAny = false; if (e.state && e.state.modal) { } else { for (let m of modals) { const el = document.getElementById(m.id); if (el && !el.classList.contains('hidden') && !el.classList.contains('opacity-0')) { if (m.id === 'view-profile') { if (window.currentViewingProfileId) { window.switchView('feed'); window.currentViewingProfileId = null; closedAny = true } } else if (m.id === 'compose-overlay') { window.closeCompose(); closedAny = true } else if (m.id === 'create-menu-overlay') { window.closeCreateMenu(); closedAny = true } else { m.close(); closedAny = true } if (closedAny) break } } } if (!closedAny) { if (history.length > 1) { history.back(); } else { if (exitAttempt) { } else { window.history.pushState({ root: true }, ""); exitAttempt = true; showToast("Press back again to exit"); setTimeout(() => { exitAttempt = false }, 2000) } } } };
         window.checkUsername = e => { const v = e.value.trim().toLowerCase(), l = v.length; document.getElementById('username-counter').innerText = `${l}/20`; if (l < 3) { document.getElementById('username-error').classList.add('hidden'); return } const t = users.some(u => u.username === v && u.id !== currentUser.id); const err = document.getElementById('username-error'); if (t) { err.innerText = "Username taken"; err.classList.remove('hidden') } else err.classList.add('hidden') };
         window.saveUsername = async () => { const v = document.getElementById('new-username-input').value.trim().toLowerCase(); if (v.length < 3 || v.length > 20 || /\s/.test(v) || !/^[a-z0-9_.]+$/.test(v)) return showToast("Invalid username", true); if (!(await getDocs(query(collection(db, "users"), where("username", "==", v)))).empty) return showToast("Taken", true); await updateDoc(doc(db, "users", currentUser.id), { username: v }); currentUser.username = v; document.getElementById('username-modal').classList.add('hidden'); showToast("Username set!") };
+        window.loadHomePostsPage = async (append = false) => {
+            if (window.homeFeedState.isLoading || (!append && !window.homeFeedState.hasMore)) return;
+            window.homeFeedState.isLoading = true;
+
+            try {
+                let qRef = query(collection(db, "posts"), orderBy("timestamp", "desc"), limit(window.homeFeedState.pageSize));
+                if (append && window.homeFeedState.lastDoc) {
+                    qRef = query(collection(db, "posts"), orderBy("timestamp", "desc"), startAfter(window.homeFeedState.lastDoc), limit(window.homeFeedState.pageSize));
+                }
+
+                const snap = await getDocs(qRef);
+                const nextPosts = snap.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().timestamp || d.data().createdAt || Date.now() }));
+
+                if (append) {
+                    const existing = new Set(posts.map(p => p.id));
+                    const merged = [...posts];
+                    nextPosts.forEach(p => { if (!existing.has(p.id)) merged.push(p); });
+                    posts = merged;
+                } else {
+                    posts = nextPosts;
+                }
+
+                window.homeFeedState.lastDoc = snap.docs[snap.docs.length - 1] || null;
+                window.homeFeedState.hasMore = snap.docs.length === window.homeFeedState.pageSize;
+
+                if (window.currentViewName === 'feed') {
+                    renderFeed();
+                }
+            } catch (error) {
+                console.error('loadHomePostsPage error:', error);
+            } finally {
+                window.homeFeedState.isLoading = false;
+            }
+        };
+
         function initRealtimeListeners() {
             let initialUsersLoaded = false;
+
             onSnapshot(collection(db, "users"), s => {
                 users = s.docs.map(d => ({ id: d.id, ...d.data() }));
                 const me = users.find(u => u.id === currentUser.id);
@@ -7283,7 +7320,7 @@
                     if (sidebar && sidebar.classList.contains('active')) renderNotificationSidebar();
                 }
                 if (me && me.banned) { document.getElementById('banned-overlay').classList.remove('hidden') }
-                
+
                 if (!initialUsersLoaded && users.length > 0) {
                     initialUsersLoaded = true;
                     window.checkFriendBirthdays();
@@ -7292,7 +7329,6 @@
                     showProfile(window.pendingProfileUid);
                     window.pendingProfileUid = null;
                 }
-                // Handle pending profile by username (from /profile/username URL)
                 if (window.pendingProfileUsername) {
                     const targetUser = users.find(u => (u.username || '').toLowerCase() === window.pendingProfileUsername.toLowerCase());
                     if (targetUser) {
@@ -7301,144 +7337,57 @@
                         window.pendingProfileTab = null;
                     }
                 }
-                // Removed automatic renderNetwork() and renderProfileContent() from generic user updates to prevent jumps
                 if (!document.getElementById('privacy-overlay').classList.contains('hidden')) {
                     const u = users.find(x => x.id === currentUser.id);
                     if (u && u.settings) {
                         const pt = document.getElementById('toggle-privacy-main'), ht = document.getElementById('toggle-hide-connections');
                         if (u.settings.privateNetwork) pt.classList.add('active'); else pt.classList.remove('active');
-                        if (u.settings.hideConnections) ht.classList.add('active'); else ht.classList.remove('active')
+                        if (u.settings.hideConnections) ht.classList.add('active'); else ht.classList.remove('active');
                     }
                 }
                 if (document.getElementById('notification-sidebar')?.classList.contains('active')) {
                     renderNotificationSidebar();
                 }
-                refreshIcons()
+                refreshIcons();
             });
+
             onSnapshot(doc(db, "global", "promo"), s => {
                 const sec = document.getElementById('promo-section');
                 const promoImg = document.getElementById('promo-image');
                 const promoLink = document.getElementById('promo-link');
-                
+
                 if (s.exists() && s.data().imageUrl) {
                     sec.classList.remove('hidden');
                     promoImg.src = s.data().imageUrl;
                     promoLink.href = s.data().linkUrl || '#';
                 } else {
-                    // Default fallback if no custom promo is set
                     sec.classList.remove('hidden');
                     promoImg.src = 'https://images.unsplash.com/photo-1611162617474-5b21e879e113?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80';
                     promoLink.href = 'https://www.threads.net';
                 }
             });
-            onSnapshot(query(collection(db, "posts"), orderBy("timestamp", "desc")), { includeMetadataChanges: true }, s => {
-                const oldPosts = [...posts];
-                posts = s.docs.map(d => ({ id: d.id, ...d.data(), timestamp: d.data().timestamp }));
-                const ch = s.docChanges();
-                ch.filter(c => c.type === 'removed').forEach(c => {
-                    document.querySelectorAll(`[id*='post-card-'][id$='-${c.doc.id}']`).forEach(el => el.remove())
-                });
 
-                // Targeted in-place updates for existing posts
-                posts.forEach(p => {
-                    const isLiked = p.likes && p.likes.includes(currentUser.id);
-                    document.querySelectorAll(`.js-like-btn-${p.id}`).forEach(b => {
-                        b.classList.toggle('active', isLiked);
-                        const icon = b.querySelector('i');
-                        if (icon) {
-                            icon.classList.toggle('fill-red-500', isLiked);
-                            icon.classList.toggle('text-red-500', isLiked);
-                        }
-                    });
-                    document.querySelectorAll(`.js-like-count-${p.id}`).forEach(el => el.innerText = p.likes?.length || 0);
-                    document.querySelectorAll(`.js-comment-count-${p.id}`).forEach(el => el.innerText = p.comments?.length || 0);
-                    const isSaved = savedPosts.includes(p.id);
-                    document.querySelectorAll(`.js-save-btn-${p.id}`).forEach(b => b.classList.toggle('active', isSaved));
-                    
-                    // Targeted in-place updates for comments of this post
-                    if (p.comments) {
-                        p.comments.forEach(c => {
-                            const isCLiked = c.likes && c.likes.includes(currentUser.id);
-                            document.querySelectorAll(`.js-comment-like-btn-${c.id}`).forEach(b => {
-                                b.classList.toggle('active', isCLiked);
-                                const icon = b.querySelector('i');
-                                if (icon) {
-                                    icon.classList.toggle('fill-red-500', isCLiked);
-                                    icon.classList.toggle('text-red-500', isCLiked);
-                                }
-                            });
-                            document.querySelectorAll(`.js-comment-like-count-${c.id}`).forEach(el => el.innerText = c.likes?.length || 0);
-                        });
-                    }
+            // Initial lightweight post load: only the first 10 posts until the user reaches the next batch.
+            window.loadHomePostsPage(false);
 
-                    // Only update body if content changed (prevents flicker)
-                    const oldP = oldPosts.find(x => x.id === p.id);
-                    if (!oldP || oldP.content !== p.content) {
-                        document.querySelectorAll(`.js-post-body-${p.id}`).forEach(el => el.innerHTML = window.renderTextWithReadMore(p.content, `post-${p.id}`));
-                    }
-                });
+            if (window.currentViewName === 'feed') {
+                const c = document.getElementById('feed-container');
+                if (c && c.children.length === 0) renderFeed();
+            }
 
-                // Interaction specifically for current post view
-                if (window.currentViewingPostId) {
-                    const cp = posts.find(p => p.id === window.currentViewingPostId);
-                    const oldP = oldPosts.find(p => p.id === window.currentViewingPostId);
-                    if (cp) {
-                        // Check if only likes changed (to avoid full re-render)
-                        const onlyLikesChanged = oldP && oldP.comments && cp.comments && 
-                                                oldP.comments.length === cp.comments.length &&
-                                                oldP.comments.every((c, i) => c.id === cp.comments[i].id && c.content === cp.comments[i].content);
+            if (window.currentViewName === 'saved') {
+                const c = document.getElementById('saved-container');
+                if (c && (c.children.length === 0 || c.innerHTML.includes('No saved posts'))) renderSaved();
+            } else if (window.currentViewName === 'blog') {
+                const c = document.getElementById('blog-results');
+                if (c && (c.children.length === 0 || c.innerHTML.includes('No text posts yet'))) renderBlog();
+            } else if (window.currentViewName === 'profile' && window.currentViewingProfileId) {
+                const c = document.getElementById('profile-content-area');
+                if (c && (c.children.length === 0 || c.innerHTML.includes('No posts yet'))) renderProfileContent(window.currentViewingProfileId, window.currentProfileTab);
+            }
 
-                        if (!oldP || (JSON.stringify(oldP.comments) !== JSON.stringify(cp.comments) && !onlyLikesChanged)) {
-                            if (window.isDesktopThreadMode) renderDesktopThread(window.threadPostId, window.threadParentCommentId);
-                            else renderCommentsInModal(window.currentViewingPostId);
-                        }
-                        updatePostViewStats(window.currentViewingPostId)
-                    } else closePostView()
-                }
+            setTimeout(refreshIcons, 5);
 
-                if (window.threadPostId && !window.isDesktopThreadMode) {
-                    const tp = posts.find(p => p.id === window.threadPostId);
-                    const oldTp = oldPosts.find(p => p.id === window.threadPostId);
-                    if (tp && (JSON.stringify(oldTp?.comments) !== JSON.stringify(tp.comments))) {
-                         const onlyLikesChanged = oldTp && oldTp.comments && tp.comments && 
-                                                oldTp.comments.length === tp.comments.length &&
-                                                oldTp.comments.every((c, i) => c.id === tp.comments[i].id && c.content === tp.comments[i].content);
-                        if (!onlyLikesChanged) renderThreadContent(window.threadPostId, window.threadParentCommentId);
-                    }
-                }
-
-                if (window.currentPostIdForComments) {
-                    const cp = posts.find(p => p.id === window.currentPostIdForComments);
-                    const oldCp = oldPosts.find(p => p.id === window.currentPostIdForComments);
-                    if (cp && (JSON.stringify(oldCp?.comments) !== JSON.stringify(cp.comments))) {
-                         const onlyLikesChanged = oldCp && oldCp.comments && cp.comments && 
-                                                oldCp.comments.length === cp.comments.length &&
-                                                oldCp.comments.every((c, i) => c.id === cp.comments[i].id && c.content === cp.comments[i].content);
-                        if (!onlyLikesChanged) renderOverlayComments(window.currentPostIdForComments);
-                    }
-                }
-
-                // Ensure current view is populated if data just arrived or was missing
-                if (posts.length > 0) {
-                    const v = window.currentViewName;
-                    if (v === 'feed') {
-                        const c = document.getElementById('feed-container');
-                        if (c && c.children.length === 0) renderFeed();
-                    } else if (v === 'saved') {
-                        const c = document.getElementById('saved-container');
-                        if (c && (c.children.length === 0 || c.innerHTML.includes('No saved posts'))) renderSaved();
-                    } else if (v === 'blog') {
-                        const c = document.getElementById('blog-results');
-                        if (c && (c.children.length === 0 || c.innerHTML.includes('No text posts yet'))) renderBlog();
-                    } else if (v === 'profile' && window.currentViewingProfileId) {
-                        const c = document.getElementById('profile-content-area');
-                        if (c && (c.children.length === 0 || c.innerHTML.includes('No posts yet'))) renderProfileContent(window.currentViewingProfileId, window.currentProfileTab);
-                    }
-                }
-
-                // renderRightSidebar() call removed from here to prevent tweaks on post updates
-                setTimeout(refreshIcons, 5)
-            });
             onSnapshot(query(collection(db, "notifications"), where("receiverId", "==", currentUser.id)), s => {
                 notifications = s.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.timestamp?.toDate?.() || 0) - (a.timestamp?.toDate?.() || 0));
                 window.notifications = notifications;
@@ -7446,13 +7395,13 @@
                 if (sidebar && sidebar.classList.contains('active')) renderNotificationSidebar();
                 window.updateNotificationBadges();
                 if (!document.getElementById('view-notifications').classList.contains('hidden')) renderNotifications();
-                refreshIcons()
-            })
+                refreshIcons();
+            });
 
             onSnapshot(query(collection(db, "notifications"), where("senderId", "==", currentUser.id), where("type", "==", "follow_request")), s => {
                 window.outgoingFollowRequests = s.docs.map(d => ({ id: d.id, ...d.data() }));
                 refreshIcons();
-            })
+            });
         }
 
         window.openPromoModal = e => { if (e) { e.stopPropagation(); e.preventDefault() } document.getElementById('promo-modal').classList.remove('hidden'); const i = document.getElementById('promo-image'), l = document.getElementById('promo-link'); if (i.src) document.getElementById('promo-img-url').value = i.src; if (l.href) document.getElementById('promo-target-url').value = l.href };
@@ -8088,6 +8037,9 @@
             }
             refreshIcons();
         };
+
+        window.getPostLikeCount = p => Number(p?.likeCount ?? p?.likes?.length ?? 0);
+        window.getPostCommentCount = p => Number(p?.commentCount ?? p?.comments?.length ?? 0);
 
         window.isUploadedVideoPost = (p) => {
             if (!p || !p.media) return false;
@@ -9410,8 +9362,8 @@
                           </div>`;
                 }
             } const isLiked = p.likes?.includes(currentUser.id), isSaved = savedPosts.includes(p.id); 
-            const likeText = p.likes?.length || 0; 
-            const commentText = p.comments?.length || 0; 
+            const likeText = window.getPostLikeCount(p);
+            const commentText = window.getPostCommentCount(p);
             let rightActionBtn = '';
             if (p.claimLink) {
                 rightActionBtn = `<button class="action-btn text-black border-gray-100 bg-gray-50 hover:bg-gray-100" onclick="event.stopPropagation(); confirmAndOpenLink('${p.claimLink}')"><i data-lucide="shopping-bag" class="w-4 h-4"></i> Claim</button>`;
@@ -10420,7 +10372,7 @@
         window.toggleLike = async (pid, forceLike = false) => { 
             const r = doc(db, "posts", pid), p = posts.find(x => x.id === pid); 
             if (!p) return;
-            if (!p.likes) p.likes = [];
+            if (!Array.isArray(p.likes)) p.likes = [];
             const wasLiked = p.likes.includes(currentUser.id);
 
             if (forceLike && wasLiked) {
@@ -10436,14 +10388,15 @@
             const isLiking = !wasLiked;
             document.querySelectorAll(`.js-like-btn-${pid}`).forEach(b => b.classList.toggle('active', isLiking)); 
             
+            const nextLikeCount = window.getPostLikeCount(p) + (wasLiked ? -1 : 1);
+            p.likeCount = Math.max(0, nextLikeCount);
             if (wasLiked) {
                 p.likes = p.likes.filter(id => id !== currentUser.id);
-                await updateDoc(r, { likes: arrayRemove(currentUser.id) });
+                await updateDoc(r, { likeCount: increment(-1) });
             } else {
-                p.likes.push(currentUser.id);
-                await updateDoc(r, { likes: arrayUnion(currentUser.id) });
+                if (!p.likes.includes(currentUser.id)) p.likes.push(currentUser.id);
+                await updateDoc(r, { likeCount: increment(1) });
                 if (p.authorId !== currentUser.id) sendNotification(p.authorId, 'like', 'liked your post', pid); 
-                // Notify reposters
                 users.filter(u => u.reposts?.includes(pid)).forEach(rep => {
                     if (rep.id !== currentUser.id && rep.id !== p.authorId) {
                         sendNotification(rep.id, 'repost_like', 'liked the post you reposted', pid);
@@ -10451,8 +10404,7 @@
                 });
             }
             
-            // Update all like counts
-            const newLikeCount = p.likes.length;
+            const newLikeCount = window.getPostLikeCount(p);
             document.querySelectorAll(`.js-like-count-${pid}`).forEach(el => { let t = el.innerText; let c = parseInt(t); if (isNaN(c)) c = 0; el.innerText = newLikeCount === 0 ? 'Like' : newLikeCount }); 
             
             // Update overlay and mobile overlay like buttons
@@ -10611,9 +10563,12 @@
                 return; 
             }
             
-            // Initialize likes state
+            // Only hydrate the actual like-user list when the user opens the overlay.
+            if (!Array.isArray(p.likes)) {
+                p.likes = [];
+            }
             window.likesState = {
-                allIds: p.likes || [],
+                allIds: p.likes.slice(0, 50),
                 displayedCount: 10,
                 searchTerm: '',
                 isLoading: false
@@ -13496,6 +13451,7 @@
             };
             const p = posts.find(x => x.id === pid);
             if (!p) return;
+            if (!Array.isArray(p.comments)) p.comments = [];
             renderOverlayComments(pid);
             toggleModalAnim('comments-overlay', 'comments-modal', true);
             document.getElementById('comments-overlay-input-avatar').src = currentUser.avatar;
@@ -13536,7 +13492,8 @@
                 };
             }
 
-            let comments = (p.comments || []).filter(c => !c.parentId);
+            const commentList = Array.isArray(p.comments) ? p.comments : [];
+            let comments = commentList.filter(c => !c.parentId);
             if (window.commentOverlayState.searchTerm) {
                 const term = window.commentOverlayState.searchTerm.toLowerCase();
                 comments = comments.filter(c => {
@@ -13552,7 +13509,7 @@
             if (displayList.length === 0) {
                 container.innerHTML = '<div class="flex flex-col items-center justify-center h-full text-gray-400 py-20"><i data-lucide="message-circle" class="w-12 h-12 mb-4 opacity-20"></i><p class="font-medium">No comments yet</p><p class="text-xs">Be the first to share what you think!</p></div>';
             } else {
-                let html = displayList.map(c => createCommentHTML(c, pid, (p.comments || []).filter(r => r.parentId === c.id).length)).join('');
+                let html = displayList.map(c => createCommentHTML(c, pid, commentList.filter(r => r.parentId === c.id).length)).join('');
                 if (window.commentOverlayState.hasMore) {
                     html += '<div class="px-4 py-4 text-center text-sm text-gray-500">Scroll to load more comments...</div>';
                 }
