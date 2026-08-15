@@ -269,7 +269,7 @@
 
         img, video {
             -webkit-user-drag: none;
-            user-drag: none;
+            -webkit-touch-callout: none;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
@@ -3387,36 +3387,33 @@
         }
 
         #ptr-spinner {
-            position: sticky;
-            top: 64px;
+            position: absolute;
+            top: 70px;
             left: 50%;
-            width: 28px;
-            height: 28px;
-            margin: 0 auto 8px auto;
-            background: rgba(255,255,255,0.88);
+            transform: translateX(-50%) translateY(-20px);
+            width: 40px;
+            height: 40px;
+            background: #f3f4f6;
             border-radius: 50%;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, .1);
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 12;
+            z-index: 15;
             opacity: 0;
             pointer-events: none;
-            transition: opacity .2s ease;
-            backdrop-filter: blur(4px);
+            transition: transform .2s, opacity .2s;
+            color: #000000;
+            border: 1px solid #e5e7eb;
         }
 
-        #ptr-spinner .ptr-loader {
-            width: 22px;
-            height: 22px;
-            border-radius: 9999px;
-            border: 2px solid #e5e7eb;
-            border-top-color: #374151;
-            border-right-color: #374151;
-            animation: ptr-spin .8s linear infinite;
+        #ptr-spinner.visible {
+            opacity: 1;
         }
 
-        @keyframes ptr-spin {
-            to { transform: rotate(360deg); }
+        #ptr-spinner.refreshing {
+            background: #ffffff;
+            border-color: #d1d5db;
         }
 
         @media(max-width:768px) {
@@ -5545,8 +5542,8 @@
                     </div>
                 </div>
             </header>
+            <div id="ptr-spinner"><i data-lucide="arrow-down" class="w-5 h-5"></i></div>
             <div id="view-feed" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20 pb-24 md:pb-20">
-                <div id="ptr-spinner"><div class="ptr-loader"></div></div>
                 <div id="feed-container"></div>
                 <div id="feed-sentinel" class="h-12 flex items-center justify-center">
                     <div id="feed-loader" class="hidden py-2">
@@ -6780,59 +6777,53 @@
         window.commentSearchTerm = ''; window.isCommentSearchOpen = false;
         window.currentClaimLink = null;
         const feedView = document.getElementById('view-feed'), exploreView = document.getElementById('view-explore'), blogView = document.getElementById('view-blog'), ptrSpinner = document.getElementById('ptr-spinner'), refreshIcons = () => window.lucide?.createIcons();
-        const setupPullToRefresh = () => {
-            if (!feedView || !ptrSpinner) return;
-
-            let pullStartY = 0;
-            let pullDistance = 0;
-            let isPulling = false;
-
-            const updatePTR = () => {
-                const progress = Math.min(1, pullDistance / 90);
-                ptrSpinner.style.opacity = pullDistance > 0 ? '1' : '0';
-                const loader = ptrSpinner.querySelector('.ptr-loader');
-                if (loader) loader.style.transform = `scale(${0.8 + (progress * 0.8)})`;
-            };
-
-            feedView.addEventListener('touchstart', (event) => {
-                if (window.currentViewName !== 'feed' || feedView.scrollTop > 0 || window.homeFeedState.isLoading) return;
-                pullStartY = event.touches[0].clientY;
-                pullDistance = 0;
-                isPulling = true;
-            }, { passive: true });
-
-            feedView.addEventListener('touchmove', (event) => {
-                if (!isPulling || window.currentViewName !== 'feed' || feedView.scrollTop > 0) return;
-                const delta = event.touches[0].clientY - pullStartY;
-                if (delta <= 0) return;
-                pullDistance = Math.min(120, delta);
-                event.preventDefault();
-                updatePTR();
-            }, { passive: false });
-
-            const finishPull = async () => {
-                if (!isPulling) return;
-                isPulling = false;
-                if (pullDistance > 60 && !window.homeFeedState.isLoading) {
-                    await window.refreshHomeFeed();
-                }
-                pullDistance = 0;
-                const loader = ptrSpinner.querySelector('.ptr-loader');
-                if (loader) loader.style.transform = 'scale(1)';
-                ptrSpinner.style.opacity = '0';
-            };
-
-            feedView.addEventListener('touchend', finishPull, { passive: true });
-            feedView.addEventListener('touchcancel', finishPull, { passive: true });
-        };
-
-        setupPullToRefresh();
-
         if (feedView) { 
             feedView.addEventListener('scroll', () => { 
                 const c = feedView.scrollTop, h = document.getElementById('main-header'); 
                 if (h) h.style.transform = c > lastScrollTop && c > 60 ? 'translateY(-100%)' : 'translateY(0)';
                 lastScrollTop = Math.max(0, c);
+                if (c <= 0 && ptrSpinner && ptrSpinner.classList.contains('visible')) {
+                    ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)';
+                }
+            }, { passive: true });
+
+            feedView.addEventListener('touchstart', (event) => {
+                if (feedView.scrollTop > 0 || window.homeFeedState.isLoading || window.homeFeedState.refreshing) return;
+                ptrStartY = event.touches[0].clientY;
+                isPtr = true;
+            }, { passive: true });
+
+            feedView.addEventListener('touchmove', (event) => {
+                if (!isPtr || feedView.scrollTop > 0) return;
+                const delta = event.touches[0].clientY - ptrStartY;
+                if (delta <= 0) return;
+                ptrDist = Math.min(delta * 0.6, 96);
+                const lift = Math.max(0, ptrDist - 20);
+                if (ptrSpinner) {
+                    ptrSpinner.classList.add('visible');
+                    ptrSpinner.style.transform = `translateX(-50%) translateY(${lift}px)`;
+                    ptrSpinner.style.opacity = '1';
+                }
+                if (event.cancelable) event.preventDefault();
+            }, { passive: false });
+
+            feedView.addEventListener('touchend', () => {
+                if (!isPtr) return;
+                const shouldRefresh = ptrDist > 56;
+                ptrDist = 0;
+                isPtr = false;
+                if (ptrSpinner) {
+                    ptrSpinner.classList.remove('refreshing');
+                    if (shouldRefresh) {
+                        ptrSpinner.classList.add('refreshing');
+                        ptrSpinner.innerHTML = '<div class="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-800"></div>';
+                        window.refreshHomeFeed();
+                    } else {
+                        ptrSpinner.classList.remove('visible');
+                        ptrSpinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5"></i>';
+                        ptrSpinner.style.transform = 'translateX(-50%) translateY(-20px)';
+                    }
+                }
             }, { passive: true });
         }
         if (blogView) { 
@@ -7333,6 +7324,44 @@
             const modals = [{ id: 'thread-overlay', close: window.closeThread }, { id: 'comments-overlay', close: window.closeComments }, { id: 'post-view-overlay', close: window.closePostView }, { id: 'edit-profile-overlay', close: window.closeEditProfile }, { id: 'likes-overlay', close: window.closeLikes }, { id: 'user-list-overlay', close: window.closeUserList }, { id: 'feed-filter-overlay', close: window.closeFeedFilter }, { id: 'compose-overlay', close: window.attemptCloseCompose }, { id: 'share-overlay', close: window.closeShareMenu }, { id: 'post-options-overlay', close: window.hidePostMenu }, { id: 'settings-overlay', close: window.closeSettings }, { id: 'notif-options-overlay', close: window.closeNotifOptions }, { id: 'qr-overlay', close: window.closeQR }, { id: 'privacy-overlay', close: window.closePrivacySettings }, { id: 'profile-filter-overlay', close: window.closeProfileFilter }, { id: 'download-select-overlay', close: window.closeDownloadSelect }, { id: 'comment-options-overlay', close: window.closeCommentOptions }, { id: 'create-menu-overlay', close: window.closeCreateMenu }, { id: 'announcement-overlay', close: window.closeAnnouncement }, { id: 'profile-preview-overlay', close: window.closeProfilePreview }, { id: 'claim-link-overlay', close: window.closeClaimOverlay }, { id: 'view-profile', close: () => window.switchView('feed') }]; let closedAny = false; if (e.state && e.state.modal) { } else { for (let m of modals) { const el = document.getElementById(m.id); if (el && !el.classList.contains('hidden') && !el.classList.contains('opacity-0')) { if (m.id === 'view-profile') { if (window.currentViewingProfileId) { window.switchView('feed'); window.currentViewingProfileId = null; closedAny = true } } else if (m.id === 'compose-overlay') { window.closeCompose(); closedAny = true } else if (m.id === 'create-menu-overlay') { window.closeCreateMenu(); closedAny = true } else { m.close(); closedAny = true } if (closedAny) break } } } if (!closedAny) { if (history.length > 1) { history.back(); } else { if (exitAttempt) { } else { window.history.pushState({ root: true }, ""); exitAttempt = true; showToast("Press back again to exit"); setTimeout(() => { exitAttempt = false }, 2000) } } } };
         window.checkUsername = e => { const v = e.value.trim().toLowerCase(), l = v.length; document.getElementById('username-counter').innerText = `${l}/20`; if (l < 3) { document.getElementById('username-error').classList.add('hidden'); return } const t = users.some(u => u.username === v && u.id !== currentUser.id); const err = document.getElementById('username-error'); if (t) { err.innerText = "Username taken"; err.classList.remove('hidden') } else err.classList.add('hidden') };
         window.saveUsername = async () => { const v = document.getElementById('new-username-input').value.trim().toLowerCase(); if (v.length < 3 || v.length > 20 || /\s/.test(v) || !/^[a-z0-9_.]+$/.test(v)) return showToast("Invalid username", true); if (!(await getDocs(query(collection(db, "users"), where("username", "==", v)))).empty) return showToast("Taken", true); await updateDoc(doc(db, "users", currentUser.id), { username: v }); currentUser.username = v; document.getElementById('username-modal').classList.add('hidden'); showToast("Username set!") };
+        window.refreshHomeFeed = async () => {
+            if (window.homeFeedState.isLoading || window.homeFeedState.refreshing) return;
+            window.homeFeedState.refreshing = true;
+            const spinner = document.getElementById('ptr-spinner');
+            if (spinner) {
+                spinner.classList.add('visible', 'refreshing');
+                spinner.innerHTML = '<div class="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-gray-800"></div>';
+            }
+
+            try {
+                window.feedPagination.cursor = 0;
+                window.feedPagination.hasMore = true;
+                window.feedPagination.loading = false;
+                window.homeFeedState.lastDoc = null;
+                window.homeFeedState.hasMore = true;
+
+                const feedContainer = document.getElementById('feed-container');
+                if (feedContainer) {
+                    feedContainer.innerHTML = '';
+                }
+
+                await window.loadHomePostsPage(false);
+                if (window.currentViewName === 'feed' && (!posts || !posts.length)) {
+                    const c = document.getElementById('feed-container');
+                    if (c) c.innerHTML = '<div class="text-center py-12 text-gray-400">No posts yet</div>';
+                }
+            } finally {
+                if (spinner) {
+                    spinner.classList.remove('refreshing');
+                    spinner.classList.remove('visible');
+                    spinner.innerHTML = '<i data-lucide="arrow-down" class="w-5 h-5"></i>';
+                    spinner.style.transform = 'translateX(-50%) translateY(-20px)';
+                    refreshIcons();
+                }
+                window.homeFeedState.refreshing = false;
+            }
+        };
+
         window.loadHomePostsPage = async (append = false) => {
             if (window.homeFeedState.isLoading || (!append && !window.homeFeedState.hasMore)) return;
             window.homeFeedState.isLoading = true;
@@ -7352,7 +7381,8 @@
                     nextPosts.forEach(p => { if (!existing.has(p.id)) merged.push(p); });
                     posts = merged;
                 } else {
-                    posts = nextPosts;
+                    const keepExisting = nextPosts.length === 0 && Array.isArray(posts) && posts.length > 0;
+                    posts = keepExisting ? posts : nextPosts;
                 }
 
                 window.homeFeedState.lastDoc = snap.docs[snap.docs.length - 1] || null;
@@ -8054,40 +8084,6 @@
                 </div>
             </div>
         `;
-        window.refreshHomeFeed = async () => {
-            const c = document.getElementById('feed-container');
-            if (!c) return;
-            const loader = document.getElementById('feed-loader');
-            const spinner = document.getElementById('ptr-spinner');
-            if (spinner) spinner.style.opacity = '1';
-            if (loader) loader.classList.remove('hidden');
-
-            const holdCurrent = c.innerHTML;
-            c.innerHTML = window.getFeedSkeleton ? window.getFeedSkeleton() : '<div class="p-4 space-y-3 animate-pulse">...</div>';
-            c.style.background = '#f9fafb';
-            c.style.minHeight = '200px';
-            window.homeFeedState.lastDoc = null;
-            window.homeFeedState.hasMore = true;
-            window.homeFeedState.isLoading = true;
-            window.feedPagination.cursor = 0;
-            window.feedPagination.hasMore = true;
-            window.feedPagination.loading = false;
-            window.feedPagination.allCandidates = [];
-            posts = [];
-            try {
-                await window.loadHomePostsPage(false);
-                if (c.children.length === 0 && !holdCurrent) {
-                    c.innerHTML = '';
-                }
-            } finally {
-                window.homeFeedState.isLoading = false;
-                c.style.background = '';
-                c.style.minHeight = '';
-                if (loader) loader.classList.add('hidden');
-                if (spinner) spinner.style.opacity = '0';
-            }
-        };
-
         window.renderFeed = async (t) => {
             const c = document.getElementById('feed-container');
             if (!c) return;
@@ -8095,7 +8091,7 @@
             const hasExistingContent = c.children.length > 0 || c.innerHTML.trim().length > 0;
             const cachedVisible = (posts || []).filter(p => window.canSeePost ? window.canSeePost(p) : true).slice(0, 5);
 
-            if (!hasExistingContent && !window.feedPagination.loading) {
+            if (!hasExistingContent && !window.feedPagination.loading && !window.homeFeedState.refreshing) {
                 c.innerHTML = window.getFeedSkeleton();
             }
 
@@ -8120,7 +8116,9 @@
             window.currentViewingPostList = window.feedPagination.allCandidates;
 
             if (window.feedPagination.allCandidates.length === 0) {
-                c.innerHTML = '';
+                if (!cachedVisible.length && !hasExistingContent && !window.homeFeedState.refreshing) {
+                    c.innerHTML = '<div class="text-center py-12 text-gray-400">No posts yet</div>';
+                }
                 window.feedPagination.hasMore = false;
             } else {
                 if (!hasExistingContent || c.children.length === 0) {
