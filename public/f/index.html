@@ -4,22 +4,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Instagram Web UI</title>
-  <!-- Google Font & Lucide Icons -->
+  <!-- Google Fonts & Lucide Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    /* HIDE ALL SCROLLBARS WHILE KEEPING SCROLL FUNCTIONALITY */
+    /* Hide scrollbars globally across browsers while preserving scroll */
     * {
-      -ms-overflow-style: none;  /* IE and Edge */
-      scrollbar-width: none;  /* Firefox */
+      -ms-overflow-style: none;
+      scrollbar-width: none;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
     }
     *::-webkit-scrollbar {
-      display: none; /* Chrome, Safari, Opera */
+      display: none;
     }
 
     html, body {
@@ -33,7 +33,7 @@
       overflow-x: hidden;
     }
 
-    /* Fixed Top Navigation Bar */
+    /* Fixed Top Header */
     header {
       position: fixed;
       top: 0;
@@ -63,7 +63,7 @@
       align-items: center;
     }
 
-    /* Pull to Refresh Hidden Spinner Gap */
+    /* Pull to Refresh Hidden Gap */
     .refresh-gap {
       position: fixed;
       top: 52px;
@@ -98,7 +98,7 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Scrollable Feed Container */
+    /* Feed Container */
     .feed-container {
       margin-top: 52px;
       margin-bottom: 50px;
@@ -132,8 +132,8 @@
     }
 
     .story-ring {
-      width: 68px;
-      height: 68px;
+      width: 66px;
+      height: 66px;
       border-radius: 50%;
       background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
       padding: 2.5px;
@@ -175,7 +175,7 @@
       font-weight: bold;
     }
 
-    /* Post Layout */
+    /* Edge-To-Edge Post Cards */
     .post-card {
       border-bottom: 1px solid #efefef;
       padding-bottom: 14px;
@@ -205,34 +205,47 @@
       border: 1px solid #efefef;
     }
 
+    /* Edge-To-Edge Media */
     .post-media-wrapper {
       width: 100%;
-      padding: 0 10px;
+      padding: 0; /* Fully edge-to-edge */
     }
 
     .post-image {
       width: 100%;
       height: 420px;
       object-fit: cover;
-      border-radius: 14px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+      border-radius: 0; /* Sharp edge-to-edge frame */
+      display: block;
     }
 
+    /* Action bar with counts beside icons */
     .post-actions {
       display: flex;
       justify-content: space-between;
-      padding: 10px 14px 4px 14px;
+      align-items: center;
+      padding: 10px 14px 6px 14px;
     }
 
     .action-group {
       display: flex;
-      gap: 14px;
+      align-items: center;
+      gap: 18px;
+    }
+
+    .action-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      color: #000000;
     }
 
     .icon-btn {
       background: none;
       border: none;
-      padding: 4px;
+      padding: 2px;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -248,11 +261,9 @@
     .icon-btn.liked {
       color: #ff3040;
     }
-
     .icon-btn.liked i {
       fill: #ff3040;
     }
-
     .icon-btn.bookmarked i {
       fill: #000;
     }
@@ -260,11 +271,6 @@
     .post-details {
       padding: 0 14px;
       font-size: 13px;
-    }
-
-    .likes-count {
-      font-weight: 600;
-      margin-bottom: 6px;
     }
 
     .caption {
@@ -306,137 +312,178 @@
       border: 1px solid #262626;
     }
 
-    /* FULLSCREEN EDGE-TO-EDGE STORY VIEWER */
+    /* Interactive Story Overlay Viewer */
     .story-modal {
       position: fixed;
       inset: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: #000000;
+      background: #000000;
       z-index: 1000;
       display: none;
-      overflow: hidden;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       touch-action: none;
-      transition: background-color 0.2s ease;
     }
 
     .story-modal.active {
-      display: block;
+      display: flex;
     }
 
-    /* Container that drags down */
-    .story-modal-content {
-      width: 100%;
-      height: 100%;
+    .story-card {
       position: relative;
-      overflow: hidden;
-      will-change: transform;
-      background: #000000;
-    }
-
-    .story-image {
-      width: 100vw;
+      width: 100%;
       height: 100vh;
-      object-fit: cover;
-      display: block;
-    }
-
-    /* Story Overlay Top Controls */
-    .story-top-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      padding: 12px 14px 30px;
-      background: linear-gradient(180deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 100%);
-      z-index: 10;
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      will-change: transform;
     }
 
-    .story-progress-container {
-      display: flex;
-      gap: 4px;
-      width: 100%;
-    }
-
-    .story-progress-segment {
-      flex: 1;
-      height: 2.5px;
+    .story-progress-bar {
+      position: absolute;
+      top: 16px;
+      left: 12px;
+      right: 12px;
+      height: 3px;
       background: rgba(255, 255, 255, 0.35);
-      border-radius: 2px;
+      border-radius: 4px;
       overflow: hidden;
+      z-index: 1001;
     }
 
     .story-progress-fill {
       height: 100%;
       width: 0%;
-      background: #ffffff;
+      background: #fff;
     }
 
-    .story-header-info {
+    .story-header {
+      position: absolute;
+      top: 28px;
+      left: 14px;
+      right: 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       color: #ffffff;
+      z-index: 1001;
     }
 
-    .story-user-meta {
+    .story-user-info {
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 13px;
       font-weight: 600;
+      font-size: 13px;
     }
 
-    .story-user-meta img {
+    .story-user-avatar {
       width: 32px;
       height: 32px;
       border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .story-card img {
+      width: 100%;
+      height: 100vh;
       object-fit: cover;
-      border: 1px solid rgba(255, 255, 255, 0.4);
     }
 
-    .story-time {
-      font-weight: 400;
-      opacity: 0.7;
-      font-size: 12px;
+    /* Create Story Gallery Modal */
+    .create-story-modal {
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
     }
 
-    .close-story-btn {
+    .create-story-modal.active {
+      display: flex;
+    }
+
+    .create-story-header {
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
       color: #ffffff;
+      background: #000;
+    }
+
+    .camera-preview {
+      width: 100%;
+      height: 45vh;
+      background: #1a1a1a;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .camera-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .gallery-selector {
+      flex: 1;
+      background: #000000;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gallery-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 14px;
+      border-top: 1px solid #1a1a1a;
+    }
+
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      overflow-y: auto;
+      padding-bottom: 20px;
+    }
+
+    .gallery-item {
+      aspect-ratio: 1 / 1;
+      background: #262626;
       cursor: pointer;
-      background: none;
-      border: none;
-      padding: 4px;
     }
 
-    /* Invisible Left/Right Click Nav Zones */
-    .story-tap-zone {
-      position: absolute;
-      top: 60px;
-      bottom: 0;
-      width: 40%;
-      z-index: 5;
+    .gallery-item img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
-
-    .story-tap-zone.left { left: 0; }
-    .story-tap-zone.right { right: 0; width: 60%; }
   </style>
 </head>
 <body>
 
-  <!-- Fixed Header -->
+  <!-- Top Fixed Header -->
   <header>
     <span class="brand-logo">Instagram</span>
     <div class="header-actions">
+      <button class="icon-btn" onclick="openCreateStory()"><i data-lucide="plus-square" size="24"></i></button>
       <button class="icon-btn"><i data-lucide="heart" size="24"></i></button>
       <button class="icon-btn"><i data-lucide="message-circle" size="24"></i></button>
     </div>
   </header>
 
-  <!-- Pull-to-Refresh Gap Spinner -->
+  <!-- Hidden Gap Revealed on Pull -->
   <div class="refresh-gap">
     <div class="spinner" id="spinner"></div>
   </div>
@@ -444,40 +491,46 @@
   <!-- Feed Container -->
   <main class="feed-container" id="feedContainer">
     
-    <!-- Stories Horizontal Carousel -->
+    <!-- Stories Carousel -->
     <div class="stories-bar">
-      <div class="story-item">
+      <div class="story-item" onclick="openCreateStory()">
         <div class="story-ring my-story">
           <img class="story-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Your Story" />
           <div class="story-add-icon">+</div>
         </div>
         <span>Your story</span>
       </div>
-      <div class="story-item" onclick="openStoryGroup(0)">
+      <div class="story-item" onclick="openStory(0)">
         <div class="story-ring">
           <img class="story-avatar" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80" alt="Story 1" />
         </div>
         <span>ts0gyal._</span>
       </div>
-      <div class="story-item" onclick="openStoryGroup(1)">
+      <div class="story-item" onclick="openStory(1)">
         <div class="story-ring">
           <img class="story-avatar" src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=80" alt="Story 2" />
         </div>
         <span>mi_haaaruu</span>
       </div>
-      <div class="story-item" onclick="openStoryGroup(2)">
+      <div class="story-item" onclick="openStory(2)">
         <div class="story-ring">
           <img class="story-avatar" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80" alt="Story 3" />
         </div>
         <span>maisha_m</span>
       </div>
+      <div class="story-item" onclick="openStory(3)">
+        <div class="story-ring">
+          <img class="story-avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80" alt="Story 4" />
+        </div>
+        <span>alex_m</span>
+      </div>
     </div>
 
-    <!-- Posts Feed -->
+    <!-- Feed Post 1 -->
     <article class="post-card">
       <div class="post-header">
         <div class="post-user">
-          <img class="user-avatar" src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=150&q=80" alt="F1 Avatar" />
+          <img class="user-avatar" src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=150&q=80" alt="Avatar" />
           <span>f1</span>
         </div>
         <button class="icon-btn"><i data-lucide="more-horizontal" size="20"></i></button>
@@ -489,66 +542,169 @@
 
       <div class="post-actions">
         <div class="action-group">
-          <button class="icon-btn" onclick="toggleLike(this)"><i data-lucide="heart" size="24"></i></button>
-          <button class="icon-btn"><i data-lucide="message-circle" size="24"></i></button>
-          <button class="icon-btn"><i data-lucide="send" size="24"></i></button>
+          <div class="action-item">
+            <button class="icon-btn" onclick="toggleLike(this)"><i data-lucide="heart" size="24"></i></button>
+            <span>128.4K</span>
+          </div>
+          <div class="action-item">
+            <button class="icon-btn"><i data-lucide="message-circle" size="24"></i></button>
+            <span>1,240</span>
+          </div>
+          <div class="action-item">
+            <button class="icon-btn"><i data-lucide="send" size="24"></i></button>
+          </div>
         </div>
         <button class="icon-btn" onclick="toggleBookmark(this)"><i data-lucide="bookmark" size="24"></i></button>
       </div>
 
       <div class="post-details">
-        <div class="likes-count">128,491 likes</div>
-        <div class="caption"><span>f1</span>Pushed to the absolute limits! 🏎️💨 #F1 #Racing</div>
+        <div class="caption"><span>f1</span>Pushed to the absolute limits! 🏎️💨 #F1 #Speed</div>
         <div class="comments-link">View all 1,240 comments</div>
+      </div>
+    </article>
+
+    <!-- Feed Post 2 -->
+    <article class="post-card">
+      <div class="post-header">
+        <div class="post-user">
+          <img class="user-avatar" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80" alt="Avatar" />
+          <span>ts0gyal._</span>
+        </div>
+        <button class="icon-btn"><i data-lucide="more-horizontal" size="20"></i></button>
+      </div>
+
+      <div class="post-media-wrapper">
+        <img class="post-image" src="https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1000&q=80" alt="Nature Landscape" />
+      </div>
+
+      <div class="post-actions">
+        <div class="action-group">
+          <div class="action-item">
+            <button class="icon-btn" onclick="toggleLike(this)"><i data-lucide="heart" size="24"></i></button>
+            <span>4,812</span>
+          </div>
+          <div class="action-item">
+            <button class="icon-btn"><i data-lucide="message-circle" size="24"></i></button>
+            <span>82</span>
+          </div>
+          <div class="action-item">
+            <button class="icon-btn"><i data-lucide="send" size="24"></i></button>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="toggleBookmark(this)"><i data-lucide="bookmark" size="24"></i></button>
+      </div>
+
+      <div class="post-details">
+        <div class="caption"><span>ts0gyal._</span>Weekend getaways hit different ✨🏔️</div>
+        <div class="comments-link">View all 82 comments</div>
+      </div>
+    </article>
+
+    <!-- Feed Post 3 -->
+    <article class="post-card">
+      <div class="post-header">
+        <div class="post-user">
+          <img class="user-avatar" src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=80" alt="Avatar" />
+          <span>mi_haaaruu</span>
+        </div>
+        <button class="icon-btn"><i data-lucide="more-horizontal" size="20"></i></button>
+      </div>
+
+      <div class="post-media-wrapper">
+        <img class="post-image" src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=80" alt="Fashion" />
+      </div>
+
+      <div class="post-actions">
+        <div class="action-group">
+          <div class="action-item">
+            <button class="icon-btn" onclick="toggleLike(this)"><i data-lucide="heart" size="24"></i></button>
+            <span>9,341</span>
+          </div>
+          <div class="action-item">
+            <button class="icon-btn"><i data-lucide="message-circle" size="24"></i></button>
+            <span>194</span>
+          </div>
+          <div class="action-item">
+            <button class="icon-btn"><i data-lucide="send" size="24"></i></button>
+          </div>
+        </div>
+        <button class="icon-btn" onclick="toggleBookmark(this)"><i data-lucide="bookmark" size="24"></i></button>
+      </div>
+
+      <div class="post-details">
+        <div class="caption"><span>mi_haaaruu</span>Golden hour moments in Tokyo 🌅</div>
+        <div class="comments-link">View all 194 comments</div>
       </div>
     </article>
 
   </main>
 
-  <!-- Bottom Nav -->
+  <!-- Bottom Navigation Bar -->
   <footer>
     <button class="icon-btn"><i data-lucide="home" size="24"></i></button>
     <button class="icon-btn"><i data-lucide="search" size="24"></i></button>
-    <button class="icon-btn"><i data-lucide="plus-square" size="24"></i></button>
+    <button class="icon-btn" onclick="openCreateStory()"><i data-lucide="plus-square" size="24"></i></button>
     <button class="icon-btn"><i data-lucide="clapperboard" size="24"></i></button>
     <button class="icon-btn">
       <img class="footer-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Profile" />
     </button>
   </footer>
 
-  <!-- Fullscreen Edge-to-Edge Story Modal Viewer -->
+  <!-- Interactive Story View Modal (Swipe down to close, tap to advance) -->
   <div class="story-modal" id="storyModal">
-    <div class="story-modal-content" id="storyModalContent">
-      
-      <!-- Top Overlay info & progress bars -->
-      <div class="story-top-overlay">
-        <div class="story-progress-container" id="storyProgressContainer"></div>
-        
-        <div class="story-header-info">
-          <div class="story-user-meta">
-            <img id="storyUserAvatar" src="" alt="Avatar" />
-            <span id="storyUsername">username</span>
-            <span class="story-time">2h</span>
-          </div>
-          <button class="close-story-btn" onclick="closeStory()"><i data-lucide="x" size="22"></i></button>
-        </div>
+    <div class="story-card" id="storyCard">
+      <div class="story-progress-bar">
+        <div class="story-progress-fill" id="storyProgress"></div>
       </div>
+      <div class="story-header">
+        <div class="story-user-info">
+          <img class="story-user-avatar" id="storyUserAvatar" src="" alt="User" />
+          <span id="storyUsername">username</span>
+        </div>
+        <span onclick="closeStory()"><i data-lucide="x" size="24"></i></span>
+      </div>
+      <img id="storyImage" src="" alt="Story content" />
+    </div>
+  </div>
 
-      <!-- Edge-to-Edge Image -->
-      <img class="story-image" id="storyImage" src="" alt="Story visual" />
+  <!-- Create Story Modal (Instagram Gallery Selector) -->
+  <div class="create-story-modal" id="createStoryModal">
+    <div class="create-story-header">
+      <span onclick="closeCreateStory()"><i data-lucide="x" size="26"></i></span>
+      <span style="font-weight: 600;">Add to story</span>
+      <span><i data-lucide="settings" size="22"></i></span>
+    </div>
 
-      <!-- Tap Navigation Zones -->
-      <div class="story-tap-zone left" id="tapLeft"></div>
-      <div class="story-tap-zone right" id="tapRight"></div>
+    <div class="camera-preview">
+      <img id="selectedStoryPreview" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80" alt="Preview" />
+    </div>
 
+    <div class="gallery-selector">
+      <div class="gallery-header">
+        <span>Recents ▾</span>
+        <i data-lucide="copy" size="20"></i>
+      </div>
+      <div class="gallery-grid" id="galleryGrid">
+        <!-- Gallery Items generated via JS -->
+      </div>
     </div>
   </div>
 
   <script>
-    // Initialize Lucide Icons
     lucide.createIcons();
 
-    /* PULL TO REFRESH LOGIC */
+    // Sample Story Data Sequence
+    const storiesData = [
+      { name: 'ts0gyal._', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80' },
+      { name: 'mi_haaaruu', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=80', img: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80' },
+      { name: 'maisha_m', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80', img: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80' },
+      { name: 'alex_m', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80' }
+    ];
+
+    let currentStoryIndex = 0;
+    let storyTimer;
+
+    // Pull-to-refresh logic
     const feed = document.getElementById('feedContainer');
     const spinner = document.getElementById('spinner');
 
@@ -577,7 +733,6 @@
       if (rawPull > 0 && window.scrollY === 0) {
         if (e.cancelable) e.preventDefault(); 
         pullDistance = rawPull * RESISTANCE;
-        
         feed.style.transform = `translateY(${pullDistance}px)`;
 
         const progress = Math.min(pullDistance / TRIGGER_GAP, 1);
@@ -619,205 +774,137 @@
       }
     }
 
-    /* FULLSCREEN DRAG-TO-CLOSE & TAP NAVIGATION STORY SYSTEM */
-    const storiesData = [
-      {
-        username: 'ts0gyal._',
-        avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80',
-        items: [
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=1000&q=80'
-        ]
-      },
-      {
-        username: 'mi_haaaruu',
-        avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=80',
-        items: [
-          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=1000&q=80'
-        ]
-      },
-      {
-        username: 'maisha_m',
-        avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80',
-        items: [
-          'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=1000&q=80',
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1000&q=80'
-        ]
-      }
-    ];
+    // Story Viewing & Swipe Down to Dismiss Logic
+    const storyModal = document.getElementById('storyModal');
+    const storyCard = document.getElementById('storyCard');
+    const storyProgress = document.getElementById('storyProgress');
 
-    let currentGroupIndex = 0;
-    let currentItemIndex = 0;
-    let storyProgressTimer = null;
-    let progressPercent = 0;
-
-    const modal = document.getElementById('storyModal');
-    const modalContent = document.getElementById('storyModalContent');
-    const storyImage = document.getElementById('storyImage');
-    const userAvatar = document.getElementById('storyUserAvatar');
-    const usernameLabel = document.getElementById('storyUsername');
-    const progressContainer = document.getElementById('storyProgressContainer');
-
-    function openStoryGroup(groupIndex) {
-      currentGroupIndex = groupIndex;
-      currentItemIndex = 0;
-      modal.classList.add('active');
-      renderStoryItem();
+    function openStory(index) {
+      currentStoryIndex = index;
+      renderStory();
+      storyModal.classList.add('active');
     }
 
-    function renderStoryItem() {
-      const group = storiesData[currentGroupIndex];
-      userAvatar.src = group.avatar;
-      usernameLabel.textContent = group.username;
-      storyImage.src = group.items[currentItemIndex];
+    function renderStory() {
+      const story = storiesData[currentStoryIndex];
+      document.getElementById('storyImage').src = story.img;
+      document.getElementById('storyUserAvatar').src = story.avatar;
+      document.getElementById('storyUsername').innerText = story.name;
+      
+      storyProgress.style.width = '0%';
+      storyCard.style.transform = 'translateY(0px) scale(1)';
+      storyCard.style.borderRadius = '0px';
 
-      // Build segment progress bars
-      progressContainer.innerHTML = '';
-      group.items.forEach((_, idx) => {
-        const seg = document.createElement('div');
-        seg.className = 'story-progress-segment';
-        const fill = document.createElement('div');
-        fill.className = 'story-progress-fill';
-        if (idx < currentItemIndex) {
-          fill.style.width = '100%';
-        }
-        seg.appendChild(fill);
-        progressContainer.appendChild(seg);
-      });
-
-      startProgressTimer();
-    }
-
-    function startProgressTimer() {
-      clearInterval(storyProgressTimer);
-      progressPercent = 0;
-      const fills = progressContainer.querySelectorAll('.story-progress-fill');
-      const currentFill = fills[currentItemIndex];
-
-      storyProgressTimer = setInterval(() => {
-        if (progressPercent >= 100) {
-          clearInterval(storyProgressTimer);
+      let width = 0;
+      clearInterval(storyTimer);
+      storyTimer = setInterval(() => {
+        if (width >= 100) {
           nextStory();
         } else {
-          progressPercent += 2;
-          if (currentFill) currentFill.style.width = progressPercent + '%';
+          width += 2;
+          storyProgress.style.width = width + '%';
         }
       }, 60);
     }
 
     function nextStory() {
-      const group = storiesData[currentGroupIndex];
-      if (currentItemIndex < group.items.length - 1) {
-        currentItemIndex++;
-        renderStoryItem();
-      } else if (currentGroupIndex < storiesData.length - 1) {
-        currentGroupIndex++;
-        currentItemIndex = 0;
-        renderStoryItem();
+      if (currentStoryIndex < storiesData.length - 1) {
+        currentStoryIndex++;
+        renderStory();
       } else {
         closeStory();
-      }
-    }
-
-    function prevStory() {
-      if (currentItemIndex > 0) {
-        currentItemIndex--;
-        renderStoryItem();
-      } else if (currentGroupIndex > 0) {
-        currentGroupIndex--;
-        currentItemIndex = storiesData[currentGroupIndex].items.length - 1;
-        renderStoryItem();
-      } else {
-        renderStoryItem();
       }
     }
 
     function closeStory() {
-      clearInterval(storyProgressTimer);
-      modal.classList.remove('active');
-      resetStoryDragState();
+      clearInterval(storyTimer);
+      storyModal.classList.remove('active');
     }
 
-    // Tap Navigation Event Listeners
-    let wasDragged = false;
-    document.getElementById('tapLeft').addEventListener('click', () => {
-      if (!wasDragged) prevStory();
-    });
-    document.getElementById('tapRight').addEventListener('click', () => {
-      if (!wasDragged) nextStory();
-    });
+    // Story Drag-down to dismiss gesture
+    let storyTouchStartY = 0;
+    let storyTouchCurrentY = 0;
+    let isDraggingStory = false;
+    let hasDragged = false;
 
-    /* DRAG DOWN TO CLOSE GESTURE */
-    let dragStartY = 0;
-    let dragDeltaY = 0;
-    let isDragging = false;
-
-    modalContent.addEventListener('touchstart', (e) => {
-      dragStartY = e.touches[0].clientY;
-      dragDeltaY = 0;
-      isDragging = true;
-      wasDragged = false;
-      modalContent.style.transition = 'none';
-      clearInterval(storyProgressTimer);
+    storyModal.addEventListener('touchstart', (e) => {
+      storyTouchStartY = e.touches[0].clientY;
+      isDraggingStory = true;
+      hasDragged = false;
+      storyCard.style.transition = 'none';
     }, { passive: true });
 
-    modalContent.addEventListener('touchmove', (e) => {
-      if (!isDragging) return;
-      const currentY = e.touches[0].clientY;
-      const diff = currentY - dragStartY;
+    storyModal.addEventListener('touchmove', (e) => {
+      if (!isDraggingStory) return;
+      storyTouchCurrentY = e.touches[0].clientY;
+      const diffY = storyTouchCurrentY - storyTouchStartY;
 
-      if (diff > 0) { // Dragging downward
-        dragDeltaY = diff;
-        if (dragDeltaY > 8) wasDragged = true;
-
-        const scale = Math.max(0.75, 1 - (dragDeltaY / 1200));
-        const borderRadius = Math.min(32, dragDeltaY / 8);
-
-        modalContent.style.transform = `translateY(${dragDeltaY}px) scale(${scale})`;
-        modalContent.style.borderRadius = `${borderRadius}px`;
-        modal.style.backgroundColor = `rgba(0, 0, 0, ${Math.max(0, 1 - dragDeltaY / 400)})`;
+      if (diffY > 5) {
+        hasDragged = true;
+        const scale = Math.max(0.7, 1 - (diffY / 1000));
+        storyCard.style.transform = `translateY(${diffY}px) scale(${scale})`;
+        storyCard.style.borderRadius = '24px';
       }
     }, { passive: true });
 
-    modalContent.addEventListener('touchend', () => {
-      if (!isDragging) return;
-      isDragging = false;
+    storyModal.addEventListener('touchend', () => {
+      if (!isDraggingStory) return;
+      isDraggingStory = false;
+      const diffY = storyTouchCurrentY - storyTouchStartY;
 
-      if (dragDeltaY > 120) {
+      if (hasDragged && diffY > 120) {
         closeStory();
+      } else if (!hasDragged) {
+        // Tap detected -> Advance story
+        nextStory();
       } else {
-        // Snap back animation
-        modalContent.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), border-radius 0.25s ease';
-        modalContent.style.transform = 'translateY(0px) scale(1)';
-        modalContent.style.borderRadius = '0px';
-        modal.style.backgroundColor = '#000000';
-        
-        // Resume progress fill
-        const fills = progressContainer.querySelectorAll('.story-progress-fill');
-        const currentFill = fills[currentItemIndex];
-        storyProgressTimer = setInterval(() => {
-          if (progressPercent >= 100) {
-            clearInterval(storyProgressTimer);
-            nextStory();
-          } else {
-            progressPercent += 2;
-            if (currentFill) currentFill.style.width = progressPercent + '%';
-          }
-        }, 60);
+        // Snap back
+        storyCard.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1)';
+        storyCard.style.transform = 'translateY(0px) scale(1)';
+        storyCard.style.borderRadius = '0px';
       }
     });
 
-    function resetStoryDragState() {
-      modalContent.style.transform = 'translateY(0px) scale(1)';
-      modalContent.style.borderRadius = '0px';
-      modal.style.backgroundColor = '#000000';
-      dragDeltaY = 0;
-      wasDragged = false;
+    // Create Story Gallery Modal Logic
+    const galleryGrid = document.getElementById('galleryGrid');
+    const galleryPhotos = [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80',
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=400&q=80'
+    ];
+
+    galleryPhotos.forEach((url) => {
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      item.innerHTML = `<img src="${url}" alt="Gallery Thumbnail" />`;
+      item.onclick = () => {
+        document.getElementById('selectedStoryPreview').src = url;
+      };
+      galleryGrid.appendChild(item);
+    });
+
+    function openCreateStory() {
+      document.getElementById('createStoryModal').classList.add('active');
     }
 
-    // Micro-interactions for Posts
-    function toggleLike(btn) { btn.classList.toggle('liked'); }
-    function toggleBookmark(btn) { btn.classList.toggle('bookmarked'); }
+    function closeCreateStory() {
+      document.getElementById('createStoryModal').classList.remove('active');
+    }
+
+    // Toggle Post Interactions
+    function toggleLike(btn) {
+      btn.classList.toggle('liked');
+    }
+
+    function toggleBookmark(btn) {
+      btn.classList.toggle('bookmarked');
+    }
   </script>
 </body>
 </html>
