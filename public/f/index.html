@@ -3,24 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Instagram Web App</title>
-  
-  <!-- Google Font & Lucide Icons CDN -->
+  <title>Instagram Web UI</title>
+  <!-- Google Font & Lucide Icons -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Grand+Hotel&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <style>
-    /* HIDE ALL SCROLLBARS GLOBALLY */
+    /* HIDE ALL SCROLLBARS WHILE RETAINING SCROLL */
     * {
-      -ms-overflow-style: none;  /* IE/Edge */
-      scrollbar-width: none;  /* Firefox */
+      -ms-overflow-style: none;
+      scrollbar-width: none;
       box-sizing: border-box;
       -webkit-tap-highlight-color: transparent;
     }
     *::-webkit-scrollbar {
-      display: none; /* Chrome/Safari */
+      display: none;
     }
 
     html, body {
@@ -31,6 +30,7 @@
       margin: 0;
       padding: 0;
       user-select: none;
+      height: 100%;
       overflow-x: hidden;
     }
 
@@ -64,7 +64,7 @@
       align-items: center;
     }
 
-    /* Pull-to-Refresh Gap */
+    /* Pull to Refresh Loader Gap */
     .refresh-gap {
       position: fixed;
       top: 52px;
@@ -99,7 +99,7 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Main Feed Area */
+    /* Main Feed Scroll Area */
     .feed-container {
       margin-top: 52px;
       margin-bottom: 50px;
@@ -130,7 +130,6 @@
       font-size: 11px;
       color: #262626;
       cursor: pointer;
-      flex-shrink: 0;
     }
 
     .story-ring {
@@ -177,7 +176,7 @@
       font-weight: bold;
     }
 
-    /* Post Card Styling */
+    /* Feed Posts */
     .post-card {
       border-bottom: 1px solid #efefef;
       padding-bottom: 14px;
@@ -256,7 +255,7 @@
     .likes-count { font-weight: 600; margin-bottom: 6px; }
     .caption span { font-weight: 600; margin-right: 6px; }
 
-    /* Bottom Fixed Footer Nav */
+    /* Bottom Navigation Bar */
     footer {
       position: fixed;
       bottom: 0;
@@ -279,246 +278,225 @@
       border: 1px solid #262626;
     }
 
-    /* -------------------------------------------------------------
-       INSTAGRAM STORY VIEWER (Drag to Close + Tap Next/Prev)
-    ----------------------------------------------------------------*/
-    .story-viewer-modal {
+    /* STORY VIEWER MODAL */
+    .story-modal {
       position: fixed;
       inset: 0;
-      background: #000000;
+      background: rgba(0,0,0,0.95);
       z-index: 1000;
       display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      overflow: hidden;
       touch-action: none;
     }
 
-    .story-viewer-modal.active { display: flex; }
+    .story-modal.active { display: flex; }
 
-    .story-container-card {
+    .story-card-wrapper {
       position: relative;
       width: 100%;
-      height: 100%;
+      max-width: 420px;
+      height: 100vh;
       display: flex;
-      align-items: center;
+      flex-direction: column;
       justify-content: center;
-      will-change: transform, border-radius;
-      transform-origin: center center;
+      align-items: center;
+      will-change: transform;
     }
 
-    .story-container-card.snap-back {
-      transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.3, 1), border-radius 0.25s ease;
-    }
-
-    /* Multi-segment Story Progress Bars */
-    .story-header-bars {
+    .story-header-overlay {
       position: absolute;
-      top: 12px;
+      top: 16px;
       left: 12px;
       right: 12px;
+      z-index: 1002;
       display: flex;
-      gap: 4px;
-      z-index: 1005;
+      flex-direction: column;
+      gap: 10px;
     }
 
-    .story-bar-segment {
-      height: 2.5px;
-      flex: 1;
+    .story-progress-bar {
+      height: 3px;
       background: rgba(255, 255, 255, 0.35);
       border-radius: 4px;
       overflow: hidden;
     }
 
-    .story-bar-fill {
+    .story-progress-fill {
       height: 100%;
       width: 0%;
-      background: #ffffff;
+      background: #fff;
     }
 
-    /* Story User Info Top Left */
-    .story-user-info {
-      position: absolute;
-      top: 22px;
-      left: 14px;
+    .story-author-info {
       display: flex;
       align-items: center;
-      gap: 10px;
-      z-index: 1005;
+      justify-content: space-between;
       color: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      padding: 0 4px;
     }
 
-    .story-user-avatar {
+    .author-details {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .author-avatar {
       width: 32px;
       height: 32px;
       border-radius: 50%;
       object-fit: cover;
-      border: 1px solid rgba(255,255,255,0.5);
     }
 
-    .story-time {
-      font-weight: 400;
-      opacity: 0.7;
-      font-size: 12px;
+    .story-media-container {
+      width: 96%;
+      height: 90vh;
+      border-radius: 18px;
+      overflow: hidden;
+      position: relative;
+      background: #111;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .story-close-btn {
-      position: absolute;
-      top: 22px;
-      right: 14px;
-      color: #ffffff;
-      z-index: 1005;
-      cursor: pointer;
-    }
-
-    .story-media {
+    .story-media-container img {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      border-radius: 0px;
     }
 
-    /* -------------------------------------------------------------
-       INSTAGRAM STORY CREATOR UI (Camera / Gallery Pick)
-    ----------------------------------------------------------------*/
-    .story-creator-modal {
+    /* INSTAGRAM CREATE STORY MODAL */
+    .create-story-modal {
       position: fixed;
       inset: 0;
-      background: #121212;
+      background: #000000;
       z-index: 1100;
       display: none;
       flex-direction: column;
-      justify-content: space-between;
-      color: #fff;
+      color: #ffffff;
     }
 
-    .story-creator-modal.active { display: flex; }
+    .create-story-modal.active { display: flex; }
 
-    /* Creator Top Bar */
-    .creator-header {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 60px;
-      padding: 12px 16px;
+    .create-header {
+      height: 52px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      z-index: 20;
-      background: linear-gradient(180deg, rgba(0,0,0,0.6) 0%, transparent 100%);
+      padding: 0 16px;
+      background: #000;
+      border-bottom: 1px solid #1a1a1a;
+      z-index: 10;
     }
 
-    .creator-top-tools {
-      display: flex;
-      gap: 18px;
+    .create-header-title {
+      font-weight: 600;
+      font-size: 16px;
     }
 
-    /* Preview Canvas / Gallery Media Display */
-    .creator-viewfinder {
-      position: absolute;
-      inset: 0;
+    .create-preview-area {
+      flex: 1;
+      background: #0a0a0a;
       display: flex;
       align-items: center;
       justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .create-preview-media {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+
+    /* Gallery Tray */
+    .gallery-tray {
+      height: 320px;
+      background: #000;
+      border-top: 1px solid #1a1a1a;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .gallery-tray-header {
+      padding: 12px 16px;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
       background: #000;
     }
 
-    .creator-media-preview {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    /* Creator Bottom Controls */
-    .creator-footer {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 20px 20px 30px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 20px;
-      z-index: 20;
-      background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%);
-    }
-
-    .creator-controls-row {
-      width: 100%;
+    .gallery-dropdown-title {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0 20px;
-    }
-
-    .gallery-thumb-btn {
-      width: 44px;
-      height: 44px;
-      border-radius: 10px;
-      border: 2px solid #fff;
-      overflow: hidden;
+      gap: 6px;
+      font-size: 15px;
+      font-weight: 600;
       cursor: pointer;
+    }
+
+    .gallery-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tray-action-btn {
       background: #262626;
+      border: none;
+      color: #fff;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
     }
 
-    .gallery-thumb-btn img {
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      overflow-y: auto;
+      flex: 1;
+      padding: 2px;
+    }
+
+    .gallery-item {
+      aspect-ratio: 1;
+      background: #1a1a1a;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .gallery-item.selected {
+      border: 3px solid #0095f6;
+    }
+
+    .gallery-item img {
       width: 100%;
       height: 100%;
       object-fit: cover;
     }
 
-    /* Instagram Shutter Button */
-    .shutter-btn {
-      width: 72px;
-      height: 72px;
+    .upload-custom-badge {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      background: rgba(0,0,0,0.6);
       border-radius: 50%;
-      border: 4px solid #ffffff;
+      padding: 4px;
       display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      background: transparent;
-      transition: transform 0.1s ease;
-    }
-
-    .shutter-btn:active { transform: scale(0.9); }
-
-    .shutter-inner {
-      width: 58px;
-      height: 58px;
-      border-radius: 50%;
-      background: #ffffff;
-    }
-
-    /* Mode Switcher Carousel */
-    .mode-switcher {
-      display: flex;
-      gap: 24px;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.5px;
-      opacity: 0.6;
-    }
-
-    .mode-item {
-      cursor: pointer;
-      color: #fff;
-      text-transform: uppercase;
-    }
-
-    .mode-item.active {
-      opacity: 1;
-      border-bottom: 2px solid #fff;
-      padding-bottom: 2px;
     }
   </style>
 </head>
@@ -533,18 +511,18 @@
     </div>
   </header>
 
-  <!-- Pull-to-Refresh Gap -->
+  <!-- Pull to Refresh Loader Gap -->
   <div class="refresh-gap">
     <div class="spinner" id="spinner"></div>
   </div>
 
-  <!-- Main Feed -->
+  <!-- Feed Container -->
   <main class="feed-container" id="feedContainer">
     
     <!-- Stories Carousel -->
     <div class="stories-bar">
-      <!-- Create / Add Story Button -->
-      <div class="story-item" onclick="openStoryCreator()">
+      <!-- Create / Your Story -->
+      <div class="story-item" onclick="openCreateStory()">
         <div class="story-ring my-story">
           <img class="story-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80" alt="Your Story" />
           <div class="story-add-icon">+</div>
@@ -552,34 +530,32 @@
         <span>Your story</span>
       </div>
 
-      <!-- User Stories -->
-      <div class="story-item" onclick="openStoryViewer(0)">
+      <!-- Feed User Stories -->
+      <div class="story-item" onclick="openStory(0)">
         <div class="story-ring">
-          <img class="story-avatar" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80" alt="ts0gyal._" />
+          <img class="story-avatar" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80" alt="Story 1" />
         </div>
         <span>ts0gyal._</span>
       </div>
-
-      <div class="story-item" onclick="openStoryViewer(1)">
+      <div class="story-item" onclick="openStory(1)">
         <div class="story-ring">
-          <img class="story-avatar" src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=80" alt="mi_haaaruu" />
+          <img class="story-avatar" src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=80" alt="Story 2" />
         </div>
         <span>mi_haaaruu</span>
       </div>
-
-      <div class="story-item" onclick="openStoryViewer(2)">
+      <div class="story-item" onclick="openStory(2)">
         <div class="story-ring">
-          <img class="story-avatar" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80" alt="maisha_m" />
+          <img class="story-avatar" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80" alt="Story 3" />
         </div>
         <span>maisha_m</span>
       </div>
     </div>
 
-    <!-- Posts Feed -->
+    <!-- Feed Post -->
     <article class="post-card">
       <div class="post-header">
         <div class="post-user">
-          <img class="user-avatar" src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=150&q=80" alt="f1" />
+          <img class="user-avatar" src="https://images.unsplash.com/photo-1568602471122-7832951cc4c5?auto=format&fit=crop&w=150&q=80" alt="F1 Avatar" />
           <span>f1</span>
         </div>
         <button class="icon-btn"><i data-lucide="more-horizontal" size="20"></i></button>
@@ -600,108 +576,81 @@
 
       <div class="post-details">
         <div class="likes-count">128,491 likes</div>
-        <div class="caption"><span>f1</span>Pushed to the absolute limits! 🏎️💨</div>
+        <div class="caption"><span>f1</span>Pushed to the limits! 🏎️💨 #F1</div>
       </div>
     </article>
-
   </main>
 
   <!-- Bottom Navigation Bar -->
   <footer>
     <button class="icon-btn"><i data-lucide="home" size="24"></i></button>
     <button class="icon-btn"><i data-lucide="search" size="24"></i></button>
-    <button class="icon-btn" onclick="openStoryCreator()"><i data-lucide="plus-square" size="24"></i></button>
+    <button class="icon-btn" onclick="openCreateStory()"><i data-lucide="plus-square" size="24"></i></button>
     <button class="icon-btn"><i data-lucide="clapperboard" size="24"></i></button>
     <button class="icon-btn">
       <img class="footer-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Profile" />
     </button>
   </footer>
 
-  <!-- =========================================================
-       INSTAGRAM STORY VIEWER MODAL (Drag Down & Tap Navigation)
-  ============================================================== -->
-  <div class="story-viewer-modal" id="storyViewerModal">
-    <div class="story-container-card" id="storyCard">
-      
-      <!-- Segmented Top Progress Bars -->
-      <div class="story-header-bars" id="storyProgressContainer"></div>
-
-      <!-- User Info -->
-      <div class="story-user-info">
-        <img class="story-user-avatar" id="storyUserAvatar" src="" alt="Avatar" />
-        <span id="storyUsername">username</span>
-        <span class="story-time" id="storyTime">2h</span>
+  <!-- STORY VIEWER MODAL -->
+  <div class="story-modal" id="storyModal">
+    <div class="story-card-wrapper" id="storyCard">
+      <div class="story-header-overlay">
+        <div class="story-progress-bar">
+          <div class="story-progress-fill" id="storyProgress"></div>
+        </div>
+        <div class="story-author-info">
+          <div class="author-details">
+            <img class="author-avatar" id="storyAuthorAvatar" src="" alt="Author" />
+            <span id="storyAuthorName">username</span>
+          </div>
+          <button class="icon-btn" style="color:#fff;" onclick="closeStory()"><i data-lucide="x" size="24"></i></button>
+        </div>
       </div>
 
-      <!-- Close Button -->
-      <div class="story-close-btn" onclick="closeStoryViewer()"><i data-lucide="x" size="24"></i></div>
-
-      <!-- Story Media Content -->
-      <img class="story-media" id="storyMedia" src="" alt="Story Content" />
+      <div class="story-media-container" id="storyMediaContainer">
+        <img id="storyMedia" src="" alt="Story Media" />
+      </div>
     </div>
   </div>
 
-  <!-- =========================================================
-       INSTAGRAM STORY CREATOR MODAL (Phone Gallery + Camera UI)
-  ============================================================== -->
-  <div class="story-creator-modal" id="storyCreatorModal">
-    
-    <!-- Top Bar Controls -->
-    <div class="creator-header">
-      <span class="icon-btn" style="color:#fff;" onclick="closeStoryCreator()"><i data-lucide="x" size="26"></i></span>
-      <div class="creator-top-tools">
-        <span class="icon-btn" style="color:#fff;"><i data-lucide="zap" size="22"></i></span>
-        <span class="icon-btn" style="color:#fff;"><i data-lucide="type" size="22"></i></span>
-        <span class="icon-btn" style="color:#fff;"><i data-lucide="smile" size="22"></i></span>
-        <span class="icon-btn" style="color:#fff;"><i data-lucide="sparkles" size="22"></i></span>
-        <span class="icon-btn" style="color:#fff;"><i data-lucide="settings" size="22"></i></span>
-      </div>
+  <!-- INSTAGRAM CREATE STORY MODAL -->
+  <div class="create-story-modal" id="createStoryModal">
+    <div class="create-header">
+      <button class="icon-btn" style="color:#fff;" onclick="closeCreateStory()"><i data-lucide="x" size="24"></i></button>
+      <span class="create-header-title">Add to story</span>
+      <button class="icon-btn" style="color:#fff;"><i data-lucide="settings" size="22"></i></button>
     </div>
 
-    <!-- Media Viewfinder / Selected Phone Image Preview -->
-    <div class="creator-viewfinder">
-      <img id="creatorMediaPreview" class="creator-media-preview" src="https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=1000&q=80" alt="Camera View" />
-    </div>
+    <!-- Main Selected Media Preview -->
+    <div class="create-preview-area" id="createPreviewArea"></div>
 
-    <!-- Hidden Native Phone File Input -->
-    <input type="file" id="phoneGalleryInput" accept="image/*,video/*" style="display: none;" onchange="handleFileSelect(event)" />
-
-    <!-- Bottom Controls & Gallery Button -->
-    <div class="creator-footer">
-      <div class="creator-controls-row">
-        
-        <!-- Gallery Button (Triggers native phone picker) -->
-        <div class="gallery-thumb-btn" onclick="document.getElementById('phoneGalleryInput').click()" title="Open Device Gallery">
-          <img id="galleryThumb" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Gallery" />
+    <!-- Instagram Gallery Tray -->
+    <div class="gallery-tray">
+      <div class="gallery-tray-header">
+        <div class="gallery-dropdown-title">
+          Recents <i data-lucide="chevron-down" size="18"></i>
         </div>
-
-        <!-- Shutter Button -->
-        <div class="shutter-btn" onclick="publishNewStory()">
-          <div class="shutter-inner"></div>
+        <div class="gallery-actions">
+          <button class="tray-action-btn" onclick="triggerFileInput()" title="Add custom photo">
+            <i data-lucide="folder-plus" size="18"></i>
+          </button>
+          <button class="tray-action-btn"><i data-lucide="copy" size="18"></i></button>
+          <button class="tray-action-btn"><i data-lucide="camera" size="18"></i></button>
         </div>
-
-        <!-- Camera Switcher Icon -->
-        <span class="icon-btn" style="color:#fff;" onclick="document.getElementById('phoneGalleryInput').click()">
-          <i data-lucide="image" size="26"></i>
-        </span>
+        <!-- Hidden Device File Input (Only if explicitly clicked) -->
+        <input type="file" id="deviceFileInput" accept="image/*,video/*" multiple style="display: none;" onchange="handleDeviceFiles(event)">
       </div>
 
-      <!-- Mode Selector -->
-      <div class="mode-switcher">
-        <span class="mode-item">Post</span>
-        <span class="mode-item active">Story</span>
-        <span class="mode-item">Reels</span>
-        <span class="mode-item">Live</span>
-      </div>
+      <!-- Pre-Populated Photos Grid Tray -->
+      <div class="gallery-grid" id="galleryGrid"></div>
     </div>
   </div>
 
   <script>
     lucide.createIcons();
 
-    /* -------------------------------------------------------------
-       PULL-TO-REFRESH MECHANICS
-    ----------------------------------------------------------------*/
+    /* PULL TO REFRESH LOGIC */
     const feed = document.getElementById('feedContainer');
     const spinner = document.getElementById('spinner');
 
@@ -730,6 +679,7 @@
       if (rawPull > 0 && window.scrollY === 0) {
         if (e.cancelable) e.preventDefault(); 
         pullDistance = rawPull * RESISTANCE;
+        
         feed.style.transform = `translateY(${pullDistance}px)`;
 
         const progress = Math.min(pullDistance / TRIGGER_GAP, 1);
@@ -744,235 +694,220 @@
       feed.classList.add('smooth-reset');
 
       if (pullDistance >= TRIGGER_GAP) {
-        isRefreshing = true;
-        feed.style.transform = `translateY(${TRIGGER_GAP}px)`;
-        spinner.classList.add('refreshing');
-
-        setTimeout(() => {
-          spinner.classList.remove('refreshing');
-          pullDistance = 0;
-          feed.style.transform = 'translateY(0px)';
-          setTimeout(() => { isRefreshing = false; }, 300);
-        }, 1500);
+        startRefreshing();
       } else {
-        pullDistance = 0;
-        feed.style.transform = 'translateY(0px)';
-        spinner.style.opacity = '0';
+        resetPull();
       }
     });
 
-    /* -------------------------------------------------------------
-       STORY VIEWER DATA & DRAG-TO-CLOSE + TAP NAVIGATION
-    ----------------------------------------------------------------*/
-    const storiesData = [
-      {
-        username: "ts0gyal._",
-        avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=300&q=80",
-        items: [
-          { url: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80", time: "2h" },
-          { url: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80", time: "1h" }
-        ]
-      },
-      {
-        username: "mi_haaaruu",
-        avatar: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=300&q=80",
-        items: [
-          { url: "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80", time: "5h" }
-        ]
-      },
-      {
-        username: "maisha_m",
-        avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=300&q=80",
-        items: [
-          { url: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80", time: "8h" }
-        ]
+    function startRefreshing() {
+      isRefreshing = true;
+      feed.style.transform = `translateY(${TRIGGER_GAP}px)`;
+      spinner.classList.add('refreshing');
+
+      setTimeout(() => {
+        spinner.classList.remove('refreshing');
+        resetPull();
+        setTimeout(() => { isRefreshing = false; }, 300);
+      }, 1500);
+    }
+
+    function resetPull() {
+      pullDistance = 0;
+      feed.style.transform = 'translateY(0px)';
+      if (!isRefreshing) {
+        spinner.style.opacity = '0';
+        spinner.style.transform = 'scale(0.5) rotate(0deg)';
       }
+    }
+
+    /* STORY VIEWER LOGIC */
+    const storiesData = [
+      { name: 'ts0gyal._', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=150&q=80', media: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80' },
+      { name: 'mi_haaaruu', avatar: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=150&q=80', media: 'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80' },
+      { name: 'maisha_m', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=150&q=80', media: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80' }
     ];
 
-    let currentUserIdx = 0;
-    let currentItemIdx = 0;
-    let storyProgressTimer = null;
-    let progressPercent = 0;
-
-    const modal = document.getElementById('storyViewerModal');
+    let currentStoryIndex = 0;
+    let storyTimer = null;
+    const storyModal = document.getElementById('storyModal');
     const storyCard = document.getElementById('storyCard');
-    const mediaImg = document.getElementById('storyMedia');
-    const userAvatar = document.getElementById('storyUserAvatar');
-    const usernameTxt = document.getElementById('storyUsername');
-    const storyTimeTxt = document.getElementById('storyTime');
-    const progressContainer = document.getElementById('storyProgressContainer');
+    const storyMedia = document.getElementById('storyMedia');
+    const storyAuthorAvatar = document.getElementById('storyAuthorAvatar');
+    const storyAuthorName = document.getElementById('storyAuthorName');
+    const storyProgress = document.getElementById('storyProgress');
 
-    function openStoryViewer(userIndex) {
-      currentUserIdx = userIndex;
-      currentItemIdx = 0;
-      modal.classList.add('active');
-      loadStoryItem();
+    function openStory(index) {
+      currentStoryIndex = index;
+      storyModal.classList.add('active');
+      loadStoryContent();
     }
 
-    function closeStoryViewer() {
-      clearInterval(storyProgressTimer);
-      modal.classList.remove('active');
-      storyCard.style.transform = 'translateY(0px) scale(1)';
-      storyCard.style.borderRadius = '0px';
-    }
+    function loadStoryContent() {
+      const story = storiesData[currentStoryIndex];
+      storyAuthorName.textContent = story.name;
+      storyAuthorAvatar.src = story.avatar;
+      storyMedia.src = story.media;
 
-    function loadStoryItem() {
-      clearInterval(storyProgressTimer);
-      const user = storiesData[currentUserIdx];
-      const item = user.items[currentItemIdx];
+      storyProgress.style.width = '0%';
+      clearInterval(storyTimer);
 
-      userAvatar.src = user.avatar;
-      usernameTxt.textContent = user.username;
-      storyTimeTxt.textContent = item.time;
-      mediaImg.src = item.url;
-
-      // Render Progress Bar Segments
-      progressContainer.innerHTML = '';
-      user.items.forEach((_, idx) => {
-        const seg = document.createElement('div');
-        seg.className = 'story-bar-segment';
-        const fill = document.createElement('div');
-        fill.className = 'story-bar-fill';
-        fill.id = `fill-${idx}`;
-        if (idx < currentItemIdx) fill.style.width = '100%';
-        seg.appendChild(fill);
-        progressContainer.appendChild(seg);
-      });
-
-      // Start Progress Timer
-      progressPercent = 0;
-      const currentFill = document.getElementById(`fill-${currentItemIdx}`);
-      storyProgressTimer = setInterval(() => {
-        if (progressPercent >= 100) {
-          nextStoryItem();
+      let width = 0;
+      storyTimer = setInterval(() => {
+        if (width >= 100) {
+          nextStory();
         } else {
-          progressPercent += 2;
-          if (currentFill) currentFill.style.width = progressPercent + '%';
+          width += 1.5;
+          storyProgress.style.width = width + '%';
         }
-      }, 60);
+      }, 50);
     }
 
-    function nextStoryItem() {
-      const user = storiesData[currentUserIdx];
-      if (currentItemIdx < user.items.length - 1) {
-        currentItemIdx++;
-        loadStoryItem();
-      } else if (currentUserIdx < storiesData.length - 1) {
-        currentUserIdx++;
-        currentItemIdx = 0;
-        loadStoryItem();
+    function nextStory() {
+      if (currentStoryIndex < storiesData.length - 1) {
+        currentStoryIndex++;
+        loadStoryContent();
       } else {
-        closeStoryViewer();
+        closeStory();
       }
     }
 
-    function prevStoryItem() {
-      if (currentItemIdx > 0) {
-        currentItemIdx--;
-        loadStoryItem();
-      } else if (currentUserIdx > 0) {
-        currentUserIdx--;
-        currentItemIdx = storiesData[currentUserIdx].items.length - 1;
-        loadStoryItem();
+    function prevStory() {
+      if (currentStoryIndex > 0) {
+        currentStoryIndex--;
+        loadStoryContent();
       } else {
-        loadStoryItem();
+        loadStoryContent();
       }
     }
 
-    /* -------------------------------------------------------------
-       DRAG-TO-CLOSE & TAP GESTURES FOR STORY VIEWER
-    ----------------------------------------------------------------*/
-    let touchStartY = 0;
-    let touchStartX = 0;
-    let touchMoveY = 0;
+    function closeStory() {
+      clearInterval(storyTimer);
+      storyModal.classList.remove('active');
+      storyCard.style.transform = 'translateY(0px) scale(1)';
+    }
+
+    /* STORY SWIPE DOWN TO CLOSE & TAP NAVIGATION */
+    let dragStartY = 0;
+    let dragCurrentY = 0;
     let isDraggingStory = false;
 
-    storyCard.addEventListener('touchstart', (e) => {
-      touchStartY = e.touches[0].clientY;
-      touchStartX = e.touches[0].clientX;
-      isDraggingStory = false;
-      storyCard.classList.remove('snap-back');
-      clearInterval(storyProgressTimer);
-    }, { passive: true });
+    storyModal.addEventListener('touchstart', (e) => {
+      dragStartY = e.touches[0].clientY;
+      isDraggingStory = true;
+      storyCard.style.transition = 'none';
+    });
 
-    storyCard.addEventListener('touchmove', (e) => {
-      touchMoveY = e.touches[0].clientY;
-      const deltaY = touchMoveY - touchStartY;
-      const deltaX = Math.abs(e.touches[0].clientX - touchStartX);
+    storyModal.addEventListener('touchmove', (e) => {
+      if (!isDraggingStory) return;
+      dragCurrentY = e.touches[0].clientY;
+      const dy = dragCurrentY - dragStartY;
 
-      if (deltaY > 10 && deltaY > deltaX) {
-        isDraggingStory = true;
-        const scale = Math.max(0.7, 1 - deltaY / 800);
-        const radius = Math.min(30, deltaY / 10);
-        storyCard.style.transform = `translateY(${deltaY}px) scale(${scale})`;
-        storyCard.style.borderRadius = `${radius}px`;
-      }
-    }, { passive: true });
-
-    storyCard.addEventListener('touchend', (e) => {
-      const deltaY = touchMoveY - touchStartY;
-
-      if (isDraggingStory) {
-        if (deltaY > 140) {
-          closeStoryViewer();
-        } else {
-          storyCard.classList.add('snap-back');
-          storyCard.style.transform = 'translateY(0px) scale(1)';
-          storyCard.style.borderRadius = '0px';
-          // Resume progress animation
-          loadStoryItem();
-        }
-      } else {
-        // Tap Handler: Left 35% -> Prev, Right 65% -> Next
-        const screenWidth = window.innerWidth;
-        if (touchStartX < screenWidth * 0.35) {
-          prevStoryItem();
-        } else {
-          nextStoryItem();
-        }
+      if (dy > 0) {
+        const scale = Math.max(0.75, 1 - dy / 1000);
+        storyCard.style.transform = `translateY(${dy}px) scale(${scale})`;
       }
     });
 
-    /* -------------------------------------------------------------
-       INSTAGRAM STORY CREATOR UI (GALLERY & CAMERA)
-    ----------------------------------------------------------------*/
-    const creatorModal = document.getElementById('storyCreatorModal');
-    const creatorPreview = document.getElementById('creatorMediaPreview');
-    const galleryThumb = document.getElementById('galleryThumb');
+    storyModal.addEventListener('touchend', (e) => {
+      if (!isDraggingStory) return;
+      isDraggingStory = false;
+      const dy = dragCurrentY - dragStartY;
 
-    function openStoryCreator() {
-      creatorModal.classList.add('active');
-    }
+      if (dy > 120) {
+        closeStory();
+      } else {
+        storyCard.style.transition = 'transform 0.2s ease-out';
+        storyCard.style.transform = 'translateY(0px) scale(1)';
 
-    function closeStoryCreator() {
-      creatorModal.classList.remove('active');
-    }
+        if (Math.abs(dy) < 10) {
+          const tapX = e.changedTouches[0].clientX;
+          if (tapX < window.innerWidth * 0.35) {
+            prevStory();
+          } else {
+            nextStory();
+          }
+        }
+      }
+      dragStartY = 0;
+      dragCurrentY = 0;
+    });
 
-    // Handle Image/Video selection from native device phone gallery
-    function handleFileSelect(event) {
-      const file = event.target.files[0];
-      if (file) {
-        const fileURL = URL.createObjectURL(file);
-        creatorPreview.src = fileURL;
-        galleryThumb.src = fileURL;
+    /* INSTAGRAM PRE-LOADED GALLERY TRAY */
+    const createModal = document.getElementById('createStoryModal');
+    const previewArea = document.getElementById('createPreviewArea');
+    const galleryGrid = document.getElementById('galleryGrid');
+
+    // Default pre-loaded media list that acts as the phone gallery
+    const userPhoneGallery = [
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=800&q=80'
+    ];
+
+    function renderGalleryGrid() {
+      galleryGrid.innerHTML = '';
+      userPhoneGallery.forEach((url, idx) => {
+        const item = document.createElement('div');
+        item.className = `gallery-item ${idx === 0 ? 'selected' : ''}`;
+        
+        item.onclick = () => {
+          document.querySelectorAll('.gallery-item').forEach(el => el.classList.remove('selected'));
+          item.classList.add('selected');
+          setPreviewImage(url);
+        };
+
+        const img = document.createElement('img');
+        img.src = url;
+        item.appendChild(img);
+        galleryGrid.appendChild(item);
+      });
+
+      // Default main preview to the first gallery photo
+      if (userPhoneGallery.length > 0) {
+        setPreviewImage(userPhoneGallery[0]);
       }
     }
 
-    // Simulate publishing the new story
-    function publishNewStory() {
-      const newMediaURL = creatorPreview.src;
-      // Add story item to the user's stories array
-      storiesData.unshift({
-        username: "Your story",
-        avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80",
-        items: [{ url: newMediaURL, time: "Just now" }]
-      });
-
-      closeStoryCreator();
-      openStoryViewer(0);
+    function openCreateStory() {
+      createModal.classList.add('active');
+      renderGalleryGrid();
     }
 
-    /* Post Like/Bookmark Micro-interactions */
+    function closeCreateStory() {
+      createModal.classList.remove('active');
+    }
+
+    function setPreviewImage(url) {
+      previewArea.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = url;
+      img.className = 'create-preview-media';
+      previewArea.appendChild(img);
+    }
+
+    function triggerFileInput() {
+      document.getElementById('deviceFileInput').click();
+    }
+
+    function handleDeviceFiles(event) {
+      const files = event.target.files;
+      if (!files || files.length === 0) return;
+
+      Array.from(files).forEach((file, index) => {
+        const url = URL.createObjectURL(file);
+        userPhoneGallery.unshift(url);
+      });
+
+      renderGalleryGrid();
+    }
+
     function toggleLike(btn) { btn.classList.toggle('liked'); }
     function toggleBookmark(btn) { btn.classList.toggle('bookmarked'); }
   </script>
