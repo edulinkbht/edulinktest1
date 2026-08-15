@@ -269,6 +269,7 @@
 
         img, video {
             -webkit-user-drag: none;
+            user-drag: none;
             -webkit-touch-callout: none;
             -webkit-user-select: none;
             user-select: none;
@@ -5534,21 +5535,9 @@
             <div id="ptr-spinner"><i data-lucide="arrow-down" class="w-5 h-5"></i></div>
             <div id="view-feed" class="flex-1 h-full overflow-y-auto no-scrollbar p-0 bg-white pt-16 md:pt-20 pb-24 md:pb-20">
                 <div id="feed-container"></div>
-                <div id="feed-sentinel" class="h-20 flex items-center justify-center">
-                    <div id="feed-loader" class="hidden w-full max-w-xl px-4 md:px-6">
-                        <div class="space-y-4 animate-pulse">
-                            <div class="h-4 w-28 bg-gray-200 rounded-full"></div>
-                            <div class="bg-white border border-gray-100 rounded-2xl p-3">
-                                <div class="flex items-center gap-3 mb-3">
-                                    <div class="w-9 h-9 rounded-full bg-gray-200"></div>
-                                    <div class="space-y-2 flex-1">
-                                        <div class="h-2.5 w-24 bg-gray-200 rounded-full"></div>
-                                        <div class="h-2.5 w-16 bg-gray-100 rounded-full"></div>
-                                    </div>
-                                </div>
-                                <div class="h-72 md:h-80 bg-gray-200 rounded-2xl"></div>
-                            </div>
-                        </div>
+                <div id="feed-sentinel" class="h-12 flex items-center justify-center">
+                    <div id="feed-loader" class="hidden py-2">
+                        <div class="animate-spin rounded-full h-6 w-6 border-2 border-gray-200 border-t-blue-600"></div>
                     </div>
                 </div>
             </div>
@@ -6485,15 +6474,7 @@
                     const trigger = document.getElementById('profile-load-more-trigger');
                     if (trigger) {
                         trigger.classList.remove('hidden');
-                        trigger.innerHTML = `
-                            <div class="w-full max-w-md px-4 py-4 animate-pulse">
-                                <div class="grid grid-cols-3 gap-2">
-                                    <div class="h-24 bg-gray-200 rounded-xl"></div>
-                                    <div class="h-24 bg-gray-200 rounded-xl"></div>
-                                    <div class="h-24 bg-gray-200 rounded-xl"></div>
-                                </div>
-                            </div>
-                        `;
+                        trigger.innerHTML = '<div class="flex items-center justify-center py-4"><div class="h-5 w-5 animate-spin rounded-full border-2 border-gray-200 border-t-blue-600"></div></div>';
                     }
 
                     setTimeout(() => {
@@ -8064,16 +8045,13 @@
             if (!c) return;
 
             const hasExistingContent = c.children.length > 0 || c.innerHTML.trim().length > 0;
-            const cachedVisible = (posts || [])
-                .filter(p => window.canSeePost ? window.canSeePost(p) : true)
-                .sort((a, b) => (b.timestamp?.toDate?.() || new Date(b.timestamp || 0).getTime()) - (a.timestamp?.toDate?.() || new Date(a.timestamp || 0).getTime()))
-                .slice(0, 12);
+            const cachedVisible = (posts || []).filter(p => window.canSeePost ? window.canSeePost(p) : true).slice(0, 12);
 
             if (!hasExistingContent && !window.feedPagination.loading) {
                 c.innerHTML = window.getFeedSkeleton();
             }
 
-            if (cachedVisible.length > 0 && (!hasExistingContent || c.innerHTML.includes('No posts found') || c.innerHTML.includes('Welcome to EduLink') || c.innerHTML.includes('No posts yet'))) {
+            if (cachedVisible.length > 0 && (!hasExistingContent || c.innerHTML.includes('No posts found') || c.innerHTML.includes('Welcome to EduLink'))) {
                 c.innerHTML = '';
                 cachedVisible.forEach(p => c.appendChild(createPostElement(p, 'feed')));
                 refreshIcons();
@@ -8088,18 +8066,9 @@
             const context = window.hydrateUserContext();
             if (!context) return;
 
-            let candidates = await window.sourceCandidates(context, t);
-            if (!candidates.length && cachedVisible.length > 0) {
-                candidates = cachedVisible;
-            }
-
+            const candidates = await window.sourceCandidates(context, t);
             const ranked = window.scoreAndRankCandidates(candidates, context);
-            let finalCandidates = window.filterAndPolish(ranked, context);
-            if (!finalCandidates.length && cachedVisible.length > 0) {
-                finalCandidates = cachedVisible;
-            }
-
-            window.feedPagination.allCandidates = finalCandidates;
+            window.feedPagination.allCandidates = window.filterAndPolish(ranked, context);
             window.currentViewingPostList = window.feedPagination.allCandidates;
 
             if (window.feedPagination.allCandidates.length === 0) {
@@ -8118,11 +8087,8 @@
                 }
                 window.feedPagination.hasMore = false;
             } else {
-                if (!hasExistingContent || c.children.length === 0 || c.innerHTML.includes('No posts yet')) {
+                if (!hasExistingContent || c.children.length === 0) {
                     c.innerHTML = '';
-                    window.feedPagination.allCandidates.forEach((p, index) => {
-                        if (index < 5) c.appendChild(createPostElement(p, 'feed'));
-                    });
                 }
                 window.loadNextFeedBatch();
             }
@@ -9228,23 +9194,10 @@
             if (!c) return;
 
             window.feedPagination.loading = true;
-            if (loader) {
+            // Only show loader if this is NOT the initial batch (cursor > 0)
+            if (loader && window.feedPagination.cursor > 0) {
                 loader.classList.remove('hidden');
-                loader.innerHTML = `
-                    <div class="space-y-4 animate-pulse">
-                        <div class="h-4 w-28 bg-gray-200 rounded-full"></div>
-                        <div class="bg-white border border-gray-100 rounded-2xl p-3">
-                            <div class="flex items-center gap-3 mb-3">
-                                <div class="w-9 h-9 rounded-full bg-gray-200"></div>
-                                <div class="space-y-2 flex-1">
-                                    <div class="h-2.5 w-24 bg-gray-200 rounded-full"></div>
-                                    <div class="h-2.5 w-16 bg-gray-100 rounded-full"></div>
-                                </div>
-                            </div>
-                            <div class="h-72 md:h-80 bg-gray-200 rounded-2xl"></div>
-                        </div>
-                    </div>
-                `;
+                loader.innerHTML = '<div class="flex items-center justify-center py-3"><div class="flex gap-1"><span class="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse"></span><span class="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></span><span class="inline-block w-1.5 h-1.5 bg-gray-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></span></div></div>';
             }
 
             const start = window.feedPagination.cursor;
@@ -9254,16 +9207,18 @@
             if (batch.length === 0) {
                 window.feedPagination.hasMore = false;
                 window.feedPagination.loading = false;
-                loader?.classList.add('hidden');
+                if (loader) loader.classList.add('hidden');
                 return;
             }
 
+            // Render all posts from the batch
             batch.forEach((p, index) => {
                 const globalIndex = start + index;
-                c.appendChild(createPostElement(p, 'feed'));
+                const postEl = createPostElement(p, 'feed');
+                c.appendChild(postEl);
                 window.sessionSeenPosts.add(p.id);
 
-                // Injection logic: Community Spotlight
+                // Injection logic: Community Spotlight every 25-30 posts
                 const spotIndex = globalIndex + 1;
                 if (spotIndex === 25 || (spotIndex > 25 && (spotIndex - 25) % 30 === 0)) {
                     const spot = document.createElement('article');
@@ -9297,22 +9252,16 @@
             }
 
             window.feedPagination.loading = false;
-            loader?.classList.add('hidden');
+            // Hide loader after batch is rendered
+            if (loader) {
+                setTimeout(() => {
+                    loader.classList.add('hidden');
+                }, 100);
+            }
             refreshIcons();
             
             // Observe new video containers
             window.observeVideoContainers();
-
-            // If we are still intersecting (e.g. large screen or small posts), trigger next batch
-            if (window.feedPagination.hasMore) {
-                const sentinel = document.getElementById('feed-sentinel');
-                if (sentinel && sentinel.getBoundingClientRect().top < window.innerHeight + 800) {
-                    // Small delay to prevent infinite recursion in case of issues
-                    setTimeout(() => {
-                        if (window.currentViewName === 'feed') window.loadNextFeedBatch();
-                    }, 100);
-                }
-            }
         };
         window.openFeedFilter = () => { manageHistory('feed-filter-overlay'); toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !0) }; window.closeFeedFilter = () => toggleModalAnim('feed-filter-overlay', 'feed-filter-modal', !1); window.switchFeedFilter = f => { window.activeFeedFilter = f; closeFeedFilter(); renderFeed(); const m = { all: 'All Posts', following: 'Following', friends: 'Friends Only' }; showToast(`Filter: ${m[f]}`, false, "Your feed has been updated based on your selection.") };
         let touchStartX = 0, touchEndX = 0; window.handleTouchStart = e => touchStartX = e.changedTouches[0].screenX; window.handleTouchEnd = (e, pid, ov) => { touchEndX = e.changedTouches[0].screenX; const w = e.currentTarget.closest('.post-carousel'); if (w && Math.abs(touchStartX - touchEndX) > 50) moveCarousel(w.id, touchStartX > touchEndX ? 1 : -1) };
