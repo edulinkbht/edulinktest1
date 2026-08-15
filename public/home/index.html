@@ -6773,26 +6773,45 @@
             ptrSpinner.style.opacity = '0';
             ptrSpinner.style.transform = 'translateX(-50%) translateY(-18px) scale(0.7)';
         };
+        const resetFeedPull = () => {
+            if (!feedView) return;
+            feedView.style.transition = 'transform 0.28s cubic-bezier(0.2, 0.9, 0.3, 1)';
+            feedView.style.transform = 'translateY(0px)';
+            ptrPullDistance = 0;
+            feedRefreshStartY = 0;
+            hidePtrSpinner();
+        };
         const refreshFeedWithSpinner = async () => {
             if (!feedView || isRefreshing) return;
             isRefreshing = true;
             if (ptrSpinner) {
                 ptrSpinner.style.opacity = '1';
-                ptrSpinner.style.transform = 'translateX(-50%) translateY(10px) scale(1)';
+                ptrSpinner.style.transform = 'translateX(-50%) translateY(12px) scale(1)';
             }
             try {
+                if (window.feedPagination && Array.isArray(window.feedPagination.allCandidates)) {
+                    window.feedPagination.allCandidates = [...window.feedPagination.allCandidates].sort(() => Math.random() - 0.5);
+                    window.feedPagination.cursor = 0;
+                    window.feedPagination.hasMore = true;
+                }
                 await renderFeed();
+                showToast('Feed refreshed');
             } finally {
                 isRefreshing = false;
-                hidePtrSpinner();
+                setTimeout(() => {
+                    resetFeedPull();
+                    feedView.style.transition = 'none';
+                }, 180);
             }
         };
         if (feedView) {
             feedView.addEventListener('touchstart', (e) => {
                 if (feedView.scrollTop <= 0 && !isRefreshing) {
                     const touch = e.touches && e.touches[0];
-                    feedRefreshStartY = touch ? touch.pageY : 0;
+                    if (!touch) return;
+                    feedRefreshStartY = touch.pageY;
                     ptrPullDistance = 0;
+                    feedView.style.transition = 'none';
                     ptrSpinner && (ptrSpinner.style.transition = 'transform .2s ease, opacity .2s ease');
                 }
             }, { passive: true });
@@ -6802,24 +6821,25 @@
                 if (!touch) return;
                 const delta = touch.pageY - feedRefreshStartY;
                 if (delta <= 0) return;
-                ptrPullDistance = Math.min(delta, 90);
+                ptrPullDistance = Math.min(delta * 0.42, 90);
                 if (e.cancelable) e.preventDefault();
-                const y = Math.min(ptrPullDistance * 0.7, 54);
+                const progress = Math.min(ptrPullDistance / 70, 1);
+                feedView.style.transform = `translateY(${ptrPullDistance}px)`;
                 if (ptrSpinner) {
-                    const visibleProgress = Math.min(ptrPullDistance / 40, 1);
-                    ptrSpinner.style.opacity = String(visibleProgress);
-                    ptrSpinner.style.transform = `translateX(-50%) translateY(${Math.max(-18, y - 18)}px) scale(${0.7 + visibleProgress * 0.3})`;
+                    ptrSpinner.style.opacity = String(progress);
+                    ptrSpinner.style.transform = `translateX(-50%) translateY(${Math.max(-18, ptrPullDistance * 0.35 - 18)}px) scale(${0.7 + progress * 0.3})`;
                 }
             }, { passive: false });
             feedView.addEventListener('touchend', async () => {
                 if (isRefreshing) return;
-                if (ptrPullDistance > 72) {
+                const shouldRefresh = ptrPullDistance >= 70;
+                if (shouldRefresh) {
+                    feedView.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1)';
+                    feedView.style.transform = 'translateY(70px)';
                     await refreshFeedWithSpinner();
                 } else {
-                    hidePtrSpinner();
+                    resetFeedPull();
                 }
-                ptrPullDistance = 0;
-                feedRefreshStartY = 0;
             });
             feedView.addEventListener('scroll', () => { 
                 const c = feedView.scrollTop, h = document.getElementById('main-header'); 
