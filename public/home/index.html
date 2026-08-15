@@ -8064,13 +8064,16 @@
             if (!c) return;
 
             const hasExistingContent = c.children.length > 0 || c.innerHTML.trim().length > 0;
-            const cachedVisible = (posts || []).filter(p => window.canSeePost ? window.canSeePost(p) : true).slice(0, 12);
+            const cachedVisible = (posts || [])
+                .filter(p => window.canSeePost ? window.canSeePost(p) : true)
+                .sort((a, b) => (b.timestamp?.toDate?.() || new Date(b.timestamp || 0).getTime()) - (a.timestamp?.toDate?.() || new Date(a.timestamp || 0).getTime()))
+                .slice(0, 12);
 
             if (!hasExistingContent && !window.feedPagination.loading) {
                 c.innerHTML = window.getFeedSkeleton();
             }
 
-            if (cachedVisible.length > 0 && (!hasExistingContent || c.innerHTML.includes('No posts found') || c.innerHTML.includes('Welcome to EduLink'))) {
+            if (cachedVisible.length > 0 && (!hasExistingContent || c.innerHTML.includes('No posts found') || c.innerHTML.includes('Welcome to EduLink') || c.innerHTML.includes('No posts yet'))) {
                 c.innerHTML = '';
                 cachedVisible.forEach(p => c.appendChild(createPostElement(p, 'feed')));
                 refreshIcons();
@@ -8085,9 +8088,18 @@
             const context = window.hydrateUserContext();
             if (!context) return;
 
-            const candidates = await window.sourceCandidates(context, t);
+            let candidates = await window.sourceCandidates(context, t);
+            if (!candidates.length && cachedVisible.length > 0) {
+                candidates = cachedVisible;
+            }
+
             const ranked = window.scoreAndRankCandidates(candidates, context);
-            window.feedPagination.allCandidates = window.filterAndPolish(ranked, context);
+            let finalCandidates = window.filterAndPolish(ranked, context);
+            if (!finalCandidates.length && cachedVisible.length > 0) {
+                finalCandidates = cachedVisible;
+            }
+
+            window.feedPagination.allCandidates = finalCandidates;
             window.currentViewingPostList = window.feedPagination.allCandidates;
 
             if (window.feedPagination.allCandidates.length === 0) {
@@ -8106,8 +8118,11 @@
                 }
                 window.feedPagination.hasMore = false;
             } else {
-                if (!hasExistingContent || c.children.length === 0) {
+                if (!hasExistingContent || c.children.length === 0 || c.innerHTML.includes('No posts yet')) {
                     c.innerHTML = '';
+                    window.feedPagination.allCandidates.forEach((p, index) => {
+                        if (index < 5) c.appendChild(createPostElement(p, 'feed'));
+                    });
                 }
                 window.loadNextFeedBatch();
             }
