@@ -6391,11 +6391,15 @@
         // Initialize Intersection Observer for Infinite Scroll
         const feedObserver = new IntersectionObserver((entries) => {
             if (entries[0].isIntersecting && window.feedPagination.hasMore && !window.feedPagination.loading && window.currentViewName === 'feed') {
-                window.loadNextFeedBatch();
+                // Only trigger the next batch when the user is genuinely close to the next set.
+                const sentinel = document.getElementById('feed-sentinel');
+                if (sentinel && sentinel.getBoundingClientRect().top < window.innerHeight + 240) {
+                    window.loadNextFeedBatch();
+                }
             }
         }, { 
             root: document.getElementById('view-feed'),
-            rootMargin: '1000px' 
+            rootMargin: '200px 0px' 
         });
 
         const sentinel = document.getElementById('feed-sentinel');
@@ -6650,13 +6654,13 @@
                 if (context.engagementHistory.disliked?.includes(p.id)) continue;
                 if (!canSeePost(p)) continue;
 
-                // Author Diversity: Don't show more than 3 posts from same author in top batch (increased to allow more content)
+                // Author Diversity: Don't show more than 3 posts from same author in top batch
                 const authorId = p.authorId;
                 authorCounts[authorId] = (authorCounts[authorId] || 0) + 1;
                 if (authorCounts[authorId] > 3) continue;
 
                 finalSelection.push(p);
-                if (finalSelection.length >= 200) break; // Selection limit increased to 200 for more content
+                if (finalSelection.length >= 60) break; // Keep only a short working set, then fetch more only when needed
             }
             return finalSelection;
         };
@@ -8045,7 +8049,7 @@
             if (!c) return;
 
             const hasExistingContent = c.children.length > 0 || c.innerHTML.trim().length > 0;
-            const cachedVisible = (posts || []).filter(p => window.canSeePost ? window.canSeePost(p) : true).slice(0, 12);
+            const cachedVisible = (posts || []).filter(p => window.canSeePost ? window.canSeePost(p) : true).slice(0, 5);
 
             if (!hasExistingContent && !window.feedPagination.loading) {
                 c.innerHTML = window.getFeedSkeleton();
@@ -8068,7 +8072,7 @@
 
             const candidates = await window.sourceCandidates(context, t);
             const ranked = window.scoreAndRankCandidates(candidates, context);
-            window.feedPagination.allCandidates = window.filterAndPolish(ranked, context);
+            window.feedPagination.allCandidates = window.filterAndPolish(ranked, context).slice(0, 60);
             window.currentViewingPostList = window.feedPagination.allCandidates;
 
             if (window.feedPagination.allCandidates.length === 0) {
