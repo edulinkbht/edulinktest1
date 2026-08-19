@@ -1,774 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EduLink</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" href="https://i.imghippo.com/files/vgr8207c.png">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root {
-            --primary: #0d6efd;       /* Login Button Color */
-            --primary-hover: #0b5ed7; /* Login Button Hover */
-            --link-blue: #3897f0;     /* Light Blue for Links & Secondary Text */
-            --text-dark: #1c1e21;
-            --text-muted: #65676b;
-            --bg-body: #ffffff;
-            --bg-input: #ffffff; 
-            --border-color: #dadde1;
-            --gradient-accent: linear-gradient(135deg, #ff007f, #ff7a00);
-            --active-border: #555555;
-            --modal-bg: #ffffff;
-            --modal-border: #dbdbdb;
-            --card-front-bg: #f8f9fa;
-            --card-border: #ffffff;
-            --logo-url: url('https://i.imghippo.com/files/fRGt5603uII.png');
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>EduLink BHT</title>
+  <link rel="icon" type="image/png" href="https://res.cloudinary.com/dcpuyfslg/image/upload/v1787148469/idem_yezwx3.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Syne', sans-serif;
+      /* Disable selection across elements */
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -khtml-user-select: none;
+      -moz-user-select: none;
+      -ms-user-select: none;
+      user-select: none;
+    }
 
-        /* --- Dark Theme (#121212 BG with Light Theme Cards) --- */
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --primary: #0d6efd;       /* Login Button Color */
-                --primary-hover: #0b5ed7;
-                --link-blue: #3897f0;     /* Light Blue for Links & Secondary Text */
-                --text-dark: #f5f5f5;
-                --text-muted: #a8a8a8;
-                --bg-body: #121212;      /* Dark Background */
-                --bg-input: #1e1e1e;     /* Dark Input Surface */
-                --border-color: #2e2e2e; /* Dark Border */
-                --active-border: #a8a8a8; /* Active Focus Border */
-                --modal-bg: #1e1e1e;     /* Dark Dialog Background */
-                --modal-border: #2e2e2e;
-                --card-front-bg: #f8f9fa; /* Preserved Light Theme Card BG */
-                --card-border: #ffffff;   /* Preserved Light Theme White Border */
-                --logo-url: url('https://i.imghippo.com/files/vgr8207c.png');
-            }
+    html, body {
+      height: 100%;
+      width: 100%;
+      position: fixed; /* Prevents pull-to-refresh & mobile page scrolling */
+      top: 0;
+      left: 0;
+      overflow: hidden; /* Guaranteed no scrollbars */
+      touch-action: none; /* Prevents touch dragging/scrolling on mobile devices */
+      background-color: #ffffff;
+      color: #000000;
+    }
 
-            .btn-sso {
-                color: #f5f5f5 !important;
-            }
+    body {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-            .btn-sso:hover {
-                background-color: rgba(255, 255, 255, 0.05) !important;
-            }
+    /* Disable drag, context menu, and long-press saving on all images */
+    img {
+      -webkit-user-drag: none;
+      -khtml-user-drag: none;
+      -moz-user-drag: none;
+      -o-user-drag: none;
+      user-drag: none;
+      pointer-events: none; /* Prevents clicks, holding, and dragging */
+    }
 
-            .input-group input::placeholder {
-                color: #8b949e !important;
-            }
+    /* Allow interaction for form inputs and clickable links */
+    input, button, a {
+      -webkit-user-select: auto;
+      -moz-user-select: auto;
+      -ms-user-select: auto;
+      user-select: auto;
+      pointer-events: auto;
+    }
 
-            .password-toggle {
-                color: #8b949e !important;
-            }
+    /* Top-Left Logo Capsule */
+    .brand-capsule {
+      position: fixed;
+      top: 28px;
+      left: 28px;
+      display: inline-flex;
+      align-items: center;
+      height: 48px;
+      width: 48px;
+      padding-left: 9px;
+      border-radius: 50px;
+      border: 1px solid #e8e8e8;
+      background-color: #ffffff;
+      text-decoration: none;
+      color: #000000;
+      overflow: hidden;
+      transition: width 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      cursor: pointer;
+      z-index: 10;
+    }
 
-            .password-toggle:hover {
-                color: #f5f5f5 !important;
-            }
-        }
+    .brand-capsule img {
+      height: 28px;
+      width: 28px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-        }
+    .brand-capsule .brand-text {
+      max-width: 0;
+      opacity: 0;
+      white-space: nowrap;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: -0.02em;
+      transition: max-width 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                  opacity 0.25s ease,
+                  margin-left 0.35s ease;
+    }
 
-        body {
-            background-color: var(--bg-body);
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            color: var(--text-dark);
-            overflow-y: auto; 
-            -ms-overflow-style: none;  
-            scrollbar-width: none;  
-            transition: background-color 0.2s ease, color 0.2s ease;
-        }
+    .brand-capsule:hover {
+      width: 150px;
+    }
 
-        body::-webkit-scrollbar {
-            display: none;
-        }
+    .brand-capsule:hover .brand-text {
+      max-width: 100px;
+      opacity: 1;
+      margin-left: 10px;
+    }
 
-        .container {
-            display: flex;
-            flex: 1;
-            width: 100%;
-            height: 100%;
-            max-width: 1440px; 
-            margin: 0 auto;
-        }
+    /* Top-Right Redirect Link */
+    .top-right-link {
+      position: fixed;
+      top: 38px;
+      right: 28px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      color: #555555;
+      text-decoration: none;
+      z-index: 10;
+      transition: color 0.2s ease;
+    }
 
-        /* --- Left Column: Visuals (50%) --- */
-        .visual-section {
-            width: 50%;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            padding: 2rem 3rem;
-            flex-shrink: 0; 
-            min-height: 100vh;
-        }
+    .top-right-link:hover {
+      color: #000000;
+    }
 
-        .brand-logo {
-            position: absolute;
-            top: 2.5rem;
-            left: 3rem;
-            height: 40px;
-            z-index: 10;
-        }
+    .top-right-link svg {
+      width: 18px;
+      height: 18px;
+      stroke-width: 2;
+    }
 
-        .brand-logo img {
-            height: 40px;
-            object-fit: contain;
-        }
+    /* Left-Aligned Login Container */
+    .main-container {
+      flex: 1;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 0 24px;
+      z-index: 2;
+    }
 
-        .visual-wrapper {
-            margin: auto; 
-            position: relative;
-            left: 3rem; 
-            width: 100%;
-            max-width: 460px; 
-            padding-top: 4rem; 
-            padding-bottom: 4rem; 
-        }
+    .login-wrapper {
+      width: 100%;
+      max-width: 350px;
+      text-align: left;
+      transform: translateY(65px);
+    }
 
-        .visual-section h1 {
-            font-size: 3.2rem; 
-            font-weight: 400;
-            line-height: 1.15;
-            text-align: left; 
-            margin-bottom: 3rem;
-            letter-spacing: -0.03em;
-        }
+    h1 {
+      font-size: 2.35rem;
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 1.12;
+      margin-bottom: 0.85rem;
+      color: #000000;
+    }
 
-        .highlight {
-            background: var(--gradient-accent);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: 600;
-        }
+    .subtitle {
+      font-size: 0.88rem;
+      color: #707070;
+      line-height: 1.45;
+      font-weight: 400;
+      margin-bottom: 2rem;
+    }
 
-        .mockup-container {
-            position: relative;
-            width: 320px;
-            height: 380px;
-            transform: scale(1.15); 
-            transform-origin: top left;
-            margin-top: 1rem;
-        }
+    .field-group {
+      margin-bottom: 0.85rem;
+      position: relative;
+    }
 
-        /* Shared Card Base Styles (Identical in Light and Dark) */
-        .mockup-card {
-            position: absolute;
-            width: 220px;
-            height: 320px;
-            border-radius: 24px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
-            border: 8px solid var(--card-border);
-            transition: transform 0.3s ease;
-        }
+    input {
+      width: 100%;
+      padding: 15px 18px;
+      font-size: 0.9rem;
+      color: #000000;
+      background-color: #f2f2f2;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      outline: none;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
 
-        .mockup-card.back {
-            top: 0;
-            right: 20px;
-            background: linear-gradient(145deg, #a1c4fd 0%, #c2e9fb 100%);
-            transform: rotate(8deg);
-        }
+    input[type="password"],
+    input.password-field {
+      padding-right: 44px;
+    }
 
-        .mockup-card.middle {
-            top: 20px;
-            left: 20px;
-            background: linear-gradient(145deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
-            transform: rotate(-4deg);
-        }
+    input::placeholder {
+      color: #aaaaaa;
+      font-weight: 400;
+    }
 
-        .mockup-card.front {
-            top: 50px;
-            left: 50px;
-            background: var(--card-front-bg);
-            transform: rotate(2deg);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
+    input:focus {
+      background-color: #ffffff;
+      border-color: #d6d6d6;
+    }
 
-        .mockup-header {
-            height: 40px;
-            border-bottom: 1px solid #eaeaea;
-            display: flex;
-            align-items: center;
-            padding: 0 12px;
-            gap: 8px;
-        }
-        
-        .mockup-avatar {
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: #ccc;
-        }
-        
-        .mockup-line {
-            height: 6px;
-            width: 60px;
-            background: #eaeaea;
-            border-radius: 4px;
-        }
+    /* Show/Hide Password Toggle */
+    .password-toggle {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-        /* --- Right Column: Form Area (50%) --- */
-        .form-section {
-            width: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            flex-shrink: 0;
-            min-height: 100vh;
-        }
+    .password-toggle.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
 
-        .form-wrapper {
-            width: 100%;
-            max-width: 400px;
-        }
+    .password-toggle svg {
+      width: 18px;
+      height: 18px;
+      stroke: #888888;
+      stroke-width: 2px;
+    }
 
-        .form-header {
-            margin-bottom: 1.5rem;
-        }
+    button[type="submit"] {
+      width: 100%;
+      padding: 15px;
+      margin-top: 0.5rem;
+      background-color: #000000;
+      color: #ffffff;
+      border: none;
+      border-radius: 50px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+    }
 
-        .form-header h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
+    button[type="submit"]:hover {
+      opacity: 0.88;
+    }
 
-        .input-group {
-            margin-bottom: 1rem;
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
+    .meta-links {
+      margin-top: 1.8rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+    }
 
-        .input-group input {
-            width: 100%;
-            padding: 16px;
-            background-color: var(--bg-input);
-            border: 1px solid var(--border-color); 
-            border-radius: 12px;
-            font-size: 15px;
-            color: var(--text-dark);
-            transition: all 0.2s ease;
-            outline: none;
-        }
+    .meta-links a {
+      color: #888888;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
 
-        #passwordInput {
-            padding-right: 48px;
-        }
+    .meta-links a:hover {
+      color: #000000;
+    }
 
-        .input-group input:focus,
-        .input-group input:active {
-            border-color: var(--active-border); 
-            box-shadow: none; 
-        }
+    /* Edge-to-Edge Protected Footer */
+    footer {
+      width: 100vw;
+      line-height: 0;
+      flex-shrink: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
 
-        .input-group input::placeholder {
-            color: #8d949e;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 16px;
-            background: none;
-            border: none;
-            color: #8d949e;
-            cursor: pointer;
-            display: none; 
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            transition: color 0.2s ease;
-        }
-
-        .password-toggle:hover {
-            color: var(--text-dark);
-        }
-
-        .btn {
-            width: 100%;
-            padding: 14px;
-            border-radius: 100px; 
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-            margin-top: 0.5rem;
-        }
-
-        .btn-primary:hover {
-            background-color: var(--primary-hover);
-            transform: translateY(-1px);
-        }
-
-        /* Light blue color for Forgot password (No underline on hover) */
-        .link-forgot {
-            display: block;
-            text-align: center;
-            color: var(--link-blue);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            margin: 1.25rem 0; 
-            transition: opacity 0.2s ease;
-        }
-
-        .link-forgot:hover {
-            text-decoration: none;
-            opacity: 0.8;
-        }
-
-        /* OR Divider */
-        .divider {
-            display: flex;
-            align-items: center;
-            text-align: center;
-            margin: 1.25rem 0;
-            color: var(--text-muted);
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .divider::before,
-        .divider::after {
-            content: '';
-            flex: 1;
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .divider::before {
-            margin-right: 16px;
-        }
-
-        .divider::after {
-            margin-left: 16px;
-        }
-
-        /* Borderless Frameless Google Button */
-        .btn-sso {
-            background-color: transparent;
-            color: var(--text-dark);
-            font-size: 14px;
-            font-weight: 600;
-            border: none;
-            margin: 0 auto 1.5rem auto;
-            padding: 8px;
-            width: auto;
-        }
-
-        .btn-sso:hover {
-            background-color: transparent;
-            opacity: 0.75;
-        }
-
-        /* Light blue color for Create new account (No border color change on hover) */
-        .btn-outline {
-            background-color: transparent;
-            color: var(--link-blue);
-            border: 1px solid var(--border-color);
-            transition: opacity 0.2s ease;
-        }
-
-        .btn-outline:hover {
-            opacity: 0.8;
-        }
-
-        .form-footer {
-            margin-top: 2.5rem;
-            display: flex;
-            flex-wrap: wrap; 
-            align-items: center;
-            justify-content: center;
-            gap: 12px;
-            color: var(--text-muted);
-            font-size: 13px;
-        }
-
-        .form-footer a {
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-
-        .form-footer a:hover {
-            color: var(--text-dark);
-        }
-
-        /* --- Overlay Modal --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.65);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            opacity: 0;
-            visibility: hidden;
-            transition: opacity 0.2s ease, visibility 0.2s ease;
-        }
-
-        .modal-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        .modal-card {
-            background: var(--modal-bg);
-            color: var(--text-dark);
-            border-radius: 14px;
-            width: 90%;
-            max-width: 320px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-            overflow: hidden;
-            transform: scale(1.05);
-            transition: transform 0.2s cubic-bezier(0.1, 0.9, 0.2, 1);
-        }
-
-        .modal-overlay.active .modal-card {
-            transform: scale(1);
-        }
-
-        .modal-body {
-            padding: 24px 20px;
-        }
-
-        .modal-body p {
-            font-size: 14px;
-            line-height: 1.45;
-            color: var(--text-dark);
-            font-weight: 400;
-        }
-
-        .modal-footer {
-            border-top: 1px solid var(--modal-border);
-        }
-
-        .modal-footer button {
-            width: 100%;
-            background: transparent;
-            border: none;
-            color: var(--primary);
-            font-weight: 700;
-            font-size: 14px;
-            padding: 14px 0;
-            cursor: pointer;
-            transition: background 0.15s ease;
-        }
-
-        .modal-footer button:hover {
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .modal-footer button:active {
-            opacity: 0.7;
-        }
-
-        @media (max-width: 1024px) {
-            .container {
-                flex-direction: column;
-                height: auto;
-            }
-            .visual-section {
-                display: none; 
-            }
-            .form-section {
-                width: 100%;
-                padding: 4rem 1rem 2rem 1rem;
-                min-height: 100vh;
-            }
-            body::before {
-                content: "";
-                background-image: var(--logo-url);
-                background-repeat: no-repeat;
-                background-size: contain;
-                position: absolute;
-                top: 1.5rem;
-                left: 1.5rem;
-                width: 120px;
-                height: 40px;
-            }
-        }
-
-        @media (max-height: 800px) and (min-width: 1025px) {
-            .visual-section h1 {
-                font-size: 2.6rem;
-                margin-bottom: 1.5rem;
-            }
-            .mockup-container {
-                transform: scale(0.9);
-            }
-        }
-    </style>
+    footer img {
+      width: 100%;
+      height: 28vh;
+      min-height: 160px;
+      object-fit: cover;
+      object-position: top center;
+      display: block;
+    }
+  </style>
 </head>
-<body>
+<body oncontextmenu="return false;">
 
-    <main class="container">
-        
-        <!-- Left: Modern Visual Area -->
-        <section class="visual-section">
-            <picture class="brand-logo">
-                <source srcset="https://i.imghippo.com/files/vgr8207c.png" media="(prefers-color-scheme: dark)">
-                <img src="https://i.imghippo.com/files/fRGt5603uII.png" alt="Edulink Logo">
-            </picture>
-            
-            <div class="visual-wrapper">
-                <h1>Helping Learners discover their <br> <span class="highlight">Inner Ter.</span></h1>
-                
-                <div class="mockup-container">
-                    <div class="mockup-card back"></div>
-                    <div class="mockup-card middle"></div>
-                    <div class="mockup-card front">
-                        <div class="mockup-header">
-                            <div class="mockup-avatar"></div>
-                            <div class="mockup-line"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
+  <!-- Top-Left Logo Capsule -->
+  <a href="#" class="brand-capsule">
+    <img src="https://res.cloudinary.com/dcpuyfslg/image/upload/v1787140183/idem_bv7it3.png" alt="EduLink Logo" draggable="false">
+    <span class="brand-text">EduLink</span>
+  </a>
 
-        <!-- Right: Modern Form Area -->
-        <section class="form-section">
-            <div class="form-wrapper">
-                <div class="form-header">
-                    <h2>Log into your account</h2>
-                </div>
+  <!-- Top-Right External Redirect Link -->
+  <a href="https://idembt.vercel.app" target="_blank" rel="noopener noreferrer" class="top-right-link">
+    <span>idembt.vercel.app</span>
+    <i data-lucide="arrow-up-right"></i>
+  </a>
 
-                <form id="loginForm" action="#" method="POST">
-                    <div class="input-group">
-                        <input type="text" id="userInput" placeholder="Mobile number, username or email" required>
-                    </div>
-                    <div class="input-group">
-                        <input type="password" id="passwordInput" placeholder="Password" required>
-                        <button type="button" id="togglePasswordBtn" class="password-toggle" aria-label="Toggle password visibility">
-                            <i data-lucide="eye"></i>
-                        </button>
-                    </div>
-                    <button type="submit" id="submitBtn" class="btn btn-primary">Log in</button>
-                </form>
-
-                <a href="/reset" class="link-forgot">Forgot password?</a>
-
-                <!-- OR Divider -->
-                <div class="divider">OR</div>
-
-                <!-- Frameless Google SSO Button -->
-                <button type="button" id="googleSsoBtn" class="btn btn-sso">
-                    <svg width="18" height="18" viewBox="0 0 24 24" style="margin-right: 8px;">
-                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                    </svg>
-                    Continue with Google
-                </button>
-                
-                <button type="button" id="createAccountBtn" class="btn btn-outline">Create new account</button>
-
-                <!-- Footer content -->
-                <div class="form-footer">
-                    <a href="/newton">Newton</a>
-                    <a href="/terms">Terms</a>
-                    <a href="/privacy">Privacy</a>
-                    <a href="/blog">Blog</a>
-                    <a href="https://idembt.vercel.app">Idem</a>
-                    <span>&copy; 2026 Edulink</span>
-                </div>
-            </div>
-        </section>
-        
-    </main>
-
-    <!-- Error Overlay Modal -->
-    <div id="errorModal" class="modal-overlay">
-        <div class="modal-card">
-            <div class="modal-body">
-                <p id="errorMessage">The username or password you entered is incorrect. Please try again.</p>
-            </div>
-            <div class="modal-footer">
-                <button id="modalOkBtn" type="button">OK</button>
-            </div>
+  <!-- Center Form -->
+  <main class="main-container">
+    <div class="login-wrapper">
+      <h1>Discover Your<br>Inner Ter</h1>
+      <p class="subtitle">A social media platform that helps learners discover their Inner Ter.</p>
+      
+      <form>
+        <div class="field-group">
+          <input type="text" placeholder="Email or username" required autocomplete="off">
         </div>
+        <div class="field-group">
+          <input type="password" id="passwordInput" class="password-field" placeholder="Password" required>
+          <button type="button" id="passwordToggle" class="password-toggle" aria-label="Toggle password visibility">
+            <i data-lucide="eye" id="eyeIcon"></i>
+            <i data-lucide="eye-off" id="eyeOffIcon" style="display: none;"></i>
+          </button>
+        </div>
+        <button type="submit">Continue</button>
+        <div class="meta-links">
+          <a href="/reset">Forgot password?</a>
+          <a href="/idem">Create account</a>
+        </div>
+      </form>
     </div>
+  </main>
 
-    <!-- Firebase Authentication & Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
-        import { 
-            getAuth, 
-            signInWithEmailAndPassword, 
-            GoogleAuthProvider, 
-            signInWithPopup 
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            query, 
-            where, 
-            getDocs 
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  <!-- Edge-to-Edge Footer -->
+  <footer>
+    <img src="https://res.cloudinary.com/dcpuyfslg/image/upload/v1787144307/n_1_1_ap4utx.png" alt="Footer graphic landscape" draggable="false">
+  </footer>
 
-        // Web app Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyAJH79UQl0rc96Qug0DKLevO4ZI_sn8Kno",
-            authDomain: "edulinki.firebaseapp.com",
-            projectId: "edulinki",
-            storageBucket: "edulinki.firebasestorage.app",
-            messagingSenderId: "248886466474",
-            appId: "1:248886466474:web:160043201a6b28bafbbdd3",
-            measurementId: "G-MQBH12VL7N"
-        };
+  <script>
+    lucide.createIcons();
 
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const analytics = getAnalytics(app);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const googleProvider = new GoogleAuthProvider();
+    const passwordInput = document.getElementById('passwordInput');
+    const passwordToggle = document.getElementById('passwordToggle');
+    const eyeIcon = document.getElementById('eyeIcon');
+    const eyeOffIcon = document.getElementById('eyeOffIcon');
 
-        // DOM Elements
-        const loginForm = document.getElementById('loginForm');
-        const userInput = document.getElementById('userInput');
-        const passwordInput = document.getElementById('passwordInput');
-        const googleSsoBtn = document.getElementById('googleSsoBtn');
-        const createAccountBtn = document.getElementById('createAccountBtn');
-        
-        const errorModal = document.getElementById('errorModal');
-        const errorMessage = document.getElementById('errorMessage');
-        const modalOkBtn = document.getElementById('modalOkBtn');
+    passwordInput.addEventListener('input', () => {
+      if (passwordInput.value.length > 0) {
+        passwordToggle.classList.add('visible');
+      } else {
+        passwordToggle.classList.remove('visible');
+      }
+    });
 
-        // Show Error Overlay Modal
-        function showErrorModal(message) {
-            errorMessage.textContent = message || "The username or password you entered is incorrect. Please try again.";
-            errorModal.classList.add('active');
-        }
+    passwordToggle.addEventListener('click', () => {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      eyeIcon.style.display = isPassword ? 'none' : 'block';
+      eyeOffIcon.style.display = isPassword ? 'block' : 'none';
+    });
+  </script>
 
-        // Hide Modal
-        modalOkBtn.addEventListener('click', () => {
-            errorModal.classList.remove('active');
-        });
-
-        // Close modal when clicking outside card
-        errorModal.addEventListener('click', (e) => {
-            if (e.target === errorModal) {
-                errorModal.classList.remove('active');
-            }
-        });
-
-        // Redirect 'Create new account' to /idem
-        createAccountBtn.addEventListener('click', () => {
-            window.location.href = '/idem';
-        });
-
-        // Helper function: Query username and return corresponding Email
-        async function resolveEmail(inputVal) {
-            if (inputVal.includes('@')) {
-                return inputVal; // Already an email
-            }
-            
-            // Query Firestore 'users' collection for username match
-            const usersRef = collection(db, "users");
-            const q = query(usersRef, where("username", "==", inputVal.trim().toLowerCase()));
-            const querySnapshot = await getDocs(q);
-
-            if (!querySnapshot.empty) {
-                let resolvedEmail = null;
-                querySnapshot.forEach((doc) => {
-                    resolvedEmail = doc.data().email;
-                });
-                return resolvedEmail;
-            } else {
-                throw new Error("user-not-found");
-            }
-        }
-
-        // Handle Email / Username Login Submit
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const rawUser = userInput.value.trim();
-            const password = passwordInput.value;
-
-            try {
-                // 1. Resolve email from username if required
-                const email = await resolveEmail(rawUser);
-
-                // 2. Authenticate
-                await signInWithEmailAndPassword(auth, email, password);
-                
-                // 3. Directly redirect on successful login
-                window.location.href = '/home';
-
-            } catch (error) {
-                console.error("Login Error:", error);
-                showErrorModal("The username or password you entered is incorrect. Please try again.");
-            }
-        });
-
-        // Handle Google SSO Login
-        googleSsoBtn.addEventListener('click', async () => {
-            try {
-                await signInWithPopup(auth, googleProvider);
-                // Directly redirect on successful Google sign-in
-                window.location.href = '/home';
-            } catch (error) {
-                console.error("Google Auth Error:", error);
-                showErrorModal("Could not sign in with Google. Please try again.");
-            }
-        });
-    </script>
-
-    <!-- UI Toggle Script -->
-    <script>
-        // Initialize Lucide icons
-        lucide.createIcons();
-
-        // Password Show/Hide Toggle
-        const passwordInputUI = document.getElementById('passwordInput');
-        const togglePasswordBtn = document.getElementById('togglePasswordBtn');
-
-        passwordInputUI.addEventListener('input', function() {
-            if (this.value.length > 0) {
-                togglePasswordBtn.style.display = 'flex';
-            } else {
-                togglePasswordBtn.style.display = 'none';
-            }
-        });
-
-        togglePasswordBtn.addEventListener('click', function() {
-            const isPassword = passwordInputUI.getAttribute('type') === 'password';
-            passwordInputUI.setAttribute('type', isPassword ? 'text' : 'password');
-            
-            this.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}"></i>`;
-            lucide.createIcons();
-            passwordInputUI.focus();
-        });
-    </script>
 </body>
 </html>
