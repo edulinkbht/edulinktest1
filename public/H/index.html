@@ -83,7 +83,6 @@ html.dark .liked-avatars img { border-color: #181818; }
 .comment-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 1000; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.3s ease, visibility 0s 0.3s; }
 body.drawer-open .comment-overlay { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.3s ease, visibility 0s; }
 
-/* The fix: added visibility hidden & pointer-events none to base states */
 .drawer-base { position: fixed; bottom: 0; left: 0; width: 100%; height: 75vh; background: #ffffff; border-radius: 24px 24px 0 0; display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); touch-action: pan-y; visibility: hidden; pointer-events: none; transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0s 0.35s; }
 html.dark .drawer-base { background: #111111; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
 
@@ -109,7 +108,13 @@ html.dark .header-action-btn { color: #fff; }
 .drawer-body { flex: 1; overflow-y: auto; padding: 20px 16px; position: relative; }
 
 /* Comment Styling & Spotlight Effect */
-.comment-item { display: flex; gap: 12px; margin-bottom: 24px; position: relative; transition: all 0.3s ease; }
+.comment-item { 
+    display: flex; gap: 12px; margin-bottom: 24px; position: relative; transition: all 0.3s ease;
+    /* Blocks browser text selection and context menus on long press */
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
 .avatar-wrapper { display: flex; flex-direction: column; align-items: center; width: 36px; flex-shrink: 0; }
 .avatar-wrapper .avatar { width: 36px; height: 36px; margin: 0; border-radius: 50%; object-fit: cover; }
 .thread-line { flex: 1; width: 2px; background: #efefef; margin-top: 8px; margin-bottom: -20px; border-radius: 2px; }
@@ -202,7 +207,7 @@ html.dark .sheet-cancel { background: #2a2a2a; color: #fff; }
 html.dark .sheet-cancel:active { background: #333; }
 
 /* =====================================================
-   NAVIGATION BASE STYLES (Pure White Base)
+   NAVIGATION BASE STYLES 
 ===================================================== */
 .nav-icon { width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; color: #888; transition: color .2s ease, transform .15s ease; }
 .nav-icon svg { width: 28px; height: 28px; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s ease, stroke-width .2s ease; }
@@ -230,7 +235,6 @@ html.dark .mobile-nav { background: #000000; border-top: 1px solid #2a2a2a; }
     
     main { max-width: 540px; margin-left: calc(50vw - 270px + 40px); padding-top: 24px; padding-bottom: 50px; }
     
-    /* Fixing the desktop overrides */
     .drawer-base { bottom: auto; top: 50%; left: calc(50% + 40px); width: 540px; height: 80vh; max-height: 800px; border-radius: 20px; }
     .comment-drawer { transform: translate(-50%, -45%) scale(0.95); opacity: 0; }
     body.drawer-open .comment-drawer { transform: translate(-50%, -50%) scale(1); opacity: 1; visibility: visible; pointer-events: auto; }
@@ -425,14 +429,14 @@ html.dark .mobile-nav { background: #000000; border-top: 1px solid #2a2a2a; }
 </div>
 
 <nav class="mobile-nav">
-    <button class="nav-icon active" data-icon="home"><i data-lucide="house"></i></button>
+    <button class="nav-icon active" data-icon="home"><i data-lucide="home"></i></button>
     <button class="nav-icon" data-icon="search"><i data-lucide="search"></i></button>
     <button class="nav-icon create"><i data-lucide="plus"></i></button>
     <button class="nav-icon" data-icon="board"><i data-lucide="layout-dashboard"></i></button>
     <button class="nav-icon profile-pic-btn"><img src="https://i.pravatar.cc/100?img=33" alt=""></button>
 </nav>
 <nav class="desktop-nav">
-    <button class="nav-icon active" data-icon="home"><i data-lucide="house"></i></button>
+    <button class="nav-icon active" data-icon="home"><i data-lucide="home"></i></button>
     <button class="nav-icon" data-icon="search"><i data-lucide="search"></i></button>
     <button class="nav-icon create"><i data-lucide="plus"></i></button>
     <button class="nav-icon" data-icon="board"><i data-lucide="layout-dashboard"></i></button>
@@ -495,8 +499,7 @@ document.getElementById('backToComments').addEventListener('click', closeReplies
 function openPostSheet() { document.body.classList.add('sheet-open', 'post-sheet-active'); updateMetaColor(); }
 function openCommentSheet() { document.body.classList.add('sheet-open', 'comment-sheet-active'); updateMetaColor(); }
 function closeSheets() { 
-    document.body.classList.remove('sheet-open', 'post-sheet-active', 'comment-sheet-active', 'comment-spotlight-active'); 
-    document.querySelectorAll('.spotlighted').forEach(el => el.classList.remove('spotlighted'));
+    document.body.classList.remove('sheet-open', 'post-sheet-active', 'comment-sheet-active'); 
     updateMetaColor(); 
 }
 
@@ -505,16 +508,37 @@ document.querySelectorAll('.open-comment-sheet').forEach(btn => btn.addEventList
 document.getElementById('actionSheetOverlay').addEventListener('click', closeSheets);
 document.querySelectorAll('.close-sheet').forEach(btn => btn.addEventListener('click', closeSheets));
 
+// Spotlight Closing Logic
+function closeSpotlight() {
+    if (document.body.classList.contains('comment-spotlight-active')) {
+        document.body.classList.remove('comment-spotlight-active');
+        document.querySelectorAll('.spotlighted').forEach(el => el.classList.remove('spotlighted'));
+    }
+}
+// Listen for clicks or taps anywhere on the screen to dismiss the spotlight
+window.addEventListener('touchstart', (e) => {
+    if (document.body.classList.contains('comment-spotlight-active') && !e.target.closest('.spotlighted')) {
+        closeSpotlight();
+    }
+}, {passive: true});
+window.addEventListener('click', (e) => {
+    if (document.body.classList.contains('comment-spotlight-active') && !e.target.closest('.spotlighted')) {
+        closeSpotlight();
+    }
+});
+
 // Long Press Comment Spotlight
 let pressTimer;
 document.querySelectorAll('.comment-item').forEach(comment => {
+    // Prevent the default browser context menu from popping up
+    comment.addEventListener('contextmenu', e => e.preventDefault());
+
     comment.addEventListener('touchstart', (e) => {
         if (e.target.closest('button')) return; // Ignore if clicking a button inside comment
         pressTimer = setTimeout(() => {
             document.body.classList.add('comment-spotlight-active');
             comment.classList.add('spotlighted');
-            openCommentSheet();
-        }, 500);
+        }, 450); // Just the spotlight, no action sheet
     }, {passive: true});
     comment.addEventListener('touchmove', () => clearTimeout(pressTimer), {passive: true});
     comment.addEventListener('touchend', () => clearTimeout(pressTimer), {passive: true});
