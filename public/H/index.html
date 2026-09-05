@@ -3,300 +3,477 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
 <title>Daily</title>
+
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
 /* =====================================================
    RESET & BASE
 ===================================================== */
-* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent !important; }
-::-webkit-scrollbar { display: none; width: 0; background: transparent; }
 
-html { background: #fff; color: #111; transition: background .25s ease, color .25s ease; overscroll-behavior-y: none; scrollbar-width: none; -ms-overflow-style: none; }
-html.dark { background: #000; color: #fff; }
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-body { font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", Inter, sans-serif; min-height: 100vh; overscroll-behavior-y: none; }
-button { border: none; background: transparent; cursor: pointer; color: inherit; }
-button:focus, button:focus-visible { outline: none; }
+::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    background: transparent;
+}
+
+html {
+    background: #fff;
+    color: #111;
+    transition: background .25s ease, color .25s ease;
+    overscroll-behavior-y: none;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+html.dark {
+    background: #000;
+    color: #fff;
+}
+
+body {
+    font-family:
+        -apple-system,
+        BlinkMacSystemFont,
+        "SF Pro Display",
+        "SF Pro Text",
+        Inter,
+        sans-serif;
+    min-height: 100vh;
+    overscroll-behavior-y: none;
+}
+
 
 /* =====================================================
    HEADER
 ===================================================== */
-header { height: 68px; width: 100%; display: flex; align-items: center; background: #fff; transition: background .25s ease; position: relative; z-index: 50; }
+
+header {
+    height: 68px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 0;
+    transition: background .25s ease;
+    position: relative;
+    z-index: 50;
+}
+
 html.dark header { background: #000; }
-.header-inner { width: 100%; max-width: 1000px; margin: auto; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; }
-.logo { font-size: 24px; font-weight: 800; letter-spacing: -1.2px; }
-.theme { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; transition: background .2s ease, transform .15s ease; }
+
+.header-inner {
+    width: 100%;
+    max-width: 1000px;
+    margin: auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -1.2px;
+}
+
+.theme {
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background .2s ease, transform .15s ease;
+}
+
 .theme:hover { background: #f1f1f1; }
 html.dark .theme:hover { background: #181818; }
 .theme:active { transform: scale(.88); }
 
+
 /* =====================================================
    PULL TO REFRESH SPINNER
 ===================================================== */
-#ptr-spinner { position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-70px) rotate(0deg); width: 42px; height: 42px; background: #fff; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: center; z-index: 40; pointer-events: none; }
-html.dark #ptr-spinner { background: #1f1f1f; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
-#ptr-spinner svg { width: 22px; height: 22px; stroke-width: 2.5; color: #666; }
+
+#ptr-spinner {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-70px) rotate(0deg);
+    width: 42px;
+    height: 42px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 40;
+    pointer-events: none;
+}
+
+html.dark #ptr-spinner {
+    background: #1f1f1f;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+#ptr-spinner svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2.5;
+    color: #666;
+}
+
 html.dark #ptr-spinner svg { color: #aaa; }
-.refreshing #ptr-spinner svg { animation: spin 1s linear infinite; color: #000; }
+
+.refreshing #ptr-spinner svg {
+    animation: spin 1s linear infinite;
+    color: #000;
+}
 html.dark .refreshing #ptr-spinner svg { color: #fff; }
+
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
 
 /* =====================================================
    FEED & POST STRUCTURE
 ===================================================== */
-main { width: 100%; max-width: 600px; margin: auto; padding: 12px 6px 90px; position: relative; z-index: 10; }
-.post { width: 100%; border: 0; margin-bottom: 44px; }
-.post-header { display: flex; align-items: center; padding: 0 6px 10px; }
-.avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; margin-right: 12px; flex-shrink: 0; }
+
+main {
+    width: 100%;
+    /* Default Mobile Sizing (Side gaps introduced) */
+    max-width: 600px;
+    margin: auto;
+    padding: 12px 14px 90px; 
+    position: relative;
+    z-index: 10;
+}
+
+.post {
+    width: 100%;
+    border: 0;
+    margin-bottom: 38px;
+}
+
+.post-header {
+    display: flex;
+    align-items: center;
+    padding: 0 6px 10px;
+}
+
+.avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-right: 12px;
+}
+
 .user { flex: 1; }
 .username { font-size: 14.5px; font-weight: 700; }
 .date { color: #8d8d93; font-size: 12px; margin-top: 2px; }
-.more { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; transition: background .2s ease; }
+
+.more {
+    width: 40px;
+    height: 40px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+}
 .more:hover { background: #f3f3f3; }
 html.dark .more:hover { background: #181818; }
-.caption { font-size: 15.5px; line-height: 1.5; padding: 0 6px 14px; color: #111; }
+
+
+/* =====================================================
+   CAPTION (Moved Above Image)
+===================================================== */
+
+.caption {
+    font-size: 15.5px;
+    line-height: 1.5;
+    padding: 0 6px 14px;
+    color: #111;
+}
+
 html.dark .caption { color: #f5f5f5; }
-.post-image { display: block; width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 12px; border: 1px solid rgba(0,0,0,0.04); }
+
+
+/* =====================================================
+   IMAGE
+===================================================== */
+
+.post-image {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 12px;
+    border: 1px solid rgba(0,0,0,0.04);
+}
+
 html.dark .post-image { border-color: rgba(255,255,255,0.06); }
 
-/* POST FOOT (Capsules) */
-.post-bottom { padding: 12px 4px 0; display: flex; align-items: center; justify-content: space-between; }
-.actions-capsule, .right-capsule { display: flex; align-items: center; gap: 2px; height: 42px; padding: 3px 4px; background: #ffffff; border: 1px solid #e8e8e8; border-radius: 999px; transition: background .25s ease, border-color .25s ease; }
-html.dark .actions-capsule, html.dark .right-capsule { background: #181818; border-color: #2a2a2a; }
-.action { width: 36px; height: 34px; border-radius: 999px; display: grid; place-items: center; transition: background .18s ease, transform .15s ease; }
+
+/* =====================================================
+   POST FOOT (Capsules)
+===================================================== */
+
+.post-bottom {
+    padding: 12px 4px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.actions-capsule,
+.right-capsule {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 42px;
+    padding: 3px 4px;
+    background: #ffffff; 
+    border: 1px solid #e8e8e8; 
+    border-radius: 999px;
+    transition: background .25s ease, border-color .25s ease;
+}
+
+html.dark .actions-capsule,
+html.dark .right-capsule {
+    background: #181818;
+    border-color: #2a2a2a; 
+}
+
+.action {
+    width: 36px;
+    height: 34px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: background .18s ease, transform .15s ease;
+}
+
 .action:hover { background: #f1f1f1; }
 html.dark .action:hover { background: #292929; }
 .action:active { transform: scale(.84); }
-.action svg { width: 22px; height: 22px; stroke-width: 2.15; stroke-linecap: round; stroke-linejoin: round; }
+
+.action svg {
+    width: 22px;
+    height: 22px;
+    stroke-width: 2.15;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
 .like.liked { color: #ff3045; }
 .like.liked svg { fill: currentColor; }
 .bookmark.saved svg { fill: currentColor; }
 
+
+/* =====================================================
+   LIKE DEMO CAPSULE
+===================================================== */
+
 .liked-by-capsule { padding: 2px 12px 2px 6px; gap: 6px; }
 .liked-avatars { display: flex; align-items: center; }
-.liked-avatars img { width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ffffff; object-fit: cover; margin-left: -8px; transition: border-color .25s ease; }
+.liked-avatars img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 2px solid #ffffff; 
+    object-fit: cover;
+    margin-left: -8px;
+    transition: border-color .25s ease;
+}
 .liked-avatars img:first-child { margin-left: 0; }
 html.dark .liked-avatars img { border-color: #181818; }
 .like-count { font-size: 13px; font-weight: 700; }
 
-/* =====================================================
-   DRAWER SYSTEM (Comments & Replies)
-===================================================== */
-.comment-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease; }
-body.drawer-open .comment-overlay { opacity: 1; visibility: visible; }
-
-.drawer-base { position: fixed; bottom: 0; left: 0; width: 100%; height: 75vh; background: #ffffff; border-radius: 24px 24px 0 0; display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease; }
-html.dark .drawer-base { background: #111111; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
-.comment-drawer { z-index: 1001; transform: translateY(100%); }
-body.drawer-open .comment-drawer { transform: translateY(0); }
-.replies-drawer { z-index: 1002; transform: translateX(100%); }
-body.replies-open .replies-drawer { transform: translateX(0); }
-
-.drawer-header { display: flex; align-items: center; justify-content: center; height: 60px; border-bottom: 1px solid #f0f0f0; position: relative; }
-html.dark .drawer-header { border-bottom-color: #222; }
-.drag-handle { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: #e0e0e0; border-radius: 4px; }
-html.dark .drag-handle { background: #333; }
-.drawer-header h3 { font-size: 16px; font-weight: 700; }
-
-.header-action-btn { position: absolute; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #f4f4f4; color: #111; transition: background .2s ease; }
-html.dark .header-action-btn { background: #222; color: #fff; }
-.header-action-btn:active { transform: scale(.9); }
-.header-action-btn svg { width: 18px; height: 18px; }
-.close-drawer { right: 16px; }
-.back-drawer { left: 16px; }
-
-.drawer-body { flex: 1; overflow-y: auto; padding: 20px 16px; }
-
-/* Threading & Comment Styling */
-.comment-item { display: flex; gap: 12px; margin-bottom: 24px; position: relative; }
-.avatar-wrapper { display: flex; flex-direction: column; align-items: center; width: 36px; flex-shrink: 0; }
-.avatar-wrapper .avatar { width: 36px; height: 36px; margin: 0; border-radius: 50%; object-fit: cover; }
-.thread-line { flex: 1; width: 2px; background: #efefef; margin-top: 8px; margin-bottom: -20px; border-radius: 2px; }
-html.dark .thread-line { background: #2a2a2a; }
-
-.comment-content { flex: 1; padding-bottom: 4px; }
-.comment-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
-.comment-top-left { display: flex; align-items: baseline; gap: 8px; }
-.comment-top .username { font-weight: 700; font-size: 14px; }
-.comment-top .time { color: #888; font-size: 12px; }
-
-.comment-more { width: 24px; height: 24px; display: grid; place-items: center; color: #999; border-radius: 50%; transition: background .2s; }
-.comment-more:hover { background: #f0f0f0; color: #111; }
-html.dark .comment-more:hover { background: #222; color: #fff; }
-.comment-more svg { width: 16px; height: 16px; }
-
-.comment-text { font-size: 14.5px; line-height: 1.4; margin-bottom: 8px; }
-
-/* Comment Action Row */
-.comment-action-row { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-
-.comment-capsule { display: inline-flex; align-items: center; gap: 2px; height: 32px; padding: 2px 4px; background: #f9f9f9; border: 1px solid #efefef; border-radius: 999px; }
-html.dark .comment-capsule { background: #1a1a1a; border-color: #2a2a2a; }
-.comment-capsule .action { width: 28px; height: 26px; }
-.comment-capsule .action svg { width: 15px; height: 15px; stroke-width: 2.2; }
-
-/* Liked by Creator Badge */
-.creator-like-badge { display: inline-flex; align-items: center; gap: 6px; }
-.creator-avatar-wrap { position: relative; width: 22px; height: 22px; }
-.creator-avatar-wrap img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-.creator-heart { position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; background: #ff3045; border: 2px solid #ffffff; border-radius: 50%; display: grid; place-items: center; }
-html.dark .creator-heart { border-color: #111111; }
-.creator-heart svg { width: 7px; height: 7px; fill: #ffffff; color: #ffffff; stroke-width: 0; }
-.creator-like-text { font-size: 12px; font-weight: 600; color: #888; }
-html.dark .creator-like-text { color: #777; }
-
-.view-replies-btn { display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; padding: 4px 8px 4px 0; font-size: 13px; font-weight: 600; color: #777; transition: opacity .2s ease; }
-html.dark .view-replies-btn { color: #999; }
-.reply-avatars { display: flex; align-items: center; }
-.reply-avatars img { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; margin-left: -6px; }
-.reply-avatars img:first-child { margin-left: 0; }
-html.dark .reply-avatars img { border-color: #111; }
-
-.parent-comment { position: relative; margin-bottom: 24px; padding-bottom: 8px; }
-
-/* Drawer Footer */
-.drawer-footer { display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid #f0f0f0; }
-html.dark .drawer-footer { border-top-color: #222; }
-.drawer-footer .avatar { width: 36px; height: 36px; margin: 0; border-radius: 50%; }
-.comment-input { flex: 1; height: 40px; background: #f4f4f4; border: 1px solid transparent; border-radius: 20px; padding: 0 16px; font-size: 14px; color: inherit; outline: none; transition: border-color 0.2s; }
-html.dark .comment-input { background: #222; }
-.comment-input:focus { border-color: #ccc; }
-html.dark .comment-input:focus { border-color: #444; }
-.send-comment { width: 40px; height: 40px; display: grid; place-items: center; color: #111; }
-html.dark .send-comment { color: #fff; }
-.send-comment svg { width: 20px; height: 20px; }
-
-/* =====================================================
-   ACTION SHEETS (More Menus)
-===================================================== */
-.action-sheet-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease; }
-body.sheet-open .action-sheet-overlay { opacity: 1; visibility: visible; }
-
-.action-sheet { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%) translateY(100%); width: 100%; max-width: 440px; background: #fff; border-radius: 24px 24px 0 0; z-index: 2001; padding: 12px 16px calc(20px + env(safe-area-inset-bottom)); transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1); display: none; }
-html.dark .action-sheet { background: #1c1c1c; }
-
-body.sheet-open.post-sheet-active #postActionSheet { display: block; transform: translateX(-50%) translateY(0); }
-body.sheet-open.comment-sheet-active #commentActionSheet { display: block; transform: translateX(-50%) translateY(0); }
-
-.sheet-handle { width: 40px; height: 4px; background: #e0e0e0; border-radius: 4px; margin: 0 auto 16px; }
-html.dark .sheet-handle { background: #3a3a3a; }
-
-.sheet-menu { background: #f4f4f4; border-radius: 16px; overflow: hidden; margin-bottom: 12px; }
-html.dark .sheet-menu { background: #2a2a2a; }
-
-.sheet-btn { width: 100%; padding: 16px; text-align: left; font-size: 15px; font-weight: 500; background: transparent; border-bottom: 1px solid #e5e5e5; display: flex; align-items: center; gap: 12px; transition: background .2s ease; }
-html.dark .sheet-btn { border-bottom-color: #3a3a3a; color: #fff; }
-.sheet-btn:last-child { border-bottom: none; }
-.sheet-btn:active { background: #e8e8e8; }
-html.dark .sheet-btn:active { background: #333; }
-
-.sheet-btn svg { width: 20px; height: 20px; stroke-width: 2; }
-.sheet-btn.danger { color: #ff3045; }
-.sheet-btn.danger svg { color: #ff3045; }
-
-.sheet-cancel { width: 100%; padding: 16px; font-size: 15px; font-weight: 600; text-align: center; background: #f4f4f4; border-radius: 16px; transition: background .2s ease; }
-html.dark .sheet-cancel { background: #2a2a2a; color: #fff; }
-.sheet-cancel:active { background: #e8e8e8; }
-html.dark .sheet-cancel:active { background: #333; }
 
 /* =====================================================
    NAVIGATION BASE STYLES
 ===================================================== */
-.nav-icon { width: 58px; height: 58px; border-radius: 18px; display: grid; place-items: center; color: #888; transition: color .2s ease, transform .15s ease, background .2s ease; }
-.nav-icon svg { width: 28px; height: 28px; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; transition: transform .2s ease, stroke-width .2s ease; }
+
+.nav-icon {
+    width: 58px;
+    height: 58px;
+    border: 0;
+    background: transparent;
+    color: #888;
+    border-radius: 18px;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: color .2s ease, transform .15s ease, background .2s ease;
+}
+
+.nav-icon svg {
+    width: 28px;
+    height: 28px;
+    stroke-width: 2.1;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: transform .2s ease, stroke-width .2s ease;
+}
+
 .nav-icon:hover { background: #f4f4f4; }
 html.dark .nav-icon:hover { background: #181818; }
 .nav-icon:active { transform: scale(.84); }
+
 .nav-icon.active { color: #000; }
 html.dark .nav-icon.active { color: #fff; }
 .nav-icon.active svg { stroke-width: 2.5; transform: scale(1.04); }
-.nav-icon.active[data-icon="home"] svg, .nav-icon.active[data-icon="heart"] svg, .nav-icon.active[data-icon="board"] svg { fill: currentColor; }
-.profile-pic-btn img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; border: 2px solid transparent; transition: border-color .2s ease, transform .2s ease; }
-.nav-icon.active.profile-pic-btn img { border-color: #111; transform: scale(1.08); }
+
+.nav-icon.active[data-icon="home"] svg { fill: currentColor; }
+.nav-icon.active[data-icon="heart"] svg { fill: currentColor; }
+.nav-icon.active[data-icon="board"] svg { fill: currentColor; }
+.nav-icon.create svg { stroke-width: 2.4; }
+
+.profile-pic-btn img {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid transparent;
+    transition: border-color .2s ease, transform .2s ease;
+}
+.nav-icon.active.profile-pic-btn img {
+    border-color: #111;
+    transform: scale(1.08);
+}
 html.dark .nav-icon.active.profile-pic-btn img { border-color: #fff; }
 
-.desktop-nav { display: none; }
-.mobile-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 66px; display: flex; align-items: center; justify-content: space-around; background: rgba(255,255,255,.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); z-index: 100; border-top: 1px solid #e8e8e8; padding-bottom: env(safe-area-inset-bottom); transition: background .25s ease, border-color .25s ease; }
-html.dark .mobile-nav { background: rgba(0,0,0,.96); border-top: 1px solid #2a2a2a; }
 
 /* =====================================================
-   RESPONSIVE (TABLET & DESKTOP) 
-   Perfectly aligning drawers over the post
+   RESPONSIVE BREAKPOINTS (Mobile vs Tablet/Desktop)
 ===================================================== */
-@media (min-width: 768px) {
-    .mobile-nav { display: none; }
-    .desktop-nav { position: fixed; left: 20px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 12px; background: transparent; z-index: 100; }
-    .desktop-nav .nav-icon { width: 52px; height: 52px; border-radius: 17px; }
-    .desktop-nav .nav-icon svg { width: 29px; height: 29px; }
-    
-    /* Main feed offset perfectly sets the stage */
-    main { max-width: 540px; margin-left: calc(50vw - 270px + 40px); padding-top: 24px; padding-bottom: 50px; }
-    
-    /* Centered floating modal, exactly aligning with the offset post */
-    .drawer-base { 
-        bottom: auto; top: 50%; 
-        left: calc(50% + 40px);
-        width: 540px; 
-        height: 80vh; max-height: 800px; 
-        border-radius: 20px; 
-    }
-    
-    .comment-drawer { transform: translate(-50%, -45%) scale(0.95); opacity: 0; }
-    body.drawer-open .comment-drawer { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-    
-    /* Replies slide in slightly from the right of the perfectly centered parent */
-    .replies-drawer { transform: translate(-30%, -50%); opacity: 0; }
-    body.replies-open .replies-drawer { transform: translate(-50%, -50%); opacity: 1; }
-    
-    .drag-handle { display: none; }
-    
-    /* Action sheets perfectly aligned to the post */
-    .action-sheet { 
-        bottom: 50%; 
-        left: calc(50% + 40px);
-        width: 540px; max-width: 540px;
-        transform: translate(-50%, 50%) scale(0.95); 
-        border-radius: 20px; padding: 20px; opacity: 0; 
-        transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s ease; 
-    }
-    body.sheet-open.post-sheet-active #postActionSheet, 
-    body.sheet-open.comment-sheet-active #commentActionSheet { transform: translate(-50%, 50%) scale(1); opacity: 1; }
-    .sheet-handle { display: none; }
+
+.desktop-nav { display: none; }
+
+.mobile-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 66px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: rgba(255,255,255,.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 100;
+    border-top: 1px solid #e8e8e8;
+    padding-bottom: env(safe-area-inset-bottom);
+    transition: background .25s ease, border-color .25s ease;
 }
 
-@media (min-width: 1024px) {
-    /* Post gets slightly smaller on very wide screens */
-    main { max-width: 480px; margin-left: calc(50vw - 240px + 40px); }
-    .desktop-nav { left: 40px; }
-    
-    /* Inherits center alignment, just shrinks to match 480px main column */
-    .drawer-base { 
-        width: 480px; 
-        height: 85vh; 
-    }
-    
-    .action-sheet { 
-        width: 480px; 
-        max-width: 480px; 
-    }
+html.dark .mobile-nav {
+    background: rgba(0,0,0,.96);
+    border-top: 1px solid #2a2a2a; 
 }
+
+
+/* TABLET & UP */
+@media (min-width: 768px) {
+    .mobile-nav { display: none; }
+
+    .desktop-nav {
+        position: fixed;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        background: transparent;
+        z-index: 100;
+    }
+
+    .desktop-nav .nav-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 17px;
+    }
+
+    .desktop-nav .nav-icon svg { width: 29px; height: 29px; }
+
+    main {
+        max-width: 500px;
+        /* Centers perfectly by offsetting half the width of the sidebar (approx 40px) */
+        margin-left: calc(50vw - 250px + 40px);
+        padding-top: 24px;
+        padding-bottom: 50px;
+    }
+
+    .post-image { border-radius: 14px; }
+}
+
+/* DESKTOP / LARGE SCREENS */
+@media (min-width: 1024px) {
+    main { 
+        max-width: 480px; 
+        margin-left: calc(50vw - 240px + 40px); 
+    }
+    .desktop-nav { left: 40px; }
+}
+
+
+/* =====================================================
+   ACCESSIBILITY
+===================================================== */
+button { -webkit-tap-highlight-color: transparent; }
+button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 </style>
 </head>
 
+
 <body>
 
-<div id="ptr-spinner"><i data-lucide="loader-circle"></i></div>
+<!-- PULL TO REFRESH SPINNER -->
+<div id="ptr-spinner">
+    <i data-lucide="loader-circle"></i>
+</div>
 
+
+<!-- =====================================================
+     HEADER
+===================================================== -->
 <header>
     <div class="header-inner">
         <div class="logo">Daily</div>
-        <button class="theme" id="theme" aria-label="Toggle dark mode"><i data-lucide="moon"></i></button>
+        <button class="theme" id="theme" aria-label="Toggle dark mode">
+            <i data-lucide="moon"></i>
+        </button>
     </div>
 </header>
 
+
+<!-- =====================================================
+     FEED
+===================================================== -->
 <main>
+
     <!-- POST 1 -->
     <article class="post">
         <div class="post-header">
@@ -305,239 +482,96 @@ html.dark .mobile-nav { background: rgba(0,0,0,.96); border-top: 1px solid #2a2a
                 <div class="username">alex</div>
                 <div class="date">Today at 8:32 AM</div>
             </div>
-            <button class="more open-post-sheet" aria-label="More options"><i data-lucide="ellipsis-vertical"></i></button>
+            <button class="more" aria-label="More"><i data-lucide="ellipsis-vertical"></i></button>
         </div>
+
+        <!-- CAPTION MOVED TO TOP -->
         <p class="caption">A quiet morning and a fresh start. ☕</p>
+
         <img class="post-image" src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=1000&q=90" alt="Coffee">
+
         <div class="post-bottom">
             <div class="actions-capsule">
                 <button class="action like" aria-label="Like"><i data-lucide="heart"></i></button>
-                <button class="action open-comments" aria-label="Comment"><i data-lucide="message-circle"></i></button>
+                <button class="action" aria-label="Comment"><i data-lucide="message-circle"></i></button>
+                <button class="action" aria-label="Share"><i data-lucide="send"></i></button>
+            </div>
+            <div class="right-capsule">
+                <button class="action bookmark" aria-label="Bookmark"><i data-lucide="bookmark"></i></button>
+            </div>
+        </div>
+    </article>
+
+
+    <!-- POST 2 -->
+    <article class="post">
+        <div class="post-header">
+            <img class="avatar" src="https://i.pravatar.cc/100?img=32" alt="">
+            <div class="user">
+                <div class="username">mia</div>
+                <div class="date">Yesterday at 6:14 PM</div>
+            </div>
+            <button class="more" aria-label="More"><i data-lucide="ellipsis-vertical"></i></button>
+        </div>
+
+        <!-- CAPTION MOVED TO TOP -->
+        <p class="caption">Weekend views never get old. Taking some time to disconnect and recharge.</p>
+
+        <img class="post-image" src="https://images.unsplash.com/photo-1500534623283-312aade485b7?auto=format&fit=crop&w=1000&q=90" alt="Landscape">
+
+        <div class="post-bottom">
+            <div class="actions-capsule">
+                <button class="action like" aria-label="Like"><i data-lucide="heart"></i></button>
+                <button class="action" aria-label="Comment"><i data-lucide="message-circle"></i></button>
                 <button class="action" aria-label="Share"><i data-lucide="send"></i></button>
             </div>
             <div class="right-capsule liked-by-capsule">
                 <div class="liked-avatars">
                     <img src="https://i.pravatar.cc/100?img=5" alt="">
                     <img src="https://i.pravatar.cc/100?img=9" alt="">
+                    <img src="https://i.pravatar.cc/100?img=4" alt="">
                 </div>
-                <div class="like-count">1.2k</div>
+                <div class="like-count">14.2k</div>
             </div>
         </div>
     </article>
+
 </main>
 
 
 <!-- =====================================================
-     ACTION SHEETS (Post & Comment menus)
-===================================================== -->
-<div class="action-sheet-overlay" id="actionSheetOverlay"></div>
-
-<!-- POST Action Sheet -->
-<div class="action-sheet" id="postActionSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-menu">
-        <button class="sheet-btn"><i data-lucide="star"></i> Add to Favorites</button>
-        <button class="sheet-btn"><i data-lucide="link"></i> Copy Link</button>
-        <button class="sheet-btn"><i data-lucide="share-2"></i> Share to...</button>
-        <button class="sheet-btn danger"><i data-lucide="user-minus"></i> Unfollow</button>
-        <button class="sheet-btn danger"><i data-lucide="flag"></i> Report</button>
-    </div>
-    <button class="sheet-cancel close-sheet">Cancel</button>
-</div>
-
-<!-- COMMENT Action Sheet -->
-<div class="action-sheet" id="commentActionSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-menu">
-        <button class="sheet-btn"><i data-lucide="eye-off"></i> Hide</button>
-        <button class="sheet-btn danger"><i data-lucide="flag"></i> Report</button>
-    </div>
-    <button class="sheet-cancel close-sheet">Cancel</button>
-</div>
-
-
-<!-- =====================================================
-     COMMENT DRAWER
-===================================================== -->
-<div class="comment-overlay" id="commentOverlay"></div>
-
-<div class="drawer-base comment-drawer" id="commentDrawer">
-    <div class="drawer-header">
-        <div class="drag-handle"></div>
-        <h3>Comments</h3>
-        <button class="header-action-btn close-drawer" id="closeDrawer" aria-label="Close"><i data-lucide="x"></i></button>
-    </div>
-    
-    <div class="drawer-body">
-        
-        <!-- Threaded Parent Comment 1 -->
-        <div class="comment-item">
-            <div class="avatar-wrapper">
-                <img class="avatar" src="https://i.pravatar.cc/100?img=5" alt="">
-                <div class="thread-line"></div>
-            </div>
-            
-            <div class="comment-content">
-                <div class="comment-top">
-                    <div class="comment-top-left">
-                        <span class="username">sarah_j</span>
-                        <span class="time">2h</span>
-                    </div>
-                    <button class="comment-more open-comment-sheet" aria-label="More"><i data-lucide="more-horizontal"></i></button>
-                </div>
-                <p class="comment-text">This looks absolutely amazing! Enjoy the quiet time. ✨</p>
-                
-                <div class="comment-action-row">
-                    <div class="comment-capsule">
-                        <button class="action like" aria-label="Like Comment"><i data-lucide="heart"></i></button>
-                        <button class="action open-replies" aria-label="Reply"><i data-lucide="message-circle"></i></button>
-                    </div>
-
-                    <!-- LIKED BY CREATOR BADGE -->
-                    <div class="creator-like-badge">
-                        <div class="creator-avatar-wrap">
-                            <img src="https://i.pravatar.cc/100?img=12" alt="alex">
-                            <div class="creator-heart"><i data-lucide="heart"></i></div>
-                        </div>
-                        <span class="creator-like-text">Liked by author</span>
-                    </div>
-                </div>
-
-                <button class="view-replies-btn open-replies">
-                    <div class="reply-avatars"><img src="https://i.pravatar.cc/100?img=11" alt=""><img src="https://i.pravatar.cc/100?img=44" alt=""></div>
-                    — View 2 replies
-                </button>
-            </div>
-        </div>
-
-        <!-- Standalone Comment 2 -->
-        <div class="comment-item">
-            <div class="avatar-wrapper">
-                <img class="avatar" src="https://i.pravatar.cc/100?img=22" alt="">
-            </div>
-            
-            <div class="comment-content">
-                <div class="comment-top">
-                    <div class="comment-top-left">
-                        <span class="username">dev_mark</span>
-                        <span class="time">4h</span>
-                    </div>
-                    <button class="comment-more open-comment-sheet" aria-label="More"><i data-lucide="more-horizontal"></i></button>
-                </div>
-                <p class="comment-text">Love the lighting in this shot. Did you use a filter or is it natural?</p>
-                
-                <div class="comment-action-row">
-                    <div class="comment-capsule">
-                        <button class="action like" aria-label="Like Comment"><i data-lucide="heart"></i></button>
-                        <button class="action open-replies" aria-label="Reply"><i data-lucide="message-circle"></i></button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="drawer-footer">
-        <img class="avatar" src="https://i.pravatar.cc/100?img=33" alt="">
-        <input type="text" placeholder="Add a comment..." class="comment-input">
-        <button class="send-comment"><i data-lucide="send"></i></button>
-    </div>
-</div>
-
-<!-- =====================================================
-     REPLIES DRAWER
-===================================================== -->
-<div class="drawer-base replies-drawer" id="repliesDrawer">
-    <div class="drawer-header">
-        <button class="header-action-btn back-drawer" id="backToComments" aria-label="Back"><i data-lucide="chevron-left"></i></button>
-        <h3>Replies</h3>
-    </div>
-    
-    <div class="drawer-body">
-        <!-- Parent -->
-        <div class="comment-item parent-comment">
-            <div class="avatar-wrapper">
-                <img class="avatar" src="https://i.pravatar.cc/100?img=5" alt="">
-                <div class="thread-line"></div>
-            </div>
-            <div class="comment-content">
-                <div class="comment-top">
-                    <div class="comment-top-left">
-                        <span class="username">sarah_j</span>
-                        <span class="time">2h</span>
-                    </div>
-                    <button class="comment-more open-comment-sheet"><i data-lucide="more-horizontal"></i></button>
-                </div>
-                <p class="comment-text">This looks absolutely amazing! Enjoy the quiet time. ✨</p>
-            </div>
-        </div>
-
-        <!-- Reply 1 -->
-        <div class="comment-item">
-            <div class="avatar-wrapper">
-                <img class="avatar" src="https://i.pravatar.cc/100?img=11" alt="">
-                <div class="thread-line"></div>
-            </div>
-            <div class="comment-content">
-                <div class="comment-top">
-                    <div class="comment-top-left">
-                        <span class="username">mike_v</span>
-                        <span class="time">1h</span>
-                    </div>
-                    <button class="comment-more open-comment-sheet"><i data-lucide="more-horizontal"></i></button>
-                </div>
-                <p class="comment-text">Right? Wish I was there instead of the office right now haha.</p>
-                <div class="comment-capsule"><button class="action like"><i data-lucide="heart"></i></button></div>
-            </div>
-        </div>
-
-        <!-- Reply 2 -->
-        <div class="comment-item">
-            <div class="avatar-wrapper">
-                <img class="avatar" src="https://i.pravatar.cc/100?img=44" alt="">
-            </div>
-            <div class="comment-content">
-                <div class="comment-top">
-                    <div class="comment-top-left">
-                        <span class="username">emma.design</span>
-                        <span class="time">45m</span>
-                    </div>
-                    <button class="comment-more open-comment-sheet"><i data-lucide="more-horizontal"></i></button>
-                </div>
-                <p class="comment-text">@mike_v same here! Need a vacation ASAP.</p>
-                <div class="comment-capsule"><button class="action like"><i data-lucide="heart"></i></button></div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="drawer-footer">
-        <img class="avatar" src="https://i.pravatar.cc/100?img=33" alt="">
-        <input type="text" placeholder="Reply to sarah_j..." class="comment-input" id="replyInput">
-        <button class="send-comment"><i data-lucide="send"></i></button>
-    </div>
-</div>
-
-
-<!-- =====================================================
-     NAVS
+     MOBILE NAV (Phones only)
 ===================================================== -->
 <nav class="mobile-nav">
-    <button class="nav-icon active" data-icon="home"><i data-lucide="house"></i></button>
-    <button class="nav-icon" data-icon="heart"><i data-lucide="heart"></i></button>
-    <button class="nav-icon create"><i data-lucide="plus"></i></button>
-    <button class="nav-icon profile-pic-btn"><img src="https://i.pravatar.cc/100?img=33" alt=""></button>
+    <button class="nav-icon active" data-icon="home" aria-label="Home"><i data-lucide="house"></i></button>
+    <button class="nav-icon" data-icon="heart" aria-label="Notifications"><i data-lucide="heart"></i></button>
+    <button class="nav-icon create" aria-label="Create"><i data-lucide="plus"></i></button>
+    <button class="nav-icon" data-icon="board" aria-label="Board"><i data-lucide="grid-2x2"></i></button>
+    
+    <button class="nav-icon profile-pic-btn" data-icon="profile" aria-label="Profile">
+        <img src="https://i.pravatar.cc/100?img=33" alt="Profile">
+    </button>
 </nav>
+
+
+<!-- =====================================================
+     DESKTOP NAV (Tablets, Laptops, Desktops)
+===================================================== -->
 <nav class="desktop-nav">
-    <button class="nav-icon active" data-icon="home"><i data-lucide="house"></i></button>
-    <button class="nav-icon" data-icon="heart"><i data-lucide="heart"></i></button>
-    <button class="nav-icon create"><i data-lucide="plus"></i></button>
-    <button class="nav-icon profile-pic-btn"><img src="https://i.pravatar.cc/100?img=33" alt=""></button>
+    <button class="nav-icon active" data-icon="home" aria-label="Home"><i data-lucide="house"></i></button>
+    <button class="nav-icon" data-icon="heart" aria-label="Notifications"><i data-lucide="heart"></i></button>
+    <button class="nav-icon create" aria-label="Create"><i data-lucide="plus"></i></button>
+    <button class="nav-icon" data-icon="board" aria-label="Board"><i data-lucide="grid-2x2"></i></button>
+    
+    <button class="nav-icon profile-pic-btn" data-icon="profile" aria-label="Profile">
+        <img src="https://i.pravatar.cc/100?img=33" alt="Profile">
+    </button>
 </nav>
 
 
 <script>
 lucide.createIcons();
 
-// Theme Logic
 const themeButton = document.getElementById("theme");
 let dark = localStorage.getItem("social-theme") === "dark";
 
@@ -547,14 +581,21 @@ function updateTheme() {
     lucide.createIcons();
     localStorage.setItem("social-theme", dark ? "dark" : "light");
 }
-themeButton.addEventListener("click", () => { dark = !dark; updateTheme(); });
+
+themeButton.addEventListener("click", () => {
+    dark = !dark;
+    updateTheme();
+});
 updateTheme();
 
-// Interactions
-document.querySelectorAll(".like").forEach(btn => btn.addEventListener("click", () => btn.classList.toggle("liked")));
-document.querySelectorAll(".bookmark").forEach(btn => btn.addEventListener("click", () => btn.classList.toggle("saved")));
+document.querySelectorAll(".like").forEach(button => {
+    button.addEventListener("click", () => button.classList.toggle("liked"));
+});
 
-// Nav Selection
+document.querySelectorAll(".bookmark").forEach(button => {
+    button.addEventListener("click", () => button.classList.toggle("saved"));
+});
+
 document.querySelectorAll(".nav-icon").forEach(button => {
     button.addEventListener("click", () => {
         const nav = button.closest("nav");
@@ -563,40 +604,18 @@ document.querySelectorAll(".nav-icon").forEach(button => {
     });
 });
 
-// Comments & Replies Drawer Logic
-const commentOverlay = document.getElementById('commentOverlay');
-const closeDrawerBtn = document.getElementById('closeDrawer');
-const backToCommentsBtn = document.getElementById('backToComments');
 
-function openComments() { document.body.classList.add('drawer-open'); document.body.style.overflow = 'hidden'; }
-function closeComments() { document.body.classList.remove('drawer-open', 'replies-open'); document.body.style.overflow = ''; }
-function openReplies() { document.body.classList.add('replies-open'); setTimeout(() => document.getElementById('replyInput').focus(), 350); }
-function closeReplies() { document.body.classList.remove('replies-open'); }
-
-document.querySelectorAll('.open-comments').forEach(btn => btn.addEventListener('click', openComments));
-document.querySelectorAll('.open-replies').forEach(btn => btn.addEventListener('click', openReplies));
-closeDrawerBtn.addEventListener('click', closeComments);
-commentOverlay.addEventListener('click', closeComments);
-backToCommentsBtn.addEventListener('click', closeReplies);
-
-// ACTION SHEET LOGIC
-const actionSheetOverlay = document.getElementById('actionSheetOverlay');
-
-function openPostSheet() { document.body.classList.add('sheet-open', 'post-sheet-active'); }
-function openCommentSheet() { document.body.classList.add('sheet-open', 'comment-sheet-active'); }
-function closeSheets() { document.body.classList.remove('sheet-open', 'post-sheet-active', 'comment-sheet-active'); }
-
-document.querySelectorAll('.open-post-sheet').forEach(btn => btn.addEventListener('click', openPostSheet));
-document.querySelectorAll('.open-comment-sheet').forEach(btn => btn.addEventListener('click', openCommentSheet));
-actionSheetOverlay.addEventListener('click', closeSheets);
-document.querySelectorAll('.close-sheet').forEach(btn => btn.addEventListener('click', closeSheets));
-
-// PTR Logic
+// ==========================================
+// CUSTOM PULL TO REFRESH LOGIC
+// ==========================================
 const ptrSpinner = document.getElementById('ptr-spinner');
-let startY = 0, currentY = 0, isPulling = false, isRefreshing = false;
+let startY = 0;
+let currentY = 0;
+let isPulling = false;
+let isRefreshing = false;
 
 window.addEventListener('touchstart', (e) => {
-    if (window.scrollY === 0 && !isRefreshing && !document.body.classList.contains('drawer-open') && !document.body.classList.contains('sheet-open')) {
+    if (window.scrollY === 0 && !isRefreshing) {
         startY = e.touches[0].clientY;
         isPulling = true;
         ptrSpinner.style.transition = 'none'; 
@@ -605,8 +624,10 @@ window.addEventListener('touchstart', (e) => {
 
 window.addEventListener('touchmove', (e) => {
     if (!isPulling) return;
+    
     currentY = e.touches[0].clientY;
     let pullDistance = currentY - startY;
+    
     if (pullDistance > 0 && window.scrollY === 0) {
         let resistance = pullDistance * 0.4;
         let yPos = Math.min(resistance - 70, 30);
@@ -620,13 +641,19 @@ window.addEventListener('touchmove', (e) => {
 window.addEventListener('touchend', () => {
     if (!isPulling) return;
     isPulling = false;
+    
     let pullDistance = currentY - startY;
+    
     if (pullDistance > 140) {
         isRefreshing = true;
         ptrSpinner.style.transition = 'transform 0.3s ease';
         ptrSpinner.style.transform = `translateX(-50%) translateY(30px) rotate(0deg)`;
         document.documentElement.classList.add('refreshing');
-        setTimeout(() => location.reload(), 1200);
+        
+        setTimeout(() => {
+            location.reload();
+        }, 1200);
+        
     } else {
         ptrSpinner.style.transition = 'transform 0.3s ease';
         ptrSpinner.style.transform = `translateX(-50%) translateY(-70px) rotate(0deg)`;
