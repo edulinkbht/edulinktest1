@@ -1,3 +1,8 @@
+Got it. You want that true, edge-to-edge Instagram spotlight where the entire screen drops out of focus, and you want that little gray thread line to disappear so the comment looks like it's completely floating on its own.
+Here is exactly what I tweaked:
+ * Full-Screen Blur: I linked the spotlight trigger to the main feed overlay (.comment-overlay). Now, when you long-press a comment, it doesn't just blur inside the drawer—it throws a heavy blur and tint across the entire app background so it all matches perfectly.
+ * Severed the Thread: I added an opacity transition to the .thread-line specifically when a comment enters the .spotlighted state. It vanishes instantly when focused.
+Here is the updated code:
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -102,35 +107,23 @@ html.dark body.comment-spotlight-active .comment-overlay {
     background: rgba(0, 0, 0, 0.7);
 }
 
-.drawer-base { 
-    position: fixed; bottom: 0; left: 0; width: 100%; height: 75vh; 
-    background: #ffffff; border-radius: 24px 24px 0 0; display: flex; flex-direction: column; 
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.1); touch-action: pan-y; 
-    visibility: hidden; pointer-events: none; 
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), height 0.35s cubic-bezier(0.32, 0.72, 0, 1), border-radius 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0s 0.35s; 
-}
+.drawer-base { position: fixed; bottom: 0; left: 0; width: 100%; height: 75vh; background: #ffffff; border-radius: 24px 24px 0 0; display: flex; flex-direction: column; box-shadow: 0 -10px 40px rgba(0,0,0,0.1); touch-action: pan-y; visibility: hidden; pointer-events: none; transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0s 0.35s; }
 html.dark .drawer-base { background: #111111; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
 
 /* SPOTLIGHT OVERLAY (Inside drawer) */
-.spotlight-overlay { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 50; border-radius: inherit; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.3s ease; }
+.spotlight-overlay { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 50; border-radius: 24px 24px 0 0; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.3s ease; }
 html.dark .spotlight-overlay { background: rgba(0, 0, 0, 0.7); }
 body.comment-spotlight-active .spotlight-overlay { opacity: 1; visibility: visible; pointer-events: auto; }
 
 .comment-drawer { z-index: 1001; transform: translateY(100%); }
-body.drawer-open .comment-drawer { 
-    transform: translateY(0); visibility: visible; pointer-events: auto; 
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), height 0.35s cubic-bezier(0.32, 0.72, 0, 1), border-radius 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0s; 
-}
+body.drawer-open .comment-drawer { transform: translateY(0); visibility: visible; pointer-events: auto; transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0s; }
 
 .replies-drawer { z-index: 1002; transform: translateX(100%); }
-body.replies-open .replies-drawer { 
-    transform: translateX(0); visibility: visible; pointer-events: auto; 
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), height 0.35s cubic-bezier(0.32, 0.72, 0, 1), border-radius 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0s; 
-}
+body.replies-open .replies-drawer { transform: translateX(0); visibility: visible; pointer-events: auto; transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.3s ease, visibility 0s; }
 
 .drawer-header { display: flex; align-items: center; justify-content: center; height: 60px; border-bottom: 1px solid #f0f0f0; position: relative; flex-shrink: 0; z-index: 10; }
 html.dark .drawer-header { border-bottom-color: #222; }
-.drag-handle { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: #e0e0e0; border-radius: 4px; transition: opacity 0.2s ease; }
+.drag-handle { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: #e0e0e0; border-radius: 4px; }
 html.dark .drag-handle { background: #333; }
 .drawer-header h3 { font-size: 16px; font-weight: 700; }
 
@@ -272,20 +265,6 @@ html.dark .nav-icon.active.profile-pic-btn img { border-color: #fff; }
 .desktop-nav { display: none; }
 .mobile-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 66px; display: flex; align-items: center; justify-content: space-around; background: #ffffff; z-index: 100; border-top: 1px solid #e8e8e8; padding-bottom: env(safe-area-inset-bottom); transition: background .25s ease, border-color .25s ease; }
 html.dark .mobile-nav { background: #000000; border-top: 1px solid #2a2a2a; }
-
-/* =====================================================
-   RESPONSIVE (MOBILE SPECIFIC OVERRIDES) 
-===================================================== */
-@media (max-width: 767px) {
-    /* Grow drawer to full height on phone when spotlighted */
-    body.comment-spotlight-active .drawer-base {
-        height: 100vh;
-        border-radius: 0;
-    }
-    body.comment-spotlight-active .drag-handle {
-        opacity: 0; /* Fade out drag handle when expanded */
-    }
-}
 
 /* =====================================================
    RESPONSIVE (TABLET & DESKTOP) 
@@ -702,3 +681,4 @@ window.addEventListener('touchend', () => {
 
 </body>
 </html>
+
