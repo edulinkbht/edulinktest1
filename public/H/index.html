@@ -92,15 +92,14 @@ body.drawer-open .comment-overlay {
     transition: opacity 0.3s ease, background 0.3s ease, backdrop-filter 0.3s ease, visibility 0s; 
 }
 
-/* SPOTLIGHT OVERLAY BEHAVIOR */
-/* We turn the main background overlay into a heavy blur and hide the drawer's structural UI */
+/* Spotlighting turns the main feed background blur on to match the drawer */
 body.comment-spotlight-active .comment-overlay {
-    background: rgba(255, 255, 255, 0.92);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 html.dark body.comment-spotlight-active .comment-overlay {
-    background: rgba(10, 10, 10, 0.92);
+    background: rgba(0, 0, 0, 0.7);
 }
 
 .drawer-base { 
@@ -108,39 +107,35 @@ html.dark body.comment-spotlight-active .comment-overlay {
     background: #ffffff; border-radius: 24px 24px 0 0; display: flex; flex-direction: column; 
     box-shadow: 0 -10px 40px rgba(0,0,0,0.1); touch-action: pan-y; 
     visibility: hidden; pointer-events: none; 
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, visibility 0s 0.35s; 
+    /* Removed height from transition to eliminate lag completely */
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), border-radius 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, visibility 0s 0.35s; 
 }
 html.dark .drawer-base { background: #111111; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
 
-/* The magic trick: make the drawer invisible so it blends perfectly into the full screen overlay */
-body.comment-spotlight-active .drawer-base {
-    background: transparent !important;
-    box-shadow: none !important;
-}
+/* SPOTLIGHT OVERLAY (Inside drawer) */
+.spotlight-overlay { position: absolute; inset: 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 50; border-radius: inherit; opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.3s ease; }
+html.dark .spotlight-overlay { background: rgba(0, 0, 0, 0.7); }
+body.comment-spotlight-active .spotlight-overlay { opacity: 1; visibility: visible; pointer-events: auto; }
 
 .comment-drawer { z-index: 1001; transform: translateY(100%); }
 body.drawer-open .comment-drawer { 
     transform: translateY(0); visibility: visible; pointer-events: auto; 
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, visibility 0s; 
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), border-radius 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, visibility 0s; 
 }
 
 .replies-drawer { z-index: 1002; transform: translateX(100%); }
 body.replies-open .replies-drawer { 
     transform: translateX(0); visibility: visible; pointer-events: auto; 
-    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), background 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, visibility 0s; 
+    transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1), border-radius 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease, visibility 0s; 
 }
 
-/* Header & Footer Fade Out during spotlight */
-.drawer-header { display: flex; align-items: center; justify-content: center; height: 60px; border-bottom: 1px solid #f0f0f0; position: relative; flex-shrink: 0; z-index: 10; transition: opacity 0.3s ease; }
-html.dark .drawer-header { border-bottom-color: #222; }
-.drag-handle { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: #e0e0e0; border-radius: 4px; transition: opacity 0.3s ease; }
+/* Header border removed completely */
+.drawer-header { display: flex; align-items: center; justify-content: center; height: 60px; border-bottom: none; position: relative; flex-shrink: 0; z-index: 10; transition: opacity 0.2s ease; }
+.drag-handle { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 40px; height: 4px; background: #e0e0e0; border-radius: 4px; transition: opacity 0.2s ease; }
 html.dark .drag-handle { background: #333; }
-.drawer-header h3 { font-size: 16px; font-weight: 700; }
+.drawer-header h3 { font-size: 16px; font-weight: 700; transition: opacity 0.2s ease; }
 
-body.comment-spotlight-active .drawer-header,
-body.comment-spotlight-active .drag-handle { opacity: 0; pointer-events: none; }
-
-.header-action-btn { position: absolute; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #111; transition: transform .15s ease; }
+.header-action-btn { position: absolute; width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: #111; transition: transform .15s ease, opacity 0.2s ease; }
 html.dark .header-action-btn { color: #fff; }
 .header-action-btn:active { transform: scale(.84); }
 .header-action-btn svg { width: 22px; height: 22px; }
@@ -148,9 +143,8 @@ html.dark .header-action-btn { color: #fff; }
 .back-drawer { left: 16px; }
 
 .drawer-body { flex: 1; overflow-y: auto; padding: 20px 16px; position: relative; }
-body.comment-spotlight-active .drawer-body { overflow: hidden; }
 
-/* Comment Styling */
+/* Comment Styling & Spotlight Effect with Shadow */
 .comment-item { 
     display: flex; gap: 12px; position: relative; 
     z-index: 1;
@@ -159,15 +153,8 @@ body.comment-spotlight-active .drawer-body { overflow: hidden; }
     margin: -12px -12px 12px -12px;
     border-radius: 16px;
     background: transparent;
-    transition: transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.25s ease;
+    transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1), background 0.3s ease, box-shadow 0.3s ease;
 }
-
-/* Fade out all non-focused comments seamlessly */
-body.comment-spotlight-active .comment-item:not(.spotlighted) {
-    opacity: 0;
-    pointer-events: none;
-}
-
 .avatar-wrapper { display: flex; flex-direction: column; align-items: center; width: 36px; flex-shrink: 0; }
 .avatar-wrapper .avatar { width: 36px; height: 36px; margin: 0; border-radius: 50%; object-fit: cover; }
 .thread-line { flex: 1; width: 2px; background: #efefef; margin-top: 8px; margin-bottom: -20px; border-radius: 2px; transition: opacity 0.2s ease; }
@@ -186,10 +173,17 @@ html.dark .comment-more:active { color: #fff; }
 
 .comment-text { font-size: 14.5px; line-height: 1.4; margin-bottom: 8px; }
 
-/* Spotlight Focus: Just a slight scale pop, completely floating without borders */
+/* Spotlight Long-Press Pop & Hiding Thread Line */
+body.comment-spotlight-active .drawer-body { overflow: hidden; }
 .comment-item.spotlighted { 
     z-index: 100; 
-    transform: scale(1.04); 
+    transform: scale(1.03); 
+    background: #ffffff; 
+    box-shadow: 0 16px 40px rgba(0,0,0,0.15); 
+}
+html.dark .comment-item.spotlighted {
+    background: #1c1c1c; 
+    box-shadow: 0 16px 40px rgba(0,0,0,0.7);
 }
 .comment-item.spotlighted .thread-line { opacity: 0; }
 
@@ -218,10 +212,8 @@ html.dark .reply-avatars img { border-color: #111; }
 .parent-comment { position: relative; margin-bottom: 24px; padding-bottom: 8px; }
 
 /* Drawer Footer */
-.drawer-footer { display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid #f0f0f0; flex-shrink: 0; z-index: 10; position: relative; transition: opacity 0.3s ease; }
+.drawer-footer { display: flex; align-items: center; gap: 12px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid #f0f0f0; flex-shrink: 0; z-index: 10; position: relative; transition: opacity 0.2s ease; }
 html.dark .drawer-footer { border-top-color: #222; }
-body.comment-spotlight-active .drawer-footer { opacity: 0; pointer-events: none; }
-
 .drawer-footer .avatar { width: 36px; height: 36px; margin: 0; border-radius: 50%; }
 .comment-input { flex: 1; height: 40px; background: #f4f4f4; border: 1px solid transparent; border-radius: 20px; padding: 0 16px; font-size: 14px; color: inherit; outline: none; transition: border-color 0.2s; }
 html.dark .comment-input { background: #222; }
@@ -281,6 +273,38 @@ html.dark .nav-icon.active.profile-pic-btn img { border-color: #fff; }
 .desktop-nav { display: none; }
 .mobile-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 66px; display: flex; align-items: center; justify-content: space-around; background: #ffffff; z-index: 100; border-top: 1px solid #e8e8e8; padding-bottom: env(safe-area-inset-bottom); transition: background .25s ease, border-color .25s ease; }
 html.dark .mobile-nav { background: #000000; border-top: 1px solid #2a2a2a; }
+
+/* =====================================================
+   RESPONSIVE (MOBILE SPECIFIC OVERRIDES) 
+===================================================== */
+@media (max-width: 767px) {
+    /* The trick to faking full screen without animating height (which causes lag and movement)
+       is to turn the global overlay completely solid, visually matching the drawer's background. */
+    body.comment-spotlight-active .comment-overlay {
+        background: #ffffff;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        opacity: 1;
+    }
+    html.dark body.comment-spotlight-active .comment-overlay {
+        background: #111111;
+    }
+    
+    /* Remove drawer shape constraints to blend smoothly with solid overlay */
+    body.comment-spotlight-active .drawer-base {
+        border-radius: 0;
+        box-shadow: none;
+    }
+    
+    /* Fade out non-essential elements for a true spotlight focus */
+    body.comment-spotlight-active .drawer-header h3,
+    body.comment-spotlight-active .drawer-header .close-drawer,
+    body.comment-spotlight-active .drag-handle,
+    body.comment-spotlight-active .drawer-footer {
+        opacity: 0;
+        pointer-events: none;
+    }
+}
 
 /* =====================================================
    RESPONSIVE (TABLET & DESKTOP) 
@@ -384,6 +408,8 @@ html.dark .mobile-nav { background: #000000; border-top: 1px solid #2a2a2a; }
 <div class="comment-overlay" id="commentOverlay"></div>
 
 <div class="drawer-base comment-drawer" id="commentDrawer">
+    <div class="spotlight-overlay"></div>
+    
     <div class="drawer-header">
         <div class="drag-handle"></div>
         <h3>Comments</h3>
@@ -449,6 +475,7 @@ html.dark .mobile-nav { background: #000000; border-top: 1px solid #2a2a2a; }
 </div>
 
 <div class="drawer-base replies-drawer" id="repliesDrawer">
+    <div class="spotlight-overlay"></div>
     <div class="drawer-header">
         <button class="header-action-btn back-drawer" id="backToComments" aria-label="Back"><i data-lucide="chevron-left"></i></button>
         <h3>Replies</h3>
@@ -581,31 +608,47 @@ function closeSpotlight() {
         document.querySelectorAll('.spotlighted').forEach(el => el.classList.remove('spotlighted'));
     }
 }
-window.addEventListener('touchstart', (e) => {
-    if (document.body.classList.contains('comment-spotlight-active') && !e.target.closest('.spotlighted')) {
-        closeSpotlight();
-    }
-}, {passive: true});
 window.addEventListener('click', (e) => {
     if (document.body.classList.contains('comment-spotlight-active') && !e.target.closest('.spotlighted')) {
         closeSpotlight();
     }
 });
 
-// Long Press Comment Spotlight
+// Long Press Comment Spotlight - Updated to close on release
 let pressTimer;
+let isSpotlighting = false;
+
 document.querySelectorAll('.comment-item').forEach(comment => {
     comment.addEventListener('contextmenu', e => e.preventDefault());
 
     comment.addEventListener('touchstart', (e) => {
         if (e.target.closest('button')) return; 
         pressTimer = setTimeout(() => {
+            isSpotlighting = true;
             document.body.classList.add('comment-spotlight-active');
             comment.classList.add('spotlighted');
-        }, 450); 
+        }, 350); // Just a hair faster for that snappy feel
     }, {passive: true});
+    
+    // Clear timer if user slides finger away before it triggers
     comment.addEventListener('touchmove', () => clearTimeout(pressTimer), {passive: true});
-    comment.addEventListener('touchend', () => clearTimeout(pressTimer), {passive: true});
+    
+    // When user releases finger, immediately drop back to normal state
+    comment.addEventListener('touchend', () => {
+        clearTimeout(pressTimer);
+        if (isSpotlighting) {
+            closeSpotlight();
+            isSpotlighting = false;
+        }
+    }, {passive: true});
+
+    comment.addEventListener('touchcancel', () => {
+        clearTimeout(pressTimer);
+        if (isSpotlighting) {
+            closeSpotlight();
+            isSpotlighting = false;
+        }
+    }, {passive: true});
 });
 
 // Drag to Close Drawers (Mobile Only)
