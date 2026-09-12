@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login Page</title>
+  <style>
+    :root {
+      --bg-main: #09090b;
+      --btn-bg: #18181b;
+      --btn-hover: #27272a;
+      --btn-border: 1px solid rgba(255, 255, 255, 0.1);
+      --btn-text: #ffffff;
+      --text-main: #f4f4f5;
+      --text-sub: #a1a1aa;
+      --arrow-bg: rgba(255, 255, 255, 0.1);
+      --dot-inactive: #3f3f46;
+      --dot-active: #ffffff;
+      --toggle-bg: #18181b;
+      --toggle-border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    [data-theme="light"] {
+      --bg-main: #fbfbfd;
+      --btn-bg: #f4f4f7;
+      --btn-hover: #e8e8ed;
+      --btn-border: 1px solid #e5e5ea;
+      --btn-text: #1d1d1f;
+      --text-main: #1d1d1f;
+      --text-sub: #86868b;
+      --arrow-bg: rgba(0, 0, 0, 0.06);
+      --dot-inactive: #d2d2d7;
+      --dot-active: #1d1d1f;
+      --toggle-bg: #ffffff;
+      --toggle-border: 1px solid #e5e5ea;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+      box-shadow: none !important; /* Strictly no shadows */
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      overflow-x: hidden;
+    }
+
+    /* Theme Toggle Switch - Hidden on small screens */
+    .theme-toggle {
+      display: none;
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      background: var(--toggle-bg);
+      color: var(--text-main);
+      border: var(--toggle-border);
+      padding: 10px 18px;
+      border-radius: 30px;
+      cursor: pointer;
+      align-items: center;
+      gap: 8px;
+      font-weight: 500;
+      font-size: 14px;
+      z-index: 100;
+    }
+
+    /* Page Layout */
+    .page-wrapper {
+      min-height: 100vh;
+      width: 100vw;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Mobile Outer Image Wrapper (Side Gaps) */
+    .art-section-wrapper {
+      width: 100%;
+      padding: 16px 16px 0 16px;
+    }
+
+    /* Mobile Image Box (Extended Height: 50vh & Rounded Corners) */
+    .art-section {
+      width: 100%;
+      height: 50vh;
+      position: relative;
+      background: #000000;
+      overflow: hidden;
+      border-radius: 28px;
+    }
+
+    .art-section img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
+      display: block;
+      border-radius: 28px;
+    }
+
+    /* Content Section */
+    .content-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 36px 24px 24px 24px;
+      width: 100%;
+      max-width: 440px;
+      margin: 0 auto;
+    }
+
+    /* Headline Container */
+    .headline-wrapper {
+      width: 100%;
+      margin-top: 10px;
+      margin-bottom: 24px;
+    }
+
+    /* Mobile Text Styling */
+    @media (max-width: 899px) {
+      .headline {
+        display: none;
+        font-size: 20px;
+        font-weight: 400;
+        line-height: 1.45;
+        text-align: left;
+        color: var(--text-main);
+        letter-spacing: -0.3px;
+      }
+      .headline[data-index="0"] {
+        display: block;
+      }
+    }
+
+    /* Action Buttons */
+    .button-group {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .btn {
+      width: 100%;
+      height: 56px;
+      border-radius: 28px;
+      border: var(--btn-border);
+      background-color: var(--btn-bg);
+      color: var(--btn-text);
+      font-size: 15px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .btn:hover {
+      background-color: var(--btn-hover);
+    }
+
+    .btn-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .arrow-icon {
+      position: absolute;
+      right: 8px;
+      width: 40px;
+      height: 40px;
+      background-color: var(--arrow-bg);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-main);
+    }
+
+    /* Terms & Privacy Policy Styling */
+    .terms {
+      font-size: 12.5px;
+      color: var(--text-sub);
+      text-align: center;
+      margin-top: 20px;
+      line-height: 1.5;
+      max-width: 90%;
+    }
+
+    .legal-link {
+      font-weight: 600;
+      color: var(--text-main);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      transition: opacity 0.2s ease;
+    }
+
+    .legal-link:hover {
+      opacity: 0.75;
+    }
+
+    /* Pagination Dots - Hidden on small screens */
+    .pagination {
+      display: none;
+      gap: 8px;
+      margin-top: 24px;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--dot-inactive);
+      cursor: pointer;
+      transition: background-color 0.3s ease, transform 0.25s ease;
+    }
+
+    .dot.active {
+      background-color: var(--dot-active);
+      transform: scale(1.3);
+    }
+
+    /* Desktop View Layout */
+    @media (min-width: 900px) {
+      .theme-toggle {
+        display: flex;
+      }
+
+      .page-wrapper {
+        flex-direction: row;
+        height: 100vh;
+      }
+
+      .art-section-wrapper {
+        padding: 0;
+        width: 50%;
+        height: 100%;
+      }
+
+      .art-section {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
+      }
+
+      .art-section img {
+        border-radius: 0;
+      }
+
+      .content-section {
+        width: 50%;
+        max-width: 540px;
+        height: 100%;
+        padding: 60px 48px 40px 48px;
+        justify-content: center;
+      }
+
+      /* Desktop Grid Overlay Stack with Zero Overlapping */
+      .headline-wrapper {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-template-rows: 1fr;
+        margin-top: 0;
+        margin-bottom: 36px;
+      }
+
+      .headline {
+        display: block;
+        grid-column: 1 / -1;
+        grid-row: 1 / -1;
+        font-size: 26px;
+        font-weight: 400;
+        line-height: 1.45;
+        text-align: left;
+        color: var(--text-main);
+        letter-spacing: -0.4px;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(14px);
+        pointer-events: none;
+        transition: opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1), 
+                    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+                    visibility 0.35s ease;
+      }
+
+      /* State 1: Active In View */
+      .headline.active {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+        pointer-events: auto;
+      }
+
+      /* State 2: Rapid Exit (Fades & slides up completely before next slide appears) */
+      .headline.exit {
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-12px);
+        transition: opacity 0.2s ease-in, 
+                    transform 0.2s ease-in,
+                    visibility 0.2s ease;
+      }
+
+      .button-group {
+        gap: 16px;
+      }
+
+      .terms {
+        margin-top: 28px;
+      }
+
+      .pagination {
+        display: flex;
+        margin-top: 40px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Theme Toggle Switch (Big screen only) -->
+  <button class="theme-toggle" id="themeToggle" aria-label="Toggle Theme">
+    <span id="themeIcon">
+      <!-- Iconoir Sun Icon -->
+      <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.5" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 17C14.7614 17 17 14.7614 17 12C17 9.23858 14.7614 7 12 7C9.23858 7 7 9.23858 7 12C7 14.7614 9.23858 17 12 17Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 2V4M12 20V22M4 12H2M22 12H20M19.7778 4.22217L18.3636 5.63638M5.63604 18.3638L4.22183 19.778M4.22183 4.22217L5.63604 5.63638M18.3636 18.3638L19.7778 19.778" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </span>
+    <span id="themeText">Light</span>
+  </button>
+
+  <div class="page-wrapper">
+    <!-- Art Wrapper with Mobile Side Gaps & Extended Height -->
+    <div class="art-section-wrapper">
+      <div class="art-section">
+        <img src="https://i.pinimg.com/736x/62/68/91/62689183d6cbede08ff0db583f538b46.jpg" alt="Login Banner Image" />
+      </div>
+    </div>
+
+    <!-- Login Content Section -->
+    <div class="content-section">
+      <!-- Fixed Height Container -->
+      <div class="headline-wrapper">
+        <h1 class="headline active" data-index="0">
+          Try using Posts to ask questions, share interests, or just talk about what's on your mind.
+        </h1>
+        <h1 class="headline" data-index="1">
+          Discover active communities, connect with new people, and explore topics you love.
+        </h1>
+        <h1 class="headline" data-index="2">
+          Express yourself freely with custom posts, rich media, and live discussions.
+        </h1>
+        <h1 class="headline" data-index="3">
+          Stay updated with your favorite creators and never miss a new post.
+        </h1>
+      </div>
+
+      <div class="button-group">
+        <!-- Google Button -->
+        <button class="btn">
+          <div class="btn-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21.8055 10.0415H12V14.2415H17.6515C17.4075 15.5585 16.6615 16.6715 15.5415 17.4215V20.0615H19.0415C21.0895 18.1735 22.2795 15.3935 22.2795 12.0415C22.2795 11.3415 22.1155 10.6715 21.8055 10.0415Z" fill="#4285F4"/>
+              <path d="M12 23C14.97 23 17.464 22.016 19.0415 20.0615L15.5415 17.4215C14.5765 18.0715 13.3615 18.4815 12 18.4815C9.135 18.4815 6.705 16.5515 5.835 13.9615H2.215V16.7615C3.995 20.2915 7.7 23 12 23Z" fill="#34A853"/>
+              <path d="M5.835 13.9615C5.615 13.3015 5.49 12.6015 5.49 11.8815C5.49 11.1615 5.615 10.4615 5.835 9.8015V7.0015H2.215C1.445 8.5315 1 10.1515 1 11.8815C1 13.6115 1.445 15.2315 2.215 16.7615L5.835 13.9615Z" fill="#FBBC05"/>
+              <path d="M12 5.2815C13.615 5.2815 15.06 5.8415 16.195 6.9215L19.315 3.8015C17.4565 2.0615 14.97 1 12 1 C7.7 1 3.995 3.7085 2.215 7.0015L5.835 9.8015C6.705 7.2115 9.135 5.2815 12 5.2815Z" fill="#EA4335"/>
+            </svg>
+          </div>
+          Continue with Google
+        </button>
+
+        <!-- Email Button -->
+        <button class="btn">
+          <div class="btn-icon">
+            <!-- Iconoir Mail Icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.8" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 9L12 12.5L17 9" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M2 17V7C2 5.89543 2.89543 5 4 5H20C21.1046 5 22 5.89543 22 7V17C22 18.1046 21.1046 19 20 19H4C2.89543 19 2 18.1046 2 17Z" stroke="currentColor"/>
+            </svg>
+          </div>
+          Continue with email
+          <div class="arrow-icon">
+            <!-- Iconoir Arrow Right Icon -->
+            <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="2" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M6 12H18M18 12L13 7M18 12L13 17" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+        </button>
+      </div>
+
+      <!-- Bold terms & privacy policy links -->
+      <p class="terms">
+        By continuing you agree to our <a href="/terms" class="legal-link">Terms of Service</a> and <a href="/privacy" class="legal-link">Privacy Policy</a>.
+      </p>
+
+      <!-- Dots Pagination (Desktop only) -->
+      <div class="pagination" id="pagination">
+        <div class="dot active" data-index="0"></div>
+        <div class="dot" data-index="1"></div>
+        <div class="dot" data-index="2"></div>
+        <div class="dot" data-index="3"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const headlines = document.querySelectorAll('.headline');
+    const dots = document.querySelectorAll('.pagination .dot');
+    let currentIndex = 0;
+    let autoRotateTimer = null;
+    let isAnimating = false; // Prevents overlap when clicking quickly
+
+    // Sequential Transition Logic (No visual overlapping)
+    function goToSlide(nextIndex) {
+      if (window.innerWidth < 900 || nextIndex === currentIndex || isAnimating) return;
+
+      isAnimating = true;
+      const prevIndex = currentIndex;
+      currentIndex = nextIndex;
+
+      const currentEl = headlines[prevIndex];
+      const nextEl = headlines[currentIndex];
+
+      // Step 1: Fade out & slide up current text completely
+      currentEl.classList.remove('active');
+      currentEl.classList.add('exit');
+
+      // Step 2: Once current text disappears (200ms), slide in the next text cleanly
+      setTimeout(() => {
+        currentEl.classList.remove('exit');
+        nextEl.classList.add('active');
+
+        // Update active dot indicator
+        dots.forEach((dot, i) => {
+          dot.classList.toggle('active', i === currentIndex);
+        });
+
+        isAnimating = false;
+      }, 200); 
+    }
+
+    // Timer set to 7 SECONDS (7000ms)
+    function startTimer() {
+      stopTimer();
+      autoRotateTimer = setInterval(() => {
+        if (window.innerWidth >= 900 && !isAnimating) {
+          let nextIndex = (currentIndex + 1) % headlines.length;
+          goToSlide(nextIndex);
+        }
+      }, 7000);
+    }
+
+    function stopTimer() {
+      if (autoRotateTimer) clearInterval(autoRotateTimer);
+    }
+
+    // Dot click interaction
+    dots.forEach((dot, idx) => {
+      dot.addEventListener('click', () => {
+        goToSlide(idx);
+        startTimer(); // Reset 7-second countdown on click
+      });
+    });
+
+    // Window Resize Handler
+    window.addEventListener('resize', () => {
+      if (window.innerWidth < 900) {
+        headlines.forEach((h, i) => {
+          h.classList.remove('exit');
+          h.classList.toggle('active', i === 0);
+        });
+      } else {
+        goToSlide(currentIndex);
+      }
+    });
+
+    // Theme Toggle Handler
+    const themeToggleBtn = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const themeText = document.getElementById('themeText');
+    const htmlElement = document.documentElement;
+
+    const sunIconSVG = `
+      <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.5" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 17C14.7614 17 17 14.7614 17 12C17 9.23858 14.7614 7 12 7C9.23858 7 7 9.23858 7 12C7 14.7614 9.23858 17 12 17Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 2V4M12 20V22M4 12H2M22 12H20M19.7778 4.22217L18.3636 5.63638M5.63604 18.3638L4.22183 19.778M4.22183 4.22217L5.63604 5.63638M18.3636 18.3638L19.7778 19.778" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+
+    const moonIconSVG = `
+      <svg width="18" height="18" viewBox="0 0 24 24" stroke-width="1.5" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 11.5066C3 16.7497 7.25026 21 12.4934 21C16.2209 21 19.4466 18.8518 21 15.7259C19.8885 16.3429 18.6046 16.696 17.2393 16.696C12.4962 16.696 8.65171 12.8515 8.65171 8.10842C8.65171 6.74312 9.00481 5.4592 9.62184 4.34766C6.4959 5.90104 4.34766 9.12675 4.34766 12.8542C4.34766 12.4005 3 11.5066 3 11.5066Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`;
+
+    themeToggleBtn.addEventListener('click', () => {
+      const currentTheme = htmlElement.getAttribute('data-theme');
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      
+      htmlElement.setAttribute('data-theme', newTheme);
+      themeIcon.innerHTML = newTheme === 'dark' ? sunIconSVG : moonIconSVG;
+      themeText.textContent = newTheme === 'dark' ? 'Light' : 'Dark';
+    });
+
+    // Initialize timer
+    startTimer();
+  </script>
+</body>
+</html>
