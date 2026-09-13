@@ -16,21 +16,21 @@
   <style>
     /* CSS Variables for Light / Dark Themes */
     :root[data-theme="dark"] {
-      --bg-color: #000000; /* Darker background */
-      --nav-bg: #000000;   /* Darker background */
+      --bg-color: #0a0a0a; /* Spotify-like deep dark gray */
+      --nav-bg: #0a0a0a;   
       --icon-color: #f5f5f5;
-      --hover-bg: #1e1e1e;
-      --active-bg: #262626;
+      --hover-bg: #1a1a1a;
+      --active-bg: #242424;
       --active-ring: #ffffff;
-      --menu-bg: #262626;
-      --menu-hover: #333333;
-      --capsule-bg: #262626;
+      --menu-bg: #242424;
+      --menu-hover: #303030;
+      --capsule-bg: #242424;
       --capsule-border: rgba(255, 255, 255, 0.1);
-      --capsule-hover: #333333;
+      --capsule-hover: #303030;
       --divider-color: rgba(255, 255, 255, 0.08);
       --text-primary: #f5f5f5;
       --text-secondary: #90909a;
-      --shadow-color: rgba(0, 0, 0, 0.6); /* Shadow for More Menu in Dark Mode */
+      --shadow-color: rgba(0, 0, 0, 0.6); 
       --like-color: #ff3040;
     }
 
@@ -49,7 +49,7 @@
       --divider-color: rgba(0, 0, 0, 0.08);
       --text-primary: #0f172a;
       --text-secondary: #64748b;
-      --shadow-color: rgba(0, 0, 0, 0.15); /* Shadow for More Menu in Light Mode */
+      --shadow-color: rgba(0, 0, 0, 0.15); 
       --like-color: #ff3040;
     }
 
@@ -77,7 +77,8 @@
     .action-btn,
     .post-more-btn,
     .right-notification-capsule,
-    .right-sidebar-container {
+    .right-sidebar-container,
+    .mobile-header {
       transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                   color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                   border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
@@ -100,6 +101,11 @@
       display: flex;
       width: 100%;
       min-height: 100vh;
+    }
+
+    /* MOBILE HEADER - Hidden on large screens by default */
+    .mobile-header {
+      display: none; 
     }
 
     .nav-wrapper {
@@ -453,12 +459,11 @@
       font-weight: 500;
     }
 
-    /* RIGHT SIDEBAR & NOTIFICATION CAPSULE (NO SHADOW ALWAYS) */
+    /* RIGHT SIDEBAR & NOTIFICATION CAPSULE */
     .right-sidebar-container {
       display: none;
     }
 
-    /* Class dynamically added ONLY when an open More Menu overlaps it */
     .right-sidebar-container.hidden-by-menu {
       opacity: 0 !important;
       visibility: hidden !important;
@@ -480,7 +485,7 @@
       font-weight: 600;
       font-size: 15px;
       width: fit-content;
-      box-shadow: none !important; /* NO SHADOW FOR NOTIFICATION CAPSULE */
+      box-shadow: none !important; 
     }
 
     .right-notification-capsule:hover {
@@ -558,10 +563,62 @@
 
     /* RESPONSIVE BREAKPOINTS */
     @media (max-width: 767px) {
+      /* Show and style Mobile Header */
+      .mobile-header {
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 64px;
+        background-color: var(--nav-bg);
+        z-index: 1000;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--divider-color);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Auto-hide class injected by JS */
+      .mobile-header.hidden {
+        transform: translateY(-100%);
+      }
+
+      .mobile-logo-link {
+        display: flex;
+        align-items: center;
+        text-decoration: none;
+      }
+
+      .mobile-logo {
+        height: 34px; /* Nice big logo */
+        width: auto;
+        object-fit: contain;
+        transition: filter 0.25s ease;
+      }
+
+      /* Invert logo to white when in Dark Theme */
+      :root[data-theme="dark"] .mobile-logo {
+        filter: brightness(0) invert(1);
+      }
+
+      .mobile-search-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px; /* Bold prominent search icon like Instagram */
+        cursor: pointer;
+      }
+
+      /* Offset main feed content to account for top header */
       .main-content-wrapper {
         margin-left: 0;
-        padding-top: 0;
-        padding-bottom: 74px;
+        padding-top: 64px; /* Space for the header */
+        padding-bottom: 74px; /* Space for bottom nav */
         justify-content: center;
       }
 
@@ -699,9 +756,19 @@
 </head>
 <body>
 
+  <!-- Top Mobile Header -->
+  <header class="mobile-header" id="mobileHeader">
+    <a href="#" class="mobile-logo-link" aria-label="Brand Home">
+      <img src="https://i.imghippo.com/files/hSw6147lF.png" alt="Logo" class="mobile-logo">
+    </a>
+    <button class="mobile-search-btn" aria-label="Search">
+      <iconify-icon icon="solar:magnifer-bold"></iconify-icon>
+    </button>
+  </header>
+
   <div class="app-layout">
 
-    <!-- Navigation Bar -->
+    <!-- Navigation Bar (Sidebar on Desktop / Bottom Bar on Mobile) -->
     <nav class="nav-wrapper" id="sidebar">
       <div class="brand-icon">
         <a href="#" class="nav-item" aria-label="Brand Home">
@@ -762,7 +829,7 @@
     <div class="main-content-wrapper">
       <main class="middle-container">
 
-        <!-- Post 1 (Top Post - Near Notification Capsule) -->
+        <!-- Post 1 -->
         <article class="post-card">
           <header class="post-header">
             <div class="post-author-row">
@@ -840,7 +907,7 @@
           </div>
         </article>
 
-        <!-- Post 2 (Lower Down Feed) -->
+        <!-- Post 2 -->
         <article class="post-card">
           <header class="post-header">
             <div class="post-author-row">
@@ -978,6 +1045,28 @@
 
   <script>
     const rightSidebar = document.getElementById('rightSidebar');
+    const mobileHeader = document.getElementById('mobileHeader');
+    let lastScrollTop = 0;
+
+    // Mobile Auto-Hiding Header Logic
+    window.addEventListener('scroll', () => {
+      const st = window.pageYOffset || document.documentElement.scrollTop;
+      
+      if (window.innerWidth <= 767) {
+        // If scrolling down, hide header. If scrolling up, show it.
+        if (st > lastScrollTop && st > 64) {
+          mobileHeader.classList.add('hidden');
+        } else {
+          mobileHeader.classList.remove('hidden');
+        }
+      }
+      
+      // Re-check overlap for tooltips/menus
+      const activePopup = document.querySelector('.post-menu-popup.active');
+      if (activePopup) checkAndHideIfOverlapping(activePopup);
+
+      lastScrollTop = st <= 0 ? 0 : st; 
+    }, { passive: true });
 
     // Navigation Active Switcher
     const navItems = document.querySelectorAll('.nav-list .nav-item');
@@ -1012,17 +1101,12 @@
       if (rightSidebar) rightSidebar.classList.remove('hidden-by-menu');
     }
 
-    // FUNCTION TO DETECT REAL OVERLAP / TOUCHING BETWEEN MORE CONTAINER & NOTIFICATION CAPSULE
     function checkAndHideIfOverlapping(popup) {
       if (!rightSidebar || window.getComputedStyle(rightSidebar).display === 'none') return;
-
-      // Temporarily remove hidden class to measure accurate bounding boxes
       rightSidebar.classList.remove('hidden-by-menu');
-
       const popupRect = popup.getBoundingClientRect();
       const capsuleRect = rightSidebar.getBoundingClientRect();
 
-      // Check collision/intersection of bounding rectangles
       const isOverlapping = !(
         popupRect.right < capsuleRect.left ||
         popupRect.left > capsuleRect.right ||
@@ -1030,7 +1114,6 @@
         popupRect.top > capsuleRect.bottom
       );
 
-      // Hide notification capsule ONLY if there is actual physical overlap/touching
       if (isOverlapping) {
         rightSidebar.classList.add('hidden-by-menu');
       } else {
@@ -1049,14 +1132,12 @@
 
         const isCurrentlyActive = popup.classList.contains('active');
 
-        // Close all other post menus
         document.querySelectorAll('.post-menu-popup').forEach(p => {
           if (p !== popup) p.classList.remove('active');
         });
 
         if (!isCurrentlyActive) {
           popup.classList.add('active');
-          // Wait 1 frame so CSS transition positions the box accurately before checking collision
           requestAnimationFrame(() => {
             checkAndHideIfOverlapping(popup);
           });
@@ -1086,12 +1167,6 @@
         rightSidebar.classList.remove('hidden-by-menu');
       }
     });
-
-    // Re-check overlap on scroll or window resize
-    window.addEventListener('scroll', () => {
-      const activePopup = document.querySelector('.post-menu-popup.active');
-      if (activePopup) checkAndHideIfOverlapping(activePopup);
-    }, { passive: true });
 
     window.addEventListener('resize', () => {
       const activePopup = document.querySelector('.post-menu-popup.active');
