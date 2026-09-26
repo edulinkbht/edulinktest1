@@ -15,6 +15,7 @@
                         brand: {
                             50: '#eef2ff',
                             100: '#e0e7ff',
+                            400: '#818cf8',
                             500: '#6366f1',
                             600: '#4f46e5',
                             700: '#4338ca',
@@ -30,7 +31,8 @@
     <!-- Google Fonts Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -49,78 +51,108 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #475569;
         }
+        @keyframes pulseGlow {
+            0%, 100% { opacity: 0.8; }
+            50% { opacity: 0.4; }
+        }
+        .glow-effect {
+            animation: pulseGlow 3s infinite ease-in-out;
+        }
     </style>
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
 
-    <!-- Main Header -->
     <header class="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
             <div class="flex items-center gap-3 cursor-pointer" onclick="window.scrollTo({top:0, behavior:'smooth'})">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                    <i class="fa-solid font-bold fa-bolt text-white text-xl"></i>
+                    <i class="fa-solid fa-bolt text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent">
+                    <h1 class="text-xl font-extrabold bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent">
                         EchoPulse
                     </h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">Share thoughts & recorded dates</p>
+                    <p class="text-xs text-slate-400 hidden sm:block">Share updates & recorded timeline events</p>
                 </div>
             </div>
 
-            <!-- User Auth Navigation -->
-            <div id="nav-auth-section" class="flex items-center gap-3">
-                <!-- Skeleton loader before auth initializes -->
-                <div id="auth-loading-skeleton" class="h-9 w-28 bg-slate-800 animate-pulse rounded-lg"></div>
+            <!-- Right Header Controls -->
+            <div class="flex items-center gap-3">
+                <!-- Rules Fix Alert Button -->
+                <button id="rules-help-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-semibold rounded-xl transition">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span class="hidden sm:inline">Firebase Rules Helper</span>
+                </button>
 
-                <!-- Unauthenticated view buttons -->
-                <div id="logged-out-nav" class="hidden flex items-center gap-2">
-                    <button id="google-login-btn-header" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-sm font-medium rounded-xl border border-slate-700 transition">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24">
-                            <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"/>
-                            <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-                            <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9z"/>
-                            <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z"/>
-                        </svg>
-                        <span>Sign In</span>
-                    </button>
-                </div>
+                <!-- User Auth Navigation -->
+                <div id="nav-auth-section" class="flex items-center gap-3">
+                    <div id="auth-loading-skeleton" class="h-9 w-28 bg-slate-800 animate-pulse rounded-lg"></div>
 
-                <!-- Authenticated view buttons -->
-                <div id="logged-in-nav" class="hidden flex items-center gap-3">
-                    <button id="edit-profile-btn-nav" class="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-medium rounded-xl border border-slate-700 transition text-slate-200">
-                        <i class="fa-solid fa-user-gear text-brand-400"></i>
-                        <span class="hidden sm:inline">Profile</span>
-                    </button>
-                    <div class="flex items-center gap-2 pl-2 border-l border-slate-800">
-                        <img id="nav-user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border border-slate-700 object-cover">
-                        <div class="hidden md:block text-left">
-                            <div id="nav-user-name" class="text-xs font-semibold leading-tight text-slate-200">User</div>
-                            <div id="nav-user-handle" class="text-[10px] text-slate-400">@username</div>
-                        </div>
+                    <!-- Logged Out View -->
+                    <div id="logged-out-nav" class="hidden flex items-center gap-2">
+                        <button id="google-login-btn-header" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-medium rounded-xl border border-slate-700 transition">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24">
+                                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"/>
+                                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
+                                <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9z"/>
+                                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z"/>
+                            </svg>
+                            <span>Sign In</span>
+                        </button>
                     </div>
-                    <button id="logout-btn" title="Sign Out" class="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition">
-                        <i class="fa-solid fa-right-from-bracket"></i>
-                    </button>
+
+                    <!-- Logged In View -->
+                    <div id="logged-in-nav" class="hidden flex items-center gap-3">
+                        <button id="edit-profile-btn-nav" class="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-medium rounded-xl border border-slate-700 transition text-slate-200">
+                            <i class="fa-solid fa-user-gear text-brand-400"></i>
+                            <span class="hidden sm:inline">Profile</span>
+                        </button>
+                        <div class="flex items-center gap-2 pl-2 border-l border-slate-800">
+                            <img id="nav-user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border border-slate-700 object-cover">
+                            <div class="hidden md:block text-left">
+                                <div id="nav-user-name" class="text-xs font-semibold leading-tight text-slate-200">User</div>
+                                <div id="nav-user-handle" class="text-[10px] text-slate-400">@username</div>
+                            </div>
+                        </div>
+                        <button id="logout-btn" title="Sign Out" class="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition">
+                            <i class="fa-solid fa-right-from-bracket"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- Main Content Area -->
+    <div id="rules-warning-banner" class="hidden bg-gradient-to-r from-amber-950/90 via-amber-900/80 to-amber-950/90 border-b border-amber-500/30 px-4 py-3 text-amber-200 text-xs sm:text-sm">
+        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-amber-500/20 text-amber-400 rounded-xl">
+                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
+                </div>
+                <div>
+                    <span class="font-bold">Firestore Permission Denied (`allow read, write: if false;`):</span>
+                    <p class="text-amber-300/80 text-xs">Your Firebase project security rules are currently blocking read/write access.</p>
+                </div>
+            </div>
+            <button id="fix-rules-banner-btn" class="w-full sm:w-auto px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs hover:bg-amber-400 transition shadow-md whitespace-nowrap">
+                Fix Rules Now (2 Steps)
+            </button>
+        </div>
+    </div>
+
     <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
 
-        <!-- Logged Out Welcome Screen -->
-        <div id="welcome-container" class="hidden max-w-2xl mx-auto my-12 text-center bg-slate-900/60 border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
+        <!-- Welcome Hero Banner (Logged Out) -->
+        <div id="welcome-container" class="hidden max-w-2xl mx-auto my-8 sm:my-12 text-center bg-slate-900/60 border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
             <div class="absolute -top-24 -right-24 w-60 h-60 bg-brand-500/10 rounded-full blur-3xl"></div>
             <div class="absolute -bottom-24 -left-24 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl"></div>
 
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-brand-600/20 text-brand-400 rounded-2xl mb-6 border border-brand-500/30">
+            <div class="inline-flex items-center justify-center w-16 h-16 bg-brand-600/20 text-brand-400 rounded-2xl mb-6 border border-brand-500/30 shadow-lg">
                 <i class="fa-solid fa-comments text-3xl"></i>
             </div>
             <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">Welcome to EchoPulse</h2>
-            <p class="text-slate-400 text-base sm:text-lg mb-8 max-w-lg mx-auto">
-                Share updates, capture specific event dates, and interact with a live community feed. Sign in with Google to create your profile and start posting!
+            <p class="text-slate-400 text-sm sm:text-base mb-8 max-w-lg mx-auto leading-relaxed">
+                Share updates, attach custom event dates to your timeline posts, and interact with the live community feed in real-time.
             </p>
 
             <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -144,7 +176,6 @@
         <!-- Authenticated Main Dashboard Layout -->
         <div id="dashboard-container" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-            <!-- Left Sidebar Profile Card -->
             <aside class="lg:col-span-4 space-y-6">
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
                     <div class="h-20 -mx-5 -mt-5 bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600"></div>
@@ -173,28 +204,26 @@
                     </div>
                 </div>
 
-                <!-- Info / Tips Widget -->
-                <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-5 text-xs text-slate-400 space-y-3 hidden sm:block">
+                <!-- Feature Tip Card -->
+                <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-5 text-xs text-slate-400 space-y-3">
                     <h4 class="font-semibold text-slate-200 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-info text-brand-400"></i> Recorded Date Feature
+                        <i class="fa-solid fa-circle-info text-brand-400"></i> Recorded Date Landmark
                     </h4>
-                    <p>When creating a post, use the date selector to tag a specific memory date, event, deadline, or timeline landmark.</p>
+                    <p class="leading-relaxed">When publishing a post, select a specific calendar date to record milestones, past events, future releases, or travel logs.</p>
                 </div>
             </aside>
 
-            <!-- Main Central Feed -->
             <section class="lg:col-span-8 space-y-6">
 
-                <!-- Post Composer Box -->
+                <!-- Post Creation Box -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
                     <div class="flex items-start gap-3">
                         <img id="composer-user-avatar" src="" alt="User" class="w-10 h-10 rounded-full border border-slate-700 object-cover mt-1">
                         <div class="flex-1">
-                            <textarea id="post-input-text" rows="3" placeholder="What's happening? Share a thought or update..." class="w-full bg-slate-950/60 border border-slate-800 focus:border-brand-500 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none transition"></textarea>
+                            <textarea id="post-input-text" rows="3" placeholder="What's happening? Share an update or recorded event..." class="w-full bg-slate-950/60 border border-slate-800 focus:border-brand-500 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none transition"></textarea>
                             
-                            <!-- Post Controls: Recorded Date Picker & Submit -->
+                            <!-- Controls Row -->
                             <div class="mt-3 pt-3 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-3">
-                                
                                 <!-- Recorded Date Input -->
                                 <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
                                     <i class="fa-regular fa-calendar-days text-brand-400 text-xs"></i>
@@ -204,7 +233,7 @@
 
                                 <div class="flex items-center gap-3 ml-auto">
                                     <span id="char-count" class="text-xs text-slate-500">0/280</span>
-                                    <button id="create-post-btn" class="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-medium text-sm rounded-xl shadow-md shadow-brand-600/20 transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <button id="create-post-btn" class="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-medium text-sm rounded-xl shadow-md shadow-brand-600/20 transition active:scale-95 disabled:opacity-50">
                                         <i class="fa-solid fa-paper-plane text-xs"></i>
                                         <span>Post</span>
                                     </button>
@@ -214,7 +243,7 @@
                     </div>
                 </div>
 
-                <!-- Feed Header Filters -->
+                <!-- Feed Search & Sort Controls -->
                 <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-800/60">
                     <div class="relative flex-1">
                         <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
@@ -230,9 +259,8 @@
                     </div>
                 </div>
 
-                <!-- Feed Posts Stream Container -->
+                <!-- Real-time Feed Posts List -->
                 <div id="posts-container" class="space-y-4">
-                    <!-- Loading Skeletons -->
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 animate-pulse">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 bg-slate-800 rounded-full"></div>
@@ -250,12 +278,11 @@
 
     </main>
 
-    <!-- Profile Setup / Edit Modal -->
     <div id="profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 relative">
             <div class="flex justify-between items-center border-b border-slate-800 pb-4">
                 <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-user-gear text-brand-400"></i> Setup Your Profile
+                    <i class="fa-solid fa-user-gear text-brand-400"></i> Setup Profile
                 </h3>
                 <button id="close-profile-modal-btn" class="text-slate-400 hover:text-white p-1 rounded-lg">
                     <i class="fa-solid fa-xmark text-lg"></i>
@@ -280,7 +307,6 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Avatar Image URL (Optional)</label>
                     <input type="url" id="modal-avatar-url" placeholder="https://example.com/photo.jpg" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
-                    <p class="text-[10px] text-slate-500 mt-1">Leave blank to keep your current or Google profile avatar.</p>
                 </div>
 
                 <div>
@@ -288,7 +314,7 @@
                     <textarea id="modal-bio" rows="2" placeholder="Tell the community a bit about yourself..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500 resize-none"></textarea>
                 </div>
 
-                <div class="pt-2 flex justify-end gap-3">
+                <div class="pt-2">
                     <button type="submit" id="save-profile-btn" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl shadow-lg transition">
                         Save Profile
                     </button>
@@ -297,14 +323,74 @@
         </div>
     </div>
 
-    <!-- Custom Delete Confirmation Modal -->
+    <div id="rules-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md hidden">
+        <div class="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-5 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
+                        <i class="fa-solid fa-shield-cat text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-extrabold text-white">How to Fix Firebase Permission Error</h3>
+                        <p class="text-xs text-amber-400 font-medium">`allow read, write: if false;` solution guide</p>
+                    </div>
+                </div>
+                <button id="close-rules-modal-btn" class="text-slate-400 hover:text-white p-1 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="text-xs sm:text-sm text-slate-300 space-y-4 leading-relaxed">
+                <p>
+                    Your Firebase database currently rejects queries because the default Firestore Rules set read and write permissions to <code class="bg-red-950 text-red-300 px-1.5 py-0.5 rounded font-mono">false</code>.
+                </p>
+
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-semibold uppercase text-brand-400 tracking-wider">Step 1: Copy Updated Rules</span>
+                        <button id="copy-rules-code-btn" class="px-2.5 py-1 bg-brand-600/30 hover:bg-brand-600/50 text-brand-300 border border-brand-500/40 rounded-lg text-xs font-semibold transition">
+                            <i class="fa-regular fa-copy mr-1"></i> Copy Rules
+                        </button>
+                    </div>
+                    <pre id="rules-code-block" class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-[11px] font-mono text-emerald-400 overflow-x-auto">rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      // Allows logged-in authenticated users to read and write
+      allow read, write: if request.auth != null;
+    }
+  }
+}</pre>
+                </div>
+
+                <div class="space-y-2 text-xs">
+                    <span class="font-bold text-slate-100">Step 2: Update in Firebase Console</span>
+                    <ol class="list-decimal list-inside space-y-1 text-slate-400">
+                        <li>Go to <a href="https://console.firebase.google.com/" target="_blank" class="text-brand-400 underline hover:text-brand-300">Firebase Console</a> and open your project <span class="font-mono text-slate-200">idembt</span>.</li>
+                        <li>Click on <b class="text-slate-200">Firestore Database</b> on the left navigation menu.</li>
+                        <li>Click the <b class="text-slate-200">Rules</b> tab at the top.</li>
+                        <li>Replace <code class="text-red-400">allow read, write: if false;</code> with <code class="text-emerald-400">allow read, write: if request.auth != null;</code> (or paste the copied snippet above).</li>
+                        <li>Click <b class="text-slate-200">Publish</b>!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="pt-2 border-t border-slate-800 flex justify-end">
+                <button id="understood-rules-btn" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl text-xs shadow-lg transition">
+                    Got it, close guide
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
             <div class="w-12 h-12 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto border border-red-500/30">
                 <i class="fa-solid fa-trash-can text-xl"></i>
             </div>
             <h4 class="text-lg font-bold text-white">Delete Post?</h4>
-            <p class="text-xs text-slate-400">This action cannot be undone. Are you sure you want to remove this post?</p>
+            <p class="text-xs text-slate-400">This action cannot be undone. Are you sure you want to remove this post from the feed?</p>
             <div class="flex gap-3 pt-2">
                 <button id="cancel-delete-btn" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition">Cancel</button>
                 <button id="confirm-delete-btn" class="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold transition">Delete</button>
@@ -318,9 +404,8 @@
         <span id="toast-message" class="text-xs font-medium">Notification message</span>
     </div>
 
-    <!-- Firebase Script Integration -->
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
         import { 
             getAuth, 
             signInWithPopup, 
@@ -328,7 +413,7 @@
             signInAnonymously, 
             signOut, 
             onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
         import { 
             getFirestore, 
             collection, 
@@ -339,28 +424,24 @@
             deleteDoc, 
             updateDoc, 
             onSnapshot 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-        // Exact user Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCHeKhAj0fKHjmcp1V_tX7bvQvVE3tzVLk",
             authDomain: "idembt.firebaseapp.com",
             projectId: "idembt",
             storageBucket: "idembt.firebasestorage.app",
             messagingSenderId: "297940761171",
-            appId: "1:297940761171:web:5e11230daad141c5a6a4a6",
-            measurementId: "G-612RFP1X36"
+            appId: "1:297940761171:web:5e11230daad141c5a6a4a6"
         };
 
-        // Initialize Firebase instances
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // App Identifier and Collection references adhering to required storage paths
+        // App Identifier and Collection references complying with Rule 1
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'idembt-social';
         const postsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
-        const usersCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'users');
 
         // Application State
         let currentUser = null;
@@ -368,19 +449,19 @@
         let allPosts = [];
         let postToDeleteId = null;
 
-        // UI Element Selectors
         const navLoadingSkeleton = document.getElementById('auth-loading-skeleton');
         const loggedOutNav = document.getElementById('logged-out-nav');
         const loggedInNav = document.getElementById('logged-in-nav');
         const welcomeContainer = document.getElementById('welcome-container');
         const dashboardContainer = document.getElementById('dashboard-container');
+        const rulesWarningBanner = document.getElementById('rules-warning-banner');
 
-        // Nav User Info
+        // Nav Elements
         const navUserAvatar = document.getElementById('nav-user-avatar');
         const navUserName = document.getElementById('nav-user-name');
         const navUserHandle = document.getElementById('nav-user-handle');
 
-        // Sidebar User Info
+        // Sidebar Elements
         const sidebarUserAvatar = document.getElementById('sidebar-user-avatar');
         const sidebarUserName = document.getElementById('sidebar-user-name');
         const sidebarUserHandle = document.getElementById('sidebar-user-handle');
@@ -407,17 +488,19 @@
         const modalUsername = document.getElementById('modal-username');
         const modalAvatarUrl = document.getElementById('modal-avatar-url');
         const modalBio = document.getElementById('modal-bio');
-        const closeProfileModalBtn = document.getElementById('close-profile-modal-btn');
+
+        // Rules Helper Modal Elements
+        const rulesModal = document.getElementById('rules-modal');
+        const copyRulesCodeBtn = document.getElementById('copy-rules-code-btn');
 
         // Delete Modal Elements
         const deleteModal = document.getElementById('delete-modal');
         const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
         const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
 
-        // Set default recorded date to today (YYYY-MM-DD)
+        // Set default recorded date input to current date
         postRecordedDate.value = new Date().toISOString().split('T')[0];
 
-        // Toast feedback trigger
         function showToast(message, type = 'success') {
             const toast = document.getElementById('toast');
             const toastMessage = document.getElementById('toast-message');
@@ -441,12 +524,15 @@
             }, 3500);
         }
 
-        // Helper to generate default avatar using unpkg dicebear
         function getDefaultAvatar(seed) {
             return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(seed || 'user')}`;
         }
 
-        // Google Authentication handler
+        function triggerPermissionErrorNotice() {
+            rulesWarningBanner.classList.remove('hidden');
+            showToast("Firestore Permission Denied! Click 'Firebase Rules Helper' to fix.", "error");
+        }
+
         async function handleGoogleSignIn() {
             try {
                 const provider = new GoogleAuthProvider();
@@ -455,7 +541,7 @@
             } catch (error) {
                 console.error("Google Sign-in Error:", error);
                 if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-                    showToast('Popup blocked or closed. Trying fallback login...', 'info');
+                    showToast('Popup closed. Trying guest login...', 'info');
                     tryGuestSignIn();
                 } else {
                     showToast('Sign-in failed: ' + error.message, 'error');
@@ -463,7 +549,6 @@
             }
         }
 
-        // Fallback Anonymous / Guest handler
         async function tryGuestSignIn() {
             try {
                 await signInAnonymously(auth);
@@ -473,7 +558,6 @@
             }
         }
 
-        // Listen for Authentication state changes
         onAuthStateChanged(auth, async (user) => {
             navLoadingSkeleton.classList.add('hidden');
             if (user) {
@@ -483,10 +567,7 @@
                 loggedInNav.classList.remove('hidden');
                 dashboardContainer.classList.remove('hidden');
 
-                // Load or initialize user profile document
                 await loadUserProfile();
-
-                // Start real-time posts feed subscription
                 subscribeToFeed();
             } else {
                 currentUser = null;
@@ -498,7 +579,6 @@
             }
         });
 
-        // Fetch or create profile record in Firestore
         async function loadUserProfile() {
             if (!currentUser) return;
             const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.uid);
@@ -508,7 +588,6 @@
                 if (docSnap.exists()) {
                     currentUserProfile = docSnap.data();
                 } else {
-                    // Create default profile based on Auth metadata
                     const defaultName = currentUser.displayName || (currentUser.isAnonymous ? 'Guest Echoer' : 'Pulse User');
                     const defaultHandle = (currentUser.email ? currentUser.email.split('@')[0] : 'user_' + currentUser.uid.slice(0, 5)).replace(/[^a-zA-Z0-9_]/g, '');
                     const defaultPhoto = currentUser.photoURL || getDefaultAvatar(currentUser.uid);
@@ -523,16 +602,17 @@
                     };
 
                     await setDoc(userDocRef, currentUserProfile);
-                    // Prompt user to customize profile on first sign-in
                     openProfileModal();
                 }
                 updateUserUI();
             } catch (err) {
-                console.error("Error loading user profile:", err);
+                console.error("Error loading profile:", err);
+                if (err.code === 'permission-denied') {
+                    triggerPermissionErrorNotice();
+                }
             }
         }
 
-        // Update all UI components matching logged in profile
         function updateUserUI() {
             if (!currentUserProfile) return;
 
@@ -562,11 +642,6 @@
             profileModal.classList.remove('hidden');
         }
 
-        function closeProfileModal() {
-            profileModal.classList.add('hidden');
-        }
-
-        // Save Profile Form Submission
         profileForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!currentUser) return;
@@ -591,15 +666,15 @@
                 await setDoc(userDocRef, updatedProfile, { merge: true });
                 currentUserProfile = updatedProfile;
                 updateUserUI();
-                closeProfileModal();
-                showToast('Profile updated successfully!');
+                profileModal.classList.add('hidden');
+                showToast('Profile updated!');
             } catch (err) {
                 console.error("Save profile error:", err);
-                showToast('Failed to save profile: ' + err.message, 'error');
+                if (err.code === 'permission-denied') triggerPermissionErrorNotice();
+                else showToast('Failed to save profile: ' + err.message, 'error');
             }
         });
 
-        // Character counter
         postInputText.addEventListener('input', () => {
             const length = postInputText.value.length;
             charCount.textContent = `${length}/280`;
@@ -612,7 +687,6 @@
             }
         });
 
-        // Submit new post
         async function createPost() {
             const text = postInputText.value.trim();
             const dateVal = postRecordedDate.value;
@@ -646,10 +720,11 @@
 
                 postInputText.value = '';
                 charCount.textContent = '0/280';
-                showToast('Post created successfully!');
+                showToast('Post published!');
             } catch (err) {
                 console.error("Error creating post:", err);
-                showToast('Failed to create post: ' + err.message, 'error');
+                if (err.code === 'permission-denied') triggerPermissionErrorNotice();
+                else showToast('Failed to post: ' + err.message, 'error');
             } finally {
                 createPostBtn.disabled = false;
                 createPostBtn.innerHTML = `<i class="fa-solid fa-paper-plane text-xs"></i> <span>Post</span>`;
@@ -658,7 +733,6 @@
 
         createPostBtn.addEventListener('click', createPost);
 
-        // Real-time listener adhering strictly to Rule 2 (No compound queries in Firestore call)
         function subscribeToFeed() {
             onSnapshot(postsCollectionRef, (snapshot) => {
                 const loadedPosts = [];
@@ -667,10 +741,15 @@
                 });
 
                 allPosts = loadedPosts;
+                rulesWarningBanner.classList.add('hidden');
                 renderFeed();
             }, (error) => {
-                console.error("Real-time feed listener error:", error);
-                showToast('Error syncing live feed: ' + error.message, 'error');
+                console.error("Real-time feed error:", error);
+                if (error.code === 'permission-denied') {
+                    triggerPermissionErrorNotice();
+                } else {
+                    showToast('Feed error: ' + error.message, 'error');
+                }
             });
         }
 
@@ -678,7 +757,6 @@
             const queryText = feedSearchInput.value.toLowerCase().trim();
             const sortBy = feedSortSelect.value;
 
-            // Client-side filtering
             let filtered = allPosts.filter(post => {
                 const contentMatch = post.content && post.content.toLowerCase().includes(queryText);
                 const userMatch = post.authorUsername && post.authorUsername.toLowerCase().includes(queryText);
@@ -686,7 +764,6 @@
                 return contentMatch || userMatch || nameMatch;
             });
 
-            // Client-side sorting
             filtered.sort((a, b) => {
                 if (sortBy === 'oldest') {
                     return (a.createdAt || 0) - (b.createdAt || 0);
@@ -695,12 +772,10 @@
                     const likesB = Array.isArray(b.likes) ? b.likes.length : 0;
                     return likesB - likesA;
                 } else {
-                    // default 'newest'
                     return (b.createdAt || 0) - (a.createdAt || 0);
                 }
             });
 
-            // Update user post statistics
             if (currentUser) {
                 const myPosts = allPosts.filter(p => p.authorUid === currentUser.uid);
                 userPostCount.textContent = myPosts.length;
@@ -712,7 +787,7 @@
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500 space-y-2">
                         <i class="fa-regular fa-comment-dots text-3xl mb-2 text-slate-600 block"></i>
                         <p class="font-medium text-slate-300">No posts found</p>
-                        <p class="text-xs">Be the first to share an update or try a different search filter!</p>
+                        <p class="text-xs">Be the first to share an update!</p>
                     </div>
                 `;
                 return;
@@ -728,11 +803,10 @@
 
                 const recordedDateFormatted = post.recordedDate ? new Date(post.recordedDate + 'T00:00:00').toLocaleDateString(undefined, {
                     weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
-                }) : 'No date recorded';
+                }) : 'No date';
 
                 return `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3 hover:border-slate-700/80 transition">
-                        <!-- Post Header -->
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-center gap-3">
                                 <img src="${escapeHtml(post.authorPhotoURL || getDefaultAvatar(post.authorUid))}" onerror="this.src='${getDefaultAvatar('user')}'" class="w-10 h-10 rounded-full border border-slate-700 object-cover">
@@ -752,17 +826,15 @@
                             ` : ''}
                         </div>
 
-                        <!-- Recorded Date Tag -->
+                        <!-- Recorded Date Badge -->
                         <div class="inline-flex items-center gap-2 px-3 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-300">
                             <i class="fa-regular fa-calendar-check text-brand-400"></i>
                             <span class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Recorded Date:</span>
-                            <span class="font-semibold">${escapeHtml(recordedDateFormatted)}</span>
+                            <span class="font-semibold text-slate-200">${escapeHtml(recordedDateFormatted)}</span>
                         </div>
 
-                        <!-- Post Text Content -->
                         <p class="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">${escapeHtml(post.content)}</p>
 
-                        <!-- Post Footer Toolbar -->
                         <div class="pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
                             <button onclick="window.toggleLikePost('${post.id}', ${isLiked})" class="flex items-center gap-2 px-3 py-1.5 rounded-xl transition ${isLiked ? 'text-red-400 bg-red-500/10 font-semibold' : 'hover:bg-slate-800 hover:text-slate-200'}">
                                 <i class="${isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart'} text-sm"></i>
@@ -779,13 +851,11 @@
             }).join('');
         }
 
-        // Sanitize strings to prevent XSS
         function escapeHtml(str) {
             if (!str) return '';
             return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
         }
 
-        // Toggle like on a post
         window.toggleLikePost = async function(postId, currentlyLiked) {
             if (!currentUser) {
                 showToast('Please sign in to like posts.', 'error');
@@ -809,11 +879,11 @@
                 await updateDoc(postDocRef, { likes: currentLikes });
             } catch (err) {
                 console.error("Error toggling like:", err);
-                showToast('Failed to update like: ' + err.message, 'error');
+                if (err.code === 'permission-denied') triggerPermissionErrorNotice();
+                else showToast('Like update failed: ' + err.message, 'error');
             }
         };
 
-        // Post deletion trigger
         window.triggerDeletePost = function(postId) {
             postToDeleteId = postId;
             deleteModal.classList.remove('hidden');
@@ -828,7 +898,8 @@
                 showToast('Post deleted successfully.');
             } catch (err) {
                 console.error("Error deleting post:", err);
-                showToast('Failed to delete post: ' + err.message, 'error');
+                if (err.code === 'permission-denied') triggerPermissionErrorNotice();
+                else showToast('Delete failed: ' + err.message, 'error');
             } finally {
                 postToDeleteId = null;
                 deleteModal.classList.add('hidden');
@@ -840,7 +911,6 @@
             deleteModal.classList.add('hidden');
         });
 
-        // Copy post link helper
         window.copyPostLink = function(postId) {
             const dummy = document.createElement('input');
             document.body.appendChild(dummy);
@@ -848,10 +918,9 @@
             dummy.select();
             document.execCommand('copy');
             document.body.removeChild(dummy);
-            showToast('Post link copied to clipboard!');
+            showToast('Link copied to clipboard!');
         };
 
-        // Event Listeners for Nav buttons & Controls
         document.getElementById('google-login-btn-header').addEventListener('click', handleGoogleSignIn);
         document.getElementById('google-login-hero').addEventListener('click', handleGoogleSignIn);
         document.getElementById('guest-login-hero').addEventListener('click', tryGuestSignIn);
@@ -862,7 +931,24 @@
 
         document.getElementById('edit-profile-btn-nav').addEventListener('click', openProfileModal);
         document.getElementById('edit-profile-btn-sidebar').addEventListener('click', openProfileModal);
-        closeProfileModalBtn.addEventListener('click', closeProfileModal);
+        document.getElementById('close-profile-modal-btn').addEventListener('click', () => profileModal.classList.add('hidden'));
+
+        // Rules Helper Modal triggers
+        document.getElementById('rules-help-btn').addEventListener('click', () => rulesModal.classList.remove('hidden'));
+        document.getElementById('fix-rules-banner-btn').addEventListener('click', () => rulesModal.classList.remove('hidden'));
+        document.getElementById('close-rules-modal-btn').addEventListener('click', () => rulesModal.classList.add('hidden'));
+        document.getElementById('understood-rules-btn').addEventListener('click', () => rulesModal.classList.add('hidden'));
+
+        copyRulesCodeBtn.addEventListener('click', () => {
+            const codeText = document.getElementById('rules-code-block').innerText;
+            const dummy = document.createElement('textarea');
+            document.body.appendChild(dummy);
+            dummy.value = codeText;
+            dummy.select();
+            document.execCommand('copy');
+            document.body.removeChild(dummy);
+            showToast('Rules code copied to clipboard!');
+        });
 
         feedSearchInput.addEventListener('input', renderFeed);
         feedSortSelect.addEventListener('change', renderFeed);
