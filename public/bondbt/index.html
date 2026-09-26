@@ -24,14 +24,13 @@
       --active-ring: #ffffff;
       --menu-bg: #242424;
       --menu-hover: #303030;
+      --menu-shadow: 0 12px 32px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
       --capsule-bg: #242424;
-      --capsule-border: rgba(255, 255, 255, 0.1);
+      --capsule-border: rgba(255, 255, 255, 0.12);
       --divider-color: rgba(255, 255, 255, 0.08);
       --text-primary: #f5f5f5;
       --text-secondary: #90909a;
-      --shadow-color: rgba(0, 0, 0, 0.6); 
       --like-color: #ff3040;
-      /* Dynamic Follow Button (Dark = Grey) */
       --follow-bg: #2a2a2a; 
       --follow-hover: #3a3a3a;
       --follow-text: #ffffff;
@@ -46,14 +45,13 @@
       --active-ring: #000000;
       --menu-bg: #ffffff;
       --menu-hover: #f5f5f7;
+      --menu-shadow: 0 12px 32px rgba(0, 0, 0, 0.12), 0 4px 14px rgba(0, 0, 0, 0.08);
       --capsule-bg: #ffffff;
       --capsule-border: #e5e7eb;
       --divider-color: rgba(0, 0, 0, 0.08);
       --text-primary: #0f172a;
       --text-secondary: #64748b;
-      --shadow-color: rgba(0, 0, 0, 0.15); 
       --like-color: #ff3040;
-      /* Dynamic Follow Button (Light = Blue) */
       --follow-bg: #3897f0; 
       --follow-hover: #2b80d5;
       --follow-text: #ffffff;
@@ -81,14 +79,13 @@
     .menu-popup, 
     .action-btn,
     .post-more-btn,
-    .right-notification-capsule,
-    .right-sidebar-container,
+    .right-sidebar-capsule,
+    .icon-only-btn,
     .mobile-header,
     .post-follow-btn {
       transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                   color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                   border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-                  box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1),
                   opacity 0.2s ease,
                   transform 0.2s ease,
                   visibility 0.2s;
@@ -102,7 +99,6 @@
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Helper class to stop background scroll when drawer is open */
     body.no-scroll {
       overflow: hidden;
       touch-action: none;
@@ -115,7 +111,6 @@
       min-height: 100vh;
     }
 
-    /* Drawer Overlay */
     .drawer-overlay {
       position: fixed;
       top: 0;
@@ -128,15 +123,25 @@
       visibility: hidden;
       transition: opacity 0.35s ease, visibility 0.35s;
     }
-
     .drawer-overlay.active {
       opacity: 1;
       visibility: visible;
     }
 
-    /* MOBILE HEADER - Hidden on large screens by default */
-    .mobile-header {
-      display: none; 
+    .mobile-header { display: none; }
+    .desktop-brand-logo { display: none; }
+
+    /* Floating Fade Mask (Hidden on Mobile) */
+    .bottom-fade-mask {
+      display: none;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 160px;
+      background: linear-gradient(to top, var(--bg-color) 10%, transparent);
+      pointer-events: none;
+      z-index: 900;
     }
 
     .nav-wrapper {
@@ -144,23 +149,19 @@
       z-index: 1000;
       background-color: var(--nav-bg);
       border: none !important;
-      transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: none !important;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .nav-item {
       display: inline-flex;
       align-items: center;
-      gap: 16px;
-      padding: 0 12px;
-      height: 48px;
-      border-radius: 16px;
+      gap: 12px;
       color: var(--icon-color);
       text-decoration: none;
       background: transparent;
       border: none;
       cursor: pointer;
-      width: 100%;
-      text-align: left;
     }
 
     .nav-item iconify-icon {
@@ -168,22 +169,12 @@
       flex-shrink: 0;
       transition: transform 0.15s ease;
     }
-
-    .nav-item:hover {
-      background-color: var(--hover-bg);
-    }
-
-    .nav-item:active iconify-icon {
-      transform: scale(0.92);
-    }
+    .nav-item:active iconify-icon { transform: scale(0.92); }
 
     .nav-text {
       font-size: 15px;
       font-weight: 500;
       white-space: nowrap;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.2s ease, visibility 0.2s;
     }
 
     .nav-item.active .nav-text {
@@ -191,27 +182,18 @@
     }
 
     .profile-avatar {
-      width: 28px;
-      height: 28px;
+      width: 30px;
+      height: 30px;
       border-radius: 50%;
       overflow: hidden;
       flex-shrink: 0;
       border: 2px solid transparent;
       transition: border-color 0.2s ease, transform 0.2s ease;
     }
+    .profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .nav-item.active .profile-avatar { border-color: var(--active-ring); transform: scale(1.08); }
 
-    .profile-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .nav-item.active .profile-avatar {
-      border-color: var(--active-ring);
-      transform: scale(1.08);
-    }
-
-    /* NOTIFICATION BADGE AT TOP RIGHT OF BELL ICON */
+    /* Badge */
     .icon-badge-wrapper {
       position: relative;
       display: inline-flex;
@@ -219,7 +201,6 @@
       justify-content: center;
       flex-shrink: 0;
     }
-
     .notification-badge {
       position: absolute;
       top: -3px;
@@ -244,12 +225,12 @@
       flex: 1;
       display: flex;
       width: 100%;
-      transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1), width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .middle-container {
       width: 100%;
-      max-width: 500px;
+      max-width: 520px;
       display: flex;
       flex-direction: column;
       gap: 24px;
@@ -261,384 +242,183 @@
       display: flex;
       flex-direction: column;
       position: relative;
+      box-shadow: none !important;
     }
+    .post-header { display: flex; flex-direction: column; gap: 12px; padding: 16px 16px 12px 16px; }
+    .post-author-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+    .post-author-left { display: flex; align-items: center; gap: 12px; }
+    .author-avatar { width: 44px; height: 44px; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+    .author-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .author-details { display: flex; flex-direction: column; gap: 2px; }
+    .author-name { font-size: 15px; font-weight: 700; color: var(--text-primary); text-decoration: none; line-height: 1.2; }
+    .post-date { font-size: 12px; color: var(--text-secondary); font-weight: 400; }
+    .post-caption { font-size: 15px; font-weight: 400; line-height: 1.5; color: var(--text-primary); padding: 0; }
 
-    .post-header {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      padding: 16px 16px 12px 16px;
-    }
-
-    .post-author-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-    }
-
-    .post-author-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .author-avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-
-    .author-avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .author-details {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .author-name {
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text-primary);
-      text-decoration: none;
-      line-height: 1.2;
-    }
-
-    .post-date {
-      font-size: 12px;
-      color: var(--text-secondary);
-      font-weight: 400;
-    }
-
-    .post-caption {
-      font-size: 15px;
-      font-weight: 400;
-      line-height: 1.5;
-      color: var(--text-primary);
-      padding: 0;
-    }
-
-    /* POST MORE OPTIONS BUTTON & CONTAINER */
-    .post-header-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
+    /* Follow & Post Actions */
+    .post-header-actions { display: flex; align-items: center; gap: 10px; }
+    
     .post-follow-btn {
-      background-color: var(--follow-bg);
-      color: var(--follow-text);
-      border: 1px solid transparent; 
-      font-family: inherit;
-      font-size: 15px; 
-      font-weight: 600;
-      cursor: pointer;
-      height: 36px; 
-      padding: 0 20px;
-      border-radius: 10px; 
-      letter-spacing: 0.3px;
-      box-shadow: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
+      background-color: var(--follow-bg); color: var(--follow-text); border: 1px solid transparent; 
+      font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer; height: 36px; padding: 0 18px;
+      border-radius: 10px; box-shadow: none !important; display: inline-flex; align-items: center; justify-content: center;
     }
+    .post-follow-btn:hover { background-color: var(--follow-hover); }
+    .post-follow-btn.following { background-color: transparent; color: var(--text-primary); border: 1px solid var(--divider-color); }
+    .post-follow-btn.following:hover { background-color: var(--hover-bg); }
 
-    .post-follow-btn:hover {
-      background-color: var(--follow-hover);
-    }
-
-    .post-follow-btn.following {
-      background-color: transparent;
-      color: var(--text-primary);
-      border: 1px solid var(--divider-color);
-    }
-
-    .post-follow-btn.following:hover {
-      background-color: var(--hover-bg);
-    }
-
-    .post-more-wrapper {
-      position: relative;
-      display: flex;
-    }
-
+    .post-more-wrapper { position: relative; display: flex; }
     .post-more-btn {
-      background: transparent !important; /* Removed hover grey circle background */
-      border: none;
-      color: var(--text-primary);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 36px;
-      height: 36px; 
-      flex-shrink: 0;
-      transition: opacity 0.15s ease;
-    }
-
-    .post-more-btn:hover, .post-more-btn:active {
-      opacity: 0.7; /* Fades icon slightly on hover instead of drawing a circle */
-    }
-
-    .post-more-btn iconify-icon {
-      font-size: 28px;
-    }
-
-    /* Desktop Menu Popup */
-    .post-menu-popup {
-      position: absolute;
-      top: 0;
-      left: calc(100% + 20px);
-      width: 220px;
-      background-color: var(--menu-bg);
-      border-radius: 16px;
-      padding: 8px;
-      box-shadow: 0 12px 32px var(--shadow-color); 
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      z-index: 500;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateX(-6px) scale(0.95);
-      border: 1px solid var(--divider-color);
-      transition: background-color 0.25s, opacity 0.2s, transform 0.2s, visibility 0.2s;
-    }
-
-    .post-menu-popup.active {
-      opacity: 1;
-      visibility: visible;
-      transform: translateX(0) scale(1);
-    }
-
-    .drawer-handle {
-      display: none; /* Hidden on desktop */
-    }
-
-    .post-menu-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 10px;
-      color: var(--text-primary);
-      font-size: 15px;
-      font-weight: 500;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      text-align: left;
-    }
-
-    .post-menu-item:hover {
-      background-color: var(--menu-hover);
-    }
-
-    .post-menu-item.danger {
-      color: #ff3040;
-      font-weight: 600;
-    }
-
-    .post-menu-item iconify-icon {
-      font-size: 22px;
-    }
-
-    /* Base Post Media (Desktop/Tablet) */
-    .post-media {
-      width: calc(100% - 32px); 
-      margin: 4px 16px 0 16px; 
-      position: relative;
-      border-radius: 16px;
-      overflow: hidden;
-      background-color: rgba(0, 0, 0, 0.03);
-    }
-
-    .post-media img {
-      width: 100%;
-      height: auto;
-      display: block;
-      object-fit: contain;
-      max-height: 750px;
-    }
-
-    .post-actions {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 14px 16px 16px 16px;
-    }
-
-    /* Action capsule */
-    .action-capsule {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px; 
-      background-color: var(--capsule-bg);
-      border: 1px solid var(--capsule-border);
-      padding: 4px 12px;
-      border-radius: 30px;
-      height: 40px; 
-    }
-
-    .action-btn {
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px; 
-      font-family: inherit;
-      font-size: 14px;
-      font-weight: 600;
-      padding: 2px;
-    }
-
-    .action-btn iconify-icon {
-      font-size: 26px; 
-    }
-
-    .action-btn:hover {
-      opacity: 0.7; 
-    }
-
-    .action-btn.liked iconify-icon {
-      color: var(--like-color);
-    }
-    .action-btn.liked span {
-      color: var(--text-primary);
-    }
-
-    .bookmark-btn {
-      background: none;
-      border: none;
-      color: var(--text-primary);
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 4px;
+      background: transparent !important; border: none; color: var(--text-primary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; flex-shrink: 0;
       border-radius: 50%;
     }
+    .post-more-btn:hover { background-color: var(--hover-bg) !important; }
+    .post-more-btn:active { opacity: 0.8; }
+    .post-more-btn iconify-icon { font-size: 28px; }
 
-    .bookmark-btn iconify-icon {
-      font-size: 26px; 
+    /* Post Menu Popup - OUTSIDE THE POST CARD with SHADOW RESTORED */
+    .post-menu-popup {
+      position: absolute; 
+      top: 0; 
+      left: calc(100% + 12px); 
+      right: auto;
+      width: 220px; 
+      background-color: var(--menu-bg);
+      border-radius: 16px; 
+      padding: 8px; 
+      box-shadow: var(--menu-shadow) !important; 
+      display: flex;
+      flex-direction: column; 
+      gap: 2px; 
+      z-index: 500; 
+      opacity: 0; 
+      visibility: hidden; 
+      transform: translateX(-6px) scale(0.95);
+      border: 1px solid var(--capsule-border); 
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
-    /* RIGHT SIDEBAR & NOTIFICATION CAPSULE */
-    .right-sidebar-container {
-      display: none;
+    .post-menu-popup.active { opacity: 1; visibility: visible; transform: translateX(0) scale(1); }
+    .drawer-handle { display: none; }
+    
+    .post-menu-item {
+      display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 14px; border-radius: 10px;
+      color: var(--text-primary); font-size: 14px; font-weight: 500; background: transparent; border: none; cursor: pointer; text-align: left;
     }
+    .post-menu-item:hover { background-color: var(--menu-hover); }
+    .post-menu-item.danger { color: #ff3040; font-weight: 600; }
+    .post-menu-item iconify-icon { font-size: 22px; }
 
-    .right-sidebar-container.hidden-by-menu {
+    /* Post Media & Bottom Actions */
+    .post-media {
+      width: calc(100% - 32px); margin: 4px 16px 0 16px; position: relative;
+      border-radius: 16px; overflow: hidden; background-color: rgba(0, 0, 0, 0.03);
+    }
+    .post-media img { width: 100%; height: auto; display: block; object-fit: contain; max-height: 750px; }
+    
+    /* ENLARGED POST ACTIONS */
+    .post-actions { 
+      display: flex; 
+      align-items: center; 
+      justify-content: space-between; 
+      padding: 16px; 
+    }
+    
+    .action-capsule {
+      display: inline-flex; 
+      align-items: center; 
+      gap: 14px; 
+      background-color: var(--capsule-bg);
+      border: 1px solid var(--capsule-border); 
+      padding: 6px 16px; 
+      border-radius: 32px; 
+      height: 46px; 
+      box-shadow: none !important;
+    }
+    .action-btn {
+      background: none; border: none; color: var(--text-primary); cursor: pointer;
+      display: flex; align-items: center; gap: 8px; font-family: inherit; font-size: 15px; font-weight: 600; padding: 2px;
+    }
+    .action-btn iconify-icon { font-size: 30px; }
+    .action-btn:hover { opacity: 0.75; }
+    .action-btn.liked iconify-icon { color: var(--like-color); }
+    
+    .bookmark-btn {
+      background: none; border: none; color: var(--text-primary); cursor: pointer; padding: 6px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .bookmark-btn:hover { background-color: var(--hover-bg); }
+    .bookmark-btn iconify-icon { font-size: 30px; }
+
+    /* RIGHT SIDEBAR CONTAINER (Desktop Only) */
+    .right-sidebar-container { display: none; }
+
+    /* ENLARGED NOTIFICATION CAPSULE */
+    .right-sidebar-capsule {
+      display: inline-flex; 
+      align-items: center; 
+      gap: 12px; 
+      padding: 10px 22px; 
+      border-radius: 32px;
+      height: 48px;
+      background-color: var(--capsule-bg); 
+      border: 1px solid var(--capsule-border); 
+      color: var(--text-primary);
+      cursor: pointer; 
+      font-weight: 600; 
+      font-size: 15px; 
+      width: fit-content; 
+      box-shadow: none !important; 
+      font-family: inherit;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .right-sidebar-capsule:hover { background-color: var(--menu-hover); transform: translateY(-2px); }
+    .right-sidebar-capsule iconify-icon { font-size: 24px; color: var(--icon-color); }
+    .right-sidebar-capsule .notification-badge { border-color: var(--capsule-bg); }
+
+    /* Auto-hide capsule when overlapping with post menu container */
+    .right-sidebar-capsule.hidden-overlap {
       opacity: 0 !important;
       visibility: hidden !important;
       pointer-events: none !important;
-      transform: translateY(-8px) !important;
+      transform: translateY(-8px) scale(0.95);
     }
 
-    .right-notification-capsule {
-      display: inline-flex;
-      align-items: center;
-      gap: 14px;
-      padding: 10px 20px;
-      border-radius: 30px;
-      background-color: var(--capsule-bg);
+    /* ENLARGED ICON-ONLY MENU BUTTON */
+    .icon-only-btn {
+      display: inline-flex; 
+      align-items: center; 
+      justify-content: center; 
+      width: 48px; 
+      height: 48px;
+      border-radius: 50%; 
+      background-color: var(--capsule-bg); 
       border: 1px solid var(--capsule-border);
-      color: var(--text-primary);
-      text-decoration: none;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 15px;
-      width: fit-content;
-      box-shadow: none !important; 
+      color: var(--text-primary); 
+      cursor: pointer; 
+      box-shadow: none !important;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    .icon-only-btn:hover { background-color: var(--menu-hover); transform: translateY(-2px); }
+    .icon-only-btn iconify-icon { font-size: 26px; color: var(--icon-color); }
 
-    .right-notification-capsule:hover {
-      background-color: var(--menu-hover); 
-      transform: translateY(-2px);
-    }
-
-    .right-notification-capsule iconify-icon {
-      font-size: 24px;
-      color: var(--icon-color);
-    }
-
-    /* Ensure Big Screen notification badge matches the capsule border color */
-    .right-notification-capsule .notification-badge {
-      border-color: var(--capsule-bg);
-    }
-
-    /* SIDEBAR POPUP MENU */
+    /* GLOBAL SETTINGS MENU POPUP - WITH SHADOW RESTORED */
     .menu-popup {
-      position: fixed;
-      bottom: 90px;
-      left: 16px;
-      width: 240px;
-      background-color: var(--menu-bg);
-      border-radius: 16px;
-      padding: 8px;
-      box-shadow: 0 10px 30px var(--shadow-color);
-      display: flex;
-      flex-direction: column;
-      z-index: 2000;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(10px) scale(0.95);
-      border: 1px solid var(--divider-color);
+      position: fixed; background-color: var(--menu-bg); border-radius: 16px; padding: 8px;
+      box-shadow: var(--menu-shadow) !important; display: flex; flex-direction: column; z-index: 2000;
+      opacity: 0; visibility: hidden; border: 1px solid var(--capsule-border);
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     }
-
-    .menu-popup.active {
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0) scale(1);
-    }
-
-    .menu-group {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
+    .menu-popup.active { opacity: 1; visibility: visible; }
+    
+    .menu-group { display: flex; flex-direction: column; gap: 2px; }
     .menu-item {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      color: var(--text-primary);
-      font-size: 14px;
-      font-weight: 500;
-      text-decoration: none;
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      text-align: left;
+      display: flex; align-items: center; gap: 14px; width: 100%; padding: 12px 14px; border-radius: 12px;
+      color: var(--text-primary); font-size: 14px; font-weight: 500; text-decoration: none; background: transparent; border: none; cursor: pointer; text-align: left;
     }
+    .menu-item:hover { background-color: var(--menu-hover); }
+    .menu-item iconify-icon { font-size: 22px; color: var(--text-primary); }
+    .menu-divider { height: 1px; background-color: var(--divider-color); margin: 6px 0; }
 
-    .menu-item:hover {
-      background-color: var(--menu-hover);
-    }
-
-    .menu-item iconify-icon {
-      font-size: 22px;
-      color: var(--text-primary);
-    }
-
-    .menu-divider {
-      height: 1px;
-      background-color: var(--divider-color);
-      margin: 6px 0;
-    }
 
     /* -------------------------------------- */
     /* RESPONSIVE BREAKPOINTS                 */
@@ -647,292 +427,121 @@
     /* MOBILE: Max Width 767px */
     @media (max-width: 767px) {
       .mobile-header {
-        display: flex;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 64px;
-        background-color: var(--nav-bg);
-        z-index: 1000;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 16px;
-        border-bottom: none; 
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 64px; background-color: var(--nav-bg); z-index: 1000; align-items: center; justify-content: space-between; padding: 0 16px; transition: transform 0.3s ease;
       }
-
-      .mobile-header.hidden {
-        transform: translateY(-100%);
-      }
-
-      .mobile-action-btn {
-        background: transparent;
-        border: none;
-        color: var(--text-primary);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        cursor: pointer;
-        width: 40px; 
-      }
-
-      .mobile-brand-name {
-        flex: 1;
-        text-align: center;
-        font-family: 'Grand Hotel', cursive; 
-        font-size: 34px;
-        color: var(--text-primary);
-        line-height: 1;
-        margin-top: 4px; 
-        letter-spacing: 0.5px;
-      }
-
-      .main-content-wrapper {
-        margin-left: 0;
-        padding-top: 64px; 
-        padding-bottom: 74px; 
-        justify-content: center;
-      }
-
-      .middle-container {
-        gap: 16px; 
-      }
-
-      .post-card {
-        border-radius: 0;
-        border-bottom: none; 
-        padding-bottom: 0px; 
-      }
-
-      .post-media {
-        width: 100%;
-        margin: 4px 0 0 0;
-        border-radius: 0;
-      }
-
-      .post-header-actions {
-        height: 32px; 
-      }
-
-      /* BIGGER, PROMINENT FOLLOW BUTTON FOR MOBILE */
-      .post-follow-btn {
-        height: 34px;
-        padding: 0 18px;
-        font-size: 14px;
-        border-radius: 8px;
-      }
-
-      .post-more-btn {
-        width: 32px;
-        height: 32px;
-      }
-
-      /* BIGGER ICON FOR MOBILE MORE BUTTON */
-      .post-more-btn iconify-icon {
-        font-size: 30px; 
-      }
-
-      /* TRANSFORM POST MENU TO BOTTOM DRAWER */
+      .mobile-header.hidden { transform: translateY(-100%); }
+      .mobile-action-btn { background: transparent; border: none; color: var(--text-primary); display: flex; align-items: center; justify-content: center; font-size: 28px; cursor: pointer; width: 40px; }
+      .mobile-brand-name { flex: 1; text-align: center; font-family: 'Grand Hotel', cursive; font-size: 34px; color: var(--text-primary); line-height: 1; margin-top: 4px; letter-spacing: 0.5px; }
+      
+      .main-content-wrapper { margin-left: 0; padding-top: 64px; padding-bottom: 74px; justify-content: center; }
+      .middle-container { gap: 16px; }
+      .post-card { border-radius: 0; padding-bottom: 0px; }
+      .post-media { width: 100%; margin: 4px 0 0 0; border-radius: 0; }
+      .post-header-actions { height: 32px; }
+      .post-follow-btn { height: 34px; padding: 0 18px; font-size: 14px; border-radius: 8px; }
+      .post-more-btn { width: 36px; height: 36px; }
+      .post-more-btn iconify-icon { font-size: 28px; }
+      
       .post-menu-popup {
-        position: fixed;
-        top: auto;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        max-width: 100%;
-        border-radius: 24px 24px 0 0;
-        padding: 24px 16px calc(env(safe-area-inset-bottom, 16px) + 24px) 16px;
-        transform: translateY(100%);
-        box-shadow: 0 -10px 40px rgba(0,0,0,0.3);
-        border: none;
-        border-top: 1px solid var(--divider-color);
-        z-index: 2000;
-        /* Custom curve mimicking Instagram drawer pop */
-        transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease, visibility 0.3s;
-        touch-action: none; /* Prevents scroll interference while touching drawer */
+        position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: 100%; border-radius: 24px 24px 0 0;
+        padding: 24px 16px calc(env(safe-area-inset-bottom, 16px) + 24px) 16px; transform: translateY(100%);
+        box-shadow: var(--menu-shadow) !important; border: none; border-top: 1px solid var(--divider-color); z-index: 2000;
+        transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s ease, visibility 0.3s; touch-action: none;
       }
+      .post-menu-popup.active { transform: translateY(0); }
+      .drawer-handle { display: block; width: 44px; height: 5px; background-color: var(--text-secondary); border-radius: 5px; margin: -12px auto 20px auto; opacity: 0.5; }
+      .post-actions { padding: 12px 14px; }
+      .action-capsule { height: 42px; padding: 4px 12px; gap: 10px; }
+      .action-btn iconify-icon, .bookmark-btn iconify-icon { font-size: 26px; }
 
-      .post-menu-popup.active {
-        transform: translateY(0);
+      .nav-wrapper { bottom: 0; left: 0; width: 100%; height: 58px; padding-bottom: env(safe-area-inset-bottom, 0px); border-top: 1px solid var(--divider-color) !important; }
+      .main-navigation, .nav-list { width: 100%; height: 100%; }
+      .nav-list { display: flex; list-style: none; }
+      .nav-list li { flex: 1 1 0%; height: 100%; display: flex; align-items: center; justify-content: center; }
+      .nav-item { justify-content: center; width: 48px; padding: 0; height: 100%; }
+      
+      .nav-text { display: none !important; }
+      
+      .menu-popup {
+        bottom: 90px; left: 16px; width: 240px; transform: translateY(10px) scale(0.95);
       }
-
-      /* Drawer drag handle for small screens */
-      .drawer-handle {
-        display: block;
-        width: 44px;
-        height: 5px;
-        background-color: var(--text-secondary);
-        border-radius: 5px;
-        margin: -12px auto 20px auto;
-        opacity: 0.5;
-      }
-
-      .post-actions {
-        padding: 12px 12px 14px 10px;
-      }
-
-      .action-capsule {
-        padding: 4px 8px; 
-        gap: 8px;
-      }
-
-      .nav-wrapper {
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 58px;
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-        border-top: 1px solid var(--divider-color) !important; 
-      }
-
-      .main-navigation {
-        width: 100%;
-        height: 100%;
-      }
-
-      .nav-list {
-        display: flex;
-        width: 100%;
-        height: 100%;
-        list-style: none;
-      }
-
-      .nav-list li {
-        flex: 1 1 0%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .nav-item {
-        justify-content: center;
-        width: 48px;
-        padding: 0;
-      }
-
-      .nav-text,
-      .brand-icon,
-      .secondary-actions {
-        display: none !important;
-      }
+      .menu-popup.active { transform: translateY(0) scale(1); }
     }
 
-    /* Desktop and Tablet Defaults */
+
+    /* DESKTOP & TABLET: Top-Left Logo, Floating Nav Dock, & Top-Right Sidebar Controls */
     @media (min-width: 768px) {
-      .nav-wrapper {
-        top: 0;
-        left: 0;
-        width: 80px;
-        height: 100vh;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        align-items: flex-start;
-        padding: 32px 16px 36px 16px;
+      .bottom-fade-mask { display: block; }
+
+      /* Top-Left Logo */
+      .desktop-brand-logo {
+        display: flex; position: fixed; top: 32px; left: 32px; z-index: 1000; align-items: center;
+      }
+      .desktop-brand-logo .brand-text {
+        font-family: 'Grand Hotel', cursive; font-size: 42px; color: var(--text-primary); line-height: 1; letter-spacing: 0.5px;
       }
 
-      .main-content-wrapper {
-        margin-left: 80px;
-        width: calc(100% - 80px);
-        padding-top: 32px;
-        padding-bottom: 32px;
-        justify-content: center;
+      /* Bottom Floating Nav Capsule */
+      .nav-wrapper {
+        top: auto; bottom: 32px; left: 50%; transform: translateX(-50%);
+        width: auto !important; height: auto; display: flex; flex-direction: row;
+        padding: 8px 12px; border-radius: 40px; background-color: var(--capsule-bg);
+        border: 1px solid var(--capsule-border) !important;
+        box-shadow: none !important;
+        backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
       }
       
-      .middle-container {
-        margin: 0 auto; 
+      .nav-list { display: flex; flex-direction: row; gap: 8px; list-style: none; }
+      
+      .nav-item {
+        padding: 10px 18px; border-radius: 30px; height: 48px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); justify-content: center;
       }
+      .nav-item:hover { background-color: var(--hover-bg); }
+      .nav-item.active { background-color: var(--active-bg); }
+      
+      .nav-item .nav-text {
+        width: 0; opacity: 0; overflow: hidden; padding-left: 0;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .nav-item.active .nav-text { width: auto; opacity: 1; padding-left: 4px; }
 
-      .nav-wrapper.expanded {
-        width: 240px;
-      }
+      /* Centered Feed */
+      .main-content-wrapper { margin: 0 auto; justify-content: center; padding-top: 40px; padding-bottom: 140px; }
+      .middle-container { margin: 0 auto; }
 
-      .nav-wrapper.expanded .nav-item.active {
-        background-color: var(--active-bg);
-      }
-
-      .nav-wrapper.expanded .nav-text {
-        opacity: 1;
-        visibility: visible;
-      }
-
-      .brand-icon, .main-navigation, .secondary-actions {
-        width: 100%;
-      }
-
-      .main-navigation {
-        transform: translateY(-30px);
-      }
-
-      .nav-list {
-        display: flex;
-        flex-direction: column;
-        gap: 20px;
-        list-style: none;
-      }
-    }
-
-    /* TABLET STRICT: 768px to 1023px (Collapsed Sidebar Only + Centered Feed) */
-    @media (min-width: 768px) and (max-width: 1023px) {
-      .nav-wrapper.expanded {
-        width: 80px !important; /* Force stay collapsed */
-      }
-      .nav-wrapper.expanded .nav-text {
-        opacity: 0 !important;
-        visibility: hidden !important;
-      }
-      #collapseToggleItem {
-        display: none !important; /* Hide collapse toggle menu item */
-      }
-      body.sidebar-expanded .main-content-wrapper {
-        margin-left: 80px !important; 
-        width: calc(100% - 80px) !important; 
-      }
-    }
-
-    /* DESKTOP BIG SCREENS: 1024px+ */
-    @media (min-width: 1024px) {
-      .main-content-wrapper {
-        justify-content: center;
-        gap: 64px; 
-      }
-
-      .middle-container {
-        margin: 0; /* Reset auto margin to allow flexbox spacing with right sidebar */
-      }
-
-      body.sidebar-expanded .main-content-wrapper {
-        margin-left: 240px;
-        width: calc(100% - 240px);
-      }
-
+      /* Top-Right Sidebar Row Configuration */
       .right-sidebar-container {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-        width: 300px;
-        position: sticky;
-        top: 32px;
-        height: fit-content;
+        display: flex; flex-direction: row; gap: 12px;
+        position: fixed; top: 32px; right: 32px; z-index: 1000; align-items: center;
       }
-
-      .mobile-notification-item {
-        display: none !important;
+      
+      /* Global Dropdown popup directly under the Icon Menu */
+      .menu-popup {
+        top: 88px; right: 32px; width: 260px; transform: translateY(-10px) scale(0.95);
       }
+      .menu-popup.active { transform: translateY(0) scale(1); }
+      
+      .mobile-notification-item { display: none !important; }
     }
+
   </style>
 </head>
 <body>
 
-  <!-- Full Screen Drawer Overlay (For mobile popups) -->
   <div class="drawer-overlay" id="drawerOverlay"></div>
+
+  <!-- Fade element to prevent posts colliding visually with floating capsule -->
+  <div class="bottom-fade-mask"></div>
+
+  <!-- Top-Left Desktop Logo ("Bond") -->
+  <div class="desktop-brand-logo">
+    <span class="brand-text">Bond</span>
+  </div>
 
   <!-- Top Mobile Header -->
   <header class="mobile-header" id="mobileHeader">
-    <button class="mobile-action-btn" aria-label="Menu">
+    <button class="mobile-action-btn" id="mobileMenuToggle" aria-label="Menu">
       <iconify-icon icon="solar:hamburger-menu-linear"></iconify-icon>
     </button>
     
@@ -945,15 +554,8 @@
 
   <div class="app-layout">
 
-    <!-- Navigation Bar (Sidebar on Desktop/Tablet / Bottom Bar on Mobile) -->
+    <!-- Floating Navigation Capsule -->
     <nav class="nav-wrapper" id="sidebar">
-      <div class="brand-icon">
-        <a href="#" class="nav-item" aria-label="Brand Home">
-          <iconify-icon icon="solar:round-alt-arrow-right-bold" style="font-size: 30px;"></iconify-icon>
-          <span class="nav-text" style="font-size: 18px; font-weight: 700;">Bond</span>
-        </a>
-      </div>
-
       <div class="main-navigation">
         <ul class="nav-list">
           <li>
@@ -974,13 +576,14 @@
               <span class="nav-text">Create</span>
             </a>
           </li>
+          <!-- Mobile Only Notification Item -->
           <li class="mobile-notification-item">
             <a href="#" class="nav-item" data-outline="solar:bell-outline" data-filled="solar:bell-bold" aria-label="Notifications">
               <div class="icon-badge-wrapper">
                 <iconify-icon icon="solar:bell-outline"></iconify-icon>
                 <span class="notification-badge">3</span>
               </div>
-              <span class="nav-text">Notifications</span>
+              <span class="nav-text">Notifs</span>
             </a>
           </li>
           <li>
@@ -992,13 +595,6 @@
             </a>
           </li>
         </ul>
-      </div>
-
-      <div class="secondary-actions">
-        <button class="nav-item" id="menuToggle" aria-label="More Options">
-          <iconify-icon icon="solar:hamburger-menu-linear"></iconify-icon>
-          <span class="nav-text">More</span>
-        </button>
       </div>
     </nav>
 
@@ -1020,46 +616,26 @@
                 </div>
               </div>
 
-              <!-- Right side action wrapper -->
               <div class="post-header-actions">
                 <button class="post-follow-btn">Follow</button>
-                
                 <div class="post-more-wrapper">
                   <button class="post-more-btn" aria-label="More Options">
                     <iconify-icon icon="solar:list-bold"></iconify-icon>
                   </button>
-                  
                   <div class="post-menu-popup">
                     <div class="drawer-handle"></div>
-                    <button class="post-menu-item danger">
-                      <iconify-icon icon="solar:danger-circle-linear"></iconify-icon>
-                      <span>Report</span>
-                    </button>
-                    <button class="post-menu-item danger">
-                      <iconify-icon icon="solar:user-minus-linear"></iconify-icon>
-                      <span>Unfollow</span>
-                    </button>
+                    <button class="post-menu-item danger"><iconify-icon icon="solar:danger-circle-linear"></iconify-icon><span>Report</span></button>
+                    <button class="post-menu-item danger"><iconify-icon icon="solar:user-minus-linear"></iconify-icon><span>Unfollow</span></button>
                     <div class="menu-divider"></div>
-                    <button class="post-menu-item">
-                      <iconify-icon icon="solar:star-linear"></iconify-icon>
-                      <span>Add to favorites</span>
-                    </button>
-                    <button class="post-menu-item">
-                      <iconify-icon icon="solar:link-circle-linear"></iconify-icon>
-                      <span>Copy link</span>
-                    </button>
-                    <button class="post-menu-item">
-                      <iconify-icon icon="solar:info-circle-linear"></iconify-icon>
-                      <span>About this account</span>
-                    </button>
+                    <button class="post-menu-item"><iconify-icon icon="solar:star-linear"></iconify-icon><span>Add to favorites</span></button>
+                    <button class="post-menu-item"><iconify-icon icon="solar:link-circle-linear"></iconify-icon><span>Copy link</span></button>
+                    <button class="post-menu-item"><iconify-icon icon="solar:info-circle-linear"></iconify-icon><span>About this account</span></button>
                   </div>
                 </div>
               </div>
-
             </div>
-
             <p class="post-caption">
-              Exploring new minimalist dark interfaces. The menu is now a perfectly smooth bottom drawer! 🚀
+              Clean layout with menu options popping up seamlessly on the side outside the post card! 🚀
             </p>
           </header>
 
@@ -1069,21 +645,11 @@
 
           <div class="post-actions">
             <div class="action-capsule">
-              <button class="action-btn like-btn" aria-label="Like Post">
-                <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                <span>1,284</span>
-              </button>
-              <button class="action-btn" aria-label="Comment">
-                <iconify-icon icon="solar:chat-round-line-duotone"></iconify-icon>
-                <span>48</span>
-              </button>
-              <button class="action-btn" aria-label="Share">
-                <iconify-icon icon="solar:plain-linear"></iconify-icon>
-              </button>
+              <button class="action-btn like-btn" aria-label="Like Post"><iconify-icon icon="solar:heart-linear"></iconify-icon><span>1,284</span></button>
+              <button class="action-btn" aria-label="Comment"><iconify-icon icon="solar:chat-round-line-duotone"></iconify-icon><span>48</span></button>
+              <button class="action-btn" aria-label="Share"><iconify-icon icon="solar:plain-linear"></iconify-icon></button>
             </div>
-            <button class="bookmark-btn" aria-label="Bookmark">
-              <iconify-icon icon="solar:bookmark-linear"></iconify-icon>
-            </button>
+            <button class="bookmark-btn" aria-label="Bookmark"><iconify-icon icon="solar:bookmark-linear"></iconify-icon></button>
           </div>
         </article>
 
@@ -1100,47 +666,26 @@
                   <span class="post-date">5 hrs</span>
                 </div>
               </div>
-
-              <!-- Right side action wrapper -->
               <div class="post-header-actions">
                 <button class="post-follow-btn">Follow</button>
-
                 <div class="post-more-wrapper">
                   <button class="post-more-btn" aria-label="More Options">
                     <iconify-icon icon="solar:list-bold"></iconify-icon>
                   </button>
-                  
                   <div class="post-menu-popup">
                     <div class="drawer-handle"></div>
-                    <button class="post-menu-item danger">
-                      <iconify-icon icon="solar:danger-circle-linear"></iconify-icon>
-                      <span>Report</span>
-                    </button>
-                    <button class="post-menu-item danger">
-                      <iconify-icon icon="solar:user-minus-linear"></iconify-icon>
-                      <span>Unfollow</span>
-                    </button>
+                    <button class="post-menu-item danger"><iconify-icon icon="solar:danger-circle-linear"></iconify-icon><span>Report</span></button>
+                    <button class="post-menu-item danger"><iconify-icon icon="solar:user-minus-linear"></iconify-icon><span>Unfollow</span></button>
                     <div class="menu-divider"></div>
-                    <button class="post-menu-item">
-                      <iconify-icon icon="solar:star-linear"></iconify-icon>
-                      <span>Add to favorites</span>
-                    </button>
-                    <button class="post-menu-item">
-                      <iconify-icon icon="solar:link-circle-linear"></iconify-icon>
-                      <span>Copy link</span>
-                    </button>
-                    <button class="post-menu-item">
-                      <iconify-icon icon="solar:info-circle-linear"></iconify-icon>
-                      <span>About this account</span>
-                    </button>
+                    <button class="post-menu-item"><iconify-icon icon="solar:star-linear"></iconify-icon><span>Add to favorites</span></button>
+                    <button class="post-menu-item"><iconify-icon icon="solar:link-circle-linear"></iconify-icon><span>Copy link</span></button>
+                    <button class="post-menu-item"><iconify-icon icon="solar:info-circle-linear"></iconify-icon><span>About this account</span></button>
                   </div>
                 </div>
               </div>
-
             </div>
-
             <p class="post-caption">
-              Peaceful moments by the ocean shore. The background feed won't scroll anymore when pulling down menus. 🌊✨
+              Clean elevated menus with subtle drop shadow styling! ✨
             </p>
           </header>
 
@@ -1150,72 +695,48 @@
 
           <div class="post-actions">
             <div class="action-capsule">
-              <button class="action-btn like-btn" aria-label="Like Post">
-                <iconify-icon icon="solar:heart-linear"></iconify-icon>
-                <span>3,891</span>
-              </button>
-              <button class="action-btn" aria-label="Comment">
-                <iconify-icon icon="solar:chat-round-line-duotone"></iconify-icon>
-                <span>112</span>
-              </button>
-              <button class="action-btn" aria-label="Share">
-                <iconify-icon icon="solar:plain-linear"></iconify-icon>
-              </button>
+              <button class="action-btn like-btn" aria-label="Like Post"><iconify-icon icon="solar:heart-linear"></iconify-icon><span>3,891</span></button>
+              <button class="action-btn" aria-label="Comment"><iconify-icon icon="solar:chat-round-line-duotone"></iconify-icon><span>112</span></button>
+              <button class="action-btn" aria-label="Share"><iconify-icon icon="solar:plain-linear"></iconify-icon></button>
             </div>
-            <button class="bookmark-btn" aria-label="Bookmark">
-              <iconify-icon icon="solar:bookmark-linear"></iconify-icon>
-            </button>
+            <button class="bookmark-btn" aria-label="Bookmark"><iconify-icon icon="solar:bookmark-linear"></iconify-icon></button>
           </div>
         </article>
 
       </main>
 
-      <!-- Right Sidebar (Big Screen Only) -->
+      <!-- Right Sidebar Controls (Desktop Only) -->
       <aside class="right-sidebar-container" id="rightSidebar">
-        <button class="right-notification-capsule" id="notificationCapsule" aria-label="Notifications">
+        <!-- Notification Capsule -->
+        <button class="right-sidebar-capsule" id="notifCapsule" aria-label="Notifications">
           <div class="icon-badge-wrapper">
             <iconify-icon icon="solar:bell-bold"></iconify-icon>
             <span class="notification-badge">3</span>
           </div>
           <span>Notifications</span>
         </button>
+
+        <!-- Menu Toggle Icon-Only -->
+        <button class="icon-only-btn" id="desktopMenuToggle" aria-label="More Options">
+          <iconify-icon icon="solar:hamburger-menu-linear"></iconify-icon>
+        </button>
       </aside>
 
     </div>
   </div>
 
-  <!-- Sidebar Flyout Menu -->
+  <!-- Global App Options Menu -->
   <div class="menu-popup" id="menuPopup">
     <div class="menu-group">
-      <button class="menu-item">
-        <iconify-icon icon="solar:settings-linear"></iconify-icon>
-        <span>Settings</span>
-      </button>
-      <button class="menu-item">
-        <iconify-icon icon="solar:history-linear"></iconify-icon>
-        <span>Your activity</span>
-      </button>
-      <button class="menu-item">
-        <iconify-icon icon="solar:bookmark-linear"></iconify-icon>
-        <span>Saved</span>
-      </button>
-
+      <button class="menu-item"><iconify-icon icon="solar:settings-linear"></iconify-icon><span>Settings</span></button>
+      <button class="menu-item"><iconify-icon icon="solar:history-linear"></iconify-icon><span>Your activity</span></button>
+      <button class="menu-item"><iconify-icon icon="solar:bookmark-linear"></iconify-icon><span>Saved</span></button>
       <button class="menu-item" id="themeToggleItem">
         <iconify-icon id="themeMenuIcon" icon="solar:moon-linear"></iconify-icon>
         <span>Switch appearance</span>
       </button>
-
-      <button class="menu-item" id="collapseToggleItem">
-        <iconify-icon id="collapseIcon" icon="solar:sidebar-minimalistic-linear"></iconify-icon>
-        <span id="collapseLabel">Expand sidebar</span>
-      </button>
-
-      <button class="menu-item">
-        <iconify-icon icon="solar:danger-circle-linear"></iconify-icon>
-        <span>Report a problem</span>
-      </button>
+      <button class="menu-item"><iconify-icon icon="solar:danger-circle-linear"></iconify-icon><span>Report a problem</span></button>
     </div>
-
     <div class="menu-divider"></div>
     <div class="menu-group">
       <button class="menu-item"><span>Switch accounts</span></button>
@@ -1227,15 +748,48 @@
   </div>
 
   <script>
-    const rightSidebar = document.getElementById('rightSidebar');
     const mobileHeader = document.getElementById('mobileHeader');
     const drawerOverlay = document.getElementById('drawerOverlay');
+    const notifCapsule = document.getElementById('notifCapsule');
     let lastScrollTop = 0;
 
-    // Mobile Auto-Hiding Header Logic
+    // Collision detection to hide Notification capsule if post options menu overlaps it
+    function checkNotificationOverlap() {
+      if (!notifCapsule || window.innerWidth < 768) return;
+
+      const notifRect = notifCapsule.getBoundingClientRect();
+      let shouldHide = false;
+
+      document.querySelectorAll('.post-menu-popup.active').forEach(popup => {
+        const pRect = popup.getBoundingClientRect();
+        if (rectsOverlap(notifRect, pRect)) {
+          shouldHide = true;
+        }
+      });
+
+      document.querySelectorAll('.post-more-wrapper').forEach(wrapper => {
+        const wRect = wrapper.getBoundingClientRect();
+        if (rectsOverlap(notifRect, wRect)) {
+          shouldHide = true;
+        }
+      });
+
+      if (shouldHide) {
+        notifCapsule.classList.add('hidden-overlap');
+      } else {
+        notifCapsule.classList.remove('hidden-overlap');
+      }
+    }
+
+    function rectsOverlap(r1, r2) {
+      return !(r2.left > r1.right || 
+               r2.right < r1.left || 
+               r2.top > r1.bottom || 
+               r2.bottom < r1.top);
+    }
+
     window.addEventListener('scroll', () => {
       const st = window.pageYOffset || document.documentElement.scrollTop;
-      
       if (window.innerWidth <= 767) {
         if (st > lastScrollTop && st > 64) {
           mobileHeader.classList.add('hidden');
@@ -1243,14 +797,12 @@
           mobileHeader.classList.remove('hidden');
         }
       }
-      
-      const activePopup = document.querySelector('.post-menu-popup.active');
-      if (activePopup) checkAndHideIfOverlapping(activePopup);
-
       lastScrollTop = st <= 0 ? 0 : st; 
+
+      checkNotificationOverlap();
     }, { passive: true });
 
-    // Navigation Active Switcher
+    // Floating Capsule Nav Switcher
     const navItems = document.querySelectorAll('.nav-list .nav-item');
     navItems.forEach(item => {
       item.addEventListener('click', (e) => {
@@ -1268,47 +820,41 @@
       });
     });
 
-    // Sidebar Flyout Menu Toggle Logic
-    const menuToggle = document.getElementById('menuToggle');
+    // App Menu Popups
+    const desktopMenuToggle = document.getElementById('desktopMenuToggle');
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
     const menuPopup = document.getElementById('menuPopup');
 
-    menuToggle.addEventListener('click', (e) => {
+    function toggleAppMenu(e) {
       e.stopPropagation();
       closeAllPostMenus();
       menuPopup.classList.toggle('active');
-    });
+      
+      if (window.innerWidth <= 767) {
+        if (menuPopup.classList.contains('active')) {
+          drawerOverlay.classList.add('active');
+          document.body.classList.add('no-scroll');
+        } else {
+          drawerOverlay.classList.remove('active');
+          document.body.classList.remove('no-scroll');
+        }
+      }
+    }
+
+    if (desktopMenuToggle) desktopMenuToggle.addEventListener('click', toggleAppMenu);
+    if (mobileMenuToggle) mobileMenuToggle.addEventListener('click', toggleAppMenu);
 
     function closeAllPostMenus() {
       document.querySelectorAll('.post-menu-popup').forEach(p => {
         p.classList.remove('active');
-        p.style.transform = ''; // reset slide tracking
+        p.style.transform = ''; 
       });
       if (drawerOverlay) drawerOverlay.classList.remove('active');
-      if (rightSidebar) rightSidebar.classList.remove('hidden-by-menu');
       document.body.classList.remove('no-scroll');
+      checkNotificationOverlap();
     }
 
-    function checkAndHideIfOverlapping(popup) {
-      if (!rightSidebar || window.getComputedStyle(rightSidebar).display === 'none') return;
-      rightSidebar.classList.remove('hidden-by-menu');
-      const popupRect = popup.getBoundingClientRect();
-      const capsuleRect = rightSidebar.getBoundingClientRect();
-
-      const isOverlapping = !(
-        popupRect.right < capsuleRect.left ||
-        popupRect.left > capsuleRect.right ||
-        popupRect.bottom < capsuleRect.top ||
-        popupRect.top > capsuleRect.bottom
-      );
-
-      if (isOverlapping) {
-        rightSidebar.classList.add('hidden-by-menu');
-      } else {
-        rightSidebar.classList.remove('hidden-by-menu');
-      }
-    }
-
-    // Post Options Dropdown / Drawer Logic
+    // Post Options Individual Dropdowns
     document.querySelectorAll('.post-more-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1316,46 +862,28 @@
         const popup = wrapper.querySelector('.post-menu-popup');
 
         if (menuPopup) menuPopup.classList.remove('active');
-
         const isCurrentlyActive = popup.classList.contains('active');
 
-        document.querySelectorAll('.post-menu-popup').forEach(p => {
-          if (p !== popup) {
-            p.classList.remove('active');
-            p.style.transform = '';
-          }
-        });
+        closeAllPostMenus();
 
         if (!isCurrentlyActive) {
           popup.classList.add('active');
           if (window.innerWidth <= 767) {
             if (drawerOverlay) drawerOverlay.classList.add('active');
-            document.body.classList.add('no-scroll'); // Lock body scrolling
+            document.body.classList.add('no-scroll');
           }
-          requestAnimationFrame(() => {
-            if (window.innerWidth > 767) checkAndHideIfOverlapping(popup);
-          });
-        } else {
-          popup.classList.remove('active');
-          if (drawerOverlay) drawerOverlay.classList.remove('active');
-          if (rightSidebar) rightSidebar.classList.remove('hidden-by-menu');
-          document.body.classList.remove('no-scroll');
         }
+        checkNotificationOverlap();
       });
     });
 
     // Mobile Slide-to-Close Drawer Logic
-    let startY = 0;
-    let currentY = 0;
-    let isDragging = false;
-
-    document.querySelectorAll('.post-menu-popup').forEach(popup => {
+    let startY = 0; let currentY = 0; let isDragging = false;
+    document.querySelectorAll('.post-menu-popup, #menuPopup').forEach(popup => {
       popup.addEventListener('touchstart', (e) => {
         if (window.innerWidth > 767 || !popup.classList.contains('active')) return;
         startY = e.touches[0].clientY;
         isDragging = true;
-        
-        // Remove transitions so the drawer perfectly tracks the finger
         popup.style.transition = 'none'; 
       }, {passive: true});
 
@@ -1364,35 +892,28 @@
         currentY = e.touches[0].clientY;
         let deltaY = currentY - startY;
         
-        // Only allow dragging downwards
         if (deltaY > 0) {
           popup.style.transform = `translateY(${deltaY}px)`;
-          e.preventDefault(); // Prevents scroll actions to ensure completely smooth dragging
+          e.preventDefault(); 
         }
-      }, {passive: false}); // passive MUST be false to use preventDefault
+      }, {passive: false}); 
 
       popup.addEventListener('touchend', (e) => {
         if (!isDragging || window.innerWidth > 767) return;
         isDragging = false;
-        
-        // Restore CSS transition for snapping back or closing
-        popup.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1)'; 
+        popup.style.transition = 'transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.3s'; 
         
         let deltaY = currentY - startY;
-        
-        // Close completely if pulled down sufficiently
         if (deltaY > 60) {
           popup.classList.remove('active');
-          drawerOverlay.classList.remove('active');
-          document.body.classList.remove('no-scroll'); // Unlock scroll
+          if (drawerOverlay) drawerOverlay.classList.remove('active');
+          document.body.classList.remove('no-scroll');
         }
-        
-        // Clear manual transform so CSS rules take over
         popup.style.transform = ''; 
       });
     });
 
-    // Follow Button interaction logic
+    // Follow Interactions
     document.querySelectorAll('.post-follow-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         if (btn.classList.contains('following')) {
@@ -1405,15 +926,17 @@
       });
     });
 
-    // Global Click Listener to close popups and overlay
+    // Global Click-to-Close
     document.addEventListener('click', (e) => {
-      if (menuPopup && !menuPopup.contains(e.target) && !menuToggle.contains(e.target)) {
+      if (menuPopup && !menuPopup.contains(e.target) && 
+         (!desktopMenuToggle || !desktopMenuToggle.contains(e.target)) && 
+         (!mobileMenuToggle || !mobileMenuToggle.contains(e.target))) {
         menuPopup.classList.remove('active');
       }
 
-      // If clicked on the dark overlay on mobile, close everything
       if (e.target === drawerOverlay) {
         closeAllPostMenus();
+        if (menuPopup) menuPopup.classList.remove('active');
         return;
       }
 
@@ -1427,75 +950,49 @@
         }
       });
 
-      if (!clickedInsideAnyPostMenu && window.innerWidth > 767 && rightSidebar) {
-        rightSidebar.classList.remove('hidden-by-menu');
-      }
-      if (!clickedInsideAnyPostMenu) {
+      if (!clickedInsideAnyPostMenu && window.innerWidth > 767) {
          if(drawerOverlay) drawerOverlay.classList.remove('active');
          document.body.classList.remove('no-scroll');
       }
+
+      checkNotificationOverlap();
     });
 
     window.addEventListener('resize', () => {
-      const activePopup = document.querySelector('.post-menu-popup.active');
       if (window.innerWidth > 767) {
         if (drawerOverlay) drawerOverlay.classList.remove('active');
         document.body.classList.remove('no-scroll');
       }
-      if (activePopup && window.innerWidth > 767) checkAndHideIfOverlapping(activePopup);
+      checkNotificationOverlap();
     });
 
-    // Light / Dark Theme Switcher Logic
-    const themeToggleItem = document.getElementById('themeToggleItem');
-    const themeMenuIcon = document.getElementById('themeMenuIcon');
-    
-    const mobileThemeToggle = document.getElementById('mobileThemeToggle');
-    const mobileThemeIcon = document.getElementById('mobileThemeIcon');
-    
+    // Theme Switcher
     const htmlRoot = document.documentElement;
-
     function updateTheme(newTheme) {
       htmlRoot.setAttribute('data-theme', newTheme);
       const iconName = newTheme === 'dark' ? 'solar:moon-linear' : 'solar:sun-2-linear';
-      
+      const themeMenuIcon = document.getElementById('themeMenuIcon');
+      const mobileThemeIcon = document.getElementById('mobileThemeIcon');
       if (themeMenuIcon) themeMenuIcon.setAttribute('icon', iconName);
       if (mobileThemeIcon) mobileThemeIcon.setAttribute('icon', iconName);
     }
-
-    themeToggleItem.addEventListener('click', () => {
-      const currentTheme = htmlRoot.getAttribute('data-theme');
-      updateTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    
+    document.getElementById('themeToggleItem').addEventListener('click', () => {
+      updateTheme(htmlRoot.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
     });
-
+    const mobileThemeToggle = document.getElementById('mobileThemeToggle');
     if (mobileThemeToggle) {
       mobileThemeToggle.addEventListener('click', () => {
-        const currentTheme = htmlRoot.getAttribute('data-theme');
-        updateTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        updateTheme(htmlRoot.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
       });
     }
-
-    // Sidebar Expand / Collapse Toggle (Desktop Only)
-    const collapseToggleItem = document.getElementById('collapseToggleItem');
-    const collapseLabel = document.getElementById('collapseLabel');
-    const sidebar = document.getElementById('sidebar');
-
-    collapseToggleItem.addEventListener('click', () => {
-      sidebar.classList.toggle('expanded');
-      document.body.classList.toggle('sidebar-expanded'); 
-      const isExpanded = sidebar.classList.contains('expanded');
-      collapseLabel.textContent = isExpanded ? "Collapse sidebar" : "Expand sidebar";
-    });
 
     // Likes & Bookmarks Logic
     document.querySelectorAll('.like-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         btn.classList.toggle('liked');
         const icon = btn.querySelector('iconify-icon');
-        if (btn.classList.contains('liked')) {
-          icon.setAttribute('icon', 'solar:heart-bold');
-        } else {
-          icon.setAttribute('icon', 'solar:heart-linear');
-        }
+        icon.setAttribute('icon', btn.classList.contains('liked') ? 'solar:heart-bold' : 'solar:heart-linear');
       });
     });
 
@@ -1503,11 +1000,7 @@
       btn.addEventListener('click', () => {
         btn.classList.toggle('bookmarked');
         const icon = btn.querySelector('iconify-icon');
-        if (btn.classList.contains('bookmarked')) {
-          icon.setAttribute('icon', 'solar:bookmark-bold');
-        } else {
-          icon.setAttribute('icon', 'solar:bookmark-linear');
-        }
+        icon.setAttribute('icon', btn.classList.contains('bookmarked') ? 'solar:bookmark-bold' : 'solar:bookmark-linear');
       });
     });
   </script>
