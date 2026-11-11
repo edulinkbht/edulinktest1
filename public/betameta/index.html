@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Minimal Instagram Navigation</title>
 
+<!-- Modern, clean geometric font (Plus Jakarta Sans) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700&display=swap" rel="stylesheet">
+
 <style>
 * {
     box-sizing: border-box;
@@ -21,7 +26,7 @@ html, body {
 body {
     min-height: 100vh;
     min-height: 100svh;
-    font-family: Arial, sans-serif;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     overflow-x: hidden;
 }
 
@@ -33,10 +38,10 @@ body {
     background: #fff;
 }
 
-/* FOOTER */
+/* FOOTER NAV CONTAINER */
 
 .bottom-nav {
-    --side: 8px;
+    --side: 12px;
 
     position: fixed;
     bottom: 0;
@@ -48,12 +53,11 @@ body {
 
     height: calc(76px + env(safe-area-inset-bottom));
 
-    padding: 8px var(--side)
-        calc(8px + env(safe-area-inset-bottom));
+    padding: 8px var(--side) calc(8px + env(safe-area-inset-bottom));
 
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    display: flex;
     align-items: center;
+    justify-content: space-between;
 
     background: #fff;
     border: none;
@@ -66,30 +70,26 @@ body {
     touch-action: pan-y;
 }
 
-/* SIMPLE GRAY CAPSULE */
+/* DYNAMIC ACCENT CAPSULE */
 
 .active-capsule {
     position: absolute;
-
     top: 15px;
     left: 0;
 
-    width: 68px;
+    width: 0px;
     height: 46px;
 
     border-radius: 50px;
-
-    background: #ededf0;
-
-    transform: translateX(-50%);
+    background: #f0f2f5;
 
     pointer-events: none;
     z-index: 0;
 
-    will-change: left;
-
-    transition:
-        left 480ms cubic-bezier(.22,.75,.18,1);
+    will-change: left, width;
+    transition: 
+        left 400ms cubic-bezier(.22,.75,.18,1),
+        width 400ms cubic-bezier(.22,.75,.18,1);
 }
 
 .bottom-nav.dragging .active-capsule {
@@ -101,13 +101,13 @@ body {
 .nav-item {
     position: relative;
 
-    width: 100%;
-    min-width: 0;
-    height: 54px;
+    height: 46px;
+    padding: 0 12px;
 
     display: flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
 
     border: none;
     outline: none;
@@ -119,6 +119,22 @@ body {
     -webkit-tap-highlight-color: transparent;
 
     z-index: 1;
+    transition: color 250ms ease;
+}
+
+/* NAV LABEL */
+
+.nav-label {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+    display: none;
+    color: #0f1419;
+}
+
+.nav-item.active .nav-label {
+    display: inline-block;
 }
 
 /* ICONS */
@@ -126,15 +142,15 @@ body {
 .nav-item svg {
     display: block;
 
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
 
     flex-shrink: 0;
     overflow: visible;
 
     fill: none;
     stroke: currentColor;
-    stroke-width: 1.75;
+    stroke-width: 2.2;
     stroke-linecap: round;
     stroke-linejoin: round;
 
@@ -185,8 +201,8 @@ body {
 
 .profile-container {
     position: relative;
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -194,8 +210,8 @@ body {
 }
 
 .profile-avatar {
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
     border-radius: 50%;
     object-fit: cover;
     display: block;
@@ -205,8 +221,8 @@ body {
     position: absolute;
     top: -1px;
     right: -1px;
-    width: 9px;
-    height: 9px;
+    width: 8px;
+    height: 8px;
     background-color: #ff3040;
     border-radius: 50%;
     border: 1.5px solid #fff;
@@ -217,7 +233,7 @@ body {
     display: block;
 }
 
-/* SUBTLE FEEDBACK */
+/* FEEDBACK & ACCESSIBILITY */
 
 .nav-item:active {
     opacity: .78;
@@ -226,7 +242,7 @@ body {
 .nav-item:focus-visible {
     outline: 2px solid #888;
     outline-offset: 2px;
-    border-radius: 12px;
+    border-radius: 24px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -241,22 +257,19 @@ body {
 
 <main class="app">
 
-<nav class="bottom-nav" id="bottomNav"
-     aria-label="Main navigation">
+<nav class="bottom-nav" id="bottomNav" aria-label="Main navigation">
 
     <div class="active-capsule" id="activeCapsule"></div>
 
     <!-- HOME -->
-    <button class="nav-item active"
-            aria-label="Home"
-            aria-current="page">
-
+    <button class="nav-item active" aria-label="Home" aria-current="page">
         <svg viewBox="0 0 24 24">
             <path class="home-filled"
                 d="M21.7 10.2 13.3 2.7a2 2 0 0 0-2.6 0L2.3 10.2a1.8 1.8 0 0 0-.3 2.5l1.1 1.2V19a3 3 0 0 0 3 3h3.1v-6.2a2.8 2.8 0 0 1 5.6 0V22H18a3 3 0 0 0 3-3v-5.1l1.1-1.2a1.8 1.8 0 0 0-.4-2.5Z"/>
             <path class="home-outline"
                 d="M2.5 10.7 12 2.8l9.5 7.9M4.5 9.5V19a2 2 0 0 0 2 2h3.2v-5.8a2.3 2.3 0 0 1 4.6 0V21h3.2a2 2 0 0 0 2-2V9.5"/>
         </svg>
+        <span class="nav-label">Home</span>
     </button>
 
     <!-- SEARCH -->
@@ -265,6 +278,7 @@ body {
             <circle cx="10.5" cy="10.5" r="7.2"/>
             <path d="M16 16l5 5"/>
         </svg>
+        <span class="nav-label">Search</span>
     </button>
 
     <!-- CREATE -->
@@ -274,6 +288,7 @@ body {
             <path d="M12 7.5v9"/>
             <path d="M7.5 12h9"/>
         </svg>
+        <span class="nav-label">Create</span>
     </button>
 
     <!-- CHAT -->
@@ -300,6 +315,7 @@ body {
                 C24.5 7.6 19.8 3.5 14 3.5Z
             "/>
         </svg>
+        <span class="nav-label">Chat</span>
     </button>
 
     <!-- PROFILE -->
@@ -308,6 +324,7 @@ body {
             <img class="profile-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Profile avatar">
             <span class="profile-badge"></span>
         </div>
+        <span class="nav-label">Profile</span>
     </button>
 
 </nav>
@@ -319,43 +336,13 @@ const nav = document.getElementById("bottomNav");
 const capsule = document.getElementById("activeCapsule");
 const items = [...document.querySelectorAll(".nav-item")];
 
-const SIDE = 8;
-const DRAG_THRESHOLD = 20;
-
 let activeIndex = 0;
-let startX = 0;
-let startY = 0;
-
-let tracking = false;
-let dragging = false;
-let verticalGesture = false;
-let suppressClick = false;
-
-let pointerId = null;
-
-let currentX = 0;
-let targetX = 0;
-let animationFrame = null;
-
-function getCellWidth() {
-    return (nav.clientWidth - SIDE * 2) / items.length;
-}
-
-function getCenter(index) {
-    return SIDE + getCellWidth() * (index + .5);
-}
-
-function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
-}
 
 function updateActive(index) {
-
-    activeIndex = clamp(index, 0, items.length - 1);
+    activeIndex = Math.max(0, Math.min(items.length - 1, index));
 
     items.forEach((item, i) => {
         const selected = i === activeIndex;
-
         item.classList.toggle("active", selected);
 
         if (selected) {
@@ -366,184 +353,36 @@ function updateActive(index) {
     });
 }
 
+function updateCapsulePosition() {
+    const activeItem = items[activeIndex];
+    if (!activeItem) return;
+
+    const navRect = nav.getBoundingClientRect();
+    const itemRect = activeItem.getBoundingClientRect();
+
+    const left = itemRect.left - navRect.left;
+    const width = itemRect.width;
+
+    capsule.style.left = left + "px";
+    capsule.style.width = width + "px";
+}
+
 function moveTo(index) {
-
     updateActive(index);
-
-    const position = getCenter(activeIndex);
-
-    currentX = position;
-    targetX = position;
-
-    capsule.style.left = position + "px";
+    updateCapsulePosition();
 }
-
-function followFinger(position) {
-
-    targetX = clamp(
-        position,
-        getCenter(0),
-        getCenter(items.length - 1)
-    );
-
-    if (animationFrame) return;
-
-    function animate() {
-
-        const difference = targetX - currentX;
-
-        currentX += difference * .20;
-
-        if (Math.abs(difference) < .12) {
-            currentX = targetX;
-            capsule.style.left = currentX + "px";
-            animationFrame = null;
-            return;
-        }
-
-        capsule.style.left = currentX + "px";
-
-        animationFrame = requestAnimationFrame(animate);
-    }
-
-    animationFrame = requestAnimationFrame(animate);
-}
-
-function stopFollowing() {
-    if (animationFrame) {
-        cancelAnimationFrame(animationFrame);
-        animationFrame = null;
-    }
-}
-
-/* POINTER DOWN */
-
-nav.addEventListener("pointerdown", event => {
-
-    if (event.button !== undefined && event.button !== 0) return;
-
-    tracking = true;
-    dragging = false;
-    verticalGesture = false;
-
-    pointerId = event.pointerId;
-
-    startX = event.clientX;
-    startY = event.clientY;
-
-    suppressClick = false;
-});
-
-/* INTENTIONAL DRAG */
-
-nav.addEventListener("pointermove", event => {
-
-    if (!tracking || event.pointerId !== pointerId) return;
-
-    const dx = event.clientX - startX;
-    const dy = event.clientY - startY;
-
-    const horizontal = Math.abs(dx);
-    const vertical = Math.abs(dy);
-
-    if (!dragging && vertical > 12 && vertical > horizontal) {
-        verticalGesture = true;
-        return;
-    }
-
-    if (verticalGesture) return;
-
-    if (!dragging) {
-
-        if (horizontal < DRAG_THRESHOLD) return;
-        if (horizontal < vertical * 1.5) return;
-
-        dragging = true;
-        suppressClick = true;
-
-        nav.classList.add("dragging");
-    }
-
-    const rect = nav.getBoundingClientRect();
-
-    followFinger(event.clientX - rect.left);
-});
-
-/* RELEASE AND SNAP */
-
-function finishGesture(event) {
-
-    if (!tracking || event.pointerId !== pointerId) return;
-
-    tracking = false;
-
-    if (dragging) {
-
-        dragging = false;
-        nav.classList.remove("dragging");
-
-        stopFollowing();
-
-        const position = targetX;
-        let destination = activeIndex;
-
-        for (let i = 0; i < items.length; i++) {
-
-            const midpoint = getCenter(i);
-
-            if (i > 0) {
-                const boundary =
-                    (getCenter(i - 1) + midpoint) / 2;
-
-                if (position >= boundary) {
-                    destination = i;
-                }
-            }
-        }
-
-        updateActive(destination);
-
-        const finalPosition = getCenter(destination);
-
-        currentX = finalPosition;
-        targetX = finalPosition;
-
-        capsule.style.left = finalPosition + "px";
-    }
-
-    pointerId = null;
-}
-
-/* POINTER EVENTS */
-
-nav.addEventListener("pointerup", finishGesture);
-nav.addEventListener("pointercancel", finishGesture);
-
-/* CLICK */
 
 items.forEach((item, index) => {
-
-    item.addEventListener("click", event => {
-
-        if (suppressClick) {
-            event.preventDefault();
-            event.stopPropagation();
-            suppressClick = false;
-            return;
-        }
-
+    item.addEventListener("click", () => {
         moveTo(index);
     });
 });
 
-/* RESIZE */
-
 window.addEventListener("resize", () => {
-    if (!tracking) moveTo(activeIndex);
+    updateCapsulePosition();
 });
 
-/* INITIAL POSITION */
-
+// Initialize active state and capsule sizing
 moveTo(0);
 
 </script>
