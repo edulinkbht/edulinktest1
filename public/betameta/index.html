@@ -112,10 +112,10 @@ body {
     transform: translateX(-50%);
     width: 100%;
     max-width: 430px;
-    background: #fff;
+    background: transparent;
+    pointer-events: none;
     z-index: 100;
     display: none;
-    transition: box-shadow 0.3s ease;
 }
 
 .search-top-row {
@@ -127,6 +127,7 @@ body {
     background: #fff;
     position: relative;
     z-index: 2;
+    pointer-events: auto;
 }
 
 .search-box {
@@ -176,28 +177,26 @@ body {
     cursor: pointer;
 }
 
-/* Smooth Category Hide/Show Transitions */
+/* Silky GPU-Accelerated Category Hide/Show Transitions */
 .search-categories {
     display: flex;
     gap: 8px;
     padding: 8px 12px 12px;
     overflow-x: auto;
-    
-    /* Animation Properties */
-    max-height: 60px;
-    opacity: 1;
-    transform: translateY(0);
-    transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    background: #fff;
     position: relative;
     z-index: 1;
+    pointer-events: auto;
+    will-change: transform, opacity;
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+    transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .search-header-container.scrolled .search-categories {
-    max-height: 0;
-    padding-top: 0;
-    padding-bottom: 0;
+    transform: translate3d(0, -100%, 0);
     opacity: 0;
-    transform: translateY(-10px);
     pointer-events: none;
 }
 
@@ -350,6 +349,30 @@ body {
     font-size: 12px; 
     font-weight: 700;
     color: #111;
+    letter-spacing: -0.2px;
+}
+
+/* End of Feed Footer */
+.end-of-feed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 24px 16px 36px;
+    color: #6e6e73;
+}
+
+.end-of-feed svg {
+    width: 40px;
+    height: 40px;
+    color: #6e6e73;
+}
+
+.end-of-feed span {
+    font-size: 15.5px;
+    font-weight: 700;
     letter-spacing: -0.2px;
 }
 
@@ -662,6 +685,15 @@ svg.icon-outline, svg.icon-filled {
         </div>
 
     </div>
+
+    <!-- End of Feed Indicator -->
+    <div class="end-of-feed">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+            <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>No more posts</span>
+    </div>
 </div>
 
 <!-- ==========================================
@@ -755,7 +787,9 @@ function persistScrollPositions() {
 
 let activeIndex = 0;
 let lastScrollTop = 0;
+let scrollDelta = 0;
 let isRestoringScroll = false;
+const SCROLL_THRESHOLD = 14;
 
 function updateActive(index, isInitial = false) {
     const targetIndex = Math.max(0, Math.min(items.length - 1, index));
@@ -769,6 +803,7 @@ function updateActive(index, isInitial = false) {
 
     isRestoringScroll = true;
     activeIndex = targetIndex;
+    scrollDelta = 0;
     
     items.forEach((item, i) => {
         item.classList.toggle("active", i === activeIndex);
@@ -793,7 +828,7 @@ function updateActive(index, isInitial = false) {
     lastScrollTop = savedY;
 
     if (activeIndex === 1) {
-        if (savedY > 50) {
+        if (savedY > 60) {
             searchHeader.classList.add("scrolled");
         } else {
             searchHeader.classList.remove("scrolled");
@@ -828,7 +863,7 @@ updateActive(0, true);
 updateCapsulePosition();
 
 // ==========================================
-// SCROLL DETECTION (SAVE POSITION & HIDE/SHOW TAGS)
+// SCROLL DETECTION (SAVE POSITION & SMOOTH HIDE/SHOW TAGS)
 // ==========================================
 window.addEventListener("scroll", () => {
     if (isRestoringScroll) return;
@@ -840,18 +875,32 @@ window.addEventListener("scroll", () => {
     scrollPositions[activeIndex] = st;
     persistScrollPositions();
 
-    // Hide/show tags only on Search tab
+    // Smooth hide/show tags on Search tab with scroll threshold
     if (activeIndex === 1) {
-        if (st > lastScrollTop && st > 50) {
-            searchHeader.classList.add("scrolled");
-        } else if (st < lastScrollTop) {
+        const diff = st - lastScrollTop;
+        const isAtBottom = (window.innerHeight + st) >= (document.documentElement.scrollHeight - 8);
+
+        if (st <= 40) {
             searchHeader.classList.remove("scrolled");
+            scrollDelta = 0;
+        } else if (!isAtBottom) {
+            if ((diff > 0 && scrollDelta < 0) || (diff < 0 && scrollDelta > 0)) {
+                scrollDelta = 0;
+            }
+            scrollDelta += diff;
+
+            if (scrollDelta > SCROLL_THRESHOLD && st > 60) {
+                searchHeader.classList.add("scrolled");
+                scrollDelta = 0;
+            } else if (scrollDelta < -SCROLL_THRESHOLD) {
+                searchHeader.classList.remove("scrolled");
+                scrollDelta = 0;
+            }
         }
     }
     
     lastScrollTop = st;
 }, { passive: true });
-
 </script>
 
 </body>
