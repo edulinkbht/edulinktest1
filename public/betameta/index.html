@@ -734,10 +734,41 @@ const searchHeader = document.getElementById("searchHeader");
 const homeContent = document.getElementById("homeContent");
 const searchContent = document.getElementById("searchContent");
 
-let activeIndex = 0;
+// ==========================================
+// LOCAL STORAGE SCROLL PERSISTENCE
+// ==========================================
+const SCROLL_STORAGE_KEY = "edulinkband_tab_scrolls";
+let scrollPositions = {};
 
-function updateActive(index) {
-    activeIndex = Math.max(0, Math.min(items.length - 1, index));
+try {
+    const saved = localStorage.getItem(SCROLL_STORAGE_KEY);
+    if (saved) scrollPositions = JSON.parse(saved) || {};
+} catch (e) {
+    scrollPositions = {};
+}
+
+function persistScrollPositions() {
+    try {
+        localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(scrollPositions));
+    } catch (e) {}
+}
+
+let activeIndex = 0;
+let lastScrollTop = 0;
+let isRestoringScroll = false;
+
+function updateActive(index, isInitial = false) {
+    const targetIndex = Math.max(0, Math.min(items.length - 1, index));
+
+    // Save outgoing tab's scroll position before switching views
+    if (!isInitial) {
+        const currentY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        scrollPositions[activeIndex] = currentY;
+        persistScrollPositions();
+    }
+
+    isRestoringScroll = true;
+    activeIndex = targetIndex;
     
     items.forEach((item, i) => {
         item.classList.toggle("active", i === activeIndex);
@@ -755,6 +786,25 @@ function updateActive(index) {
         homeContent.classList.remove("active");
         searchContent.classList.add("active");
     }
+
+    // Restore incoming tab's saved scroll position
+    const savedY = Number(scrollPositions[activeIndex]) || 0;
+    window.scrollTo(0, savedY);
+    lastScrollTop = savedY;
+
+    if (activeIndex === 1) {
+        if (savedY > 50) {
+            searchHeader.classList.add("scrolled");
+        } else {
+            searchHeader.classList.remove("scrolled");
+        }
+    }
+
+    requestAnimationFrame(() => {
+        window.scrollTo(0, savedY);
+        lastScrollTop = savedY;
+        isRestoringScroll = false;
+    });
 }
 
 function updateCapsulePosition() {
@@ -774,29 +824,32 @@ items.forEach((item, index) => {
 });
 
 window.addEventListener("resize", updateCapsulePosition);
-updateActive(0);
+updateActive(0, true);
 updateCapsulePosition();
 
 // ==========================================
-// SCROLL DETECTION (HIDE/SHOW TAGS)
+// SCROLL DETECTION (SAVE POSITION & HIDE/SHOW TAGS)
 // ==========================================
-let lastScrollTop = 0;
-
 window.addEventListener("scroll", () => {
-    if (activeIndex !== 1) return; // Only apply logic on Search tab
-    
+    if (isRestoringScroll) return;
+
     let st = window.pageYOffset || document.documentElement.scrollTop;
-    
-    // If scrolling down, hide the categories
-    if (st > lastScrollTop && st > 50) {
-        searchHeader.classList.add("scrolled");
-    } 
-    // If scrolling up, show the categories
-    else if (st < lastScrollTop) {
-        searchHeader.classList.remove("scrolled");
+    st = st <= 0 ? 0 : st;
+
+    // Save current tab's scroll position to localStorage
+    scrollPositions[activeIndex] = st;
+    persistScrollPositions();
+
+    // Hide/show tags only on Search tab
+    if (activeIndex === 1) {
+        if (st > lastScrollTop && st > 50) {
+            searchHeader.classList.add("scrolled");
+        } else if (st < lastScrollTop) {
+            searchHeader.classList.remove("scrolled");
+        }
     }
     
-    lastScrollTop = st <= 0 ? 0 : st;
+    lastScrollTop = st;
 }, { passive: true });
 
 </script>
