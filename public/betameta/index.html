@@ -130,6 +130,11 @@ body {
     pointer-events: auto;
 }
 
+.search-back-btn {
+    display: none;
+    padding: 4px;
+}
+
 .search-box {
     flex: 1;
     display: flex;
@@ -198,6 +203,18 @@ body {
     transform: translate3d(0, -100%, 0);
     opacity: 0;
     pointer-events: none;
+}
+
+/* Search Bar Focus Mode: Only Header Visible */
+.app.search-focused .search-categories,
+.app.search-focused #searchContent,
+.app.search-focused .bottom-nav,
+.app.search-focused .search-grid-btn {
+    display: none !important;
+}
+
+.app.search-focused .search-back-btn {
+    display: flex;
 }
 
 .category-pill {
@@ -489,7 +506,7 @@ svg.icon-outline, svg.icon-filled {
 </head>
 <body>
 
-<main class="app">
+<main class="app" id="appRoot">
 
 <!-- ==========================================
      TOP HEADER (HOME VIEW)
@@ -523,18 +540,24 @@ svg.icon-outline, svg.icon-filled {
      ========================================== -->
 <div class="search-header-container" id="searchHeader">
     <div class="search-top-row">
+        <button class="header-btn search-back-btn" id="searchBackBtn" aria-label="Exit search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5"/>
+                <path d="m12 19-7-7 7-7"/>
+            </svg>
+        </button>
         <div class="search-box">
             <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 11.5c0 2.35-.95 4.47-2.49 6.01S13.85 20 11.5 20C6.81 20 3 16.19 3 11.5S6.81 3 11.5 3 20 6.81 20 11.5"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m21 21-3.49-3.49"/>
             </svg>
-            <input type="text" placeholder="Search edulinkband...">
+            <input type="text" id="searchInput" placeholder="Search edulinkband...">
             <div class="search-divider"></div>
             <svg class="camera-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
                 <circle cx="12" cy="13" r="4"/>
             </svg>
         </div>
-        <button class="header-btn">
+        <button class="header-btn search-grid-btn">
             <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="18" height="18" rx="3"/>
                 <line x1="3" y1="12" x2="21" y2="12"/>
@@ -692,7 +715,7 @@ svg.icon-outline, svg.icon-filled {
             <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
             <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
         </svg>
-        <span>No more posts</span>
+        <span>All caught up</span>
     </div>
 </div>
 
@@ -757,6 +780,7 @@ svg.icon-outline, svg.icon-filled {
 </main>
 
 <script>
+const appRoot = document.getElementById("appRoot");
 const nav = document.getElementById("bottomNav");
 const capsule = document.getElementById("activeCapsule");
 const items = [...document.querySelectorAll(".nav-item")];
@@ -765,6 +789,8 @@ const homeHeader = document.getElementById("homeHeader");
 const searchHeader = document.getElementById("searchHeader");
 const homeContent = document.getElementById("homeContent");
 const searchContent = document.getElementById("searchContent");
+const searchInput = document.getElementById("searchInput");
+const searchBackBtn = document.getElementById("searchBackBtn");
 
 // ==========================================
 // LOCAL STORAGE SCROLL PERSISTENCE
@@ -789,13 +815,58 @@ let activeIndex = 0;
 let lastScrollTop = 0;
 let scrollDelta = 0;
 let isRestoringScroll = false;
+let isSearchFocused = false;
 const SCROLL_THRESHOLD = 14;
+
+// ==========================================
+// SEARCH BAR FOCUS MODE (ONLY HEADER VISIBLE)
+// ==========================================
+function enterSearchFocus() {
+    if (isSearchFocused) return;
+    const currentY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    scrollPositions[1] = currentY;
+    persistScrollPositions();
+
+    isSearchFocused = true;
+    appRoot.classList.add("search-focused");
+}
+
+function exitSearchFocus() {
+    if (!isSearchFocused) return;
+    isRestoringScroll = true;
+    isSearchFocused = false;
+    appRoot.classList.remove("search-focused");
+    searchInput.blur();
+
+    const savedY = Number(scrollPositions[1]) || 0;
+    window.scrollTo(0, savedY);
+    lastScrollTop = savedY;
+    scrollDelta = 0;
+
+    if (savedY > 60) {
+        searchHeader.classList.add("scrolled");
+    } else {
+        searchHeader.classList.remove("scrolled");
+    }
+
+    requestAnimationFrame(() => {
+        window.scrollTo(0, savedY);
+        lastScrollTop = savedY;
+        isRestoringScroll = false;
+    });
+}
+
+searchInput.addEventListener("focus", enterSearchFocus);
+searchBackBtn.addEventListener("click", exitSearchFocus);
 
 function updateActive(index, isInitial = false) {
     const targetIndex = Math.max(0, Math.min(items.length - 1, index));
 
-    // Save outgoing tab's scroll position before switching views
-    if (!isInitial) {
+    if (isSearchFocused) {
+        isSearchFocused = false;
+        appRoot.classList.remove("search-focused");
+    } else if (!isInitial) {
+        // Save outgoing tab's scroll position before switching views
         const currentY = window.pageYOffset || document.documentElement.scrollTop || 0;
         scrollPositions[activeIndex] = currentY;
         persistScrollPositions();
@@ -866,7 +937,7 @@ updateCapsulePosition();
 // SCROLL DETECTION (SAVE POSITION & SMOOTH HIDE/SHOW TAGS)
 // ==========================================
 window.addEventListener("scroll", () => {
-    if (isRestoringScroll) return;
+    if (isRestoringScroll || isSearchFocused) return;
 
     let st = window.pageYOffset || document.documentElement.scrollTop;
     st = st <= 0 ? 0 : st;
