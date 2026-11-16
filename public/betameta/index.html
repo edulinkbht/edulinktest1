@@ -115,6 +115,7 @@ body {
     background: #fff;
     z-index: 100;
     display: none;
+    transition: box-shadow 0.3s ease;
 }
 
 .search-top-row {
@@ -123,6 +124,9 @@ body {
     height: calc(60px + env(safe-area-inset-top));
     padding: env(safe-area-inset-top) 12px 0;
     gap: 12px;
+    background: #fff;
+    position: relative;
+    z-index: 2;
 }
 
 .search-box {
@@ -172,11 +176,29 @@ body {
     cursor: pointer;
 }
 
+/* Smooth Category Hide/Show Transitions */
 .search-categories {
     display: flex;
     gap: 8px;
     padding: 8px 12px 12px;
     overflow-x: auto;
+    
+    /* Animation Properties */
+    max-height: 60px;
+    opacity: 1;
+    transform: translateY(0);
+    transition: all 0.35s cubic-bezier(0.25, 1, 0.5, 1);
+    position: relative;
+    z-index: 1;
+}
+
+.search-header-container.scrolled .search-categories {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
 }
 
 .category-pill {
@@ -274,58 +296,58 @@ body {
     filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.5));
 }
 
-/* Search Card Metadata - Adjusted Size and Overlap Fix */
+/* Search Card Metadata */
 .masonry-meta {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-top: 8px; 
     padding: 0 4px;
-    gap: 8px; /* Ensures space between user info and likes */
+    gap: 8px; 
 }
 
 .meta-user {
     display: flex;
     align-items: center;
     gap: 6px; 
-    flex: 1; /* Allows it to take up available space */
-    min-width: 0; /* Critical: allows text truncation to work */
+    flex: 1; 
+    min-width: 0; 
 }
 
 .meta-pfp {
-    width: 22px; /* Smaller */
+    width: 22px; 
     height: 22px;
     border-radius: 50%;
     object-fit: cover;
     background: #e0e0e0;
-    flex-shrink: 0; /* Prevents image from squishing */
+    flex-shrink: 0; 
 }
 
 .meta-username {
-    font-size: 12px; /* Smaller */
+    font-size: 12px; 
     font-weight: 700;
     color: #111;
     letter-spacing: -0.2px;
     white-space: nowrap;
     overflow: hidden;
-    text-overflow: ellipsis; /* Prevents overlap by cutting off long names */
+    text-overflow: ellipsis; 
 }
 
 .meta-likes {
     display: flex;
     align-items: center;
     gap: 4px;
-    flex-shrink: 0; /* Protects like count from being squished by long names */
+    flex-shrink: 0; 
 }
 
 .meta-likes svg {
-    width: 15px; /* Smaller */
+    width: 15px; 
     height: 15px;
     color: #111;
 }
 
 .meta-like-count {
-    font-size: 12px; /* Smaller */
+    font-size: 12px; 
     font-weight: 700;
     color: #111;
     letter-spacing: -0.2px;
@@ -754,6 +776,29 @@ items.forEach((item, index) => {
 window.addEventListener("resize", updateCapsulePosition);
 updateActive(0);
 updateCapsulePosition();
+
+// ==========================================
+// SCROLL DETECTION (HIDE/SHOW TAGS)
+// ==========================================
+let lastScrollTop = 0;
+
+window.addEventListener("scroll", () => {
+    if (activeIndex !== 1) return; // Only apply logic on Search tab
+    
+    let st = window.pageYOffset || document.documentElement.scrollTop;
+    
+    // If scrolling down, hide the categories
+    if (st > lastScrollTop && st > 50) {
+        searchHeader.classList.add("scrolled");
+    } 
+    // If scrolling up, show the categories
+    else if (st < lastScrollTop) {
+        searchHeader.classList.remove("scrolled");
+    }
+    
+    lastScrollTop = st <= 0 ? 0 : st;
+}, { passive: true });
+
 </script>
 
 </body>
