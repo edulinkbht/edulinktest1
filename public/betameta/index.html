@@ -265,6 +265,10 @@ body {
     gap: 5px;
 }
 
+.profile-hero {
+    background: #fff;
+}
+
 .profile-banner-wrap {
     padding: 2px 12px 0;
 }
@@ -424,19 +428,46 @@ body {
     height: 2.5px;
     border-radius: 2px;
     background: #111;
-    transition: left 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: left;
+    transition: left 0.32s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.profile-grid-wrap {
-    padding: 12px 12px calc(88px + env(safe-area-inset-bottom));
+/* TikTok-Style Horizontal Swipe Viewport & Track */
+.profile-swipe-viewport {
+    width: 100%;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+
+.profile-swipe-track {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    will-change: transform;
+    transform: translate3d(0%, 0, 0);
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.profile-swipe-track.dragging {
+    transition: none;
 }
 
 .profile-tab-panel {
-    display: none;
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 100%;
+    padding: 12px 12px calc(88px + env(safe-area-inset-bottom));
+    /* Ensures profile hero always scrolls smoothly up to dock the sticky tabs, even with few/no posts */
+    min-height: calc(100vh - 106px - env(safe-area-inset-top));
+    min-height: calc(100svh - 106px - env(safe-area-inset-top));
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-.profile-tab-panel.active {
-    display: block;
+.profile-tab-panel.collapsed {
+    max-height: calc(100vh - 106px - env(safe-area-inset-top));
+    overflow: hidden;
 }
 
 /* Video Corner Indicator Badge */
@@ -523,6 +554,9 @@ body {
     height: 100%;
     display: block;
     object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
 }
 
 .feed-media.text-block {
@@ -631,99 +665,6 @@ body {
     font-size: 15.5px;
     font-weight: 700;
     letter-spacing: -0.2px;
-}
-
-/* ================================
-   MINIMAL EDIT PROFILE SHEET
-   ================================ */
-.sheet-backdrop {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.38);
-    z-index: 200;
-    display: none;
-    align-items: flex-end;
-    justify-content: center;
-}
-
-.sheet-backdrop.open {
-    display: flex;
-}
-
-.sheet-panel {
-    width: 100%;
-    max-width: 430px;
-    background: #fff;
-    border-radius: 22px 22px 0 0;
-    padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
-    animation: slideUp 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-@keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
-}
-
-.sheet-grabber {
-    width: 36px;
-    height: 4px;
-    border-radius: 2px;
-    background: #d1d1d6;
-    margin: 0 auto 14px;
-}
-
-.sheet-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-}
-
-.sheet-title {
-    font-size: 16px;
-    font-weight: 800;
-    color: #111;
-}
-
-.sheet-action-btn {
-    background: transparent;
-    border: none;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 700;
-    color: #111;
-    cursor: pointer;
-}
-
-.sheet-action-btn.muted {
-    color: #8e8e93;
-    font-weight: 600;
-}
-
-.sheet-field {
-    margin-bottom: 12px;
-}
-
-.sheet-field label {
-    display: block;
-    font-size: 12px;
-    font-weight: 700;
-    color: #8e8e93;
-    margin-bottom: 5px;
-}
-
-.sheet-field input {
-    width: 100%;
-    height: 42px;
-    border-radius: 12px;
-    border: none;
-    background: #f0f2f5;
-    padding: 0 14px;
-    font-family: inherit;
-    font-size: 14px;
-    font-weight: 600;
-    color: #111;
-    outline: none;
 }
 
 /* ================================
@@ -1155,35 +1096,38 @@ svg.icon-outline, svg.icon-filled {
      ========================================== -->
 <div id="profileContent" class="view-content">
     
-    <!-- Cover Banner -->
-    <div class="profile-banner-wrap">
-        <div class="profile-banner">
-            <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80" alt="Profile banner">
+    <!-- Scrollable Hero Section (Banner + Avatar + Bio) -->
+    <div class="profile-hero" id="profileHero">
+        <!-- Cover Banner -->
+        <div class="profile-banner-wrap">
+            <div class="profile-banner">
+                <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80" alt="Profile banner">
+            </div>
+        </div>
+
+        <!-- Avatar, Edit Profile Button & User Info -->
+        <div class="profile-identity">
+            <div class="profile-avatar-row">
+                <img class="profile-main-pfp" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=240&q=80" alt="Riko profile picture">
+                <button type="button" class="edit-profile-btn" id="editProfileBtn">Edit profile</button>
+            </div>
+
+            <div class="profile-name-block">
+                <h1 class="profile-display-name" id="profileDisplayName">Riko Takahashi</h1>
+                <div class="profile-handle" id="profileHandleText">@riko</div>
+            </div>
+
+            <p class="profile-bio" id="profileBioText">visual notes, late night film &amp; minimal spaces · tokyo</p>
+
+            <div class="profile-stats">
+                <div class="stat-item"><strong>148</strong> posts</div>
+                <div class="stat-item"><strong>24.8K</strong> followers</div>
+                <div class="stat-item"><strong>312</strong> following</div>
+            </div>
         </div>
     </div>
 
-    <!-- Avatar, Edit Profile & User Info -->
-    <div class="profile-identity">
-        <div class="profile-avatar-row">
-            <img class="profile-main-pfp" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=240&q=80" alt="Riko profile picture">
-            <button class="edit-profile-btn" id="editProfileBtn">Edit profile</button>
-        </div>
-
-        <div class="profile-name-block">
-            <h1 class="profile-display-name" id="profileDisplayName">Riko Takahashi</h1>
-            <div class="profile-handle" id="profileHandleText">@riko</div>
-        </div>
-
-        <p class="profile-bio" id="profileBioText">visual notes, late night film &amp; minimal spaces · tokyo</p>
-
-        <div class="profile-stats">
-            <div class="stat-item"><strong>148</strong> posts</div>
-            <div class="stat-item"><strong>24.8K</strong> followers</div>
-            <div class="stat-item"><strong>312</strong> following</div>
-        </div>
-    </div>
-
-    <!-- 4-Icon Category Bar (Posts, Reposts, Videos, Tags) -->
+    <!-- Sticky 4-Icon Category Bar (Posts, Reposts, Videos, Tags) -->
     <div class="profile-tabs" id="profileTabs">
         <!-- Posts Icon -->
         <button class="profile-tab-btn active" data-tab="0" aria-label="Posts">
@@ -1224,286 +1168,285 @@ svg.icon-outline, svg.icon-filled {
         <div class="profile-tab-indicator" id="profileTabIndicator"></div>
     </div>
 
-    <!-- Profile Grids (Aligned 3:4 Portrait & 16:9 Landscape) -->
-    <div class="profile-grid-wrap">
-        
-        <!-- TAB 0: POSTS -->
-        <div class="profile-tab-panel active" data-panel="0">
-            <div class="feed-grid">
-                <div class="feed-card">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Sunset window">
-                        <div class="dots-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    <!-- TikTok-Style Horizontal Swipeable Profile Grids -->
+    <div class="profile-swipe-viewport" id="profileSwipeViewport">
+        <div class="profile-swipe-track" id="profileSwipeTrack">
+            
+            <!-- TAB 0: POSTS -->
+            <div class="profile-tab-panel active" data-panel="0">
+                <div class="feed-grid">
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Sunset window">
+                            <div class="dots-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">12.4K</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
-                            <span class="meta-username">riko</span>
+
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Morning coffee">
                         </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">12.4K</span>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">9.8K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card card-landscape">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Tokyo evening">
+                            <div class="dots-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">34.2K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card">
+                        <div class="feed-media text-block">
+                            <span>Quiet mornings<br>loud dreams.</span>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">18.1K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Vinyl setup">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">15.6K</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="feed-card">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Morning coffee">
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
-                            <span class="meta-username">riko</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">9.8K</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feed-card card-landscape">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Tokyo evening">
-                        <div class="dots-icon">
-                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
-                        </div>
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
-                            <span class="meta-username">riko</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">34.2K</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feed-card">
-                    <div class="feed-media text-block">
-                        <span>Quiet mornings<br>loud dreams.</span>
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
-                            <span class="meta-username">riko</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">18.1K</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feed-card">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Vinyl setup">
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
-                            <span class="meta-username">riko</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">15.6K</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 1: REPOSTS -->
-        <div class="profile-tab-panel" data-panel="1">
-            <div class="feed-grid">
-                <div class="feed-card">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Reposted tech">
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="vxnity">
-                            <span class="meta-username">vxnity</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">98.7K</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feed-card">
-                    <div class="feed-media text-block">
-                        <span>Better Things<br>Are Coming.</span>
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="mindset">
-                            <span class="meta-username">mindset</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">124K</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feed-card card-landscape">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Starry peak">
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="midnight.frame">
-                            <span class="meta-username">midnight.frame</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">215K</span>
-                        </div>
-                    </div>
+                <div class="end-of-feed">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>All caught up</span>
                 </div>
             </div>
-        </div>
 
-        <!-- TAB 2: VIDEOS -->
-        <div class="profile-tab-panel" data-panel="2">
-            <div class="feed-grid">
-                <div class="feed-card">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1555448248-2571daf6344b?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Night walk video">
-                        <div class="video-badge">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            <!-- TAB 1: REPOSTS -->
+            <div class="profile-tab-panel collapsed" data-panel="1">
+                <div class="feed-grid">
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Reposted tech">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="vxnity">
+                                <span class="meta-username">vxnity</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">98.7K</span>
+                            </div>
                         </div>
                     </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
-                            <span class="meta-username">riko</span>
+
+                    <div class="feed-card">
+                        <div class="feed-media text-block">
+                            <span>Better Things<br>Are Coming.</span>
                         </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                            <span class="meta-like-count">41.2K</span>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="mindset">
+                                <span class="meta-username">mindset</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">124K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card card-landscape">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Starry peak">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="midnight.frame">
+                                <span class="meta-username">midnight.frame</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">215K</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="feed-card">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1518063319789-7217e6706b04?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Court clip">
-                        <div class="video-badge">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                        </div>
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
-                            <span class="meta-username">riko</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                            <span class="meta-like-count">28.9K</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feed-card card-landscape">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Shinjuku film reel">
-                        <div class="video-badge">
-                            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                        </div>
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
-                            <span class="meta-username">riko</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
-                            <span class="meta-like-count">112K</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 3: TAGS -->
-        <div class="profile-tab-panel" data-panel="3">
-            <div class="feed-grid">
-                <div class="feed-card">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1605733513597-a8f8341084e6?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Tagged post 1">
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="archive.x">
-                            <span class="meta-username">archive.x</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">89.3K</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="feed-card">
-                    <div class="feed-media">
-                        <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Tagged post 2">
-                    </div>
-                    <div class="feed-meta">
-                        <div class="meta-user">
-                            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="slow.brew">
-                            <span class="meta-username">slow.brew</span>
-                        </div>
-                        <div class="meta-likes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
-                            <span class="meta-like-count">31.8K</span>
-                        </div>
-                    </div>
+                <div class="end-of-feed">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>All caught up</span>
                 </div>
             </div>
-        </div>
 
-        <!-- End of Feed Indicator -->
-        <div class="end-of-feed">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-                <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
-                <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
-            </svg>
-            <span>All caught up</span>
-        </div>
+            <!-- TAB 2: VIDEOS -->
+            <div class="profile-tab-panel collapsed" data-panel="2">
+                <div class="feed-grid">
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1555448248-2571daf6344b?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Night walk video">
+                            <div class="video-badge">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                                <span class="meta-like-count">41.2K</span>
+                            </div>
+                        </div>
+                    </div>
 
-    </div>
-</div>
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1518063319789-7217e6706b04?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Court clip">
+                            <div class="video-badge">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                                <span class="meta-like-count">28.9K</span>
+                            </div>
+                        </div>
+                    </div>
 
-<!-- ==========================================
-     EDIT PROFILE BOTTOM SHEET
-     ========================================== -->
-<div class="sheet-backdrop" id="editProfileSheet">
-    <div class="sheet-panel">
-        <div class="sheet-grabber"></div>
-        <div class="sheet-header">
-            <button class="sheet-action-btn muted" id="cancelEditBtn">Cancel</button>
-            <span class="sheet-title">Edit profile</span>
-            <button class="sheet-action-btn" id="saveEditBtn">Done</button>
-        </div>
-        <div class="sheet-field">
-            <label for="inputDisplayName">Name</label>
-            <input type="text" id="inputDisplayName" value="Riko Takahashi">
-        </div>
-        <div class="sheet-field">
-            <label for="inputUsername">Username</label>
-            <input type="text" id="inputUsername" value="riko">
-        </div>
-        <div class="sheet-field">
-            <label for="inputBio">Bio</label>
-            <input type="text" id="inputBio" value="visual notes, late night film &amp; minimal spaces · tokyo">
+                    <div class="feed-card card-landscape">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Shinjuku film reel">
+                            <div class="video-badge">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                                <span class="meta-like-count">112K</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="end-of-feed">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>All caught up</span>
+                </div>
+            </div>
+
+            <!-- TAB 3: TAGS -->
+            <div class="profile-tab-panel collapsed" data-panel="3">
+                <div class="feed-grid">
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1605733513597-a8f8341084e6?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Tagged post 1">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="archive.x">
+                                <span class="meta-username">archive.x</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">89.3K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Tagged post 2">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="slow.brew">
+                                <span class="meta-username">slow.brew</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">31.8K</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="end-of-feed">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>All caught up</span>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -1663,62 +1606,185 @@ searchInput.addEventListener("focus", enterSearchFocus);
 searchBackBtn.addEventListener("click", exitSearchFocus);
 
 // ==========================================
-// PROFILE CATEGORY TABS (POSTS, REPOSTS, VIDEOS, TAGS)
+// PROFILE CATEGORY TABS & TIKTOK-STYLE SWIPE
 // ==========================================
+const profileHero = document.getElementById("profileHero");
 const profileTabBtns = [...document.querySelectorAll(".profile-tab-btn")];
 const profileTabPanels = [...document.querySelectorAll(".profile-tab-panel")];
 const profileTabIndicator = document.getElementById("profileTabIndicator");
+const profileSwipeViewport = document.getElementById("profileSwipeViewport");
+const profileSwipeTrack = document.getElementById("profileSwipeTrack");
+
+let activeProfileTab = 0;
+let collapseTimer = null;
+
+function setProfileTab(index, animate = true) {
+    const target = Math.max(0, Math.min(profileTabPanels.length - 1, index));
+    const currentY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    const heroHeight = profileHero ? profileHero.offsetHeight : 0;
+
+    activeProfileTab = target;
+
+    profileTabBtns.forEach((b, i) => b.classList.toggle("active", i === activeProfileTab));
+    profileTabPanels.forEach((p, i) => {
+        p.classList.toggle("active", i === activeProfileTab);
+        if (i === activeProfileTab) {
+            p.classList.remove("collapsed");
+        }
+    });
+
+    if (!animate) {
+        profileSwipeTrack.classList.add("dragging");
+        profileTabIndicator.style.transition = "none";
+    } else {
+        profileSwipeTrack.classList.remove("dragging");
+        profileTabIndicator.style.transition = "";
+    }
+
+    profileSwipeTrack.style.transform = `translate3d(-${activeProfileTab * 100}%, 0, 0)`;
+    profileTabIndicator.style.left = `calc(${activeProfileTab * 25}% + 12.5%)`;
+
+    // Collapse non-active panels after slide finishes so page height stays aligned
+    clearTimeout(collapseTimer);
+    collapseTimer = setTimeout(() => {
+        profileTabPanels.forEach((p, i) => {
+            p.classList.toggle("collapsed", i !== activeProfileTab);
+        });
+
+        // If tabs were docked at the top, keep them smoothly docked without jumping
+        if (currentY >= heroHeight && heroHeight > 0) {
+            const newScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+            if (newScrollY < heroHeight) {
+                window.scrollTo(0, heroHeight);
+            }
+        }
+    }, animate ? 330 : 0);
+}
 
 profileTabBtns.forEach((btn, idx) => {
     btn.addEventListener("click", () => {
-        profileTabBtns.forEach((b, i) => b.classList.toggle("active", i === idx));
-        profileTabPanels.forEach((p, i) => p.classList.toggle("active", i === idx));
-        profileTabIndicator.style.left = `calc(${idx * 25}% + 12.5%)`;
+        // Reveal target panel immediately for smooth slide
+        profileTabPanels[idx].classList.remove("collapsed");
+        setProfileTab(idx, true);
     });
 });
 
-// ==========================================
-// EDIT PROFILE SHEET
-// ==========================================
-const editProfileBtn = document.getElementById("editProfileBtn");
-const editProfileSheet = document.getElementById("editProfileSheet");
-const cancelEditBtn = document.getElementById("cancelEditBtn");
-const saveEditBtn = document.getElementById("saveEditBtn");
+// Touch & Pointer Swipe Gesture on Profile Content
+let swipeStartX = 0;
+let swipeStartY = 0;
+let swipeStartTime = 0;
+let swipeAxis = null; // "x" | "y" | null
+let isSwiping = false;
+let currentDeltaX = 0;
 
-const inputDisplayName = document.getElementById("inputDisplayName");
-const inputUsername = document.getElementById("inputUsername");
-const inputBio = document.getElementById("inputBio");
+function onSwipeStart(clientX, clientY) {
+    if (activeIndex !== 4) return;
+    swipeStartX = clientX;
+    swipeStartY = clientY;
+    swipeStartTime = Date.now();
+    swipeAxis = null;
+    isSwiping = true;
+    currentDeltaX = 0;
+    clearTimeout(collapseTimer);
+}
 
-const profileHeaderUsername = document.getElementById("profileHeaderUsername");
-const profileDisplayName = document.getElementById("profileDisplayName");
-const profileHandleText = document.getElementById("profileHandleText");
-const profileBioText = document.getElementById("profileBioText");
+function onSwipeMove(clientX, clientY, e) {
+    if (!isSwiping || activeIndex !== 4) return;
 
-editProfileBtn.addEventListener("click", () => {
-    editProfileSheet.classList.add("open");
-});
+    const dx = clientX - swipeStartX;
+    const dy = clientY - swipeStartY;
 
-cancelEditBtn.addEventListener("click", () => {
-    editProfileSheet.classList.remove("open");
-});
+    if (!swipeAxis) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        swipeAxis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
 
-editProfileSheet.addEventListener("click", (e) => {
-    if (e.target === editProfileSheet) {
-        editProfileSheet.classList.remove("open");
+        if (swipeAxis === "x") {
+            profileSwipeTrack.classList.add("dragging");
+            profileTabIndicator.style.transition = "none";
+            // Reveal adjacent panels while sliding
+            if (activeProfileTab > 0) {
+                profileTabPanels[activeProfileTab - 1].classList.remove("collapsed");
+            }
+            if (activeProfileTab < profileTabPanels.length - 1) {
+                profileTabPanels[activeProfileTab + 1].classList.remove("collapsed");
+            }
+        }
     }
+
+    if (swipeAxis !== "x") return;
+
+    if (e && e.cancelable) e.preventDefault();
+
+    const width = profileSwipeViewport.offsetWidth || 1;
+    let resistedDx = dx;
+
+    // Gentle edge resistance on first/last tab
+    if ((activeProfileTab === 0 && dx > 0) || (activeProfileTab === profileTabPanels.length - 1 && dx < 0)) {
+        resistedDx = dx * 0.28;
+    }
+
+    currentDeltaX = resistedDx;
+    const baseOffsetPx = -activeProfileTab * width;
+    profileSwipeTrack.style.transform = `translate3d(${baseOffsetPx + resistedDx}px, 0, 0)`;
+
+    const progress = -resistedDx / width;
+    const indicatorCenter = ((activeProfileTab + progress) * 25) + 12.5;
+    const clampedCenter = Math.max(10, Math.min(90, indicatorCenter));
+    profileTabIndicator.style.left = `${clampedCenter}%`;
+}
+
+function onSwipeEnd() {
+    if (!isSwiping) return;
+    isSwiping = false;
+
+    if (swipeAxis !== "x") {
+        swipeAxis = null;
+        return;
+    }
+
+    const width = profileSwipeViewport.offsetWidth || 1;
+    const elapsed = Math.max(1, Date.now() - swipeStartTime);
+    const velocity = Math.abs(currentDeltaX) / elapsed;
+    const threshold = width * 0.22;
+
+    let nextTab = activeProfileTab;
+    if (currentDeltaX < -threshold || (currentDeltaX < -24 && velocity > 0.35)) {
+        nextTab = Math.min(profileTabPanels.length - 1, activeProfileTab + 1);
+    } else if (currentDeltaX > threshold || (currentDeltaX > 24 && velocity > 0.35)) {
+        nextTab = Math.max(0, activeProfileTab - 1);
+    }
+
+    swipeAxis = null;
+    setProfileTab(nextTab, true);
+}
+
+profileSwipeViewport.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    onSwipeStart(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: true });
+
+profileSwipeViewport.addEventListener("touchmove", (e) => {
+    if (e.touches.length !== 1) return;
+    onSwipeMove(e.touches[0].clientX, e.touches[0].clientY, e);
+}, { passive: false });
+
+profileSwipeViewport.addEventListener("touchend", onSwipeEnd);
+profileSwipeViewport.addEventListener("touchcancel", onSwipeEnd);
+
+// Desktop mouse drag support for testing swipe
+profileSwipeViewport.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    onSwipeStart(e.clientX, e.clientY);
 });
 
-saveEditBtn.addEventListener("click", () => {
-    const cleanName = inputDisplayName.value.trim() || "Riko Takahashi";
-    const cleanUser = inputUsername.value.trim().replace(/^@+/, "") || "riko";
-    const cleanBio = inputBio.value.trim();
+window.addEventListener("mousemove", (e) => {
+    if (!isSwiping) return;
+    onSwipeMove(e.clientX, e.clientY, e);
+});
 
-    profileDisplayName.textContent = cleanName;
-    profileHeaderUsername.textContent = cleanUser;
-    profileHandleText.textContent = `@${cleanUser}`;
-    profileBioText.textContent = cleanBio;
-
-    editProfileSheet.classList.remove("open");
+window.addEventListener("mouseup", () => {
+    if (!isSwiping) return;
+    onSwipeEnd();
 });
 
 // ==========================================
