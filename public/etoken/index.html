@@ -1425,6 +1425,7 @@
           </svg>
         </div>
       </div>
+      <button type="button" class="btn-primary" id="payNowBtn">Pay now</button>
     </div>
   </div>
 
@@ -2573,7 +2574,7 @@
       }
 
       async function confirmSlide() {
-        if (locked) return;
+        if (locked) return false;
         dragging = false;
         locked = true;
         setPosition(getMaxSlide(), true);
@@ -2587,6 +2588,7 @@
         } else {
           setTimeout(() => reset(), 350);
         }
+        return ok;
       }
 
       thumb.addEventListener("keydown", (e) => {
@@ -2612,7 +2614,7 @@
       thumb.addEventListener("pointerup", onEnd);
       thumb.addEventListener("pointercancel", onEnd);
 
-      return { reset };
+      return { reset, confirm: confirmSlide };
     }
 
     // ---------- Peer Transfer & Slide-to-Pay ----------
@@ -2623,12 +2625,12 @@
       if (clean.includes("@")) {
         const q = query(collection(db, "users"), where("email", "==", clean.toLowerCase()));
         const snap = await getDocs(q);
-        return snap.empty ? null : snap.docs[0].data();
+        return snap.empty ? null : { ...snap.docs[0].data(), uid: snap.docs[0].id };
       } else {
         const digits = clean.replace(/\D/g, "");
         const q = query(collection(db, "users"), where("accountNumber", "==", digits));
         const snap = await getDocs(q);
-        return snap.empty ? null : snap.docs[0].data();
+        return snap.empty ? null : { ...snap.docs[0].data(), uid: snap.docs[0].id };
       }
     }
 
@@ -2643,24 +2645,26 @@
         errBox.classList.add("hidden");
 
         const recipientQuery = $("payRecipientInput").value.trim();
-        const amount = parseFloat($("payAmountInput").value);
+        const amount = Number($("payAmountInput").value);
+        const amountCents = Math.round(amount * 100);
         const note = $("payNoteInput").value.trim();
 
-        if (!recipientQuery || isNaN(amount) || amount <= 0) {
-          errBox.textContent = "Enter a valid recipient and amount.";
+        if (!currentUser || !currentProfile) {
+          errBox.textContent = "Your account is still loading. Wait a moment and try again.";
           errBox.classList.remove("hidden");
           return false;
         }
 
-        if (amount > (currentProfile?.balance || 0)) {
-          errBox.textContent = "Insufficient available balance.";
+        if (!recipientQuery || !Number.isFinite(amount) || !Number.isSafeInteger(amountCents) || amountCents <= 0
+          || Math.abs(amount * 100 - amountCents) > 1e-7) {
+          errBox.textContent = "Enter a recipient and a valid amount with no more than two decimal places.";
           errBox.classList.remove("hidden");
           return false;
         }
 
         try {
           const recipient = await findUserByIdentifier(recipientQuery);
-          if (!recipient) {
+          if (!recipient || !recipient.uid) {
             errBox.textContent = "Recipient account not found.";
             errBox.classList.remove("hidden");
             return false;
@@ -2681,11 +2685,16 @@
             const rSnap = await transaction.get(recipientRef);
             if (!sSnap.exists() || !rSnap.exists()) throw new Error("Account record missing.");
 
-            const sBal = Number(sSnap.data().balance || 0);
-            if (sBal < amount) throw new Error("Insufficient balance.");
+            const sBalCents = Math.round(Number(sSnap.data().balance || 0) * 100);
+            const rBalCents = Math.round(Number(rSnap.data().balance || 0) * 100);
+            if (!Number.isSafeInteger(sBalCents) || !Number.isSafeInteger(rBalCents)) {
+              throw new Error("Account balance is invalid. Contact support.");
+            }
+            if (sBalCents < amountCents) throw new Error("Insufficient available balance.");
+            if (!Number.isSafeInteger(rBalCents + amountCents)) throw new Error("Recipient balance is too large to process.");
 
-            transaction.update(senderRef, { balance: Number((sBal - amount).toFixed(2)) });
-            transaction.update(recipientRef, { balance: Number((Number(rSnap.data().balance || 0) + amount).toFixed(2)) });
+            transaction.update(senderRef, { balance: (sBalCents - amountCents) / 100 });
+            transaction.update(recipientRef, { balance: (rBalCents + amountCents) / 100 });
             transaction.set(txRef, {
               fromUid: currentUser.uid,
               fromName: currentProfile.name,
@@ -2693,7 +2702,7 @@
               toUid: recipient.uid,
               toName: recipient.name,
               toAccount: recipient.accountNumber,
-              amount: Number(amount.toFixed(2)),
+              amount: amountCents / 100,
               note,
               type: "transfer",
               createdAt: Date.now()
@@ -2704,7 +2713,12 @@
           setTimeout(() => closeModal("payModal"), 750);
           return true;
         } catch (err) {
-          errBox.textContent = err.message || "Payment failed.";
+          const errorCode = err.code || "";
+          errBox.textContent = errorCode === "permission-denied"
+            ? "Firebase blocked this transfer. Your Firestore rules or a trusted payment backend must allow secure transfers; do not make balance documents publicly writable."
+            : errorCode === "unavailable"
+              ? "Payment service is unavailable. Check your connection and try again."
+              : err.message || "Payment failed.";
           errBox.classList.remove("hidden");
           return false;
         }
@@ -2716,6 +2730,8 @@
       $("payRecipientInput").value = prefillAccount;
       $("payAmountInput").value = prefillAmount || "";
       $("payNoteInput").value = prefillNote || "";
+      const amount = Number(prefillAmount);
+      $("payNowBtn").textContent = amount > 0 ? `Pay ${formatCurrency(amount)} now` : "Pay now";
       if (prefillName) {
         $("resolvedRecipientTag").textContent = `Payment request from: ${prefillName}`;
         $("resolvedRecipientTag").classList.remove("hidden");
@@ -2735,7 +2751,10 @@
       const val = parseFloat($("payAmountInput").value);
       const label = !isNaN(val) && val > 0 ? `Slide to Pay ${formatCurrency(val)}` : "Slide to Pay";
       $("paySlideLabel").textContent = label;
+      $("payNowBtn").textContent = !isNaN(val) && val > 0 ? `Pay ${formatCurrency(val)} now` : "Pay now";
     });
+
+    $("payNowBtn").addEventListener("click", () => paySlider.confirm());
 
     // ---------- Admin Treasury (phuentx@gmail.com) ----------
     const adminSlider = createSlideController({
