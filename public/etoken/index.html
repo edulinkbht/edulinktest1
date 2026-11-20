@@ -1,0 +1,2130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Monolith — Personal Banking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- QR Code Generator & Scanner -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #F5F5F7;
+      --surface: #FFFFFF;
+      --surface-muted: #F2F2F7;
+      --ink: #1D1D1F;
+      --ink-secondary: #6E6E73;
+      --ink-tertiary: #86868B;
+      --border: rgba(0, 0, 0, 0.07);
+      --accent: #1D1D1F;
+      --blue: #0071E3;
+      --green: #16A34A;
+      --green-bg: rgba(22, 163, 74, 0.1);
+      --red: #DC2626;
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --radius-sm: 12px;
+      --shadow-card: 0 24px 48px -12px rgba(0, 0, 0, 0.22), 0 4px 12px rgba(0, 0, 0, 0.08);
+      --shadow-surface: 0 2px 14px rgba(0, 0, 0, 0.035);
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
+      --font-mono: "SF Mono", "JetBrains Mono", monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      line-height: 1.45;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .tabular {
+      font-variant-numeric: tabular-nums;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* ---------- Top Navigation ---------- */
+    header.topbar {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(245, 245, 247, 0.82);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .topbar-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 17px;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-mark {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: var(--ink);
+      display: grid;
+      place-items: center;
+      color: #fff;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pill-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      border: none;
+    }
+
+    .icon-btn {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      height: 34px;
+      padding: 0 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      background: #ECECEE;
+    }
+
+    /* ---------- Auth / Account Creation Screen ---------- */
+    .auth-shell {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 410px;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-surface);
+    }
+
+    .auth-header {
+      margin-bottom: 24px;
+    }
+
+    .auth-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-top: 14px;
+    }
+
+    .auth-header p {
+      font-size: 14px;
+      color: var(--ink-secondary);
+      margin-top: 4px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: var(--surface-muted);
+      padding: 3px;
+      border-radius: 11px;
+      margin-bottom: 22px;
+    }
+
+    .segmented button {
+      border: none;
+      background: transparent;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .segmented button.active {
+      background: var(--surface);
+      color: var(--ink);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .field {
+      margin-bottom: 14px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink-secondary);
+      margin-bottom: 6px;
+    }
+
+    .input {
+      width: 100%;
+      height: 46px;
+      padding: 0 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      background: #FAFAFC;
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+
+    .input:focus {
+      background: #FFFFFF;
+      border-color: var(--ink);
+    }
+
+    .btn-primary {
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 13px;
+      background: var(--ink);
+      color: #FFFFFF;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.1s ease;
+      margin-top: 6px;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.92;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.99);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .error-banner {
+      background: rgba(220, 38, 38, 0.08);
+      color: var(--red);
+      font-size: 13px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+
+    /* ---------- Main Dashboard Grid ---------- */
+    .workspace {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 20px 64px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+
+    @media (min-width: 820px) {
+      .workspace {
+        grid-template-columns: 390px 1fr;
+        align-items: start;
+        padding-top: 32px;
+      }
+    }
+
+    .panel {
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-surface);
+    }
+
+    /* ---------- 3D Interactive Apple-Style Card ---------- */
+    .card-stage {
+      perspective: 1200px;
+      width: 100%;
+      aspect-ratio: 1.586 / 1;
+      margin-bottom: 14px;
+      user-select: none;
+    }
+
+    .card-3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.12s ease-out;
+      cursor: grab;
+      will-change: transform;
+    }
+
+    .card-3d.flipping {
+      transition: transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    /* Obsidian Titanium Theme */
+    .card-3d.obsidian .card-face {
+      background: linear-gradient(140deg, #242427 0%, #151517 52%, #0D0D0F 100%);
+      color: #F5F5F7;
+    }
+
+    /* Silver Titanium Theme */
+    .card-3d.titanium .card-face {
+      background: linear-gradient(140deg, #F4F4F6 0%, #DFDFE4 52%, #C9C9D0 100%);
+      color: #1D1D1F;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    /* Specular light reflection layer */
+    .card-sheen {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(
+        circle at var(--mx, 50%) var(--my, 50%),
+        rgba(255, 255, 255, 0.24) 0%,
+        rgba(255, 255, 255, 0.05) 38%,
+        transparent 70%
+      );
+      mix-blend-mode: overlay;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+      padding: 0;
+    }
+
+    .magstripe {
+      width: 100%;
+      height: 40px;
+      background: #09090B;
+      margin-top: 22px;
+    }
+
+    .card-back-body {
+      padding: 16px 24px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1;
+    }
+
+    .emv-chip {
+      width: 40px;
+      height: 30px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #D4D4D8 0%, #A1A1AA 50%, #E4E4E7 100%);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+    }
+
+    .emv-chip::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(0, 0, 0, 0.22);
+      border-radius: 3px;
+    }
+
+    .card-top-row, .card-bottom-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: relative;
+      z-index: 2;
+    }
+
+    .card-holder-name {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .card-sub-digits {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      opacity: 0.72;
+      letter-spacing: 0.06em;
+    }
+
+    .card-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .finish-dots {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot-btn {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      border: 2px solid transparent;
+      cursor: pointer;
+    }
+
+    .dot-btn.active {
+      box-shadow: 0 0 0 2px var(--bg), 0 0 0 3.5px var(--ink);
+    }
+
+    .text-link {
+      background: none;
+      border: none;
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* ---------- Balance & Quick Actions ---------- */
+    .balance-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-secondary);
+    }
+
+    .balance-amount {
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      margin: 2px 0 4px;
+    }
+
+    .account-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-muted);
+      padding: 6px 11px;
+      border-radius: 9px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+      cursor: pointer;
+      border: none;
+      margin-bottom: 18px;
+    }
+
+    .account-pill:hover {
+      background: #E8E8ED;
+      color: var(--ink);
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .action-tile {
+      background: var(--surface-muted);
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 14px 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .action-tile:hover {
+      background: #E8E8ED;
+    }
+
+    .action-tile:active {
+      transform: scale(0.97);
+    }
+
+    .action-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--surface);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    /* ---------- Activity List ---------- */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .section-head h2 {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .tx-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tx-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tx-item:last-child {
+      border-bottom: none;
+      padding-bottom: 2px;
+    }
+
+    .tx-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .tx-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: var(--surface-muted);
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ink);
+      flex-shrink: 0;
+    }
+
+    .tx-title {
+      font-size: 14.5px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tx-meta {
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+    }
+
+    .tx-amount {
+      font-size: 15px;
+      font-weight: 600;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    .tx-amount.credit {
+      color: var(--green);
+    }
+
+    /* ---------- Slide to Pay Component ---------- */
+    .slide-track {
+      position: relative;
+      width: 100%;
+      height: 58px;
+      border-radius: 999px;
+      background: var(--surface-muted);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      user-select: none;
+      touch-action: none;
+      margin-top: 10px;
+    }
+
+    .slide-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 58px;
+      background: var(--ink);
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .slide-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--ink);
+      letter-spacing: -0.01em;
+      pointer-events: none;
+      padding-left: 28px;
+    }
+
+    .slide-thumb {
+      position: absolute;
+      top: 4px;
+      left: 4px;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--ink);
+      color: #FFFFFF;
+      display: grid;
+      place-items: center;
+      cursor: grab;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.22);
+      z-index: 2;
+    }
+
+    .slide-thumb:active {
+      cursor: grabbing;
+    }
+
+    .slide-track.confirmed {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .slide-track.confirmed .slide-fill {
+      width: 100% !important;
+      background: var(--green);
+    }
+
+    .slide-track.confirmed .slide-label {
+      color: #FFFFFF;
+      padding-left: 0;
+    }
+
+    /* ---------- Modals / Bottom Sheets ---------- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0, 0, 0, 0.36);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding: 0;
+    }
+
+    @media (min-width: 600px) {
+      .modal-backdrop {
+        align-items: center;
+        padding: 20px;
+      }
+    }
+
+    .sheet {
+      width: 100%;
+      max-width: 440px;
+      background: var(--surface);
+      border-radius: 26px 26px 0 0;
+      padding: 24px 24px 30px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.22);
+      max-height: 92vh;
+      overflow-y: auto;
+      animation: sheetUp 0.26s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @media (min-width: 600px) {
+      .sheet {
+        border-radius: 26px;
+      }
+    }
+
+    @keyframes sheetUp {
+      from { transform: translateY(24px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .sheet-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+    }
+
+    .sheet-head h3 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .close-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: var(--surface-muted);
+      color: var(--ink-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .detail-box {
+      background: var(--surface-muted);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .detail-k {
+      font-size: 12px;
+      color: var(--ink-secondary);
+      margin-bottom: 2px;
+    }
+
+    .detail-v {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--ink);
+    }
+
+    .qr-frame {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 10px 0 16px;
+    }
+
+    #qrReader {
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      margin-bottom: 14px;
+    }
+
+    .amount-hero {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-family: var(--font-sans);
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      outline: none;
+      margin: 8px 0 16px;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--surface-muted);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .chip:hover {
+      background: #E5E5EA;
+    }
+
+    .admin-user-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-bottom: 8px;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .admin-user-row:hover {
+      background: var(--surface-muted);
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--ink);
+      color: #FFFFFF;
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-size: 13.5px;
+      font-weight: 500;
+      z-index: 100;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      animation: fadeToast 0.2s ease;
+    }
+
+    @keyframes fadeToast {
+      from { opacity: 0; transform: translate(-50%, 8px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ==================== 1. ACCOUNT CREATION / SIGN IN ==================== -->
+  <div id="authView" class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="2" y="5" width="20" height="14" rx="3"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+          </div>
+          <span>Monolith</span>
+        </div>
+        <h1 id="authTitle">Open an account</h1>
+        <p id="authSubtitle">Instant 10-digit account number and virtual titanium card.</p>
+      </div>
+
+      <div class="segmented">
+        <button type="button" id="tabSignup" class="active">Create Account</button>
+        <button type="button" id="tabSignin">Sign In</button>
+      </div>
+
+      <div id="authError" class="error-banner hidden"></div>
+
+      <form id="authForm">
+        <div class="field" id="nameFieldGroup">
+          <label for="fullName">Legal Full Name</label>
+          <input class="input" id="fullName" type="text" placeholder="Alex Rivera" autocomplete="name" required />
+        </div>
+
+        <div class="field">
+          <label for="emailInput">Email Address</label>
+          <input class="input" id="emailInput" type="email" placeholder="name@domain.com" autocomplete="email" required />
+        </div>
+
+        <div class="field">
+          <label for="passwordInput">Password</label>
+          <input class="input" id="passwordInput" type="password" placeholder="Minimum 6 characters" autocomplete="current-password" required minlength="6" />
+        </div>
+
+        <button type="submit" class="btn-primary" id="authSubmitBtn">Create Account</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== 2. MAIN BANKING DASHBOARD ==================== -->
+  <div id="appView" class="hidden">
+    <header class="topbar">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <rect x="2" y="5" width="20" height="14" rx="3"/>
+              <line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+          </div>
+          <span>Monolith</span>
+        </div>
+
+        <div class="topbar-actions">
+          <button type="button" id="adminBtn" class="pill-badge hidden">Treasury Admin</button>
+          <button type="button" id="accountDetailsBtn" class="icon-btn">Account Details</button>
+          <button type="button" id="signOutBtn" class="icon-btn">Sign Out</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <!-- Left Column: Interactive 3D Card + Balance + Actions -->
+      <div>
+        <div class="card-stage" id="cardStage">
+          <div class="card-3d obsidian" id="card3d">
+            <!-- Front Face -->
+            <div class="card-face card-front">
+              <div class="card-sheen"></div>
+              <div class="card-top-row">
+                <div class="emv-chip"></div>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" opacity="0.75">
+                  <path d="M8.5 14.5A4 4 0 0 1 8.5 9.5"/>
+                  <path d="M12 17a7.5 7.5 0 0 1 0-10"/>
+                  <path d="M15.5 19.5a11 11 0 0 1 0-15"/>
+                </svg>
+              </div>
+              <div class="card-bottom-row">
+                <div>
+                  <div class="card-holder-name" id="cardHolderName">—</div>
+                  <div class="card-sub-digits tabular" id="cardFrontAcct">ACCT •••• ••••</div>
+                </div>
+                <span style="font-weight:700; font-size:15px; letter-spacing:-0.02em;">Monolith</span>
+              </div>
+            </div>
+
+            <!-- Back Face -->
+            <div class="card-face card-back">
+              <div class="card-sheen"></div>
+              <div class="magstripe"></div>
+              <div class="card-back-body">
+                <div>
+                  <div style="font-size:10px; text-transform:uppercase; letter-spacing:0.08em; opacity:0.65;">Card Number</div>
+                  <div class="tabular" id="cardBackNumber" style="font-family:var(--font-mono); font-size:14px; font-weight:600; margin-top:2px;">•••• •••• •••• ••••</div>
+                </div>
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                  <div>
+                    <div style="font-size:10px; text-transform:uppercase; opacity:0.65;">10-Digit Account</div>
+                    <div class="tabular" id="cardBackAcct" style="font-family:var(--font-mono); font-size:13px; font-weight:600;">0000 0000 00</div>
+                  </div>
+                  <div style="display:flex; gap:16px; text-align:right;">
+                    <div>
+                      <div style="font-size:10px; text-transform:uppercase; opacity:0.65;">Exp</div>
+                      <div class="tabular" id="cardBackExp" style="font-family:var(--font-mono); font-size:13px;">11/30</div>
+                    </div>
+                    <div>
+                      <div style="font-size:10px; text-transform:uppercase; opacity:0.65;">CVV</div>
+                      <div class="tabular" id="cardBackCvv" style="font-family:var(--font-mono); font-size:13px;">•••</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-controls">
+          <div class="finish-dots" title="Card Finish">
+            <button type="button" class="dot-btn active" data-finish="obsidian" style="background:#1C1C1E;" aria-label="Obsidian finish"></button>
+            <button type="button" class="dot-btn" data-finish="titanium" style="background:#D8D8DF;" aria-label="Titanium finish"></button>
+          </div>
+          <button type="button" class="text-link" id="flipCardBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+              <path d="M3 3v5h5"/>
+            </svg>
+            Flip Card
+          </button>
+        </div>
+
+        <div class="panel">
+          <div class="balance-label">Available Balance</div>
+          <div class="balance-amount tabular" id="balanceDisplay">$0.00</div>
+          <button type="button" class="account-pill tabular" id="copyAcctPill" title="Copy 10-digit account number">
+            <span id="acctPillText">ACCT 0000 0000 00</span>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+          </button>
+
+          <div class="action-grid">
+            <button type="button" class="action-tile" id="openPayBtn">
+              <div class="action-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="7" y1="17" x2="17" y2="7"/>
+                  <polyline points="7 7 17 7 17 17"/>
+                </svg>
+              </div>
+              <span>Pay</span>
+            </button>
+
+            <button type="button" class="action-tile" id="openScanBtn">
+              <div class="action-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M3 7V5a2 2 0 0 1 2-2h2"/>
+                  <path d="M17 3h2a2 2 0 0 1 2 2v2"/>
+                  <path d="M21 17v2a2 2 0 0 1-2 2h-2"/>
+                  <path d="M7 21H5a2 2 0 0 1-2-2v-2"/>
+                  <line x1="7" y1="12" x2="17" y2="12"/>
+                </svg>
+              </div>
+              <span>Scan QR</span>
+            </button>
+
+            <button type="button" class="action-tile" id="openReceiveBtn">
+              <div class="action-icon">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <rect x="3" y="3" width="7" height="7"/>
+                  <rect x="14" y="3" width="7" height="7"/>
+                  <rect x="3" y="14" width="7" height="7"/>
+                  <path d="M14 14h3v3h-3zM18 18h3v3h-3z"/>
+                </svg>
+              </div>
+              <span>My QR</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Ledger / Latest Transactions -->
+      <div class="panel">
+        <div class="section-head">
+          <h2>Latest Transactions</h2>
+          <span class="tabular" id="txCountBadge" style="font-size:12.5px; color:var(--ink-secondary);">0 entries</span>
+        </div>
+
+        <div id="txList" class="tx-list">
+          <div style="padding:36px 0; text-align:center; color:var(--ink-secondary); font-size:14px;">
+            No transactions yet.
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ==================== MODAL: ACCOUNT DETAILS (POST-SIGNUP & MENU) ==================== -->
+  <div id="accountModal" class="modal-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3 id="acctModalHeading">Account Details</h3>
+        <button type="button" class="close-btn" data-close="accountModal">&times;</button>
+      </div>
+
+      <p style="font-size:13.5px; color:var(--ink-secondary); margin-bottom:16px;">
+        Your 10-digit checking account number and virtual card credentials are active.
+      </p>
+
+      <div class="detail-box">
+        <div>
+          <div class="detail-k">Account Holder</div>
+          <div class="detail-v" style="font-family:var(--font-sans);" id="modalHolderName">—</div>
+        </div>
+      </div>
+
+      <div class="detail-box">
+        <div>
+          <div class="detail-k">Account Number (10 Digits)</div>
+          <div class="detail-v tabular" id="modalAcctNum">—</div>
+        </div>
+        <button type="button" class="icon-btn" id="copyModalAcctBtn">Copy</button>
+      </div>
+
+      <div class="detail-box">
+        <div>
+          <div class="detail-k">Routing Number</div>
+          <div class="detail-v tabular">021000021</div>
+        </div>
+        <button type="button" class="icon-btn" onclick="window.copyText('021000021', 'Routing number copied')">Copy</button>
+      </div>
+
+      <div class="detail-box">
+        <div>
+          <div class="detail-k">Virtual Card Number</div>
+          <div class="detail-v tabular" id="modalCardNum">—</div>
+        </div>
+        <button type="button" class="icon-btn" id="copyModalCardBtn">Copy</button>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px;">
+        <div class="detail-box" style="margin-bottom:0;">
+          <div>
+            <div class="detail-k">Expires</div>
+            <div class="detail-v tabular" id="modalCardExp">11/30</div>
+          </div>
+        </div>
+        <div class="detail-box" style="margin-bottom:0;">
+          <div>
+            <div class="detail-k">Security Code</div>
+            <div class="detail-v tabular" id="modalCardCvv">000</div>
+          </div>
+        </div>
+      </div>
+
+      <button type="button" class="btn-primary" data-close="accountModal">Continue to Wallet</button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: MY QR CODE (RECEIVE) ==================== -->
+  <div id="receiveModal" class="modal-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3>Receive Payment</h3>
+        <button type="button" class="close-btn" data-close="receiveModal">&times;</button>
+      </div>
+
+      <p style="font-size:13.5px; color:var(--ink-secondary); text-align:center;">
+        Scan this code with any Monolith scanner to send funds directly to your 10-digit account.
+      </p>
+
+      <div class="qr-frame">
+        <div id="myQrContainer"></div>
+        <div style="margin-top:14px; font-weight:600; font-size:15px;" id="qrOwnerName">—</div>
+        <div class="tabular" style="font-family:var(--font-mono); font-size:13px; color:var(--ink-secondary); margin-top:2px;" id="qrOwnerAcct">0000 0000 00</div>
+      </div>
+
+      <button type="button" class="btn-primary" id="copyQrPayloadBtn">Copy Account Number</button>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: SCAN QR TO PAY ==================== -->
+  <div id="scanModal" class="modal-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3>Scan QR to Pay</h3>
+        <button type="button" class="close-btn" id="closeScanBtn">&times;</button>
+      </div>
+
+      <div id="qrReader"></div>
+      <div id="scanStatus" style="font-size:13px; color:var(--ink-secondary); text-align:center; margin-bottom:14px;">
+        Point camera at a Monolith payment QR code.
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <label class="icon-btn" style="justify-content:center; height:42px; border-radius:12px;">
+          Upload QR Image
+          <input type="file" id="qrFileInput" accept="image/*" class="hidden" />
+        </label>
+        <button type="button" id="manualEnterFromScanBtn" class="icon-btn" style="justify-content:center; height:42px; border-radius:12px;">
+          Enter Account #
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: SEND / SLIDE TO PAY ==================== -->
+  <div id="payModal" class="modal-backdrop hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <h3>Send Money</h3>
+        <button type="button" class="close-btn" data-close="payModal">&times;</button>
+      </div>
+
+      <div class="field">
+        <label for="payRecipientInput">Recipient 10-Digit Account Number or Email</label>
+        <input class="input" id="payRecipientInput" type="text" placeholder="e.g. 4082910473 or alex@domain.com" />
+        <div id="resolvedRecipientTag" style="font-size:12.5px; color:var(--green); font-weight:600; margin-top:6px;" class="hidden"></div>
+      </div>
+
+      <div class="field">
+        <label for="payNoteInput">Note (Optional)</label>
+        <input class="input" id="payNoteInput" type="text" placeholder="Dinner, rent, split..." />
+      </div>
+
+      <div style="text-align:center; margin-top:10px;">
+        <div style="font-size:12px; font-weight:600; color:var(--ink-secondary);">AMOUNT (USD)</div>
+        <input class="amount-hero tabular" id="payAmountInput" type="number" step="0.01" min="0.01" placeholder="$0.00" />
+      </div>
+
+      <div id="payError" class="error-banner hidden"></div>
+
+      <!-- Slide to Pay Control -->
+      <div class="slide-track" id="paySlideTrack">
+        <div class="slide-fill" id="paySlideFill"></div>
+        <div class="slide-label" id="paySlideLabel">Slide to Pay</div>
+        <div class="slide-thumb" id="paySlideThumb">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL: ADMIN TREASURY (phuentx@gmail.com) ==================== -->
+  <div id="adminModal" class="modal-backdrop hidden">
+    <div class="sheet" style="max-width:480px;">
+      <div class="sheet-head">
+        <h3>Treasury Disbursement</h3>
+        <button type="button" class="close-btn" data-close="adminModal">&times;</button>
+      </div>
+
+      <p style="font-size:13px; color:var(--ink-secondary); margin-bottom:14px;">
+        Signed in as <strong>phuentx@gmail.com</strong>. Select any registered account or enter a 10-digit account number to issue any amount.
+      </p>
+
+      <div class="field">
+        <label>Registered Accounts</label>
+        <div id="adminUserList" style="max-height:170px; overflow-y:auto;"></div>
+      </div>
+
+      <div class="field">
+        <label for="adminTargetInput">Recipient Account Number (10 Digits) or Email</label>
+        <input class="input" id="adminTargetInput" type="text" placeholder="Select above or type account number" />
+      </div>
+
+      <div class="field">
+        <label for="adminAmountInput">Grant Amount (USD — Unlimited)</label>
+        <input class="input tabular" id="adminAmountInput" type="number" step="0.01" min="0.01" placeholder="10000.00" />
+      </div>
+
+      <div class="chip-row">
+        <button type="button" class="chip" data-admin-amt="100">$100</button>
+        <button type="button" class="chip" data-admin-amt="1000">$1,000</button>
+        <button type="button" class="chip" data-admin-amt="25000">$25,000</button>
+        <button type="button" class="chip" data-admin-amt="1000000">$1,000,000</button>
+      </div>
+
+      <div id="adminError" class="error-banner hidden"></div>
+
+      <div class="slide-track" id="adminSlideTrack">
+        <div class="slide-fill" id="adminSlideFill"></div>
+        <div class="slide-label" id="adminSlideLabel">Slide to Issue Funds</div>
+        <div class="slide-thumb" id="adminSlideThumb">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== FIREBASE & APP LOGIC ==================== -->
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-analytics.js";
+    import {
+      getAuth,
+      createUserWithEmailAndPassword,
+      signInWithEmailAndPassword,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      setDoc,
+      getDoc,
+      getDocs,
+      collection,
+      query,
+      where,
+      onSnapshot,
+      runTransaction,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCHeKhAj0fKHjmcp1V_tX7bvQvVE3tzVLk",
+      authDomain: "idembt.firebaseapp.com",
+      projectId: "idembt",
+      storageBucket: "idembt.firebasestorage.app",
+      messagingSenderId: "297940761171",
+      appId: "1:297940761171:web:5e11230daad141c5a6a4a6",
+      measurementId: "G-612RFP1X36"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch (_) {}
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const ADMIN_EMAIL = "phuentx@gmail.com";
+
+    // App State
+    let authMode = "signup";
+    let currentUser = null;
+    let currentProfile = null;
+    let unsubProfile = null;
+    let unsubSent = null;
+    let unsubRecv = null;
+    let sentDocs = [];
+    let recvDocs = [];
+    let isNewAccountFlow = false;
+    let cardFlipped = false;
+    let html5QrScanner = null;
+
+    // ---------- Helpers ----------
+    const $ = (id) => document.getElementById(id);
+
+    function formatCurrency(num) {
+      return new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: "USD",
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }).format(Number(num || 0));
+    }
+
+    // Generates a 10-digit account number (strictly NOT 7 digits)
+    function generateTenDigitAccountNumber() {
+      const prefix = String(Math.floor(40 + Math.random() * 59)); // 2 digits (40-98)
+      let rest = "";
+      for (let i = 0; i < 8; i++) {
+        rest += Math.floor(Math.random() * 10);
+      }
+      return prefix + rest; // Exactly 10 digits
+    }
+
+    function formatAccountNumber(raw) {
+      const clean = String(raw || "").replace(/\D/g, "");
+      if (clean.length === 10) {
+        return `${clean.slice(0, 4)} ${clean.slice(4, 8)} ${clean.slice(8, 10)}`;
+      }
+      return clean.replace(/(.{4})/g, "$1 ").trim();
+    }
+
+    function generateCardNumber() {
+      let digits = "4532";
+      for (let i = 0; i < 12; i++) {
+        digits += Math.floor(Math.random() * 10);
+      }
+      return digits;
+    }
+
+    function formatCardNumber(raw) {
+      return String(raw || "").replace(/\D/g, "").replace(/(.{4})/g, "$1 ").trim();
+    }
+
+    function showToast(msg) {
+      const existing = document.querySelector(".toast");
+      if (existing) existing.remove();
+      const el = document.createElement("div");
+      el.className = "toast";
+      el.textContent = msg;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 2600);
+    }
+
+    window.copyText = async (text, label = "Copied") => {
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(label);
+      } catch {
+        showToast("Copied: " + text);
+      }
+    };
+
+    function openModal(id) {
+      $(id).classList.remove("hidden");
+    }
+
+    function closeModal(id) {
+      $(id).classList.add("hidden");
+    }
+
+    document.querySelectorAll("[data-close]").forEach((btn) => {
+      btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close")));
+    });
+
+    // ---------- Auth Tabs & Submission ----------
+    $("tabSignup").addEventListener("click", () => {
+      authMode = "signup";
+      $("tabSignup").classList.add("active");
+      $("tabSignin").classList.remove("active");
+      $("nameFieldGroup").classList.remove("hidden");
+      $("fullName").required = true;
+      $("authTitle").textContent = "Open an account";
+      $("authSubtitle").textContent = "Instant 10-digit account number and virtual titanium card.";
+      $("authSubmitBtn").textContent = "Create Account";
+      $("authError").classList.add("hidden");
+    });
+
+    $("tabSignin").addEventListener("click", () => {
+      authMode = "signin";
+      $("tabSignin").classList.add("active");
+      $("tabSignup").classList.remove("active");
+      $("nameFieldGroup").classList.add("hidden");
+      $("fullName").required = false;
+      $("authTitle").textContent = "Welcome back";
+      $("authSubtitle").textContent = "Sign in to access your Monolith account.";
+      $("authSubmitBtn").textContent = "Sign In";
+      $("authError").classList.add("hidden");
+    });
+
+    $("authForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errBox = $("authError");
+      const btn = $("authSubmitBtn");
+      errBox.classList.add("hidden");
+      btn.disabled = true;
+
+      const email = $("emailInput").value.trim();
+      const password = $("passwordInput").value;
+      const fullName = $("fullName").value.trim();
+
+      try {
+        if (authMode === "signup") {
+          isNewAccountFlow = true;
+          const cred = await createUserWithEmailAndPassword(auth, email, password);
+          const accountNumber = generateTenDigitAccountNumber(); // 10 digits
+          const cardNumber = generateCardNumber();
+          const cvv = String(Math.floor(100 + Math.random() * 899));
+          const initialBalance = email.toLowerCase() === ADMIN_EMAIL ? 100000 : 250;
+
+          const profileData = {
+            uid: cred.user.uid,
+            name: fullName || email.split("@")[0],
+            email: email.toLowerCase(),
+            accountNumber,
+            cardNumber,
+            expiry: "11/30",
+            cvv,
+            balance: initialBalance,
+            createdAt: Date.now()
+          };
+
+          await setDoc(doc(db, "users", cred.user.uid), profileData);
+          currentProfile = profileData;
+          populateUI(profileData);
+          $("acctModalHeading").textContent = "Account Created";
+          openModal("accountModal");
+        } else {
+          isNewAccountFlow = false;
+          await signInWithEmailAndPassword(auth, email, password);
+        }
+      } catch (err) {
+        isNewAccountFlow = false;
+        let msg = err.message || "Authentication failed.";
+        if (err.code === "auth/operation-not-allowed") {
+          msg = "Enable Email/Password sign-in in Firebase Console (Project: idembt → Authentication → Sign-in method).";
+        } else if (err.code === "auth/email-already-in-use") {
+          msg = "An account with this email already exists. Switch to Sign In.";
+        } else if (err.code === "auth/invalid-credential" || err.code === "auth/wrong-password") {
+          msg = "Incorrect email or password.";
+        }
+        errBox.textContent = msg;
+        errBox.classList.remove("hidden");
+      } finally {
+        btn.disabled = false;
+      }
+    });
+
+    $("signOutBtn").addEventListener("click", async () => {
+      if (unsubProfile) unsubProfile();
+      if (unsubSent) unsubSent();
+      if (unsubRecv) unsubRecv();
+      await signOut(auth);
+    });
+
+    // ---------- Auth State & Realtime Sync ----------
+    onAuthStateChanged(auth, async (user) => {
+      currentUser = user;
+      if (!user) {
+        $("appView").classList.add("hidden");
+        $("authView").classList.remove("hidden");
+        return;
+      }
+
+      $("authView").classList.add("hidden");
+      $("appView").classList.remove("hidden");
+
+      // Show Admin Treasury button if phuentx@gmail.com
+      if ((user.email || "").toLowerCase() === ADMIN_EMAIL) {
+        $("adminBtn").classList.remove("hidden");
+      } else {
+        $("adminBtn").classList.add("hidden");
+      }
+
+      const userRef = doc(db, "users", user.uid);
+
+      // Ensure profile exists if signed in from an auth-only account
+      const snap = await getDoc(userRef);
+      if (!snap.exists() && !isNewAccountFlow) {
+        const accountNumber = generateTenDigitAccountNumber();
+        const fallbackProfile = {
+          uid: user.uid,
+          name: user.email.split("@")[0],
+          email: user.email.toLowerCase(),
+          accountNumber,
+          cardNumber: generateCardNumber(),
+          expiry: "11/30",
+          cvv: String(Math.floor(100 + Math.random() * 899)),
+          balance: user.email.toLowerCase() === ADMIN_EMAIL ? 100000 : 250,
+          createdAt: Date.now()
+        };
+        await setDoc(userRef, fallbackProfile);
+        $("acctModalHeading").textContent = "Account Created";
+        openModal("accountModal");
+      }
+
+      if (unsubProfile) unsubProfile();
+      unsubProfile = onSnapshot(userRef, (docSnap) => {
+        if (docSnap.exists()) {
+          currentProfile = docSnap.data();
+          populateUI(currentProfile);
+        }
+      }, (err) => {
+        if (err.code === "permission-denied") {
+          showToast("Firestore permission denied. Set Firestore rules to allow access.");
+        }
+      });
+
+      subscribeTransactions(user.uid);
+    });
+
+    function populateUI(p) {
+      const formattedAcct = formatAccountNumber(p.accountNumber);
+      const formattedCard = formatCardNumber(p.cardNumber);
+
+      $("balanceDisplay").textContent = formatCurrency(p.balance);
+      $("acctPillText").textContent = `ACCT ${formattedAcct}`;
+      $("cardHolderName").textContent = p.name;
+      $("cardFrontAcct").textContent = `ACCT •••• •••• ${String(p.accountNumber).slice(-2)}`;
+      $("cardBackNumber").textContent = formattedCard;
+      $("cardBackAcct").textContent = formattedAcct;
+      $("cardBackExp").textContent = p.expiry || "11/30";
+      $("cardBackCvv").textContent = p.cvv || "418";
+
+      // Account Details Modal
+      $("modalHolderName").textContent = p.name;
+      $("modalAcctNum").textContent = formattedAcct;
+      $("modalCardNum").textContent = formattedCard;
+      $("modalCardExp").textContent = p.expiry || "11/30";
+      $("modalCardCvv").textContent = p.cvv || "418";
+
+      // Receive QR Modal
+      $("qrOwnerName").textContent = p.name;
+      $("qrOwnerAcct").textContent = formattedAcct;
+    }
+
+    $("copyAcctPill").addEventListener("click", () => {
+      if (currentProfile) copyText(currentProfile.accountNumber, "10-digit account number copied");
+    });
+
+    $("copyModalAcctBtn").addEventListener("click", () => {
+      if (currentProfile) copyText(currentProfile.accountNumber, "Account number copied");
+    });
+
+    $("copyModalCardBtn").addEventListener("click", () => {
+      if (currentProfile) copyText(currentProfile.cardNumber, "Card number copied");
+    });
+
+    $("accountDetailsBtn").addEventListener("click", () => {
+      $("acctModalHeading").textContent = "Account Details";
+      openModal("accountModal");
+    });
+
+    // ---------- Realtime Transaction Ledger ----------
+    function subscribeTransactions(uid) {
+      if (unsubSent) unsubSent();
+      if (unsubRecv) unsubRecv();
+
+      const qSent = query(collection(db, "transactions"), where("fromUid", "==", uid));
+      const qRecv = query(collection(db, "transactions"), where("toUid", "==", uid));
+
+      unsubSent = onSnapshot(qSent, (snap) => {
+        sentDocs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        renderTransactions();
+      });
+
+      unsubRecv = onSnapshot(qRecv, (snap) => {
+        recvDocs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        renderTransactions();
+      });
+    }
+
+    function renderTransactions() {
+      const map = new Map();
+      [...sentDocs, ...recvDocs].forEach((tx) => map.set(tx.id, tx));
+      const all = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      $("txCountBadge").textContent = `${all.length} ${all.length === 1 ? "entry" : "entries"}`;
+      const container = $("txList");
+
+      if (all.length === 0) {
+        container.innerHTML = `<div style="padding:36px 0; text-align:center; color:var(--ink-secondary); font-size:14px;">No transactions yet.</div>`;
+        return;
+      }
+
+      container.innerHTML = all.map((tx) => {
+        const isIncoming = tx.toUid === currentUser.uid;
+        const counterparty = isIncoming ? (tx.fromName || "Treasury") : (tx.toName || tx.toAccount);
+        const initial = (counterparty || "M").charAt(0).toUpperCase();
+        const dateStr = tx.createdAt
+          ? new Date(tx.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+          : "Just now";
+        const subtitle = tx.type === "admin_grant"
+          ? `Treasury Credit · ${dateStr}`
+          : `${tx.note ? tx.note + " · " : ""}${dateStr}`;
+
+        return `
+          <div class="tx-item">
+            <div class="tx-left">
+              <div class="tx-avatar">${initial}</div>
+              <div style="min-width:0;">
+                <div class="tx-title">${escapeHtml(counterparty)}</div>
+                <div class="tx-meta">${escapeHtml(subtitle)}</div>
+              </div>
+            </div>
+            <div class="tx-amount tabular ${isIncoming ? "credit" : ""}">
+              ${isIncoming ? "+" : "-"}${formatCurrency(tx.amount)}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function escapeHtml(str) {
+      return String(str || "").replace(/[&<>"']/g, (m) => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[m]));
+    }
+
+    // ---------- Interactive 3D Card Physics ----------
+    const cardStage = $("cardStage");
+    const card3d = $("card3d");
+
+    function updateCardTilt(clientX, clientY) {
+      const rect = cardStage.getBoundingClientRect();
+      const x = (clientX - rect.left) / rect.width;  // 0..1
+      const y = (clientY - rect.top) / rect.height;  // 0..1
+      const rotateY = (x - 0.5) * 24;
+      const rotateX = (0.5 - y) * 20;
+      const baseFlip = cardFlipped ? 180 : 0;
+
+      card3d.style.setProperty("--mx", `${(x * 100).toFixed(1)}%`);
+      card3d.style.setProperty("--my", `${(y * 100).toFixed(1)}%`);
+      card3d.style.transform = `rotateX(${rotateX.toFixed(2)}deg) rotateY(${(baseFlip + rotateY).toFixed(2)}deg)`;
+    }
+
+    function resetCardTilt() {
+      const baseFlip = cardFlipped ? 180 : 0;
+      card3d.style.transform = `rotateX(0deg) rotateY(${baseFlip}deg)`;
+    }
+
+    cardStage.addEventListener("mousemove", (e) => updateCardTilt(e.clientX, e.clientY));
+    cardStage.addEventListener("mouseleave", resetCardTilt);
+    cardStage.addEventListener("touchmove", (e) => {
+      if (e.touches[0]) updateCardTilt(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    cardStage.addEventListener("touchend", resetCardTilt);
+
+    $("flipCardBtn").addEventListener("click", () => {
+      cardFlipped = !cardFlipped;
+      card3d.classList.add("flipping");
+      resetCardTilt();
+      setTimeout(() => card3d.classList.remove("flipping"), 660);
+    });
+
+    document.querySelectorAll(".dot-btn").forEach((dot) => {
+      dot.addEventListener("click", () => {
+        document.querySelectorAll(".dot-btn").forEach((d) => d.classList.remove("active"));
+        dot.classList.add("active");
+        card3d.classList.remove("obsidian", "titanium");
+        card3d.classList.add(dot.dataset.finish);
+      });
+    });
+
+    // ---------- QR Code Receive ----------
+    $("openReceiveBtn").addEventListener("click", () => {
+      if (!currentProfile) return;
+      const container = $("myQrContainer");
+      container.innerHTML = "";
+      const payload = JSON.stringify({
+        app: "monolith",
+        acc: currentProfile.accountNumber,
+        name: currentProfile.name
+      });
+      new QRCode(container, {
+        text: payload,
+        width: 196,
+        height: 196,
+        colorDark: "#1D1D1F",
+        colorLight: "#FFFFFF",
+        correctLevel: QRCode.CorrectLevel.M
+      });
+      openModal("receiveModal");
+    });
+
+    $("copyQrPayloadBtn").addEventListener("click", () => {
+      if (currentProfile) copyText(currentProfile.accountNumber, "Account number copied");
+    });
+
+    // ---------- Scan QR to Pay ----------
+    async function stopQrScanner() {
+      if (html5QrScanner) {
+        try {
+          if (html5QrScanner.isScanning) {
+            await html5QrScanner.stop();
+          }
+          html5QrScanner.clear();
+        } catch (_) {}
+        html5QrScanner = null;
+      }
+    }
+
+    function handleDecodedQr(decodedText) {
+      let acc = decodedText.trim();
+      let name = "";
+      try {
+        const parsed = JSON.parse(decodedText);
+        if (parsed.acc) acc = String(parsed.acc);
+        if (parsed.name) name = parsed.name;
+      } catch (_) {}
+
+      stopQrScanner();
+      closeModal("scanModal");
+      openPaySheet(acc, name);
+      showToast("QR code scanned");
+    }
+
+    $("openScanBtn").addEventListener("click", async () => {
+      openModal("scanModal");
+      $("scanStatus").textContent = "Starting camera...";
+      try {
+        html5QrScanner = new Html5Qrcode("qrReader");
+        await html5QrScanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 220, height: 220 } },
+          (decodedText) => handleDecodedQr(decodedText),
+          () => {}
+        );
+        $("scanStatus").textContent = "Align QR code inside the frame.";
+      } catch (err) {
+        $("scanStatus").textContent = "Camera unavailable. Upload a QR image or enter account number below.";
+      }
+    });
+
+    $("closeScanBtn").addEventListener("click", async () => {
+      await stopQrScanner();
+      closeModal("scanModal");
+    });
+
+    $("qrFileInput").addEventListener("change", async (e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      await stopQrScanner();
+      const fileScanner = new Html5Qrcode("qrReader");
+      try {
+        const result = await fileScanner.scanFile(file, true);
+        handleDecodedQr(result);
+      } catch {
+        $("scanStatus").textContent = "No valid QR code found in image.";
+      } finally {
+        fileScanner.clear();
+        e.target.value = "";
+      }
+    });
+
+    $("manualEnterFromScanBtn").addEventListener("click", async () => {
+      await stopQrScanner();
+      closeModal("scanModal");
+      openPaySheet("", "");
+    });
+
+    // ---------- Slide-to-Pay Physics Engine ----------
+    function createSlideController({ trackId, fillId, labelId, thumbId, defaultLabel, onConfirm }) {
+      const track = $(trackId);
+      const fill = $(fillId);
+      const label = $(labelId);
+      const thumb = $(thumbId);
+
+      let dragging = false;
+      let startX = 0;
+      let currentX = 0;
+      let locked = false;
+
+      function getMaxSlide() {
+        return Math.max(track.offsetWidth - thumb.offsetWidth - 8, 1);
+      }
+
+      function setPosition(px, animate = false) {
+        const max = getMaxSlide();
+        const clamped = Math.max(0, Math.min(px, max));
+        currentX = clamped;
+        const progress = clamped / max;
+
+        thumb.style.transition = animate ? "transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)" : "none";
+        fill.style.transition = animate ? "width 0.28s cubic-bezier(0.22, 1, 0.36, 1)" : "none";
+
+        thumb.style.transform = `translateX(${clamped}px)`;
+        fill.style.width = `${clamped + thumb.offsetWidth + 4}px`;
+        label.style.opacity = String(Math.max(0, 1 - progress * 1.4));
+      }
+
+      function reset(newLabel) {
+        locked = false;
+        dragging = false;
+        track.classList.remove("confirmed");
+        label.textContent = newLabel || defaultLabel;
+        label.style.opacity = "1";
+        setPosition(0, false);
+      }
+
+      function onStart(clientX) {
+        if (locked) return;
+        dragging = true;
+        startX = clientX - currentX;
+      }
+
+      async function onMove(clientX) {
+        if (!dragging || locked) return;
+        const nextX = clientX - startX;
+        setPosition(nextX, false);
+
+        if (currentX / getMaxSlide() >= 0.88) {
+          dragging = false;
+          locked = true;
+          setPosition(getMaxSlide(), true);
+          if (navigator.vibrate) navigator.vibrate(20);
+          label.style.opacity = "1";
+          label.textContent = "Processing...";
+
+          const ok = await onConfirm();
+          if (ok) {
+            track.classList.add("confirmed");
+            label.textContent = "Confirmed";
+          } else {
+            setTimeout(() => reset(), 350);
+          }
+        }
+      }
+
+      function onEnd() {
+        if (!dragging || locked) return;
+        dragging = false;
+        setPosition(0, true);
+      }
+
+      thumb.addEventListener("mousedown", (e) => onStart(e.clientX));
+      window.addEventListener("mousemove", (e) => onMove(e.clientX));
+      window.addEventListener("mouseup", onEnd);
+
+      thumb.addEventListener("touchstart", (e) => {
+        if (e.touches[0]) onStart(e.touches[0].clientX);
+      }, { passive: true });
+      window.addEventListener("touchmove", (e) => {
+        if (dragging && e.touches[0]) onMove(e.touches[0].clientX);
+      }, { passive: true });
+      window.addEventListener("touchend", onEnd);
+
+      return { reset };
+    }
+
+    // ---------- Peer Transfer & Slide-to-Pay ----------
+    async function findUserByIdentifier(identifier) {
+      const clean = identifier.trim();
+      if (!clean) return null;
+
+      if (clean.includes("@")) {
+        const q = query(collection(db, "users"), where("email", "==", clean.toLowerCase()));
+        const snap = await getDocs(q);
+        return snap.empty ? null : snap.docs[0].data();
+      } else {
+        const digits = clean.replace(/\D/g, "");
+        const q = query(collection(db, "users"), where("accountNumber", "==", digits));
+        const snap = await getDocs(q);
+        return snap.empty ? null : snap.docs[0].data();
+      }
+    }
+
+    const paySlider = createSlideController({
+      trackId: "paySlideTrack",
+      fillId: "paySlideFill",
+      labelId: "paySlideLabel",
+      thumbId: "paySlideThumb",
+      defaultLabel: "Slide to Pay",
+      onConfirm: async () => {
+        const errBox = $("payError");
+        errBox.classList.add("hidden");
+
+        const recipientQuery = $("payRecipientInput").value.trim();
+        const amount = parseFloat($("payAmountInput").value);
+        const note = $("payNoteInput").value.trim();
+
+        if (!recipientQuery || isNaN(amount) || amount <= 0) {
+          errBox.textContent = "Enter a valid recipient and amount.";
+          errBox.classList.remove("hidden");
+          return false;
+        }
+
+        if (amount > (currentProfile?.balance || 0)) {
+          errBox.textContent = "Insufficient available balance.";
+          errBox.classList.remove("hidden");
+          return false;
+        }
+
+        try {
+          const recipient = await findUserByIdentifier(recipientQuery);
+          if (!recipient) {
+            errBox.textContent = "Recipient account not found.";
+            errBox.classList.remove("hidden");
+            return false;
+          }
+
+          if (recipient.uid === currentUser.uid) {
+            errBox.textContent = "Cannot transfer to your own account.";
+            errBox.classList.remove("hidden");
+            return false;
+          }
+
+          const senderRef = doc(db, "users", currentUser.uid);
+          const recipientRef = doc(db, "users", recipient.uid);
+          const txRef = doc(collection(db, "transactions"));
+
+          await runTransaction(db, async (transaction) => {
+            const sSnap = await transaction.get(senderRef);
+            const rSnap = await transaction.get(recipientRef);
+            if (!sSnap.exists() || !rSnap.exists()) throw new Error("Account record missing.");
+
+            const sBal = Number(sSnap.data().balance || 0);
+            if (sBal < amount) throw new Error("Insufficient balance.");
+
+            transaction.update(senderRef, { balance: Number((sBal - amount).toFixed(2)) });
+            transaction.update(recipientRef, { balance: Number((Number(rSnap.data().balance || 0) + amount).toFixed(2)) });
+            transaction.set(txRef, {
+              fromUid: currentUser.uid,
+              fromName: currentProfile.name,
+              fromAccount: currentProfile.accountNumber,
+              toUid: recipient.uid,
+              toName: recipient.name,
+              toAccount: recipient.accountNumber,
+              amount: Number(amount.toFixed(2)),
+              note,
+              type: "transfer",
+              createdAt: Date.now()
+            });
+          });
+
+          showToast(`Sent ${formatCurrency(amount)} to ${recipient.name}`);
+          setTimeout(() => closeModal("payModal"), 750);
+          return true;
+        } catch (err) {
+          errBox.textContent = err.message || "Payment failed.";
+          errBox.classList.remove("hidden");
+          return false;
+        }
+      }
+    });
+
+    function openPaySheet(prefillAccount = "", prefillName = "") {
+      $("payError").classList.add("hidden");
+      $("payRecipientInput").value = prefillAccount;
+      $("payAmountInput").value = "";
+      $("payNoteInput").value = "";
+      if (prefillName) {
+        $("resolvedRecipientTag").textContent = `Verified Recipient: ${prefillName}`;
+        $("resolvedRecipientTag").classList.remove("hidden");
+      } else {
+        $("resolvedRecipientTag").classList.add("hidden");
+      }
+      openModal("payModal");
+      requestAnimationFrame(() => paySlider.reset("Slide to Pay"));
+    }
+
+    $("openPayBtn").addEventListener("click", () => openPaySheet());
+
+    $("payAmountInput").addEventListener("input", () => {
+      const val = parseFloat($("payAmountInput").value);
+      const label = !isNaN(val) && val > 0 ? `Slide to Pay ${formatCurrency(val)}` : "Slide to Pay";
+      $("paySlideLabel").textContent = label;
+    });
+
+    // ---------- Admin Treasury (phuentx@gmail.com) ----------
+    const adminSlider = createSlideController({
+      trackId: "adminSlideTrack",
+      fillId: "adminSlideFill",
+      labelId: "adminSlideLabel",
+      thumbId: "adminSlideThumb",
+      defaultLabel: "Slide to Issue Funds",
+      onConfirm: async () => {
+        const errBox = $("adminError");
+        errBox.classList.add("hidden");
+
+        if ((currentUser?.email || "").toLowerCase() !== ADMIN_EMAIL) {
+          errBox.textContent = "Unauthorized.";
+          errBox.classList.remove("hidden");
+          return false;
+        }
+
+        const targetQuery = $("adminTargetInput").value.trim();
+        const amount = parseFloat($("adminAmountInput").value);
+
+        if (!targetQuery || isNaN(amount) || amount <= 0) {
+          errBox.textContent = "Select a user and enter a valid positive amount.";
+          errBox.classList.remove("hidden");
+          return false;
+        }
+
+        try {
+          const targetUser = await findUserByIdentifier(targetQuery);
+          if (!targetUser) {
+            errBox.textContent = "Target user account not found.";
+            errBox.classList.remove("hidden");
+            return false;
+          }
+
+          const targetRef = doc(db, "users", targetUser.uid);
+          const txRef = doc(collection(db, "transactions"));
+
+          await runTransaction(db, async (transaction) => {
+            const snap = await transaction.get(targetRef);
+            if (!snap.exists()) throw new Error("User record missing.");
+            const currentBal = Number(snap.data().balance || 0);
+            transaction.update(targetRef, {
+              balance: Number((currentBal + amount).toFixed(2))
+            });
+            transaction.set(txRef, {
+              fromUid: "TREASURY_ADMIN",
+              fromName: "Monolith Treasury",
+              fromAccount: "0000000000",
+              toUid: targetUser.uid,
+              toName: targetUser.name,
+              toAccount: targetUser.accountNumber,
+              amount: Number(amount.toFixed(2)),
+              note: "Treasury Grant",
+              type: "admin_grant",
+              createdAt: Date.now()
+            });
+          });
+
+          showToast(`Issued ${formatCurrency(amount)} to ${targetUser.name}`);
+          await loadAdminDirectory();
+          setTimeout(() => closeModal("adminModal"), 750);
+          return true;
+        } catch (err) {
+          errBox.textContent = err.message || "Disbursement failed.";
+          errBox.classList.remove("hidden");
+          return false;
+        }
+      }
+    });
+
+    async function loadAdminDirectory() {
+      const listEl = $("adminUserList");
+      listEl.innerHTML = `<div style="font-size:13px; color:var(--ink-secondary); padding:8px 0;">Loading accounts...</div>`;
+      try {
+        const snap = await getDocs(collection(db, "users"));
+        if (snap.empty) {
+          listEl.innerHTML = `<div style="font-size:13px; color:var(--ink-secondary);">No users found.</div>`;
+          return;
+        }
+        listEl.innerHTML = snap.docs.map((d) => {
+          const u = d.data();
+          return `
+            <div class="admin-user-row" data-acc="${escapeHtml(u.accountNumber)}">
+              <div>
+                <div style="font-size:13.5px; font-weight:600;">${escapeHtml(u.name)}</div>
+                <div class="tabular" style="font-size:12px; color:var(--ink-secondary);">${escapeHtml(u.email)} · ${formatAccountNumber(u.accountNumber)}</div>
+              </div>
+              <div class="tabular" style="font-size:13.5px; font-weight:600;">${formatCurrency(u.balance)}</div>
+            </div>
+          `;
+        }).join("");
+
+        listEl.querySelectorAll(".admin-user-row").forEach((row) => {
+          row.addEventListener("click", () => {
+            $("adminTargetInput").value = row.dataset.acc;
+          });
+        });
+      } catch (err) {
+        listEl.innerHTML = `<div style="font-size:13px; color:var(--red);">Unable to load directory.</div>`;
+      }
+    }
+
+    $("adminBtn").addEventListener("click", async () => {
+      $("adminError").classList.add("hidden");
+      $("adminAmountInput").value = "";
+      openModal("adminModal");
+      requestAnimationFrame(() => adminSlider.reset("Slide to Issue Funds"));
+      await loadAdminDirectory();
+    });
+
+    document.querySelectorAll("[data-admin-amt]").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        $("adminAmountInput").value = chip.dataset.adminAmt;
+        $("adminSlideLabel").textContent = `Slide to Issue ${formatCurrency(chip.dataset.adminAmt)}`;
+      });
+    });
+
+    $("adminAmountInput").addEventListener("input", () => {
+      const val = parseFloat($("adminAmountInput").value);
+      $("adminSlideLabel").textContent = !isNaN(val) && val > 0
+        ? `Slide to Issue ${formatCurrency(val)}`
+        : "Slide to Issue Funds";
+    });
+  </script>
+</body>
+</html>
