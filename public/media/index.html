@@ -1,0 +1,2236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>idembt — Open Music, Knowledge & Books</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --bg-elevated: rgba(255, 255, 255, 0.82);
+      --surface: #ffffff;
+      --surface-subtle: #f0f0f3;
+      --surface-hover: #eaeaeef0;
+      --text-primary: #1d1d1f;
+      --text-secondary: #6e6e73;
+      --text-tertiary: #86868b;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-strong: rgba(0, 0, 0, 0.14);
+      --accent: #0071e3;
+      --accent-hover: #0077ed;
+      --accent-soft: rgba(0, 113, 227, 0.1);
+      --danger: #ff3b30;
+      --success: #34c759;
+      --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.03);
+      --shadow-md: 0 10px 30px rgba(0, 0, 0, 0.06);
+      --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.14);
+      --radius-sm: 10px;
+      --radius-md: 16px;
+      --radius-lg: 22px;
+      --radius-pill: 999px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", Roboto, sans-serif;
+    }
+
+    [data-theme="dark"] {
+      --bg: #000000;
+      --bg-elevated: rgba(28, 28, 30, 0.82);
+      --surface: #1c1c1e;
+      --surface-subtle: #2c2c2e;
+      --surface-hover: #3a3a3c;
+      --text-primary: #f5f5f7;
+      --text-secondary: #a1a1a6;
+      --text-tertiary: #6e6e73;
+      --border: rgba(255, 255, 255, 0.1);
+      --border-strong: rgba(255, 255, 255, 0.18);
+      --accent: #2997ff;
+      --accent-hover: #40a3ff;
+      --accent-soft: rgba(41, 151, 255, 0.16);
+      --shadow-sm: 0 2px 10px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 12px 34px rgba(0, 0, 0, 0.45);
+      --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.7);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background-color: var(--bg);
+      color: var(--text-primary);
+      line-height: 1.5;
+      min-height: 100vh;
+      padding-bottom: 112px;
+      transition: background-color 0.25s ease, color 0.25s ease;
+    }
+
+    button, input, textarea {
+      font-family: inherit;
+      color: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      background: none;
+    }
+
+    /* Top Glass Navigation Bar */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 40;
+      background: var(--bg-elevated);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .topbar-inner {
+      max-width: 980px;
+      margin: 0 auto;
+      height: 62px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 17px;
+      letter-spacing: -0.025em;
+    }
+
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      background: var(--text-primary);
+      color: var(--bg);
+      display: grid;
+      place-items: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    /* Apple Segmented Control */
+    .segmented {
+      display: inline-flex;
+      background: var(--surface-subtle);
+      padding: 3px;
+      border-radius: var(--radius-pill);
+      border: 1px solid var(--border);
+    }
+
+    .seg-btn {
+      padding: 6px 15px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .seg-btn:hover {
+      color: var(--text-primary);
+    }
+
+    .seg-btn.active {
+      background: var(--surface);
+      color: var(--text-primary);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .icon-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--surface-subtle);
+      color: var(--text-primary);
+      transition: background 0.18s ease, transform 0.15s ease;
+    }
+
+    .icon-btn:hover {
+      background: var(--surface-hover);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.95);
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 16px;
+      border-radius: var(--radius-pill);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.18s ease, transform 0.15s ease;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+
+    .btn-primary:active {
+      transform: scale(0.97);
+    }
+
+    .btn-secondary {
+      background: var(--surface-subtle);
+      color: var(--text-primary);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 8px 14px;
+      border-radius: var(--radius-pill);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.18s ease;
+    }
+
+    .btn-secondary:hover {
+      background: var(--surface-hover);
+    }
+
+    .user-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px 4px 4px;
+      border-radius: var(--radius-pill);
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .user-pill img {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 28px 20px;
+    }
+
+    .container.wide {
+      max-width: 920px;
+    }
+
+    .view {
+      display: none;
+      animation: fadeIn 0.22s ease;
+    }
+
+    .view.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Section Header */
+    .section-head {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .section-title {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+    }
+
+    .section-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 5px 11px;
+      border-radius: var(--radius-pill);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+
+    .status-dot.local {
+      background: #ff9f0a;
+    }
+
+    /* Quick Composer Box */
+    .composer-trigger {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .composer-trigger:hover {
+      border-color: var(--border-strong);
+      box-shadow: var(--shadow-md);
+    }
+
+    .composer-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--surface-subtle);
+      color: var(--text-secondary);
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      font-size: 14px;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .composer-placeholder {
+      flex: 1;
+      text-align: left;
+      color: var(--text-tertiary);
+      font-size: 15px;
+      padding: 8px 4px;
+    }
+
+    .composer-shortcuts {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      flex-wrap: wrap;
+    }
+
+    .chip-btn {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: var(--surface-subtle);
+      padding: 6px 12px;
+      border-radius: var(--radius-pill);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.18s ease;
+    }
+
+    .chip-btn:hover {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    /* Filter Pills */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .filter-pill {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      color: var(--text-secondary);
+      background: transparent;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      transition: all 0.18s ease;
+    }
+
+    .filter-pill:hover {
+      color: var(--text-primary);
+      background: var(--surface-subtle);
+    }
+
+    .filter-pill.active {
+      background: var(--text-primary);
+      color: var(--bg);
+    }
+
+    /* Feed Cards */
+    .feed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .post-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color 0.2s ease;
+    }
+
+    .post-card:hover {
+      border-color: var(--border-strong);
+    }
+
+    .post-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .post-author {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+    }
+
+    .post-author-name {
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .post-meta {
+      font-size: 12px;
+      color: var(--text-tertiary);
+    }
+
+    .post-body {
+      font-size: 15px;
+      line-height: 1.55;
+      color: var(--text-primary);
+      margin-bottom: 14px;
+      white-space: pre-wrap;
+    }
+
+    /* Rich Attachment Cards inside Feed */
+    .attach-card {
+      background: var(--surface-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+      transition: background 0.18s ease, transform 0.15s ease;
+    }
+
+    .attach-card:hover {
+      background: var(--surface-hover);
+    }
+
+    .attach-thumb {
+      width: 60px;
+      height: 60px;
+      border-radius: 12px;
+      object-fit: cover;
+      background: var(--surface);
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+      color: var(--text-secondary);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .attach-thumb.book {
+      width: 50px;
+      height: 70px;
+      border-radius: 8px;
+    }
+
+    .attach-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .attach-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--accent);
+      margin-bottom: 3px;
+    }
+
+    .attach-title {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .attach-sub {
+      font-size: 13px;
+      color: var(--text-secondary);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-top: 2px;
+    }
+
+    .play-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--text-primary);
+      color: var(--bg);
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    .play-circle:hover {
+      transform: scale(1.06);
+    }
+
+    /* Post Footer Actions */
+    .post-actions {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding-top: 6px;
+    }
+
+    .action-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      padding: 5px 8px;
+      border-radius: var(--radius-pill);
+      transition: all 0.16s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--surface-subtle);
+      color: var(--text-primary);
+    }
+
+    .action-btn.liked {
+      color: #ff2d55;
+    }
+
+    /* Comments Section */
+    .comments-box {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      display: none;
+    }
+
+    .comments-box.open {
+      display: block;
+    }
+
+    .comment-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .comment-item {
+      background: var(--surface-subtle);
+      padding: 10px 14px;
+      border-radius: 14px;
+      font-size: 13px;
+    }
+
+    .comment-head {
+      display: flex;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 12px;
+      margin-bottom: 2px;
+    }
+
+    .comment-head span {
+      font-weight: 400;
+      color: var(--text-tertiary);
+    }
+
+    .comment-form {
+      display: flex;
+      gap: 8px;
+    }
+
+    .comment-input {
+      flex: 1;
+      background: var(--surface-subtle);
+      border: 1px solid transparent;
+      border-radius: var(--radius-pill);
+      padding: 8px 14px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .comment-input:focus {
+      background: var(--surface);
+      border-color: var(--accent);
+    }
+
+    /* Search Bar & Explore Grids */
+    .search-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-pill);
+      padding: 8px 10px 8px 16px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+    }
+
+    .search-bar:focus-within {
+      border-color: var(--accent);
+    }
+
+    .search-bar input {
+      flex: 1;
+      border: none;
+      background: none;
+      outline: none;
+      font-size: 15px;
+    }
+
+    .source-switch {
+      display: inline-flex;
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+
+    .grid-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .media-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+    .media-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-strong);
+    }
+
+    .media-card-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .media-card-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: auto;
+      padding-top: 8px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Persistent Minimal Spotify-Style Bottom Player */
+    .player-dock {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 28px);
+      max-width: 880px;
+      z-index: 50;
+      background: var(--bg-elevated);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border: 1px solid var(--border-strong);
+      border-radius: 22px;
+      padding: 10px 18px;
+      box-shadow: var(--shadow-lg);
+      display: grid;
+      grid-template-columns: 1.2fr 1.6fr 0.9fr;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .player-now {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .player-cover {
+      width: 44px;
+      height: 44px;
+      border-radius: 10px;
+      object-fit: cover;
+      background: var(--surface-subtle);
+      flex-shrink: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    .player-meta {
+      min-width: 0;
+    }
+
+    .player-title {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-artist {
+      font-size: 12px;
+      color: var(--text-secondary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .player-center {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .player-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .player-play-btn {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--text-primary);
+      color: var(--bg);
+      display: grid;
+      place-items: center;
+      transition: transform 0.14s ease;
+    }
+
+    .player-play-btn:hover {
+      transform: scale(1.07);
+    }
+
+    .progress-wrap {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      font-variant-numeric: tabular-nums;
+    }
+
+    .progress-bar {
+      flex: 1;
+      height: 4px;
+      background: var(--surface-subtle);
+      border-radius: 99px;
+      overflow: hidden;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--text-primary);
+      border-radius: 99px;
+      transition: width 0.1s linear;
+    }
+
+    .player-right {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .volume-slider {
+      width: 74px;
+      accent-color: var(--text-primary);
+      cursor: pointer;
+    }
+
+    /* Apple Sheet Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+      animation: fadeIn 0.18s ease;
+    }
+
+    .modal-sheet {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 24px;
+      width: 100%;
+      max-width: 560px;
+      max-height: 86vh;
+      overflow-y: auto;
+      padding: 22px;
+      box-shadow: var(--shadow-lg);
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .composer-textarea {
+      width: 100%;
+      min-height: 92px;
+      border: none;
+      outline: none;
+      resize: vertical;
+      background: transparent;
+      font-size: 16px;
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .picker-results {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 230px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+
+    .picker-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 12px;
+      background: var(--surface-subtle);
+      font-size: 13px;
+    }
+
+    .picker-row:hover {
+      background: var(--surface-hover);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .toast {
+      position: fixed;
+      top: 76px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-10px);
+      background: var(--text-primary);
+      color: var(--bg);
+      padding: 9px 18px;
+      border-radius: var(--radius-pill);
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.22s ease;
+      z-index: 80;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 720px) {
+      .topbar-inner { padding: 0 12px; }
+      .brand span { display: none; }
+      .seg-btn { padding: 6px 10px; font-size: 12px; }
+      .player-dock {
+        grid-template-columns: 1fr auto;
+        padding: 10px 14px;
+      }
+      .player-right { display: none; }
+      .progress-wrap { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark">i</div>
+        <span>idembt</span>
+      </div>
+
+      <nav class="segmented" aria-label="Main navigation">
+        <button class="seg-btn active" data-view="feed">Feed</button>
+        <button class="seg-btn" data-view="music">Listen</button>
+        <button class="seg-btn" data-view="wiki">Wikipedia</button>
+        <button class="seg-btn" data-view="books">Books</button>
+      </nav>
+
+      <div class="topbar-actions">
+        <button class="icon-btn" id="themeToggle" title="Toggle Appearance" aria-label="Toggle theme">◐</button>
+        <div id="authArea">
+          <button class="btn-primary" id="loginBtn">Sign in with Google</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- FEED VIEW -->
+  <main class="container view active" id="view-feed">
+    <div class="section-head">
+      <div>
+        <h1 class="section-title">Stream</h1>
+        <p class="section-subtitle">Open-source music, Wikipedia discoveries & public-domain books.</p>
+      </div>
+      <div class="status-badge" id="syncStatus">
+        <span class="status-dot" id="syncDot"></span>
+        <span id="syncText">Connecting...</span>
+      </div>
+    </div>
+
+    <!-- Minimal Composer Card -->
+    <div class="composer-trigger">
+      <div class="composer-top">
+        <div class="avatar" id="composerAvatar">G</div>
+        <button class="composer-placeholder" id="openComposerBtn">Share a track, Wikipedia page, or open-source book...</button>
+        <button class="btn-primary" id="quickPostBtn">Post</button>
+      </div>
+      <div class="composer-shortcuts">
+        <button class="chip-btn" data-attach-mode="music">♫ Attach Free Music</button>
+        <button class="chip-btn" data-attach-mode="wiki">W Attach Wikipedia</button>
+        <button class="chip-btn" data-attach-mode="book">▤ Recommend Book</button>
+      </div>
+    </div>
+
+    <!-- Feed Type Filters -->
+    <div class="filter-row" id="feedFilters">
+      <button class="filter-pill active" data-filter="all">All</button>
+      <button class="filter-pill" data-filter="music">Music</button>
+      <button class="filter-pill" data-filter="wiki">Wikipedia</button>
+      <button class="filter-pill" data-filter="book">Books</button>
+    </div>
+
+    <div class="feed-list" id="feedList"></div>
+  </main>
+
+  <!-- LISTEN (OPEN MUSIC) VIEW -->
+  <section class="container wide view" id="view-music">
+    <div class="section-head">
+      <div>
+        <h1 class="section-title">Open Music</h1>
+        <p class="section-subtitle">Stream free tracks from Audius & Internet Archive — no API key required.</p>
+      </div>
+    </div>
+
+    <div class="source-switch">
+      <button class="filter-pill active" data-music-source="audius">Audius (Full Tracks)</button>
+      <button class="filter-pill" data-music-source="archive">Internet Archive (Public Domain)</button>
+    </div>
+
+    <form class="search-bar" id="musicSearchForm">
+      <input type="text" id="musicSearchInput" placeholder="Search ambient, lofi, classical, jazz, synth..." />
+      <button type="submit" class="btn-primary">Search</button>
+    </form>
+
+    <div class="grid-cards" id="musicGrid"></div>
+  </section>
+
+  <!-- WIKIPEDIA VIEW -->
+  <section class="container wide view" id="view-wiki">
+    <div class="section-head">
+      <div>
+        <h1 class="section-title">Wikipedia</h1>
+        <p class="section-subtitle">Explore open knowledge articles and share them to your feed.</p>
+      </div>
+    </div>
+
+    <form class="search-bar" id="wikiSearchForm">
+      <input type="text" id="wikiSearchInput" placeholder="Search any topic on Wikipedia (e.g. Bauhaus, Voyager 1, Jazz)..." />
+      <button type="submit" class="btn-primary">Search</button>
+    </form>
+
+    <div class="grid-cards" id="wikiGrid"></div>
+  </section>
+
+  <!-- BOOKS (OPEN SOURCE / PROJECT GUTENBERG) VIEW -->
+  <section class="container wide view" id="view-books">
+    <div class="section-head">
+      <div>
+        <h1 class="section-title">Open Books</h1>
+        <p class="section-subtitle">70,000+ free public-domain books via Project Gutenberg (Gutendex).</p>
+      </div>
+    </div>
+
+    <form class="search-bar" id="bookSearchForm">
+      <input type="text" id="bookSearchInput" placeholder="Search books or authors (e.g. Frankenstein, Marcus Aurelius, Sherlock)..." />
+      <button type="submit" class="btn-primary">Search</button>
+    </form>
+
+    <div class="grid-cards" id="bookGrid"></div>
+  </section>
+
+  <!-- PERSISTENT SPOTIFY-STYLE GLASS BOTTOM PLAYER -->
+  <footer class="player-dock" aria-label="Audio Player">
+    <div class="player-now">
+      <div class="player-cover" id="playerCover">♫</div>
+      <div class="player-meta">
+        <div class="player-title" id="playerTitle">Select a track to listen</div>
+        <div class="player-artist" id="playerArtist">Audius & Internet Archive Open Audio</div>
+      </div>
+    </div>
+
+    <div class="player-center">
+      <div class="player-controls">
+        <button class="icon-btn" id="prevTrackBtn" title="Previous">⏮</button>
+        <button class="player-play-btn" id="playPauseBtn" title="Play / Pause">▶</button>
+        <button class="icon-btn" id="nextTrackBtn" title="Next">⏭</button>
+      </div>
+      <div class="progress-wrap">
+        <span id="timeCurrent">0:00</span>
+        <div class="progress-bar" id="progressBar">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <span id="timeTotal">0:00</span>
+      </div>
+    </div>
+
+    <div class="player-right">
+      <input type="range" class="volume-slider" id="volumeSlider" min="0" max="1" step="0.02" value="0.85" aria-label="Volume" />
+      <button class="btn-secondary" id="shareCurrentTrackBtn" title="Share current track to feed">Share</button>
+    </div>
+    <audio id="audioEl" preload="none"></audio>
+  </footer>
+
+  <!-- COMPOSER MODAL -->
+  <div class="modal-backdrop" id="composerModal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <div class="modal-title">New Post</div>
+        <button class="icon-btn" id="closeComposerBtn">✕</button>
+      </div>
+
+      <textarea class="composer-textarea" id="postTextInput" placeholder="Write a thought, listening note, or book takeaway..."></textarea>
+
+      <!-- Selected Attachment Preview -->
+      <div id="selectedAttachmentPreview"></div>
+
+      <!-- Attachment Picker Tabs -->
+      <div class="filter-row" id="pickerTabs">
+        <button type="button" class="filter-pill active" data-picker="music">♫ Free Music</button>
+        <button type="button" class="filter-pill" data-picker="wiki">W Wikipedia</button>
+        <button type="button" class="filter-pill" data-picker="book">▤ Free Book</button>
+      </div>
+
+      <div class="search-bar" style="margin-bottom: 8px;">
+        <input type="text" id="pickerSearchInput" placeholder="Search open-source music to attach..." />
+        <button type="button" class="btn-secondary" id="pickerSearchBtn">Find</button>
+      </div>
+
+      <div class="picker-results" id="pickerResults"></div>
+
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px; padding-top:14px; border-top:1px solid var(--border);">
+        <button type="button" class="btn-secondary" id="cancelComposerBtn">Cancel</button>
+        <button type="button" class="btn-primary" id="publishPostBtn">Publish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- READER MODAL (WIKIPEDIA & BOOKS) -->
+  <div class="modal-backdrop" id="readerModal">
+    <div class="modal-sheet">
+      <div class="modal-head">
+        <div class="modal-title" id="readerTitle">Reader</div>
+        <button class="icon-btn" id="closeReaderBtn">✕</button>
+      </div>
+      <div id="readerBody" style="font-size:15px; line-height:1.65; color:var(--text-primary);"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Firebase Modular SDK + Application Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+    import { getAnalytics } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-analytics.js";
+    import {
+      getAuth,
+      GoogleAuthProvider,
+      signInWithPopup,
+      signOut,
+      onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      doc,
+      updateDoc,
+      deleteDoc,
+      arrayUnion,
+      arrayRemove,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+
+    // Your Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyCHeKhAj0fKHjmcp1V_tX7bvQvVE3tzVLk",
+      authDomain: "idembt.firebaseapp.com",
+      projectId: "idembt",
+      storageBucket: "idembt.firebasestorage.app",
+      messagingSenderId: "297940761171",
+      appId: "1:297940761171:web:5e11230daad141c5a6a4a6",
+      measurementId: "G-612RFP1X36"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    try { getAnalytics(app); } catch (_) {}
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    const provider = new GoogleAuthProvider();
+
+    // App State
+    let currentUser = null;
+    let useCloudFirestore = true;
+    let posts = [];
+    let currentFilter = "all";
+    let musicSource = "audius";
+    let audiusHost = "https://discoveryprovider.audius.co";
+    let queue = [];
+    let currentTrackIndex = -1;
+    let pickerType = "music";
+    let selectedAttachment = null;
+
+    const LOCAL_STORAGE_KEY = "idembt_minimal_posts_v1";
+
+    // Starter Open-Source Posts so feed is immediately rich & playable
+    const STARTER_POSTS = [
+      {
+        id: "starter-1",
+        uid: "system",
+        authorName: "Open Commons",
+        authorPhoto: "",
+        text: "Late-night ambient synth session from Audius — completely free and open to stream.",
+        createdAtMs: Date.now() - 1000 * 60 * 35,
+        likes: [],
+        comments: [
+          { authorName: "Elena", text: "Super clean soundscape for reading.", createdAtMs: Date.now() - 1000 * 60 * 18 }
+        ],
+        attachment: {
+          type: "music",
+          source: "Audius",
+          id: "D7KyD",
+          title: "Nocturne in Glass",
+          subtitle: "Kiasmos Collective · Open Stream",
+          cover: "",
+          streamUrl: ""
+        }
+      },
+      {
+        id: "starter-2",
+        uid: "system",
+        authorName: "Wiki Curators",
+        authorPhoto: "",
+        text: "Worth a five-minute read today: how the Golden Record aboard Voyager 1 carries sounds and images of Earth across interstellar space.",
+        createdAtMs: Date.now() - 1000 * 60 * 120,
+        likes: [],
+        comments: [],
+        attachment: {
+          type: "wiki",
+          title: "Voyager Golden Record",
+          subtitle: "The Voyager Golden Records are two phonograph records that were included aboard both Voyager spacecraft launched in 1977...",
+          url: "https://en.wikipedia.org/wiki/Voyager_Golden_Record",
+          cover: ""
+        }
+      },
+      {
+        id: "starter-3",
+        uid: "system",
+        authorName: "Gutenberg Shelf",
+        authorPhoto: "",
+        text: "My top public-domain recommendation this week. Short, lucid Stoic reflections you can read right in your browser.",
+        createdAtMs: Date.now() - 1000 * 60 * 240,
+        likes: [],
+        comments: [],
+        attachment: {
+          type: "book",
+          bookId: 2680,
+          title: "Meditations",
+          subtitle: "Marcus Aurelius · Project Gutenberg",
+          cover: "https://www.gutenberg.org/cache/epub/2680/pg2680.cover.medium.jpg",
+          readUrl: "https://www.gutenberg.org/ebooks/2680.html.images",
+          textUrl: "https://www.gutenberg.org/ebooks/2680.txt.utf-8"
+        }
+      }
+    ];
+
+    // Utilities
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => Array.from(document.querySelectorAll(sel));
+
+    function escapeHtml(str = "") {
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function showToast(msg) {
+      const el = $("#toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.remove("show"), 2600);
+    }
+
+    function timeAgo(ms) {
+      if (!ms) return "Just now";
+      const diff = Math.max(1, Math.floor((Date.now() - ms) / 1000));
+      if (diff < 60) return "Just now";
+      if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+      if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+      return `${Math.floor(diff / 86400)}d ago`;
+    }
+
+    function formatTime(sec) {
+      if (!isFinite(sec) || sec < 0) return "0:00";
+      const m = Math.floor(sec / 60);
+      const s = Math.floor(sec % 60);
+      return `${m}:${s < 10 ? "0" : ""}${s}`;
+    }
+
+    // Theme Toggle
+    const savedTheme = localStorage.getItem("idembt_theme");
+    if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+    $("#themeToggle").addEventListener("click", () => {
+      const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("idembt_theme", next);
+    });
+
+    // Navigation Views
+    $$(".seg-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        $$(".seg-btn").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        const target = btn.dataset.view;
+        $$(".view").forEach((v) => v.classList.remove("active"));
+        $(`#view-${target}`).classList.add("active");
+      });
+    });
+
+    // Google Authentication
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      const authArea = $("#authArea");
+      const composerAvatar = $("#composerAvatar");
+
+      if (user) {
+        const photo = user.photoURL
+          ? `<img src="${escapeHtml(user.photoURL)}" alt="" />`
+          : escapeHtml((user.displayName || "U")[0].toUpperCase());
+        composerAvatar.innerHTML = photo;
+        authArea.innerHTML = `
+          <div class="user-pill">
+            ${user.photoURL ? `<img src="${escapeHtml(user.photoURL)}" alt="" />` : ""}
+            <span>${escapeHtml((user.displayName || "Member").split(" ")[0])}</span>
+            <button id="logoutBtn" style="color:var(--text-tertiary); font-size:12px; margin-left:4px;" title="Sign out">✕</button>
+          </div>
+        `;
+        $("#logoutBtn").addEventListener("click", async () => {
+          await signOut(auth);
+          showToast("Signed out");
+        });
+      } else {
+        composerAvatar.textContent = "G";
+        authArea.innerHTML = `<button class="btn-primary" id="loginBtn">Sign in with Google</button>`;
+        $("#loginBtn").addEventListener("click", handleGoogleLogin);
+      }
+      renderFeed();
+    });
+
+    async function handleGoogleLogin() {
+      try {
+        await signInWithPopup(auth, provider);
+        showToast("Signed in with Google");
+      } catch (err) {
+        console.warn("Google Auth popup info:", err.code, err.message);
+        if (window.location.protocol === "file:") {
+          showToast("Run via localhost/HTTPS for Google OAuth; Local mode active");
+        } else {
+          showToast("Enable Google Sign-In in Firebase Console");
+        }
+      }
+    }
+
+    $("#loginBtn")?.addEventListener("click", handleGoogleLogin);
+
+    // =========================================================
+    // OPEN-SOURCE PUBLIC APIS (ZERO API KEYS REQUIRED)
+    // =========================================================
+
+    // 1. Audius Discovery Host + Free Music Search & Stream
+    async function resolveAudiusHost() {
+      try {
+        const res = await fetch("https://api.audius.co");
+        const json = await res.json();
+        if (json?.data?.length) audiusHost = json.data[0];
+      } catch (_) {}
+      return audiusHost;
+    }
+
+    async function fetchAudiusTracks(queryText = "") {
+      await resolveAudiusHost();
+      const endpoint = queryText.trim()
+        ? `${audiusHost}/v1/tracks/search?query=${encodeURIComponent(queryText)}&app_name=Idembt&limit=12`
+        : `${audiusHost}/v1/tracks/trending?app_name=Idembt&limit=12`;
+      const res = await fetch(endpoint);
+      const json = await res.json();
+      return (json.data || []).map((t) => ({
+        type: "music",
+        source: "Audius",
+        id: t.id,
+        title: t.title || "Untitled Track",
+        subtitle: t.user?.name || "Independent Artist",
+        cover: t.artwork?.["480x480"] || t.artwork?.["150x150"] || "",
+        streamUrl: `${audiusHost}/v1/tracks/${t.id}/stream?app_name=Idembt`
+      }));
+    }
+
+    // 2. Internet Archive Public Domain Audio
+    async function fetchArchiveTracks(queryText = "ambient piano") {
+      const q = queryText.trim() || "classical piano";
+      const url = `https://archive.org/advancedsearch.php?q=mediatype:audio+AND+(${encodeURIComponent(q)})+AND+format:MP3&fl[]=identifier,title,creator&rows=12&output=json`;
+      const res = await fetch(url);
+      const json = await res.json();
+      const docs = json?.response?.docs || [];
+      return docs.map((d) => ({
+        type: "music",
+        source: "Internet Archive",
+        id: d.identifier,
+        title: d.title || d.identifier,
+        subtitle: Array.isArray(d.creator) ? d.creator[0] : (d.creator || "Public Domain Audio"),
+        cover: `https://archive.org/services/img/${d.identifier}`,
+        streamUrl: `archive:${d.identifier}`
+      }));
+    }
+
+    async function resolvePlayableUrl(track) {
+      if (!track.streamUrl && track.id) {
+        await resolveAudiusHost();
+        return `${audiusHost}/v1/tracks/${track.id}/stream?app_name=Idembt`;
+      }
+      if (track.streamUrl.startsWith("archive:")) {
+        const identifier = track.streamUrl.replace("archive:", "");
+        const metaRes = await fetch(`https://archive.org/metadata/${identifier}/files`);
+        const metaJson = await metaRes.json();
+        const mp3 = (metaJson.result || []).find((f) => f.name && f.name.toLowerCase().endsWith(".mp3"));
+        if (!mp3) throw new Error("No MP3 stream found");
+        return `https://archive.org/download/${identifier}/${encodeURIComponent(mp3.name)}`;
+      }
+      return track.streamUrl;
+    }
+
+    // 3. Wikipedia Open Search API (CORS origin=*)
+    async function fetchWikipedia(queryText = "Minimalism") {
+      const q = queryText.trim() || "Philosophy";
+      const url = `https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(q)}&gsrlimit=9&prop=pageimages|extracts|info&exintro=1&explaintext=1&exchars=240&piprop=thumbnail&pithumbsize=400&inprop=url&origin=*&format=json`;
+      const res = await fetch(url);
+      const json = await res.json();
+      const pages = Object.values(json?.query?.pages || {});
+      return pages.map((p) => ({
+        type: "wiki",
+        title: p.title,
+        subtitle: p.extract || "Wikipedia open encyclopedia entry.",
+        cover: p.thumbnail?.source || "",
+        url: p.fullurl || `https://en.wikipedia.org/wiki/${encodeURIComponent(p.title)}`
+      }));
+    }
+
+    // 4. Gutendex (Project Gutenberg Open-Source Books)
+    async function fetchBooks(queryText = "") {
+      const url = queryText.trim()
+        ? `https://gutendex.com/books/?search=${encodeURIComponent(queryText)}`
+        : `https://gutendex.com/books/?sort=popular`;
+      const res = await fetch(url);
+      const json = await res.json();
+      return (json.results || []).slice(0, 12).map((b) => ({
+        type: "book",
+        bookId: b.id,
+        title: b.title,
+        subtitle: (b.authors || []).map((a) => a.name).join(", ") || "Project Gutenberg",
+        cover: b.formats?.["image/jpeg"] || "",
+        readUrl: b.formats?.["text/html"] || `https://www.gutenberg.org/ebooks/${b.id}`,
+        textUrl: b.formats?.["text/plain; charset=utf-8"] || b.formats?.["text/plain"] || ""
+      }));
+    }
+
+    // =========================================================
+    // AUDIO PLAYER (MINIMAL SPOTIFY-STYLE ENGINE)
+    // =========================================================
+    const audioEl = $("#audioEl");
+
+    async function playTrack(track, trackList = null) {
+      if (trackList) {
+        queue = trackList;
+        currentTrackIndex = queue.findIndex((t) => t.id === track.id && t.title === track.title);
+      } else if (!queue.some((t) => t.title === track.title)) {
+        queue.push(track);
+        currentTrackIndex = queue.length - 1;
+      }
+
+      $("#playerTitle").textContent = track.title;
+      $("#playerArtist").textContent = `${track.subtitle} · ${track.source || "Open Audio"}`;
+      $("#playerCover").innerHTML = track.cover
+        ? `<img src="${escapeHtml(track.cover)}" style="width:100%;height:100%;object-fit:cover;border-radius:10px;" alt="" />`
+        : "♫";
+
+      try {
+        $("#playPauseBtn").textContent = "…";
+        const url = await resolvePlayableUrl(track);
+        audioEl.src = url;
+        await audioEl.play();
+        $("#playPauseBtn").textContent = "❚❚";
+      } catch (err) {
+        console.error(err);
+        $("#playPauseBtn").textContent = "▶";
+        showToast("Track unavailable — trying next");
+      }
+    }
+
+    $("#playPauseBtn").addEventListener("click", () => {
+      if (!audioEl.src) {
+        if (queue.length) playTrack(queue[0]);
+        return;
+      }
+      if (audioEl.paused) {
+        audioEl.play();
+        $("#playPauseBtn").textContent = "❚❚";
+      } else {
+        audioEl.pause();
+        $("#playPauseBtn").textContent = "▶";
+      }
+    });
+
+    $("#nextTrackBtn").addEventListener("click", () => {
+      if (!queue.length) return;
+      currentTrackIndex = (currentTrackIndex + 1) % queue.length;
+      playTrack(queue[currentTrackIndex]);
+    });
+
+    $("#prevTrackBtn").addEventListener("click", () => {
+      if (!queue.length) return;
+      currentTrackIndex = (currentTrackIndex - 1 + queue.length) % queue.length;
+      playTrack(queue[currentTrackIndex]);
+    });
+
+    audioEl.addEventListener("timeupdate", () => {
+      $("#timeCurrent").textContent = formatTime(audioEl.currentTime);
+      $("#timeTotal").textContent = formatTime(audioEl.duration);
+      const pct = audioEl.duration ? (audioEl.currentTime / audioEl.duration) * 100 : 0;
+      $("#progressFill").style.width = `${pct}%`;
+    });
+
+    audioEl.addEventListener("ended", () => {
+      $("#playPauseBtn").textContent = "▶";
+      if (queue.length > 1) {
+        currentTrackIndex = (currentTrackIndex + 1) % queue.length;
+        playTrack(queue[currentTrackIndex]);
+      }
+    });
+
+    $("#progressBar").addEventListener("click", (e) => {
+      if (!audioEl.duration) return;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+      audioEl.currentTime = ratio * audioEl.duration;
+    });
+
+    $("#volumeSlider").addEventListener("input", (e) => {
+      audioEl.volume = Number(e.target.value);
+    });
+
+    $("#shareCurrentTrackBtn").addEventListener("click", () => {
+      if (currentTrackIndex < 0 || !queue[currentTrackIndex]) {
+        showToast("Play a track first to share it");
+        return;
+      }
+      openComposerWithAttachment(queue[currentTrackIndex]);
+    });
+
+    // =========================================================
+    // READER MODAL (WIKIPEDIA & OPEN BOOKS)
+    // =========================================================
+    async function openWikiReader(item) {
+      $("#readerTitle").textContent = item.title;
+      $("#readerBody").innerHTML = `<p style="color:var(--text-secondary);">Loading Wikipedia summary...</p>`;
+      $("#readerModal").classList.add("open");
+
+      try {
+        const res = await fetch(`https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(item.title)}`);
+        const data = await res.json();
+        $("#readerBody").innerHTML = `
+          ${data.thumbnail?.source ? `<img src="${escapeHtml(data.thumbnail.source)}" style="width:100%;max-height:240px;object-fit:cover;border-radius:14px;margin-bottom:14px;" alt="" />` : ""}
+          <p style="margin-bottom:16px;">${escapeHtml(data.extract || item.subtitle)}</p>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="${escapeHtml(item.url)}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;">Open Full Wikipedia Article ↗</a>
+            <button class="btn-secondary" id="readerShareBtn">Share to Feed</button>
+          </div>
+        `;
+        $("#readerShareBtn").addEventListener("click", () => {
+          $("#readerModal").classList.remove("open");
+          openComposerWithAttachment(item);
+        });
+      } catch (_) {
+        $("#readerBody").innerHTML = `<p>${escapeHtml(item.subtitle)}</p>`;
+      }
+    }
+
+    function openBookReader(book) {
+      $("#readerTitle").textContent = book.title;
+      $("#readerBody").innerHTML = `
+        <div style="display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;">
+          ${book.cover ? `<img src="${escapeHtml(book.cover)}" style="width:90px;border-radius:10px;box-shadow:var(--shadow-sm);" alt="" />` : ""}
+          <div>
+            <div style="font-weight:600;font-size:16px;margin-bottom:4px;">${escapeHtml(book.title)}</div>
+            <div style="color:var(--text-secondary);font-size:14px;margin-bottom:10px;">${escapeHtml(book.subtitle)}</div>
+            <span class="status-badge">Public Domain · Project Gutenberg</span>
+          </div>
+        </div>
+        <p style="color:var(--text-secondary);font-size:14px;margin-bottom:18px;">
+          This book is freely licensed in the public domain. Open the full formatted HTML edition or recommend it to others on your feed.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <a href="${escapeHtml(book.readUrl)}" target="_blank" rel="noopener" class="btn-primary" style="text-decoration:none;">Read Full Book Free ↗</a>
+          <button class="btn-secondary" id="bookShareBtn">Recommend on Feed</button>
+        </div>
+      `;
+      $("#readerModal").classList.add("open");
+      $("#bookShareBtn").addEventListener("click", () => {
+        $("#readerModal").classList.remove("open");
+        openComposerWithAttachment(book);
+      });
+    }
+
+    $("#closeReaderBtn").addEventListener("click", () => $("#readerModal").classList.remove("open"));
+    $("#readerModal").addEventListener("click", (e) => {
+      if (e.target.id === "readerModal") $("#readerModal").classList.remove("open");
+    });
+
+    // =========================================================
+    // FIRESTORE REAL-TIME FEED + LOCAL FALLBACK
+    // =========================================================
+    function loadLocalPosts() {
+      try {
+        const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (_) {}
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(STARTER_POSTS));
+      return [...STARTER_POSTS];
+    }
+
+    function saveLocalPosts() {
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(posts));
+      } catch (_) {}
+    }
+
+    function setSyncIndicator(isCloud) {
+      useCloudFirestore = isCloud;
+      $("#syncDot").className = isCloud ? "status-dot" : "status-dot local";
+      $("#syncText").textContent = isCloud ? "Cloud Sync · Firestore" : "Local Preview Mode";
+    }
+
+    function initFeedListener() {
+      try {
+        const q = query(collection(db, "posts"), orderBy("createdAtMs", "desc"));
+        onSnapshot(
+          q,
+          (snapshot) => {
+            setSyncIndicator(true);
+            const cloudPosts = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+            posts = cloudPosts.length ? cloudPosts : loadLocalPosts();
+            renderFeed();
+          },
+          (err) => {
+            console.warn("Firestore listener switched to local mode:", err.message);
+            setSyncIndicator(false);
+            posts = loadLocalPosts();
+            renderFeed();
+          }
+        );
+      } catch (_) {
+        setSyncIndicator(false);
+        posts = loadLocalPosts();
+        renderFeed();
+      }
+    }
+
+    async function createPost(text, attachment) {
+      const authorName = currentUser?.displayName || "Guest Explorer";
+      const authorPhoto = currentUser?.photoURL || "";
+      const uid = currentUser?.uid || "guest";
+
+      const newPost = {
+        uid,
+        authorName,
+        authorPhoto,
+        text: text.trim(),
+        attachment: attachment || null,
+        likes: [],
+        comments: [],
+        createdAtMs: Date.now()
+      };
+
+      if (useCloudFirestore) {
+        try {
+          await addDoc(collection(db, "posts"), {
+            ...newPost,
+            createdAt: serverTimestamp()
+          });
+          showToast("Published to feed");
+          return;
+        } catch (err) {
+          console.warn("Falling back to local storage write:", err.message);
+          setSyncIndicator(false);
+        }
+      }
+
+      posts.unshift({ id: "local-" + Date.now(), ...newPost });
+      saveLocalPosts();
+      renderFeed();
+      showToast("Published");
+    }
+
+    async function toggleLike(postId) {
+      const actorId = currentUser?.uid || "guest-browser";
+      const post = posts.find((p) => p.id === postId);
+      if (!post) return;
+
+      const likes = Array.isArray(post.likes) ? post.likes : [];
+      const alreadyLiked = likes.includes(actorId);
+
+      if (useCloudFirestore && !postId.startsWith("starter-") && !postId.startsWith("local-")) {
+        try {
+          await updateDoc(doc(db, "posts", postId), {
+            likes: alreadyLiked ? arrayRemove(actorId) : arrayUnion(actorId)
+          });
+          return;
+        } catch (_) {}
+      }
+
+      post.likes = alreadyLiked ? likes.filter((id) => id !== actorId) : [...likes, actorId];
+      saveLocalPosts();
+      renderFeed();
+    }
+
+    async function addComment(postId, commentText) {
+      if (!commentText.trim()) return;
+      const post = posts.find((p) => p.id === postId);
+      if (!post) return;
+
+      const commentObj = {
+        authorName: currentUser?.displayName || "Guest",
+        text: commentText.trim(),
+        createdAtMs: Date.now()
+      };
+
+      if (useCloudFirestore && !postId.startsWith("starter-") && !postId.startsWith("local-")) {
+        try {
+          await updateDoc(doc(db, "posts", postId), {
+            comments: arrayUnion(commentObj)
+          });
+          return;
+        } catch (_) {}
+      }
+
+      post.comments = [...(post.comments || []), commentObj];
+      saveLocalPosts();
+      renderFeed();
+    }
+
+    async function removePost(postId) {
+      if (useCloudFirestore && !postId.startsWith("starter-") && !postId.startsWith("local-")) {
+        try {
+          await deleteDoc(doc(db, "posts", postId));
+          showToast("Post deleted");
+          return;
+        } catch (_) {}
+      }
+      posts = posts.filter((p) => p.id !== postId);
+      saveLocalPosts();
+      renderFeed();
+      showToast("Post removed");
+    }
+
+    // Render Social Feed
+    function renderFeed() {
+      const list = $("#feedList");
+      const actorId = currentUser?.uid || "guest-browser";
+      const filtered = posts.filter((p) => {
+        if (currentFilter === "all") return true;
+        return p.attachment?.type === currentFilter;
+      });
+
+      if (!filtered.length) {
+        list.innerHTML = `<div class="empty-state">No posts in this category yet. Share the first one above.</div>`;
+        return;
+      }
+
+      list.innerHTML = filtered
+        .map((post) => {
+          const likes = Array.isArray(post.likes) ? post.likes : [];
+          const comments = Array.isArray(post.comments) ? post.comments : [];
+          const isLiked = likes.includes(actorId);
+          const canDelete = (currentUser && post.uid === currentUser.uid) || post.id.startsWith("local-");
+
+          let attachmentHtml = "";
+          if (post.attachment) {
+            const a = post.attachment;
+            if (a.type === "music") {
+              attachmentHtml = `
+                <div class="attach-card">
+                  <div class="attach-thumb">
+                    ${a.cover ? `<img src="${escapeHtml(a.cover)}" style="width:100%;height:100%;object-fit:cover;" alt="" />` : "♫"}
+                  </div>
+                  <div class="attach-info">
+                    <div class="attach-tag">♫ ${escapeHtml(a.source || "Open Music")}</div>
+                    <div class="attach-title">${escapeHtml(a.title)}</div>
+                    <div class="attach-sub">${escapeHtml(a.subtitle || "")}</div>
+                  </div>
+                  <button class="play-circle" data-play-post="${escapeHtml(post.id)}" title="Play track">▶</button>
+                </div>
+              `;
+            } else if (a.type === "wiki") {
+              attachmentHtml = `
+                <div class="attach-card" style="cursor:pointer;" data-open-wiki="${escapeHtml(post.id)}">
+                  <div class="attach-thumb">
+                    ${a.cover ? `<img src="${escapeHtml(a.cover)}" style="width:100%;height:100%;object-fit:cover;" alt="" />` : "W"}
+                  </div>
+                  <div class="attach-info">
+                    <div class="attach-tag">W Wikipedia</div>
+                    <div class="attach-title">${escapeHtml(a.title)}</div>
+                    <div class="attach-sub">${escapeHtml(a.subtitle || "")}</div>
+                  </div>
+                  <span class="btn-secondary">Read</span>
+                </div>
+              `;
+            } else if (a.type === "book") {
+              attachmentHtml = `
+                <div class="attach-card" style="cursor:pointer;" data-open-book="${escapeHtml(post.id)}">
+                  <div class="attach-thumb book">
+                    ${a.cover ? `<img src="${escapeHtml(a.cover)}" style="width:100%;height:100%;object-fit:cover;" alt="" />` : "▤"}
+                  </div>
+                  <div class="attach-info">
+                    <div class="attach-tag">▤ Open-Source Book</div>
+                    <div class="attach-title">${escapeHtml(a.title)}</div>
+                    <div class="attach-sub">${escapeHtml(a.subtitle || "")}</div>
+                  </div>
+                  <span class="btn-secondary">Open</span>
+                </div>
+              `;
+            }
+          }
+
+          return `
+            <article class="post-card">
+              <div class="post-header">
+                <div class="post-author">
+                  <div class="avatar">
+                    ${post.authorPhoto ? `<img src="${escapeHtml(post.authorPhoto)}" alt="" />` : escapeHtml((post.authorName || "M")[0].toUpperCase())}
+                  </div>
+                  <div>
+                    <div class="post-author-name">${escapeHtml(post.authorName || "Member")}</div>
+                    <div class="post-meta">${timeAgo(post.createdAtMs)}</div>
+                  </div>
+                </div>
+                ${canDelete ? `<button class="icon-btn" data-delete-post="${escapeHtml(post.id)}" title="Delete post">✕</button>` : ""}
+              </div>
+
+              ${post.text ? `<div class="post-body">${escapeHtml(post.text)}</div>` : ""}
+              ${attachmentHtml}
+
+              <div class="post-actions">
+                <button class="action-btn ${isLiked ? "liked" : ""}" data-like-post="${escapeHtml(post.id)}">
+                  ${isLiked ? "♥" : "♡"} <span>${likes.length}</span>
+                </button>
+                <button class="action-btn" data-toggle-comments="${escapeHtml(post.id)}">
+                  💬 <span>${comments.length}</span>
+                </button>
+              </div>
+
+              <div class="comments-box ${comments.length ? "open" : ""}" id="comments-${escapeHtml(post.id)}">
+                <div class="comment-list">
+                  ${comments
+                    .map(
+                      (c) => `
+                    <div class="comment-item">
+                      <div class="comment-head">${escapeHtml(c.authorName)} <span>${timeAgo(c.createdAtMs)}</span></div>
+                      <div>${escapeHtml(c.text)}</div>
+                    </div>
+                  `
+                    )
+                    .join("")}
+                </div>
+                <form class="comment-form" data-comment-form="${escapeHtml(post.id)}">
+                  <input class="comment-input" type="text" placeholder="Write a comment..." />
+                  <button type="submit" class="btn-secondary">Send</button>
+                </form>
+              </div>
+            </article>
+          `;
+        })
+        .join("");
+
+      // Wire Feed Event Listeners
+      $$("[data-like-post]").forEach((btn) =>
+        btn.addEventListener("click", () => toggleLike(btn.dataset.likePost))
+      );
+      $$("[data-delete-post]").forEach((btn) =>
+        btn.addEventListener("click", () => removePost(btn.dataset.deletePost))
+      );
+      $$("[data-toggle-comments]").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          const box = $(`#comments-${btn.dataset.toggleComments}`);
+          box?.classList.toggle("open");
+        })
+      );
+      $$("[data-comment-form]").forEach((form) =>
+        form.addEventListener("submit", (e) => {
+          e.preventDefault();
+          const input = form.querySelector("input");
+          addComment(form.dataset.commentForm, input.value);
+          input.value = "";
+        })
+      );
+      $$("[data-play-post]").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          const post = posts.find((p) => p.id === btn.dataset.playPost);
+          if (post?.attachment) playTrack(post.attachment);
+        })
+      );
+      $$("[data-open-wiki]").forEach((el) =>
+        el.addEventListener("click", () => {
+          const post = posts.find((p) => p.id === el.dataset.openWiki);
+          if (post?.attachment) openWikiReader(post.attachment);
+        })
+      );
+      $$("[data-open-book]").forEach((el) =>
+        el.addEventListener("click", () => {
+          const post = posts.find((p) => p.id === el.dataset.openBook);
+          if (post?.attachment) openBookReader(post.attachment);
+        })
+      );
+    }
+
+    // Feed Filter Buttons
+    $$("#feedFilters .filter-pill").forEach((pill) => {
+      pill.addEventListener("click", () => {
+        $$("#feedFilters .filter-pill").forEach((p) => p.classList.remove("active"));
+        pill.classList.add("active");
+        currentFilter = pill.dataset.filter;
+        renderFeed();
+      });
+    });
+
+    // =========================================================
+    // COMPOSER MODAL & OPEN-SOURCE ATTACHMENT PICKER
+    // =========================================================
+    function openComposerWithAttachment(attachment = null, mode = "music") {
+      selectedAttachment = attachment;
+      pickerType = attachment?.type || mode;
+      renderSelectedAttachment();
+      updatePickerTabs();
+      $("#composerModal").classList.add("open");
+      $("#postTextInput").focus();
+      if (!attachment) runPickerSearch("");
+    }
+
+    function renderSelectedAttachment() {
+      const box = $("#selectedAttachmentPreview");
+      if (!selectedAttachment) {
+        box.innerHTML = "";
+        return;
+      }
+      box.innerHTML = `
+        <div class="attach-card" style="margin-bottom:14px;">
+          <div class="attach-info">
+            <div class="attach-tag">Attached · ${escapeHtml(selectedAttachment.type.toUpperCase())}</div>
+            <div class="attach-title">${escapeHtml(selectedAttachment.title)}</div>
+            <div class="attach-sub">${escapeHtml(selectedAttachment.subtitle || "")}</div>
+          </div>
+          <button type="button" class="icon-btn" id="clearAttachmentBtn">✕</button>
+        </div>
+      `;
+      $("#clearAttachmentBtn").addEventListener("click", () => {
+        selectedAttachment = null;
+        renderSelectedAttachment();
+      });
+    }
+
+    function updatePickerTabs() {
+      $$("#pickerTabs .filter-pill").forEach((t) => {
+        t.classList.toggle("active", t.dataset.picker === pickerType);
+      });
+      const placeholders = {
+        music: "Search free Audius tracks to attach...",
+        wiki: "Search Wikipedia articles to attach...",
+        book: "Search Project Gutenberg books to recommend..."
+      };
+      $("#pickerSearchInput").placeholder = placeholders[pickerType];
+    }
+
+    async function runPickerSearch(q) {
+      const resultsBox = $("#pickerResults");
+      resultsBox.innerHTML = `<div style="padding:12px;color:var(--text-tertiary);font-size:13px;">Searching open catalog...</div>`;
+      try {
+        let items = [];
+        if (pickerType === "music") items = await fetchAudiusTracks(q);
+        else if (pickerType === "wiki") items = await fetchWikipedia(q || "Art");
+        else if (pickerType === "book") items = await fetchBooks(q);
+
+        resultsBox.innerHTML = items
+          .slice(0, 6)
+          .map(
+            (item, idx) => `
+          <div class="picker-row">
+            <div style="min-width:0;flex:1;">
+              <div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(item.title)}</div>
+              <div style="color:var(--text-secondary);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(item.subtitle || "")}</div>
+            </div>
+            <button type="button" class="btn-secondary" data-pick-idx="${idx}">Attach</button>
+          </div>
+        `
+          )
+          .join("");
+
+        $$("[data-pick-idx]").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            selectedAttachment = items[Number(btn.dataset.pickIdx)];
+            renderSelectedAttachment();
+          });
+        });
+      } catch (_) {
+        resultsBox.innerHTML = `<div style="padding:12px;color:var(--text-secondary);font-size:13px;">Could not fetch results right now.</div>`;
+      }
+    }
+
+    $("#openComposerBtn").addEventListener("click", () => openComposerWithAttachment(null, "music"));
+    $("#quickPostBtn").addEventListener("click", () => openComposerWithAttachment(null, "music"));
+    $$("[data-attach-mode]").forEach((btn) =>
+      btn.addEventListener("click", () => openComposerWithAttachment(null, btn.dataset.attachMode))
+    );
+
+    $$("#pickerTabs .filter-pill").forEach((tab) => {
+      tab.addEventListener("click", () => {
+        pickerType = tab.dataset.picker;
+        updatePickerTabs();
+        runPickerSearch($("#pickerSearchInput").value);
+      });
+    });
+
+    $("#pickerSearchBtn").addEventListener("click", () => runPickerSearch($("#pickerSearchInput").value));
+    $("#pickerSearchInput").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        runPickerSearch($("#pickerSearchInput").value);
+      }
+    });
+
+    $("#publishPostBtn").addEventListener("click", async () => {
+      const text = $("#postTextInput").value;
+      if (!text.trim() && !selectedAttachment) {
+        showToast("Write a note or attach music, Wikipedia, or a book");
+        return;
+      }
+      $("#composerModal").classList.remove("open");
+      $("#postTextInput").value = "";
+      const att = selectedAttachment;
+      selectedAttachment = null;
+      renderSelectedAttachment();
+      await createPost(text, att);
+    });
+
+    ["#closeComposerBtn", "#cancelComposerBtn"].forEach((sel) =>
+      $(sel).addEventListener("click", () => $("#composerModal").classList.remove("open"))
+    );
+
+    // =========================================================
+    // EXPLORE TABS (LISTEN, WIKIPEDIA, BOOKS)
+    // =========================================================
+    async function loadMusicExplore(q = "") {
+      const grid = $("#musicGrid");
+      grid.innerHTML = `<div class="empty-state">Loading open-source audio...</div>`;
+      try {
+        const tracks =
+          musicSource === "audius" ? await fetchAudiusTracks(q) : await fetchArchiveTracks(q || "classical piano");
+        if (!tracks.length) {
+          grid.innerHTML = `<div class="empty-state">No tracks found. Try another search term.</div>`;
+          return;
+        }
+        grid.innerHTML = tracks
+          .map(
+            (t, i) => `
+          <div class="media-card">
+            <div class="media-card-top">
+              <div class="attach-thumb">
+                ${t.cover ? `<img src="${escapeHtml(t.cover)}" style="width:100%;height:100%;object-fit:cover;" alt="" />` : "♫"}
+              </div>
+              <div class="attach-info">
+                <div class="attach-tag">${escapeHtml(t.source)}</div>
+                <div class="attach-title">${escapeHtml(t.title)}</div>
+                <div class="attach-sub">${escapeHtml(t.subtitle)}</div>
+              </div>
+            </div>
+            <div class="media-card-actions">
+              <button class="btn-primary" data-play-explore="${i}">▶ Play</button>
+              <button class="btn-secondary" data-share-explore="${i}">Post to Feed</button>
+            </div>
+          </div>
+        `
+          )
+          .join("");
+
+        $$("[data-play-explore]").forEach((b) =>
+          b.addEventListener("click", () => playTrack(tracks[Number(b.dataset.playExplore)], tracks))
+        );
+        $$("[data-share-explore]").forEach((b) =>
+          b.addEventListener("click", () => openComposerWithAttachment(tracks[Number(b.dataset.shareExplore)]))
+        );
+      } catch (_) {
+        grid.innerHTML = `<div class="empty-state">Unable to load tracks right now.</div>`;
+      }
+    }
+
+    $$("[data-music-source]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        $$("[data-music-source]").forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        musicSource = btn.dataset.musicSource;
+        loadMusicExplore($("#musicSearchInput").value);
+      });
+    });
+
+    $("#musicSearchForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      loadMusicExplore($("#musicSearchInput").value);
+    });
+
+    async function loadWikiExplore(q = "Minimalism") {
+      const grid = $("#wikiGrid");
+      grid.innerHTML = `<div class="empty-state">Searching Wikipedia...</div>`;
+      try {
+        const items = await fetchWikipedia(q);
+        grid.innerHTML = items
+          .map(
+            (w, i) => `
+          <div class="media-card">
+            <div class="media-card-top">
+              <div class="attach-thumb">
+                ${w.cover ? `<img src="${escapeHtml(w.cover)}" style="width:100%;height:100%;object-fit:cover;" alt="" />` : "W"}
+              </div>
+              <div class="attach-info">
+                <div class="attach-tag">Wikipedia</div>
+                <div class="attach-title">${escapeHtml(w.title)}</div>
+              </div>
+            </div>
+            <div class="attach-sub" style="-webkit-line-clamp:3;">${escapeHtml(w.subtitle)}</div>
+            <div class="media-card-actions">
+              <button class="btn-secondary" data-read-wiki="${i}">Read</button>
+              <button class="btn-primary" data-share-wiki="${i}">Share</button>
+            </div>
+          </div>
+        `
+          )
+          .join("");
+
+        $$("[data-read-wiki]").forEach((b) =>
+          b.addEventListener("click", () => openWikiReader(items[Number(b.dataset.readWiki)]))
+        );
+        $$("[data-share-wiki]").forEach((b) =>
+          b.addEventListener("click", () => openComposerWithAttachment(items[Number(b.dataset.shareWiki)]))
+        );
+      } catch (_) {
+        grid.innerHTML = `<div class="empty-state">Wikipedia search failed.</div>`;
+      }
+    }
+
+    $("#wikiSearchForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      loadWikiExplore($("#wikiSearchInput").value);
+    });
+
+    async function loadBooksExplore(q = "") {
+      const grid = $("#bookGrid");
+      grid.innerHTML = `<div class="empty-state">Loading Project Gutenberg catalog...</div>`;
+      try {
+        const books = await fetchBooks(q);
+        grid.innerHTML = books
+          .map(
+            (bk, i) => `
+          <div class="media-card">
+            <div class="media-card-top">
+              <div class="attach-thumb book">
+                ${bk.cover ? `<img src="${escapeHtml(bk.cover)}" style="width:100%;height:100%;object-fit:cover;" alt="" />` : "▤"}
+              </div>
+              <div class="attach-info">
+                <div class="attach-tag">Public Domain</div>
+                <div class="attach-title">${escapeHtml(bk.title)}</div>
+                <div class="attach-sub">${escapeHtml(bk.subtitle)}</div>
+              </div>
+            </div>
+            <div class="media-card-actions">
+              <button class="btn-secondary" data-read-book="${i}">Read Book</button>
+              <button class="btn-primary" data-share-book="${i}">Recommend</button>
+            </div>
+          </div>
+        `
+          )
+          .join("");
+
+        $$("[data-read-book]").forEach((b) =>
+          b.addEventListener("click", () => openBookReader(books[Number(b.dataset.readBook)]))
+        );
+        $$("[data-share-book]").forEach((b) =>
+          b.addEventListener("click", () => openComposerWithAttachment(books[Number(b.dataset.shareBook)]))
+        );
+      } catch (_) {
+        grid.innerHTML = `<div class="empty-state">Unable to load books right now.</div>`;
+      }
+    }
+
+    $("#bookSearchForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      loadBooksExplore($("#bookSearchInput").value);
+    });
+
+    // Boot Application
+    initFeedListener();
+    loadMusicExplore("");
+    loadWikiExplore("Design");
+    loadBooksExplore("");
+  </script>
+</body>
+</html>
