@@ -7,9 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <!-- QR Code Generator & Scanner -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
     :root {
@@ -854,6 +856,40 @@
       margin: 10px 0 16px;
     }
 
+    .nearby-map {
+      width: 100%;
+      height: 300px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--surface-muted);
+      margin: 14px 0;
+      z-index: 0;
+    }
+
+    .nearby-privacy {
+      padding: 11px 13px;
+      border-radius: 12px;
+      background: var(--surface-muted);
+      color: var(--ink-secondary);
+      font-size: 12.5px;
+      line-height: 1.5;
+      margin: 12px 0;
+    }
+
+    .nearby-account {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nearby-account:last-child {
+      border-bottom: 0;
+    }
+
     #qrReader {
       width: 100%;
       border-radius: 16px;
@@ -1208,25 +1244,37 @@
 
   <!-- ==================== MODAL: NEARBY PAYMENT ==================== -->
   <div id="nearbyModal" class="modal-backdrop hidden">
-    <div class="sheet">
+    <div class="sheet" style="max-width:640px;">
       <div class="sheet-head">
         <h3>Payment Near Me</h3>
         <button type="button" class="close-btn" data-close="nearbyModal" aria-label="Close">&times;</button>
       </div>
-      <div class="qr-frame" style="margin-top:0;">
-        <div style="width:64px; height:64px; border-radius:20px; display:grid; place-items:center; background:rgba(0,113,227,0.08); color:var(--blue);">
-          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-            <path d="M8 8a5.5 5.5 0 0 1 8 0M5 5a10 10 0 0 1 14 0M11 11a1.5 1.5 0 1 1 2.5 1.1c-.8.6-1.5 1-1.5 2.4M12 18h.01"/>
-          </svg>
-        </div>
-      </div>
-      <p style="font-size:14px; font-weight:600; text-align:center; margin-bottom:6px;">Tap to a shop's NFC payment tag</p>
-      <p style="font-size:13px; color:var(--ink-secondary); text-align:center; margin-bottom:16px;">
-        Tap a shop's compatible Idem NFC tag, written from its Request Money screen. NFC is intended for a very close tap, but exact range depends on your device and cannot be guaranteed to be exactly 5 cm.
+      <p style="font-size:13px; color:var(--ink-secondary);">
+        Find Idem users who are sharing their live location nearby. Distances are calculated from GPS coordinates.
       </p>
-      <div id="nearbyStatus" role="status" style="font-size:13px; color:var(--ink-secondary); text-align:center; margin-bottom:14px;">Ready to scan a nearby payment tag.</div>
+      <div class="nearby-privacy">
+        Your location is private by default. While sharing is on, signed-in Idem users with access to the shared-location directory can see your position. Closing the map stops sharing; if the tab closes unexpectedly, your last location expires from search after 90 seconds. OpenStreetMap receives requests for the map tiles you view, not your exact GPS coordinates.
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+        <div id="nearbyStatus" role="status" style="font-size:13px; color:var(--ink-secondary);">Getting your location…</div>
+        <label for="nearbyRadius" style="font-size:12px; color:var(--ink-secondary); white-space:nowrap;">Within
+          <select class="input" id="nearbyRadius" style="width:auto; height:36px; margin-left:4px; padding:0 8px;">
+            <option value="1000">1 km</option>
+            <option value="5000" selected>5 km</option>
+            <option value="10000">10 km</option>
+            <option value="25000">25 km</option>
+          </select>
+        </label>
+      </div>
+      <div id="nearbyMap" class="nearby-map" role="application" aria-label="Map showing your location and nearby Idem accounts"></div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;">
+        <span id="nearbyLocationLabel" style="font-size:12px; color:var(--ink-secondary);">Your location: not available</span>
+        <button type="button" class="icon-btn" id="nearbyShareBtn" disabled>Share my location</button>
+      </div>
       <div id="nearbyError" class="error-banner hidden"></div>
-      <button type="button" class="btn-primary" id="startNearbyScanBtn">Start NFC Tap</button>
+      <div id="nearbyAccounts" aria-live="polite" style="max-height:200px; overflow-y:auto;">
+        <div style="padding:18px 0; text-align:center; color:var(--ink-secondary); font-size:13px;">Looking for nearby Idem accounts…</div>
+      </div>
       <button type="button" class="icon-btn" id="nearbyManualBtn" style="width:100%; justify-content:center; height:44px; margin-top:10px;">Enter account manually</button>
     </div>
   </div>
@@ -1454,7 +1502,9 @@
       where,
       onSnapshot,
       runTransaction,
-      serverTimestamp
+      serverTimestamp,
+      updateDoc,
+      deleteField
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     // Your web app's Firebase configuration
@@ -1492,7 +1542,18 @@
     let balanceVisible = localStorage.getItem("idem-hide-balance") !== "true";
     let transactionsVisible = localStorage.getItem("idem-hide-transactions") !== "true";
     let html5QrScanner = null;
-    let nearbyNfcReader = null;
+    let nearbyMap = null;
+    let nearbyUserMarker = null;
+    let nearbyRadiusLayer = null;
+    let nearbyAccountLayer = null;
+    let nearbyPosition = null;
+    let nearbyAccounts = [];
+    let unsubNearbyAccounts = null;
+    let nearbyWatchId = null;
+    let nearbyLocationSharing = false;
+    let nearbyShareUid = null;
+    let lastLocationWrite = null;
+    let nearbyRefreshTimer = null;
 
     // ---------- Helpers ----------
     const $ = (id) => document.getElementById(id);
@@ -1561,6 +1622,17 @@
 
     function closeModal(id) {
       $(id).classList.add("hidden");
+      if (id === "nearbyModal") {
+        stopNearbyLocationSharing();
+        if (unsubNearbyAccounts) {
+          unsubNearbyAccounts();
+          unsubNearbyAccounts = null;
+        }
+        if (nearbyRefreshTimer !== null) {
+          clearInterval(nearbyRefreshTimer);
+          nearbyRefreshTimer = null;
+        }
+      }
     }
 
     document.querySelectorAll("[data-close]").forEach((btn) => {
@@ -1672,6 +1744,7 @@
     });
 
     $("signOutBtn").addEventListener("click", async () => {
+      await stopNearbyLocationSharing();
       if (unsubProfile) unsubProfile();
       if (unsubSent) unsubSent();
       if (unsubRecv) unsubRecv();
@@ -1682,6 +1755,12 @@
     onAuthStateChanged(auth, async (user) => {
       currentUser = user;
       if (!user) {
+        closeModal("nearbyModal");
+        await stopNearbyLocationSharing();
+        if (unsubNearbyAccounts) {
+          unsubNearbyAccounts();
+          unsubNearbyAccounts = null;
+        }
         $("appView").classList.add("hidden");
         $("authView").classList.remove("hidden");
         return;
@@ -2028,93 +2107,315 @@
       }
     });
 
-    $("openNearbyBtn").addEventListener("click", () => {
-      $("nearbyStatus").textContent = "Ready to scan a nearby payment tag.";
-      $("nearbyError").classList.add("hidden");
-      openModal("nearbyModal");
-    });
+    function showNearbyError(message) {
+      $("nearbyError").textContent = message;
+      $("nearbyError").classList.remove("hidden");
+    }
 
-    $("nearbyManualBtn").addEventListener("click", () => {
-      closeModal("nearbyModal");
-      openPaySheet();
-    });
+    function formatDistance(meters) {
+      if (meters < 1000) return `${Math.round(meters)} m`;
+      return `${(meters / 1000).toFixed(meters < 10000 ? 1 : 0)} km`;
+    }
 
-    $("startNearbyScanBtn").addEventListener("click", async () => {
-      const error = $("nearbyError");
-      const status = $("nearbyStatus");
-      error.classList.add("hidden");
-      const NDEFReaderType = window.NDEFReader;
-      if (!NDEFReaderType) {
-        error.textContent = "NFC scanning is not supported in this browser. Use a compatible Android browser over HTTPS, or enter the account manually.";
-        error.classList.remove("hidden");
+    function distanceBetween(lat1, lng1, lat2, lng2) {
+      const radians = (degrees) => degrees * Math.PI / 180;
+      const earthRadiusMeters = 6371000;
+      const latDelta = radians(lat2 - lat1);
+      const lngDelta = radians(lng2 - lng1);
+      const a = Math.min(1, Math.sin(latDelta / 2) ** 2
+        + Math.cos(radians(lat1)) * Math.cos(radians(lat2)) * Math.sin(lngDelta / 2) ** 2);
+      return earthRadiusMeters * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    }
+
+    function renderNearbyAccounts() {
+      if (!nearbyMap || !nearbyAccountLayer) return;
+      nearbyAccountLayer.clearLayers();
+      const results = $("nearbyAccounts");
+      results.replaceChildren();
+      const radius = Number($("nearbyRadius").value);
+      if (nearbyRadiusLayer && nearbyPosition) {
+        nearbyRadiusLayer.setLatLng([nearbyPosition.latitude, nearbyPosition.longitude]);
+        nearbyRadiusLayer.setRadius(radius);
+      }
+
+      if (!nearbyPosition) {
+        results.textContent = "Allow location access to see accounts near you.";
         return;
       }
-      try {
-        nearbyNfcReader = new NDEFReaderType();
-        nearbyNfcReader.onreadingerror = () => {
-          status.textContent = "Couldn't read that NFC tag. Hold your phone still and try again.";
-        };
-        nearbyNfcReader.onreading = async (event) => {
-          const records = Array.from(event.message.records);
-          const record = records.find((item) => item.recordType === "text" || item.recordType === "url");
-          if (!record) {
-            status.textContent = "This tag has no Idem payment request. Try a shop payment tag.";
-            return;
-          }
-          let tagText;
-          if (record.recordType === "url") {
-            const uriPrefixes = [
-              "", "http://www.", "https://www.", "http://", "https://", "tel:", "mailto:",
-              "ftp://anonymous:anonymous@", "ftp://ftp.", "ftps://", "sftp://", "smb://",
-              "nfs://", "ftp://", "dav://", "news:", "telnet://", "imap:", "rtsp://",
-              "urn:", "pop:", "sip:", "sips:", "tftp:", "btspp://", "btl2cap://",
-              "btgoep://", "tcpobex://", "irdaobex://", "file://", "urn:epc:id:",
-              "urn:epc:tag:", "urn:epc:pat:", "urn:epc:raw:", "urn:epc:", "urn:nfc:"
-            ];
-            const payload = new Uint8Array(record.data.buffer, record.data.byteOffset, record.data.byteLength);
-            tagText = `${uriPrefixes[payload[0]] || ""}${new TextDecoder().decode(payload.slice(1))}`.trim();
-          } else {
-            tagText = new TextDecoder(record.encoding || "utf-8").decode(record.data).trim();
-          }
-          const request = parsePaymentPayload(tagText);
-          if (!request.acc) {
-            status.textContent = "This tag isn't a valid Idem payment request.";
-            return;
-          }
-          status.textContent = "Checking payment account...";
-          let recipient;
-          try {
-            recipient = await findUserByIdentifier(request.acc);
-          } catch (err) {
-            error.textContent = err.message || "Unable to verify this payment account.";
-            error.classList.remove("hidden");
-            return;
-          }
-          if (!recipient) {
-            status.textContent = "No Idem account matches this payment tag.";
-            return;
-          }
-          try {
-            await nearbyNfcReader.stop();
-          } catch (err) {
-            error.textContent = err.message || "Unable to stop NFC scanning.";
-            error.classList.remove("hidden");
-            return;
-          }
-          nearbyNfcReader = null;
-          closeModal("nearbyModal");
-          openPaySheet(recipient.accountNumber, recipient.name, request.amount, request.note);
-          showToast(`Payment request from ${recipient.name}`);
-        };
-        await nearbyNfcReader.scan();
-        status.textContent = "Hold your phone close to the shop's NFC payment tag.";
-      } catch (err) {
-        nearbyNfcReader = null;
-        error.textContent = err.name === "NotAllowedError"
-          ? "NFC permission was denied. Allow NFC access and try again."
-          : err.message || "Unable to start NFC scanning on this device.";
-        error.classList.remove("hidden");
+
+      const recentAccounts = nearbyAccounts
+        .filter((user) => {
+          const age = Date.now() - Number(user.locationUpdatedAt || 0);
+          return user.uid !== currentUser?.uid
+            && user.locationSharing === true
+            && Number.isFinite(Number(user.locationLatitude))
+            && Number.isFinite(Number(user.locationLongitude))
+            && Math.abs(Number(user.locationLatitude)) <= 90
+            && Math.abs(Number(user.locationLongitude)) <= 180
+            && age >= 0
+            && age <= 90 * 1000;
+        })
+        .map((user) => ({
+          user,
+          distance: distanceBetween(
+            nearbyPosition.latitude,
+            nearbyPosition.longitude,
+            Number(user.locationLatitude),
+            Number(user.locationLongitude)
+          )
+        }))
+        .filter((entry) => entry.distance <= radius)
+        .sort((a, b) => a.distance - b.distance);
+
+      if (!recentAccounts.length) {
+        const empty = document.createElement("div");
+        empty.style.cssText = "padding:18px 0; text-align:center; color:var(--ink-secondary); font-size:13px;";
+        empty.textContent = "No accounts sharing their location within this distance.";
+        results.appendChild(empty);
       }
+
+      $("nearbyStatus").textContent =
+        `${recentAccounts.length} ${recentAccounts.length === 1 ? "account" : "accounts"} within ${formatDistance(radius)}`;
+      recentAccounts.forEach(({ user, distance }) => {
+        const coords = [Number(user.locationLatitude), Number(user.locationLongitude)];
+        const marker = L.circleMarker(coords, {
+          radius: 8,
+          color: "#FFFFFF",
+          weight: 2,
+          fillColor: "#0071E3",
+          fillOpacity: 0.95
+        });
+        marker.bindPopup(`<strong>${escapeHtml(user.name || "Idem member")}</strong><br>${formatDistance(distance)} away`);
+        marker.addTo(nearbyAccountLayer);
+
+        const row = document.createElement("div");
+        row.className = "nearby-account";
+        const details = document.createElement("div");
+        details.style.minWidth = "0";
+        const name = document.createElement("div");
+        name.style.cssText = "font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
+        name.textContent = user.name || "Idem member";
+        const distanceLabel = document.createElement("div");
+        distanceLabel.style.cssText = "font-size:12px; color:var(--ink-secondary);";
+        distanceLabel.textContent = `${formatDistance(distance)} away`;
+        details.append(name, distanceLabel);
+        const payButton = document.createElement("button");
+        payButton.type = "button";
+        payButton.className = "icon-btn";
+        payButton.textContent = "Pay";
+        payButton.disabled = !user.accountNumber;
+        payButton.addEventListener("click", () => {
+          closeModal("nearbyModal");
+          openPaySheet(user.accountNumber, user.name || "");
+        });
+        row.append(details, payButton);
+        results.appendChild(row);
+      });
+    }
+
+    function updateNearbyPosition(position, centerMap = false) {
+      nearbyPosition = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy
+      };
+      $("nearbyLocationLabel").textContent =
+        `Your location: ±${Math.round(position.coords.accuracy)} m accuracy${nearbyLocationSharing ? " · sharing on" : ""}`;
+      $("nearbyShareBtn").disabled = false;
+      const point = [nearbyPosition.latitude, nearbyPosition.longitude];
+      if (!nearbyUserMarker) {
+        nearbyUserMarker = L.circleMarker(point, {
+          radius: 9,
+          color: "#FFFFFF",
+          weight: 3,
+          fillColor: "#16A34A",
+          fillOpacity: 1
+        }).bindPopup("Your location");
+        nearbyUserMarker.addTo(nearbyMap);
+      } else {
+        nearbyUserMarker.setLatLng(point);
+      }
+      if (!nearbyRadiusLayer) {
+        nearbyRadiusLayer = L.circle(point, {
+          radius: Number($("nearbyRadius").value),
+          color: "#0071E3",
+          weight: 1,
+          fillColor: "#0071E3",
+          fillOpacity: 0.06
+        }).addTo(nearbyMap);
+      }
+      if (centerMap) nearbyMap.setView(point, 15);
+      renderNearbyAccounts();
+    }
+
+    function locationErrorMessage(error) {
+      if (error.code === error.PERMISSION_DENIED) return "Location permission was denied. Allow location access in your browser settings to find nearby accounts.";
+      if (error.code === error.POSITION_UNAVAILABLE) return "Your device couldn't determine its location. Try again somewhere with a clearer GPS signal.";
+      if (error.code === error.TIMEOUT) return "Location lookup timed out. Try again.";
+      return error.message || "Unable to get your location.";
+    }
+
+    function startNearbyDirectory() {
+      if (unsubNearbyAccounts) unsubNearbyAccounts();
+      const nearbyQuery = query(collection(db, "users"), where("locationSharing", "==", true));
+      unsubNearbyAccounts = onSnapshot(nearbyQuery, (snapshot) => {
+        nearbyAccounts = snapshot.docs.map((item) => ({ uid: item.id, ...item.data() }));
+        renderNearbyAccounts();
+      }, (error) => {
+        showNearbyError(`Unable to load nearby accounts: ${error.message || "Firestore access was denied."}`);
+        $("nearbyAccounts").textContent = "Nearby account search is unavailable.";
+      });
+    }
+
+    function requestNearbyLocation() {
+      const status = $("nearbyStatus");
+      if (!navigator.geolocation) {
+        showNearbyError("This browser doesn't support location access.");
+        status.textContent = "Location unavailable.";
+        $("nearbyShareBtn").disabled = true;
+        return;
+      }
+      status.textContent = "Getting your location…";
+      navigator.geolocation.getCurrentPosition((position) => {
+        updateNearbyPosition(position, true);
+        status.textContent = "Your location is ready. Nearby accounts update as they share.";
+      }, (error) => {
+        showNearbyError(locationErrorMessage(error));
+        status.textContent = "Location unavailable.";
+        $("nearbyShareBtn").disabled = true;
+      }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 });
+    }
+
+    async function publishNearbyLocation(position) {
+      if (!currentUser || !nearbyShareUid) return;
+      const now = Date.now();
+      if (lastLocationWrite && now - lastLocationWrite.at < 20000) {
+        const moved = distanceBetween(
+          lastLocationWrite.latitude,
+          lastLocationWrite.longitude,
+          position.coords.latitude,
+          position.coords.longitude
+        );
+        if (moved < 20) return;
+      }
+      await setDoc(doc(db, "users", nearbyShareUid), {
+        locationSharing: true,
+        locationLatitude: position.coords.latitude,
+        locationLongitude: position.coords.longitude,
+        locationUpdatedAt: now
+      }, { merge: true });
+      lastLocationWrite = {
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        at: now
+      };
+    }
+
+    async function stopNearbyLocationSharing() {
+      if (nearbyWatchId !== null) {
+        navigator.geolocation.clearWatch(nearbyWatchId);
+        nearbyWatchId = null;
+      }
+      $("nearbyShareBtn").textContent = "Share my location";
+      $("nearbyShareBtn").setAttribute("aria-pressed", "false");
+      if (!nearbyLocationSharing || !nearbyShareUid) return;
+      nearbyLocationSharing = false;
+      const uid = nearbyShareUid;
+      nearbyShareUid = null;
+      lastLocationWrite = null;
+      try {
+        await updateDoc(doc(db, "users", uid), {
+          locationSharing: false,
+          locationLatitude: deleteField(),
+          locationLongitude: deleteField(),
+          locationUpdatedAt: deleteField()
+        });
+      } catch (error) {
+        const message = `Location sharing stopped on this device, but its saved location could not be removed: ${error.message || "Firestore access was denied."}`;
+        if ($("nearbyModal").classList.contains("hidden")) showToast(message);
+        else showNearbyError(message);
+      }
+    }
+
+    $("openNearbyBtn").addEventListener("click", () => {
+      $("nearbyError").classList.add("hidden");
+      openModal("nearbyModal");
+      $("nearbyStatus").textContent = "Getting your location…";
+      $("nearbyLocationLabel").textContent = "Your location: not available";
+      if (!window.L) {
+        showNearbyError("The map couldn't load. Check your internet connection and try again.");
+        return;
+      }
+      if (!nearbyMap) {
+        nearbyMap = L.map("nearbyMap").setView([0, 0], 2);
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+        }).addTo(nearbyMap);
+        nearbyAccountLayer = L.layerGroup().addTo(nearbyMap);
+        L.control.scale({ imperial: false }).addTo(nearbyMap);
+      }
+      requestAnimationFrame(() => nearbyMap.invalidateSize());
+      startNearbyDirectory();
+      nearbyRefreshTimer = setInterval(renderNearbyAccounts, 15000);
+      requestNearbyLocation();
+    });
+
+    $("nearbyRadius").addEventListener("change", renderNearbyAccounts);
+
+    $("nearbyShareBtn").addEventListener("click", async () => {
+      const button = $("nearbyShareBtn");
+      $("nearbyError").classList.add("hidden");
+      if (nearbyLocationSharing) {
+        await stopNearbyLocationSharing();
+        $("nearbyStatus").textContent = "Location sharing is off.";
+        return;
+      }
+      if (!currentUser || !nearbyPosition) {
+        showNearbyError("Get your location before turning on location sharing.");
+        return;
+      }
+      button.disabled = true;
+      try {
+        nearbyShareUid = currentUser.uid;
+        await publishNearbyLocation({
+          coords: {
+            latitude: nearbyPosition.latitude,
+            longitude: nearbyPosition.longitude
+          }
+        });
+        nearbyLocationSharing = true;
+        button.textContent = "Stop sharing";
+        button.setAttribute("aria-pressed", "true");
+        $("nearbyLocationLabel").textContent =
+          `Your location: ±${Math.round(nearbyPosition.accuracy)} m accuracy · sharing on`;
+        nearbyWatchId = navigator.geolocation.watchPosition(async (position) => {
+          updateNearbyPosition(position);
+          try {
+            await publishNearbyLocation(position);
+          } catch (error) {
+            showNearbyError(`Couldn't update your shared location: ${error.message || "Firestore access was denied."}`);
+            await stopNearbyLocationSharing();
+          }
+        }, (error) => {
+          showNearbyError(locationErrorMessage(error));
+          $("nearbyShareBtn").disabled = true;
+          stopNearbyLocationSharing();
+        }, { enableHighAccuracy: true, maximumAge: 10000, timeout: 15000 });
+        $("nearbyStatus").textContent = "Sharing your live location while this map is open.";
+      } catch (error) {
+        if (nearbyLocationSharing) await stopNearbyLocationSharing();
+        else nearbyShareUid = null;
+        showNearbyError(`Couldn't share your location: ${error.message || "Firestore access was denied."}`);
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $("nearbyManualBtn").addEventListener("click", async () => {
+      await stopNearbyLocationSharing();
+      closeModal("nearbyModal");
+      openPaySheet();
     });
 
     // ---------- Scan QR to Pay ----------
