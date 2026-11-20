@@ -882,12 +882,28 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
+      padding: 12px;
+      margin: 8px 0;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.78);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.025);
     }
 
     .nearby-account:last-child {
-      border-bottom: 0;
+      margin-bottom: 0;
+    }
+
+    .nearby-distance-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      margin-top: 3px;
+      border-radius: 999px;
+      background: rgba(0, 113, 227, 0.08);
+      color: var(--blue);
+      font-size: 11.5px;
+      font-weight: 600;
     }
 
     #qrReader {
@@ -1269,7 +1285,10 @@
       <div id="nearbyMap" class="nearby-map" role="application" aria-label="Map showing your location and nearby Idem accounts"></div>
       <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px;">
         <span id="nearbyLocationLabel" style="font-size:12px; color:var(--ink-secondary);">Your location: not available</span>
-        <button type="button" class="icon-btn" id="nearbyShareBtn" disabled>Share my location</button>
+        <div style="display:flex; gap:8px;">
+          <button type="button" class="icon-btn" id="nearbyRefreshBtn">Refresh</button>
+          <button type="button" class="icon-btn" id="nearbyShareBtn" disabled>Share my location</button>
+        </div>
       </div>
       <div id="nearbyError" class="error-banner hidden"></div>
       <div id="nearbyAccounts" aria-live="polite" style="max-height:200px; overflow-y:auto;">
@@ -1555,6 +1574,7 @@
     let nearbyShareUid = null;
     let lastLocationWrite = null;
     let nearbyRefreshTimer = null;
+    let selectedPayRecipient = null;
 
     // ---------- Helpers ----------
     const $ = (id) => document.getElementById(id);
@@ -2177,16 +2197,16 @@
 
       $("nearbyStatus").textContent =
         `${recentAccounts.length} ${recentAccounts.length === 1 ? "account" : "accounts"} within ${formatDistance(radius)}`;
-      recentAccounts.forEach(({ user, distance }) => {
+      recentAccounts.forEach(({ user, distance }, index) => {
         const coords = [Number(user.locationLatitude), Number(user.locationLongitude)];
         const marker = L.circleMarker(coords, {
           radius: 8,
           color: "#FFFFFF",
           weight: 2,
-          fillColor: "#0071E3",
+          fillColor: index === 0 ? "#16A34A" : "#0071E3",
           fillOpacity: 0.95
         });
-        marker.bindPopup(`<strong>${escapeHtml(user.name || "Idem member")}</strong><br>${formatDistance(distance)} away`);
+        marker.bindPopup(`<strong>${escapeHtml(user.name || "Idem member")}</strong><br>${index === 0 ? "Closest · " : ""}${formatDistance(distance)} away`);
         marker.addTo(nearbyAccountLayer);
 
         const row = document.createElement("div");
@@ -2197,17 +2217,18 @@
         name.style.cssText = "font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;";
         name.textContent = user.name || "Idem member";
         const distanceLabel = document.createElement("div");
-        distanceLabel.style.cssText = "font-size:12px; color:var(--ink-secondary);";
-        distanceLabel.textContent = `${formatDistance(distance)} away`;
+        distanceLabel.className = "nearby-distance-badge";
+        distanceLabel.textContent = `${index === 0 ? "Closest · " : ""}${formatDistance(distance)} away`;
         details.append(name, distanceLabel);
         const payButton = document.createElement("button");
         payButton.type = "button";
         payButton.className = "icon-btn";
         payButton.textContent = "Pay";
-        payButton.disabled = !user.accountNumber;
+        payButton.disabled = !user.uid;
+        payButton.setAttribute("aria-label", `Pay ${user.name || "nearby Idem member"}`);
         payButton.addEventListener("click", () => {
           closeModal("nearbyModal");
-          openPaySheet(user.accountNumber, user.name || "");
+          openPaySheet(user.accountNumber || "", user.name || "", "", "", user.uid);
         });
         row.append(details, payButton);
         results.appendChild(row);
@@ -2260,7 +2281,7 @@
       if (unsubNearbyAccounts) unsubNearbyAccounts();
       const nearbyQuery = query(collection(db, "users"), where("locationSharing", "==", true));
       unsubNearbyAccounts = onSnapshot(nearbyQuery, (snapshot) => {
-        nearbyAccounts = snapshot.docs.map((item) => ({ uid: item.id, ...item.data() }));
+        nearbyAccounts = snapshot.docs.map((item) => ({ ...item.data(), uid: item.id }));
         renderNearbyAccounts();
       }, (error) => {
         showNearbyError(`Unable to load nearby accounts: ${error.message || "Firestore access was denied."}`);
@@ -2363,6 +2384,7 @@
     });
 
     $("nearbyRadius").addEventListener("change", renderNearbyAccounts);
+    $("nearbyRefreshBtn").addEventListener("click", requestNearbyLocation);
 
     $("nearbyShareBtn").addEventListener("click", async () => {
       const button = $("nearbyShareBtn");
@@ -2655,7 +2677,8 @@
           return false;
         }
 
-        if (!recipientQuery || !Number.isFinite(amount) || !Number.isSafeInteger(amountCents) || amountCents <= 0
+        if ((!recipientQuery && !selectedPayRecipient) || !Number.isFinite(amount)
+          || !Number.isSafeInteger(amountCents) || amountCents <= 0
           || Math.abs(amount * 100 - amountCents) > 1e-7) {
           errBox.textContent = "Enter a recipient and a valid amount with no more than two decimal places.";
           errBox.classList.remove("hidden");
@@ -2663,7 +2686,7 @@
         }
 
         try {
-          const recipient = await findUserByIdentifier(recipientQuery);
+          const recipient = selectedPayRecipient || await findUserByIdentifier(recipientQuery);
           if (!recipient || !recipient.uid) {
             errBox.textContent = "Recipient account not found.";
             errBox.classList.remove("hidden");
@@ -2679,11 +2702,14 @@
           const senderRef = doc(db, "users", currentUser.uid);
           const recipientRef = doc(db, "users", recipient.uid);
           const txRef = doc(collection(db, "transactions"));
+          let recipientName = recipient.name || "Idem member";
 
           await runTransaction(db, async (transaction) => {
             const sSnap = await transaction.get(senderRef);
             const rSnap = await transaction.get(recipientRef);
             if (!sSnap.exists() || !rSnap.exists()) throw new Error("Account record missing.");
+            const senderData = sSnap.data();
+            const recipientData = rSnap.data();
 
             const sBalCents = Math.round(Number(sSnap.data().balance || 0) * 100);
             const rBalCents = Math.round(Number(rSnap.data().balance || 0) * 100);
@@ -2695,13 +2721,14 @@
 
             transaction.update(senderRef, { balance: (sBalCents - amountCents) / 100 });
             transaction.update(recipientRef, { balance: (rBalCents + amountCents) / 100 });
+            recipientName = recipientData.name || recipientName;
             transaction.set(txRef, {
               fromUid: currentUser.uid,
-              fromName: currentProfile.name,
-              fromAccount: currentProfile.accountNumber,
+              fromName: senderData.name || currentProfile.name || "",
+              fromAccount: senderData.accountNumber || currentProfile.accountNumber || "",
               toUid: recipient.uid,
-              toName: recipient.name,
-              toAccount: recipient.accountNumber,
+              toName: recipientName,
+              toAccount: recipientData.accountNumber || recipient.accountNumber || "",
               amount: amountCents / 100,
               note,
               type: "transfer",
@@ -2709,7 +2736,7 @@
             });
           });
 
-          showToast(`Sent ${formatCurrency(amount)} to ${recipient.name}`);
+          showToast(`Sent ${formatCurrency(amount)} to ${recipientName}`);
           setTimeout(() => closeModal("payModal"), 750);
           return true;
         } catch (err) {
@@ -2725,14 +2752,20 @@
       }
     });
 
-    function openPaySheet(prefillAccount = "", prefillName = "", prefillAmount = "", prefillNote = "") {
+    function openPaySheet(prefillAccount = "", prefillName = "", prefillAmount = "", prefillNote = "", prefillUid = "") {
       $("payError").classList.add("hidden");
+      selectedPayRecipient = prefillUid
+        ? { uid: prefillUid, name: prefillName, accountNumber: prefillAccount }
+        : null;
       $("payRecipientInput").value = prefillAccount;
       $("payAmountInput").value = prefillAmount || "";
       $("payNoteInput").value = prefillNote || "";
       const amount = Number(prefillAmount);
       $("payNowBtn").textContent = amount > 0 ? `Pay ${formatCurrency(amount)} now` : "Pay now";
-      if (prefillName) {
+      if (prefillUid) {
+        $("resolvedRecipientTag").textContent = `Nearby Idem account: ${prefillName}`;
+        $("resolvedRecipientTag").classList.remove("hidden");
+      } else if (prefillName) {
         $("resolvedRecipientTag").textContent = `Payment request from: ${prefillName}`;
         $("resolvedRecipientTag").classList.remove("hidden");
       } else {
@@ -2746,6 +2779,9 @@
     }
 
     $("openPayBtn").addEventListener("click", () => openPaySheet());
+    $("payRecipientInput").addEventListener("input", () => {
+      selectedPayRecipient = null;
+    });
 
     $("payAmountInput").addEventListener("input", () => {
       const val = parseFloat($("payAmountInput").value);
