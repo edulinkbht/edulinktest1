@@ -1,958 +1,1897 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EchoPulse - Modern Social Feed</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#eef2ff',
-                            100: '#e0e7ff',
-                            400: '#818cf8',
-                            500: '#6366f1',
-                            600: '#4f46e5',
-                            700: '#4338ca',
-                            900: '#312e81',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        /* Custom scrollbar for clean dark UI */
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0f172a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #475569;
-        }
-        @keyframes pulseGlow {
-            0%, 100% { opacity: 0.8; }
-            50% { opacity: 0.4; }
-        }
-        .glow-effect {
-            animation: pulseGlow 3s infinite ease-in-out;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Minimal Instagram Navigation</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Playfair+Display:wght@500&display=swap" rel="stylesheet">
+
+<style>
+/* ================================
+   GLOBAL RESET & SCROLLBAR HIDING
+   ================================ */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+body {
+    min-height: 100vh;
+    min-height: 100svh;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: #fff;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+.app {
+    width: 100%;
+    max-width: 430px;
+    min-height: 100vh;
+    margin: auto;
+    background: #fff;
+    position: relative;
+}
+
+/* ================================
+   HOME HEADER
+   ================================ */
+.top-header {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    height: calc(60px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 12px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px; 
+}
+
+.brand-icon {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #000;
+}
+
+.brand-name {
+    font-size: 25px; 
+    font-weight: 800; 
+    letter-spacing: -0.8px; 
+    color: #000;
+    margin-top: 2px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.header-btn {
+    background: transparent;
+    border: none;
+    color: #000;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* ================================
+   SEARCH HEADER
+   ================================ */
+.search-header-container {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: transparent;
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+}
+
+.search-top-row {
+    display: flex;
+    align-items: center;
+    height: calc(60px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 12px 0;
+    gap: 12px;
+    background: #fff;
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+}
+
+.search-back-btn {
+    display: none;
+    padding: 4px;
+}
+
+.search-box {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: #f0f2f5;
+    height: 44px;
+    border-radius: 22px;
+    padding: 0 16px;
+    gap: 10px;
+}
+
+.search-box svg.search-icon {
+    color: #111;
+    width: 20px;
+    height: 20px;
+}
+
+.search-box input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 500;
+    color: #111;
+}
+
+.search-box input::placeholder {
+    color: #8e8e93;
+    font-weight: 500;
+}
+
+.search-divider {
+    width: 1px;
+    height: 20px;
+    background: #d1d1d6;
+    margin: 0 2px;
+}
+
+.search-box svg.camera-icon {
+    color: #111;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+}
+
+/* Silky GPU-Accelerated Category Hide/Show Transitions */
+.search-categories {
+    display: flex;
+    gap: 8px;
+    padding: 8px 12px 12px;
+    overflow-x: auto;
+    background: #fff;
+    position: relative;
+    z-index: 1;
+    pointer-events: auto;
+    will-change: transform, opacity;
+    transform: translate3d(0, 0, 0);
+    opacity: 1;
+    transition: transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.search-header-container.scrolled .search-categories {
+    transform: translate3d(0, -100%, 0);
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Search Bar Focus Mode: Only Header Visible */
+.app.search-focused .search-categories,
+.app.search-focused #searchContent,
+.app.search-focused .bottom-nav,
+.app.search-focused .search-grid-btn {
+    display: none !important;
+}
+
+.app.search-focused .search-back-btn {
+    display: flex;
+}
+
+.category-pill {
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-size: 13.5px;
+    font-weight: 600;
+    border: none;
+    white-space: nowrap;
+    cursor: pointer;
+    background: #f0f2f5;
+    color: #111;
+    font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.category-pill.active {
+    background: #111;
+    color: #fff;
+}
+
+/* ================================
+   PROFILE HEADER & HERO
+   ================================ */
+.profile-header {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    height: calc(60px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 14px 0;
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    z-index: 100;
+}
+
+.profile-header-title {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #111;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.profile-hero {
+    background: #fff;
+}
+
+.profile-banner-wrap {
+    padding: 2px 12px 0;
+}
+
+.profile-banner {
+    width: 100%;
+    height: 126px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #f0f2f5;
+    position: relative;
+}
+
+.profile-banner img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.profile-identity {
+    padding: 0 14px 14px;
+}
+
+.profile-avatar-row {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: -36px;
+    position: relative;
+    z-index: 2;
+}
+
+.profile-main-pfp {
+    width: 78px;
+    height: 78px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3.5px solid #fff;
+    background: #f0f2f5;
+    display: block;
+}
+
+.edit-profile-btn {
+    height: 36px;
+    padding: 0 18px;
+    border-radius: 18px;
+    border: none;
+    background: #f0f2f5;
+    color: #111;
+    font-family: inherit;
+    font-size: 13.5px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s ease, transform 0.12s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.edit-profile-btn:active {
+    background: #e4e6eb;
+    transform: scale(0.97);
+}
+
+.profile-name-block {
+    margin-top: 10px;
+}
+
+.profile-display-name {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.4px;
+    color: #111;
+    line-height: 1.2;
+}
+
+.profile-handle {
+    font-size: 13px;
+    font-weight: 600;
+    color: #8e8e93;
+    margin-top: 2px;
+}
+
+.profile-bio {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #262626;
+    line-height: 1.4;
+    margin-top: 8px;
+}
+
+.profile-stats {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 10px;
+}
+
+.stat-item {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    font-size: 13px;
+    color: #8e8e93;
+    font-weight: 500;
+}
+
+.stat-item strong {
+    color: #111;
+    font-weight: 800;
+    font-size: 13.5px;
+}
+
+/* Sticky 4-Icon Profile Category Tabs */
+.profile-tabs {
+    position: sticky;
+    top: calc(60px + env(safe-area-inset-top));
+    background: #fff;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    height: 46px;
+    border-bottom: 1px solid #f0f2f5;
+    z-index: 50;
+}
+
+.profile-tab-btn {
+    background: transparent;
+    border: none;
+    color: #8e8e93;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    position: relative;
+    transition: color 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.profile-tab-btn.active {
+    color: #111;
+}
+
+.profile-tab-btn svg {
+    width: 22px;
+    height: 22px;
+}
+
+.profile-tab-indicator {
+    position: absolute;
+    bottom: 0;
+    left: 12.5%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 2.5px;
+    border-radius: 2px;
+    background: #111;
+    will-change: left;
+    transition: left 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* TikTok-Style Horizontal Swipe Viewport & Track */
+.profile-swipe-viewport {
+    width: 100%;
+    overflow: hidden;
+    touch-action: pan-y;
+}
+
+.profile-swipe-track {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    will-change: transform;
+    transform: translate3d(0%, 0, 0);
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.profile-swipe-track.dragging {
+    transition: none;
+}
+
+.profile-tab-panel {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 100%;
+    padding: 12px 12px calc(88px + env(safe-area-inset-bottom));
+    /* Ensures profile hero always scrolls smoothly up to dock the sticky tabs, even with few/no posts */
+    min-height: calc(100vh - 106px - env(safe-area-inset-top));
+    min-height: calc(100svh - 106px - env(safe-area-inset-top));
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.profile-tab-panel.collapsed {
+    max-height: calc(100vh - 106px - env(safe-area-inset-top));
+    overflow: hidden;
+}
+
+/* Video Corner Indicator Badge */
+.video-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: rgba(17, 17, 17, 0.45);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ================================
+   CONTENT VIEWS
+   ================================ */
+.view-content {
+    display: none;
+}
+
+.view-content.active {
+    display: block;
+}
+
+#homeContent {
+    padding-top: calc(60px + env(safe-area-inset-top));
+}
+
+#searchContent {
+    padding-top: calc(115px + env(safe-area-inset-top)); 
+    padding-left: 12px;
+    padding-right: 12px;
+    padding-bottom: calc(85px + env(safe-area-inset-bottom));
+}
+
+#profileContent {
+    padding-top: calc(60px + env(safe-area-inset-top));
+}
+
+/* ================================
+   STRICT ALIGNED PORTRAIT & LANDSCAPE GRID
+   ================================ */
+.feed-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 10px;
+    row-gap: 16px;
+}
+
+.feed-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Full-Width Landscape Card */
+.feed-card.card-landscape {
+    grid-column: 1 / -1;
+}
+
+/* Default Portrait Format (TikTok 2-Column Style) */
+.feed-media {
+    width: 100%;
+    aspect-ratio: 3 / 4;
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+    background: #f2f3f5;
+}
+
+/* Landscape Format (Full-Width 16:9) */
+.feed-card.card-landscape .feed-media {
+    aspect-ratio: 16 / 9;
+}
+
+.feed-media img {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+.feed-media.text-block {
+    background: #e5e5e7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+}
+
+.feed-media.text-block span {
+    font-family: 'Playfair Display', serif;
+    font-size: 19px;
+    color: #111;
+    line-height: 1.3;
+}
+
+.dots-icon {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0px 1px 2px rgba(0,0,0,0.45));
+}
+
+/* Aligned Card Metadata */
+.feed-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 7px; 
+    padding: 0 2px;
+    gap: 8px; 
+}
+
+.meta-user {
+    display: flex;
+    align-items: center;
+    gap: 6px; 
+    flex: 1; 
+    min-width: 0; 
+}
+
+.meta-pfp {
+    width: 20px; 
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #e0e0e0;
+    flex-shrink: 0; 
+}
+
+.meta-username {
+    font-size: 12px; 
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; 
+}
+
+.meta-likes {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0; 
+}
+
+.meta-likes svg {
+    width: 14px; 
+    height: 14px;
+    color: #111;
+}
+
+.meta-like-count {
+    font-size: 12px; 
+    font-weight: 700;
+    color: #111;
+    letter-spacing: -0.2px;
+}
+
+/* End of Feed Footer */
+.end-of-feed {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 24px;
+    padding: 24px 16px 36px;
+    color: #6e6e73;
+}
+
+.end-of-feed svg {
+    width: 40px;
+    height: 40px;
+    color: #6e6e73;
+}
+
+.end-of-feed span {
+    font-size: 15.5px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+}
+
+/* ================================
+   FOOTER NAV CONTAINER
+   ================================ */
+.bottom-nav {
+    --side: 12px;
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    height: calc(76px + env(safe-area-inset-bottom));
+    padding: 8px var(--side) calc(8px + env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    z-index: 100;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.active-capsule {
+    position: absolute;
+    top: 15px;
+    left: 0;
+    width: 0px;
+    height: 46px;
+    border-radius: 50px;
+    background: #f0f2f5;
+    pointer-events: none;
+    z-index: 0;
+    will-change: left, width;
+    transition: left 400ms cubic-bezier(.22,.75,.18,1), width 400ms cubic-bezier(.22,.75,.18,1);
+}
+
+.nav-item {
+    position: relative;
+    height: 46px;
+    padding: 0 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border: none;
+    background: transparent;
+    color: #111;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 1;
+}
+
+.nav-label {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.2px;
+    display: none;
+    color: #0f1419;
+}
+
+.nav-item.active .nav-label {
+    display: inline-block;
+}
+
+svg.icon-outline, svg.icon-filled {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+.nav-item .icon-filled { display: none; }
+.nav-item .icon-outline { display: block; }
+.nav-item.active .icon-filled { display: block; }
+.nav-item.active .icon-outline { display: none; }
+
+.profile-container {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.profile-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.profile-badge {
+    position: absolute;
+    top: -1px;
+    right: -1px;
+    width: 8px;
+    height: 8px;
+    background-color: #ff3040;
+    border-radius: 50%;
+    border: 1.5px solid #fff;
+    display: none;
+}
+
+.nav-item.active .profile-badge {
+    display: block;
+}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+<body>
 
-    <header class="sticky top-0 z-30 bg-slate-900/80 backdrop-blur-md border-b border-slate-800">
-        <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
-            <div class="flex items-center gap-3 cursor-pointer" onclick="window.scrollTo({top:0, behavior:'smooth'})">
-                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                    <i class="fa-solid fa-bolt text-white text-xl"></i>
-                </div>
-                <div>
-                    <h1 class="text-xl font-extrabold bg-gradient-to-r from-white via-slate-200 to-brand-400 bg-clip-text text-transparent">
-                        EchoPulse
-                    </h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">Share updates & recorded timeline events</p>
+<main class="app" id="appRoot">
+
+<!-- ==========================================
+     TOP HEADER (HOME VIEW)
+     ========================================== -->
+<header class="top-header" id="homeHeader">
+    <div class="header-left">
+        <svg class="brand-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 2L1 8L12 14L22 8.54V15H24V8L12 2ZM4.5 10.7V15C4.5 16.5 7.5 18 12 18C16.5 18 19.5 16.5 19.5 15V10.7L12 14.8L4.5 10.7Z"/>
+        </svg>
+        <span class="brand-name">edulinkband</span>
+    </div>
+    
+    <div class="header-right">
+        <button class="header-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+        </button>
+        <button class="header-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="12" y1="3" x2="12" y2="21"/>
+            </svg>
+        </button>
+    </div>
+</header>
+
+<!-- ==========================================
+     SEARCH HEADER (SEARCH VIEW)
+     ========================================== -->
+<div class="search-header-container" id="searchHeader">
+    <div class="search-top-row">
+        <button class="header-btn search-back-btn" id="searchBackBtn" aria-label="Exit search">
+            <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 12H5"/>
+                <path d="m12 19-7-7 7-7"/>
+            </svg>
+        </button>
+        <div class="search-box">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M20 11.5c0 2.35-.95 4.47-2.49 6.01S13.85 20 11.5 20C6.81 20 3 16.19 3 11.5S6.81 3 11.5 3 20 6.81 20 11.5"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="m21 21-3.49-3.49"/>
+            </svg>
+            <input type="text" id="searchInput" placeholder="Search edulinkband...">
+            <div class="search-divider"></div>
+            <svg class="camera-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+                <circle cx="12" cy="13" r="4"/>
+            </svg>
+        </div>
+        <button class="header-btn search-grid-btn">
+            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                <line x1="3" y1="12" x2="21" y2="12"/>
+                <line x1="12" y1="3" x2="12" y2="21"/>
+            </svg>
+        </button>
+    </div>
+    <div class="search-categories">
+        <button class="category-pill active">All</button>
+        <button class="category-pill">Music</button>
+        <button class="category-pill">Materials</button>
+        <button class="category-pill">Videos</button>
+        <button class="category-pill">Programs</button>
+    </div>
+</div>
+
+<!-- ==========================================
+     PROFILE HEADER (PROFILE VIEW)
+     ========================================== -->
+<header class="profile-header" id="profileHeader">
+    <div class="profile-header-title">
+        <span id="profileHeaderUsername">riko</span>
+    </div>
+    <button class="header-btn" id="profileMenuBtn" aria-label="Profile menu">
+        <svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="7" x2="20" y2="7"/>
+            <line x1="4" y1="12" x2="20" y2="12"/>
+            <line x1="4" y1="17" x2="20" y2="17"/>
+        </svg>
+    </button>
+</header>
+
+<!-- ==========================================
+     HOME CONTENT
+     ========================================== -->
+<div id="homeContent" class="view-content active">
+</div>
+
+<!-- ==========================================
+     SEARCH CONTENT (STRICT PORTRAIT & LANDSCAPE GRID)
+     ========================================== -->
+<div id="searchContent" class="view-content">
+    <div class="feed-grid">
+
+        <!-- ROW 1: PORTRAIT PAIR (2x 3:4 PORTRAIT CARDS) -->
+        <div class="feed-card">
+            <div class="feed-media">
+                <img src="https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Dark sunset window">
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
                 </div>
             </div>
-
-            <!-- Right Header Controls -->
-            <div class="flex items-center gap-3">
-                <!-- Rules Fix Alert Button -->
-                <button id="rules-help-btn" class="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-400 text-xs font-semibold rounded-xl transition">
-                    <i class="fa-solid fa-shield-halved"></i>
-                    <span class="hidden sm:inline">Firebase Rules Helper</span>
-                </button>
-
-                <!-- User Auth Navigation -->
-                <div id="nav-auth-section" class="flex items-center gap-3">
-                    <div id="auth-loading-skeleton" class="h-9 w-28 bg-slate-800 animate-pulse rounded-lg"></div>
-
-                    <!-- Logged Out View -->
-                    <div id="logged-out-nav" class="hidden flex items-center gap-2">
-                        <button id="google-login-btn-header" class="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-medium rounded-xl border border-slate-700 transition">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24">
-                                <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"/>
-                                <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-                                <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9z"/>
-                                <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z"/>
-                            </svg>
-                            <span>Sign In</span>
-                        </button>
-                    </div>
-
-                    <!-- Logged In View -->
-                    <div id="logged-in-nav" class="hidden flex items-center gap-3">
-                        <button id="edit-profile-btn-nav" class="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs sm:text-sm font-medium rounded-xl border border-slate-700 transition text-slate-200">
-                            <i class="fa-solid fa-user-gear text-brand-400"></i>
-                            <span class="hidden sm:inline">Profile</span>
-                        </button>
-                        <div class="flex items-center gap-2 pl-2 border-l border-slate-800">
-                            <img id="nav-user-avatar" src="" alt="Avatar" class="w-8 h-8 rounded-full border border-slate-700 object-cover">
-                            <div class="hidden md:block text-left">
-                                <div id="nav-user-name" class="text-xs font-semibold leading-tight text-slate-200">User</div>
-                                <div id="nav-user-handle" class="text-[10px] text-slate-400">@username</div>
-                            </div>
-                        </div>
-                        <button id="logout-btn" title="Sign Out" class="p-2 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-lg transition">
-                            <i class="fa-solid fa-right-from-bracket"></i>
-                        </button>
-                    </div>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                    <span class="meta-username">riko</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">12.4K</span>
                 </div>
             </div>
         </div>
-    </header>
 
-    <div id="rules-warning-banner" class="hidden bg-gradient-to-r from-amber-950/90 via-amber-900/80 to-amber-950/90 border-b border-amber-500/30 px-4 py-3 text-amber-200 text-xs sm:text-sm">
-        <div class="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-            <div class="flex items-center gap-3">
-                <div class="p-2 bg-amber-500/20 text-amber-400 rounded-xl">
-                    <i class="fa-solid fa-triangle-exclamation text-lg"></i>
-                </div>
-                <div>
-                    <span class="font-bold">Firestore Permission Denied (`allow read, write: if false;`):</span>
-                    <p class="text-amber-300/80 text-xs">Your Firebase project security rules are currently blocking read/write access.</p>
+        <div class="feed-card">
+            <div class="feed-media">
+                <img src="https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Black iPhone and headphones">
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
                 </div>
             </div>
-            <button id="fix-rules-banner-btn" class="w-full sm:w-auto px-4 py-2 bg-amber-500 text-slate-950 font-bold rounded-xl text-xs hover:bg-amber-400 transition shadow-md whitespace-nowrap">
-                Fix Rules Now (2 Steps)
-            </button>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="vxnity">
+                    <span class="meta-username">vxnity</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">98.7K</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 2: LANDSCAPE CARD (FULL-WIDTH 16:9) -->
+        <div class="feed-card card-landscape">
+            <div class="feed-media">
+                <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Starry night mountain peak">
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </div>
+            </div>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="midnight.frame">
+                    <span class="meta-username">midnight.frame</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">215K</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 3: PORTRAIT PAIR (2x 3:4 PORTRAIT CARDS) -->
+        <div class="feed-card">
+            <div class="feed-media">
+                <img src="https://images.unsplash.com/photo-1555448248-2571daf6344b?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Dark mood street">
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </div>
+            </div>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1527980965255-d3b416303d12?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="aesthetic.mp4">
+                    <span class="meta-username">aesthetic.mp4</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">72.1K</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="feed-card">
+            <div class="feed-media text-block">
+                <span>Better Things<br>Are Coming.</span>
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </div>
+            </div>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="mindset">
+                    <span class="meta-username">mindset</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">124K</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 4: PORTRAIT PAIR (2x 3:4 PORTRAIT CARDS) -->
+        <div class="feed-card">
+            <div class="feed-media">
+                <img src="https://images.unsplash.com/photo-1518063319789-7217e6706b04?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Basketball hoop silhouette">
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </div>
+            </div>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1544723795-3fb6469f5b39?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="daydreams">
+                    <span class="meta-username">daydreams</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">46.9K</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="feed-card">
+            <div class="feed-media">
+                <img src="https://images.unsplash.com/photo-1605733513597-a8f8341084e6?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Black sneaker">
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </div>
+            </div>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="archive.x">
+                    <span class="meta-username">archive.x</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">89.3K</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 5: LANDSCAPE CARD (FULL-WIDTH 16:9) -->
+        <div class="feed-card card-landscape">
+            <div class="feed-media">
+                <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Tokyo neon night street">
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </div>
+            </div>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="tokyo.drift">
+                    <span class="meta-username">tokyo.drift</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">164K</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROW 6: PORTRAIT PAIR (2x 3:4 PORTRAIT CARDS) -->
+        <div class="feed-card">
+            <div class="feed-media">
+                <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Minimal morning coffee">
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </div>
+            </div>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="slow.brew">
+                    <span class="meta-username">slow.brew</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">31.8K</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="feed-card">
+            <div class="feed-media">
+                <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Studio vinyl setup">
+                <div class="dots-icon">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                </div>
+            </div>
+            <div class="feed-meta">
+                <div class="meta-user">
+                    <img src="https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="analog.lab">
+                    <span class="meta-username">analog.lab</span>
+                </div>
+                <div class="meta-likes">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <span class="meta-like-count">54.2K</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- End of Feed Indicator -->
+    <div class="end-of-feed">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+            <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+        </svg>
+        <span>All caught up</span>
+    </div>
+</div>
+
+<!-- ==========================================
+     CREATE & CHAT PLACEHOLDERS
+     ========================================== -->
+<div id="createContent" class="view-content"></div>
+<div id="chatContent" class="view-content"></div>
+
+<!-- ==========================================
+     PROFILE CONTENT
+     ========================================== -->
+<div id="profileContent" class="view-content">
+    
+    <!-- Scrollable Hero Section (Banner + Avatar + Bio) -->
+    <div class="profile-hero" id="profileHero">
+        <!-- Cover Banner -->
+        <div class="profile-banner-wrap">
+            <div class="profile-banner">
+                <img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=900&q=80" alt="Profile banner">
+            </div>
+        </div>
+
+        <!-- Avatar, Edit Profile Button & User Info -->
+        <div class="profile-identity">
+            <div class="profile-avatar-row">
+                <img class="profile-main-pfp" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=240&q=80" alt="Riko profile picture">
+                <button type="button" class="edit-profile-btn" id="editProfileBtn">Edit profile</button>
+            </div>
+
+            <div class="profile-name-block">
+                <h1 class="profile-display-name" id="profileDisplayName">Riko Takahashi</h1>
+                <div class="profile-handle" id="profileHandleText">@riko</div>
+            </div>
+
+            <p class="profile-bio" id="profileBioText">visual notes, late night film &amp; minimal spaces · tokyo</p>
+
+            <div class="profile-stats">
+                <div class="stat-item"><strong>148</strong> posts</div>
+                <div class="stat-item"><strong>24.8K</strong> followers</div>
+                <div class="stat-item"><strong>312</strong> following</div>
+            </div>
         </div>
     </div>
 
-    <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6">
+    <!-- Sticky 4-Icon Category Bar (Posts, Reposts, Videos, Tags) -->
+    <div class="profile-tabs" id="profileTabs">
+        <!-- Posts Icon -->
+        <button class="profile-tab-btn active" data-tab="0" aria-label="Posts">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="3"/>
+                <path d="M3 9h18M9 21V9"/>
+            </svg>
+        </button>
 
-        <!-- Welcome Hero Banner (Logged Out) -->
-        <div id="welcome-container" class="hidden max-w-2xl mx-auto my-8 sm:my-12 text-center bg-slate-900/60 border border-slate-800 rounded-3xl p-8 sm:p-12 shadow-2xl relative overflow-hidden">
-            <div class="absolute -top-24 -right-24 w-60 h-60 bg-brand-500/10 rounded-full blur-3xl"></div>
-            <div class="absolute -bottom-24 -left-24 w-60 h-60 bg-purple-500/10 rounded-full blur-3xl"></div>
+        <!-- Reposts Icon -->
+        <button class="profile-tab-btn" data-tab="1" aria-label="Reposts">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="m17 2 4 4-4 4"/>
+                <path d="M3 11v-1a4 4 0 0 1 4-4h14"/>
+                <path d="m7 22-4-4 4-4"/>
+                <path d="M21 13v1a4 4 0 0 1-4 4H3"/>
+            </svg>
+        </button>
 
-            <div class="inline-flex items-center justify-center w-16 h-16 bg-brand-600/20 text-brand-400 rounded-2xl mb-6 border border-brand-500/30 shadow-lg">
-                <i class="fa-solid fa-comments text-3xl"></i>
-            </div>
-            <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4">Welcome to EchoPulse</h2>
-            <p class="text-slate-400 text-sm sm:text-base mb-8 max-w-lg mx-auto leading-relaxed">
-                Share updates, attach custom event dates to your timeline posts, and interact with the live community feed in real-time.
-            </p>
+        <!-- Videos Icon -->
+        <button class="profile-tab-btn" data-tab="2" aria-label="Videos">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="14" rx="3"/>
+                <path d="m10 9 5 3-5 3z" fill="currentColor" stroke="none"/>
+            </svg>
+        </button>
 
-            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <button id="google-login-hero" class="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-3.5 bg-white hover:bg-slate-100 text-slate-900 font-semibold rounded-xl shadow-xl transition transform active:scale-95">
-                    <svg class="w-5 h-5" viewBox="0 0 24 24">
-                        <path fill="#EA4335" d="M12 5c1.6 0 3 .6 4.1 1.6l3.1-3.1C17.3 1.7 14.8 1 12 1 7.5 1 3.7 3.6 1.9 7.3l3.7 2.9C6.5 7.3 9 5 12 5z"/>
-                        <path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.6-.2-2.3H12v4.5h6.5c-.3 1.5-1.1 2.8-2.4 3.7l3.7 2.9c2.2-2 3.7-5 3.7-8.8z"/>
-                        <path fill="#FBBC05" d="M5.6 14.8c-.2-.7-.4-1.5-.4-2.3s.2-1.6.4-2.3L1.9 7.3C.7 9.7 0 12.3 0 15s.7 5.3 1.9 7.7l3.7-2.9z"/>
-                        <path fill="#34A853" d="M12 23c3.2 0 6-1.1 8-3l-3.7-2.9c-1.1.7-2.5 1.2-4.3 1.2-3 0-5.5-2.3-6.4-5.2L1.9 16c1.8 3.7 5.6 7 10.1 7z"/>
+        <!-- Tags Icon -->
+        <button class="profile-tab-btn" data-tab="3" aria-label="Tags">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8Z"/>
+                <circle cx="7.5" cy="7.5" r="1"/>
+            </svg>
+        </button>
+
+        <div class="profile-tab-indicator" id="profileTabIndicator"></div>
+    </div>
+
+    <!-- TikTok-Style Horizontal Swipeable Profile Grids -->
+    <div class="profile-swipe-viewport" id="profileSwipeViewport">
+        <div class="profile-swipe-track" id="profileSwipeTrack">
+            
+            <!-- TAB 0: POSTS -->
+            <div class="profile-tab-panel active" data-panel="0">
+                <div class="feed-grid">
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1518173946687-a4c8892bbd9f?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Sunset window">
+                            <div class="dots-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">12.4K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Morning coffee">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">9.8K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card card-landscape">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Tokyo evening">
+                            <div class="dots-icon">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">34.2K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card">
+                        <div class="feed-media text-block">
+                            <span>Quiet mornings<br>loud dreams.</span>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">18.1K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Vinyl setup">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">15.6K</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="end-of-feed">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
                     </svg>
-                    <span>Continue with Google</span>
-                </button>
-                <button id="guest-login-hero" class="w-full sm:w-auto flex items-center justify-center gap-2 px-6 py-3.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl border border-slate-700 transition">
-                    <i class="fa-solid fa-user-ninja text-slate-400"></i>
-                    <span>Try as Guest</span>
-                </button>
+                    <span>All caught up</span>
+                </div>
             </div>
-            <p class="text-xs text-slate-500 mt-6">Instant access. No password required.</p>
-        </div>
 
-        <!-- Authenticated Main Dashboard Layout -->
-        <div id="dashboard-container" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-            <aside class="lg:col-span-4 space-y-6">
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg relative overflow-hidden">
-                    <div class="h-20 -mx-5 -mt-5 bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600"></div>
-                    <div class="relative -mt-10 flex justify-between items-end mb-4">
-                        <img id="sidebar-user-avatar" src="" alt="User Avatar" class="w-20 h-20 rounded-2xl border-4 border-slate-900 object-cover bg-slate-800 shadow-md">
-                        <button id="edit-profile-btn-sidebar" class="px-3 py-1.5 text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-slate-200 transition">
-                            <i class="fa-solid fa-pen-to-square mr-1"></i> Edit
-                        </button>
-                    </div>
-
-                    <div class="space-y-1 mb-4">
-                        <h3 id="sidebar-user-name" class="text-lg font-bold text-white leading-tight">...</h3>
-                        <p id="sidebar-user-handle" class="text-xs text-brand-400 font-medium">@...</p>
-                        <p id="sidebar-user-bio" class="text-xs text-slate-400 pt-2 line-clamp-2">No bio set yet. Click Edit to add one!</p>
-                    </div>
-
-                    <div class="pt-4 border-t border-slate-800/80 grid grid-cols-2 gap-2 text-center">
-                        <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50">
-                            <span id="user-post-count" class="block text-lg font-extrabold text-slate-100">0</span>
-                            <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-500">Your Posts</span>
+            <!-- TAB 1: REPOSTS -->
+            <div class="profile-tab-panel collapsed" data-panel="1">
+                <div class="feed-grid">
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1605236453806-6ff36851218e?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Reposted tech">
                         </div>
-                        <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800/50">
-                            <span id="total-feed-count" class="block text-lg font-extrabold text-slate-100">0</span>
-                            <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-500">Total Feed</span>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="vxnity">
+                                <span class="meta-username">vxnity</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">98.7K</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Feature Tip Card -->
-                <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-5 text-xs text-slate-400 space-y-3">
-                    <h4 class="font-semibold text-slate-200 flex items-center gap-2">
-                        <i class="fa-solid fa-circle-info text-brand-400"></i> Recorded Date Landmark
-                    </h4>
-                    <p class="leading-relaxed">When publishing a post, select a specific calendar date to record milestones, past events, future releases, or travel logs.</p>
-                </div>
-            </aside>
+                    <div class="feed-card">
+                        <div class="feed-media text-block">
+                            <span>Better Things<br>Are Coming.</span>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="mindset">
+                                <span class="meta-username">mindset</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">124K</span>
+                            </div>
+                        </div>
+                    </div>
 
-            <section class="lg:col-span-8 space-y-6">
-
-                <!-- Post Creation Box -->
-                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg">
-                    <div class="flex items-start gap-3">
-                        <img id="composer-user-avatar" src="" alt="User" class="w-10 h-10 rounded-full border border-slate-700 object-cover mt-1">
-                        <div class="flex-1">
-                            <textarea id="post-input-text" rows="3" placeholder="What's happening? Share an update or recorded event..." class="w-full bg-slate-950/60 border border-slate-800 focus:border-brand-500 rounded-xl p-3 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none transition"></textarea>
-                            
-                            <!-- Controls Row -->
-                            <div class="mt-3 pt-3 border-t border-slate-800/60 flex flex-wrap items-center justify-between gap-3">
-                                <!-- Recorded Date Input -->
-                                <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800">
-                                    <i class="fa-regular fa-calendar-days text-brand-400 text-xs"></i>
-                                    <label for="post-recorded-date" class="text-xs text-slate-400 font-medium whitespace-nowrap">Recorded Date:</label>
-                                    <input type="date" id="post-recorded-date" class="bg-transparent text-xs text-slate-200 border-none focus:outline-none cursor-pointer">
-                                </div>
-
-                                <div class="flex items-center gap-3 ml-auto">
-                                    <span id="char-count" class="text-xs text-slate-500">0/280</span>
-                                    <button id="create-post-btn" class="flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-medium text-sm rounded-xl shadow-md shadow-brand-600/20 transition active:scale-95 disabled:opacity-50">
-                                        <i class="fa-solid fa-paper-plane text-xs"></i>
-                                        <span>Post</span>
-                                    </button>
-                                </div>
+                    <div class="feed-card card-landscape">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1519681393784-d120267933ba?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Starry peak">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="midnight.frame">
+                                <span class="meta-username">midnight.frame</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">215K</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Feed Search & Sort Controls -->
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-800/60">
-                    <div class="relative flex-1">
-                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                        <input type="text" id="feed-search-input" placeholder="Search posts or usernames..." class="w-full pl-9 pr-3 py-1.5 bg-slate-950/80 border border-slate-800 rounded-lg text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-slate-700">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs text-slate-400 whitespace-nowrap">Sort:</label>
-                        <select id="feed-sort-select" class="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none">
-                            <option value="newest">Newest First</option>
-                            <option value="oldest">Oldest First</option>
-                            <option value="most-liked">Most Liked</option>
-                        </select>
-                    </div>
+                <div class="end-of-feed">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>All caught up</span>
                 </div>
-
-                <!-- Real-time Feed Posts List -->
-                <div id="posts-container" class="space-y-4">
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3 animate-pulse">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-slate-800 rounded-full"></div>
-                            <div class="space-y-1.5 flex-1">
-                                <div class="w-32 h-3.5 bg-slate-800 rounded"></div>
-                                <div class="w-20 h-2.5 bg-slate-800/60 rounded"></div>
-                            </div>
-                        </div>
-                        <div class="w-full h-12 bg-slate-800/40 rounded-xl"></div>
-                    </div>
-                </div>
-
-            </section>
-        </div>
-
-    </main>
-
-    <div id="profile-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 relative">
-            <div class="flex justify-between items-center border-b border-slate-800 pb-4">
-                <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-user-gear text-brand-400"></i> Setup Profile
-                </h3>
-                <button id="close-profile-modal-btn" class="text-slate-400 hover:text-white p-1 rounded-lg">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
             </div>
 
-            <form id="profile-form" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Display Name</label>
-                    <input type="text" id="modal-display-name" required placeholder="e.g. Alex Rivera" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Username (@handle)</label>
-                    <div class="relative flex items-center">
-                        <span class="absolute left-3 text-slate-500 text-sm font-semibold">@</span>
-                        <input type="text" id="modal-username" required placeholder="alexrivera" class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+            <!-- TAB 2: VIDEOS -->
+            <div class="profile-tab-panel collapsed" data-panel="2">
+                <div class="feed-grid">
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1555448248-2571daf6344b?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Night walk video">
+                            <div class="video-badge">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                                <span class="meta-like-count">41.2K</span>
+                            </div>
+                        </div>
                     </div>
-                    <p class="text-[10px] text-slate-500 mt-1">Letters, numbers and underscores only.</p>
+
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1518063319789-7217e6706b04?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Court clip">
+                            <div class="video-badge">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                                <span class="meta-like-count">28.9K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card card-landscape">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=800&q=80" loading="lazy" alt="Shinjuku film reel">
+                            <div class="video-badge">
+                                <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                            </div>
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="riko">
+                                <span class="meta-username">riko</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+                                <span class="meta-like-count">112K</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Avatar Image URL (Optional)</label>
-                    <input type="url" id="modal-avatar-url" placeholder="https://example.com/photo.jpg" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500">
+                <div class="end-of-feed">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>All caught up</span>
+                </div>
+            </div>
+
+            <!-- TAB 3: TAGS -->
+            <div class="profile-tab-panel collapsed" data-panel="3">
+                <div class="feed-grid">
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1605733513597-a8f8341084e6?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Tagged post 1">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="archive.x">
+                                <span class="meta-username">archive.x</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">89.3K</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="feed-card">
+                        <div class="feed-media">
+                            <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=500&q=80" loading="lazy" alt="Tagged post 2">
+                        </div>
+                        <div class="feed-meta">
+                            <div class="meta-user">
+                                <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=100&q=80" loading="lazy" class="meta-pfp" alt="slow.brew">
+                                <span class="meta-username">slow.brew</span>
+                            </div>
+                            <div class="meta-likes">
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                                <span class="meta-like-count">31.8K</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Short Bio</label>
-                    <textarea id="modal-bio" rows="2" placeholder="Tell the community a bit about yourself..." class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:border-brand-500 resize-none"></textarea>
+                <div class="end-of-feed">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" fill="#f0f2f5" stroke="currentColor" stroke-width="1.8"></circle>
+                        <path d="m8.5 12.2 2.3 2.3 4.7-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"></path>
+                    </svg>
+                    <span>All caught up</span>
                 </div>
+            </div>
 
-                <div class="pt-2">
-                    <button type="submit" id="save-profile-btn" class="w-full py-3 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl shadow-lg transition">
-                        Save Profile
-                    </button>
-                </div>
-            </form>
         </div>
     </div>
+</div>
 
-    <div id="rules-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md hidden">
-        <div class="bg-slate-900 border border-amber-500/40 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl space-y-5 relative max-h-[90vh] overflow-y-auto">
-            <div class="flex justify-between items-start border-b border-slate-800 pb-4">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center border border-amber-500/30">
-                        <i class="fa-solid fa-shield-cat text-xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-extrabold text-white">How to Fix Firebase Permission Error</h3>
-                        <p class="text-xs text-amber-400 font-medium">`allow read, write: if false;` solution guide</p>
-                    </div>
-                </div>
-                <button id="close-rules-modal-btn" class="text-slate-400 hover:text-white p-1 rounded-lg">
-                    <i class="fa-solid fa-xmark text-lg"></i>
-                </button>
-            </div>
+<!-- ==========================================
+     BOTTOM NAVIGATION 
+     ========================================== -->
+<nav class="bottom-nav" id="bottomNav">
 
-            <div class="text-xs sm:text-sm text-slate-300 space-y-4 leading-relaxed">
-                <p>
-                    Your Firebase database currently rejects queries because the default Firestore Rules set read and write permissions to <code class="bg-red-950 text-red-300 px-1.5 py-0.5 rounded font-mono">false</code>.
-                </p>
+    <div class="active-capsule" id="activeCapsule"></div>
 
-                <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-semibold uppercase text-brand-400 tracking-wider">Step 1: Copy Updated Rules</span>
-                        <button id="copy-rules-code-btn" class="px-2.5 py-1 bg-brand-600/30 hover:bg-brand-600/50 text-brand-300 border border-brand-500/40 rounded-lg text-xs font-semibold transition">
-                            <i class="fa-regular fa-copy mr-1"></i> Copy Rules
-                        </button>
-                    </div>
-                    <pre id="rules-code-block" class="bg-slate-900 p-3 rounded-xl border border-slate-800 text-[11px] font-mono text-emerald-400 overflow-x-auto">rules_version = '2';
+    <button class="nav-item active">
+        <svg class="icon-outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12.76c0-1.02 0-1.53.12-2 .1-.43.28-.83.51-1.2.27-.41.64-.76 1.38-1.46l2.6-2.45c1.54-1.46 2.32-2.19 3.2-2.47.77-.24 1.61-.24 2.38 0 .88.28 1.66 1.01 3.2 2.47l2.6 2.45c.74.7 1.11 1.05 1.38 1.46.23.37.41.77.51 1.2.12.47.12.98.12 2v3.57c0 1.09 0 1.63-.12 2.07-.32 1.21-1.27 2.16-2.47 2.48-.45.12-.99.12-2.08.12-.31 0-.46 0-.59-.04-.34-.09-.61-.36-.71-.7-.03-.13-.03-.29-.03-.6V17c0-.47 0-.7-.03-.89-.17-1.07-1.01-1.91-2.08-2.08C12.7 14 12.46 14 12 14s-.7 0-.89.03c-1.07.17-1.91 1.01-2.08 2.08C9 16.3 9 16.53 9 17v2.66c0 .31 0 .47-.03.6-.1.34-.37.61-.71.7-.13.04-.28.04-.59.04-1.09 0-1.63 0-2.08-.12-1.2-.32-2.15-1.27-2.47-2.48C3 17.96 3 17.42 3 16.33z"/>
+        </svg>
+        <svg class="icon-filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path fill="currentColor" d="M3 12.76c0-1.02 0-1.53.12-2 .1-.43.28-.83.51-1.2.27-.41.64-.76 1.38-1.46l2.6-2.45c1.54-1.46 2.32-2.19 3.2-2.47.77-.24 1.61-.24 2.38 0 .88.28 1.66 1.01 3.2 2.47l2.6 2.45c.74.7 1.11 1.05 1.38 1.46.23.37.41.77.51 1.2.12.47.12.98.12 2v3.57c0 1.09 0 1.63-.12 2.07-.32 1.21-1.27 2.16-2.47 2.48-.45.12-.99.12-2.08.12-.31 0-.46 0-.59-.04-.34-.09-.61-.36-.71-.7-.03-.13-.03-.29-.03-.6V17c0-.47 0-.7-.03-.89-.17-1.07-1.01-1.91-2.08-2.08C12.7 14 12.46 14 12 14s-.7 0-.89.03c-1.07.17-1.91 1.01-2.08 2.08C9 16.3 9 16.53 9 17v2.66c0 .31 0 .47-.03.6-.1.34-.37.61-.71.7-.13.04-.28.04-.59.04-1.09 0-1.63 0-2.08-.12-1.2-.32-2.15-1.27-2.47-2.48C3 17.96 3 17.42 3 16.33z"/>
+        </svg>
+        <span class="nav-label">Home</span>
+    </button>
 
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /{document=**} {
-      // Allows logged-in authenticated users to read and write
-      allow read, write: if request.auth != null;
+    <button class="nav-item">
+        <svg class="icon-outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 11.5c0 2.35-.95 4.47-2.49 6.01S13.85 20 11.5 20C6.81 20 3 16.19 3 11.5S6.81 3 11.5 3 20 6.81 20 11.5"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-3.49-3.49"/>
+        </svg>
+        <svg class="icon-filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 11.5c0 2.35-.95 4.47-2.49 6.01S13.85 20 11.5 20C6.81 20 3 16.19 3 11.5S6.81 3 11.5 3 20 6.81 20 11.5"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="m21 21-3.49-3.49"/>
+        </svg>
+        <span class="nav-label">Search</span>
+    </button>
+
+    <button class="nav-item">
+        <svg class="icon-outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+        </svg>
+        <svg class="icon-filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+        </svg>
+        <span class="nav-label">Create</span>
+    </button>
+
+    <button class="nav-item">
+        <svg class="icon-outline" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9c0 .43.03.86.09 1.27.17 1.21.25 1.81.27 1.97.02.25.01.16.01.42 0 .16-.01.34-.04.7l-.15 2.15c-.06.86-.09 1.29.06 1.61.13.28.36.51.64.64.32.15.75.12 1.61.06l2.15-.15c.36-.03.54-.04.7-.04.26 0 .17-.01.42.01.16.02.76.1 1.97.27.41.06.84.09 1.27.09"/><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h8m-8 4h4"/>
+        </svg>
+        <svg class="icon-filled" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+            <path fill="currentColor" d="M12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9-9 4.03-9 9c0 .43.03.86.09 1.27.17 1.21.25 1.81.27 1.97.02.25.01.16.01.42 0 .16-.01.34-.04.7l-.15 2.15c-.06.86-.09 1.29.06 1.61.13.28.36.51.64.64.32.15.75.12 1.61.06l2.15-.15c.36-.03.54-.04.7-.04.26 0 .17-.01.42.01.16.02.76.1 1.97.27.41.06.84.09 1.27.09"/>
+            <path stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 10h8m-8 4h4"/>
+        </svg>
+        <span class="nav-label">Chat</span>
+    </button>
+
+    <button class="nav-item">
+        <div class="profile-container">
+            <img class="profile-avatar" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" alt="Profile avatar">
+            <span class="profile-badge"></span>
+        </div>
+        <span class="nav-label">Profile</span>
+    </button>
+
+</nav>
+
+</main>
+
+<script>
+const appRoot = document.getElementById("appRoot");
+const nav = document.getElementById("bottomNav");
+const capsule = document.getElementById("activeCapsule");
+const items = [...document.querySelectorAll(".nav-item")];
+
+const homeHeader = document.getElementById("homeHeader");
+const searchHeader = document.getElementById("searchHeader");
+const profileHeader = document.getElementById("profileHeader");
+
+const homeContent = document.getElementById("homeContent");
+const searchContent = document.getElementById("searchContent");
+const createContent = document.getElementById("createContent");
+const chatContent = document.getElementById("chatContent");
+const profileContent = document.getElementById("profileContent");
+
+const viewContainers = [
+    homeContent,
+    searchContent,
+    createContent,
+    chatContent,
+    profileContent
+];
+
+const searchInput = document.getElementById("searchInput");
+const searchBackBtn = document.getElementById("searchBackBtn");
+
+// ==========================================
+// LOCAL STORAGE SCROLL PERSISTENCE
+// ==========================================
+const SCROLL_STORAGE_KEY = "edulinkband_tab_scrolls";
+let scrollPositions = {};
+
+try {
+    const saved = localStorage.getItem(SCROLL_STORAGE_KEY);
+    if (saved) scrollPositions = JSON.parse(saved) || {};
+} catch (e) {
+    scrollPositions = {};
+}
+
+function persistScrollPositions() {
+    try {
+        localStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify(scrollPositions));
+    } catch (e) {}
+}
+
+let activeIndex = 0;
+let lastScrollTop = 0;
+let scrollDelta = 0;
+let isRestoringScroll = false;
+let isSearchFocused = false;
+const SCROLL_THRESHOLD = 14;
+
+// ==========================================
+// SEARCH BAR FOCUS MODE (ONLY HEADER VISIBLE)
+// ==========================================
+function enterSearchFocus() {
+    if (isSearchFocused) return;
+    const currentY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    scrollPositions[1] = currentY;
+    persistScrollPositions();
+
+    isSearchFocused = true;
+    appRoot.classList.add("search-focused");
+}
+
+function exitSearchFocus() {
+    if (!isSearchFocused) return;
+    isRestoringScroll = true;
+    isSearchFocused = false;
+    appRoot.classList.remove("search-focused");
+    searchInput.blur();
+
+    const savedY = Number(scrollPositions[1]) || 0;
+    window.scrollTo(0, savedY);
+    lastScrollTop = savedY;
+    scrollDelta = 0;
+
+    if (savedY > 60) {
+        searchHeader.classList.add("scrolled");
+    } else {
+        searchHeader.classList.remove("scrolled");
     }
-  }
-}</pre>
-                </div>
 
-                <div class="space-y-2 text-xs">
-                    <span class="font-bold text-slate-100">Step 2: Update in Firebase Console</span>
-                    <ol class="list-decimal list-inside space-y-1 text-slate-400">
-                        <li>Go to <a href="https://console.firebase.google.com/" target="_blank" class="text-brand-400 underline hover:text-brand-300">Firebase Console</a> and open your project <span class="font-mono text-slate-200">idembt</span>.</li>
-                        <li>Click on <b class="text-slate-200">Firestore Database</b> on the left navigation menu.</li>
-                        <li>Click the <b class="text-slate-200">Rules</b> tab at the top.</li>
-                        <li>Replace <code class="text-red-400">allow read, write: if false;</code> with <code class="text-emerald-400">allow read, write: if request.auth != null;</code> (or paste the copied snippet above).</li>
-                        <li>Click <b class="text-slate-200">Publish</b>!</li>
-                    </ol>
-                </div>
-            </div>
+    requestAnimationFrame(() => {
+        window.scrollTo(0, savedY);
+        lastScrollTop = savedY;
+        isRestoringScroll = false;
+    });
+}
 
-            <div class="pt-2 border-t border-slate-800 flex justify-end">
-                <button id="understood-rules-btn" class="px-5 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-medium rounded-xl text-xs shadow-lg transition">
-                    Got it, close guide
-                </button>
-            </div>
-        </div>
-    </div>
+searchInput.addEventListener("focus", enterSearchFocus);
+searchBackBtn.addEventListener("click", exitSearchFocus);
 
-    <div id="delete-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm hidden">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4 text-center">
-            <div class="w-12 h-12 bg-red-500/20 text-red-400 rounded-full flex items-center justify-center mx-auto border border-red-500/30">
-                <i class="fa-solid fa-trash-can text-xl"></i>
-            </div>
-            <h4 class="text-lg font-bold text-white">Delete Post?</h4>
-            <p class="text-xs text-slate-400">This action cannot be undone. Are you sure you want to remove this post from the feed?</p>
-            <div class="flex gap-3 pt-2">
-                <button id="cancel-delete-btn" class="flex-1 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition">Cancel</button>
-                <button id="confirm-delete-btn" class="flex-1 py-2 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-semibold transition">Delete</button>
-            </div>
-        </div>
-    </div>
+// ==========================================
+// PROFILE CATEGORY TABS & TIKTOK-STYLE SWIPE
+// ==========================================
+const profileHero = document.getElementById("profileHero");
+const profileTabBtns = [...document.querySelectorAll(".profile-tab-btn")];
+const profileTabPanels = [...document.querySelectorAll(".profile-tab-panel")];
+const profileTabIndicator = document.getElementById("profileTabIndicator");
+const profileSwipeViewport = document.getElementById("profileSwipeViewport");
+const profileSwipeTrack = document.getElementById("profileSwipeTrack");
 
-    <!-- Floating Toast Notification -->
-    <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none flex items-center gap-3 bg-slate-900 border border-slate-700 text-slate-100 px-4 py-3 rounded-2xl shadow-2xl">
-        <i id="toast-icon" class="fa-solid fa-circle-check text-brand-400"></i>
-        <span id="toast-message" class="text-xs font-medium">Notification message</span>
-    </div>
+let activeProfileTab = 0;
+let collapseTimer = null;
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-        import { 
-            getAuth, 
-            signInWithPopup, 
-            GoogleAuthProvider, 
-            signInAnonymously, 
-            signOut, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            doc, 
-            setDoc, 
-            getDoc, 
-            addDoc, 
-            deleteDoc, 
-            updateDoc, 
-            onSnapshot 
-        } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+function setProfileTab(index, animate = true) {
+    const target = Math.max(0, Math.min(profileTabPanels.length - 1, index));
+    const currentY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    const heroHeight = profileHero ? profileHero.offsetHeight : 0;
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCHeKhAj0fKHjmcp1V_tX7bvQvVE3tzVLk",
-            authDomain: "idembt.firebaseapp.com",
-            projectId: "idembt",
-            storageBucket: "idembt.firebasestorage.app",
-            messagingSenderId: "297940761171",
-            appId: "1:297940761171:web:5e11230daad141c5a6a4a6"
-        };
+    activeProfileTab = target;
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-
-        // App Identifier and Collection references complying with Rule 1
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'idembt-social';
-        const postsCollectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
-
-        // Application State
-        let currentUser = null;
-        let currentUserProfile = null;
-        let allPosts = [];
-        let postToDeleteId = null;
-
-        const navLoadingSkeleton = document.getElementById('auth-loading-skeleton');
-        const loggedOutNav = document.getElementById('logged-out-nav');
-        const loggedInNav = document.getElementById('logged-in-nav');
-        const welcomeContainer = document.getElementById('welcome-container');
-        const dashboardContainer = document.getElementById('dashboard-container');
-        const rulesWarningBanner = document.getElementById('rules-warning-banner');
-
-        // Nav Elements
-        const navUserAvatar = document.getElementById('nav-user-avatar');
-        const navUserName = document.getElementById('nav-user-name');
-        const navUserHandle = document.getElementById('nav-user-handle');
-
-        // Sidebar Elements
-        const sidebarUserAvatar = document.getElementById('sidebar-user-avatar');
-        const sidebarUserName = document.getElementById('sidebar-user-name');
-        const sidebarUserHandle = document.getElementById('sidebar-user-handle');
-        const sidebarUserBio = document.getElementById('sidebar-user-bio');
-        const userPostCount = document.getElementById('user-post-count');
-        const totalFeedCount = document.getElementById('total-feed-count');
-
-        // Composer Elements
-        const composerUserAvatar = document.getElementById('composer-user-avatar');
-        const postInputText = document.getElementById('post-input-text');
-        const postRecordedDate = document.getElementById('post-recorded-date');
-        const createPostBtn = document.getElementById('create-post-btn');
-        const charCount = document.getElementById('char-count');
-
-        // Feed Elements
-        const postsContainer = document.getElementById('posts-container');
-        const feedSearchInput = document.getElementById('feed-search-input');
-        const feedSortSelect = document.getElementById('feed-sort-select');
-
-        // Profile Modal Elements
-        const profileModal = document.getElementById('profile-modal');
-        const profileForm = document.getElementById('profile-form');
-        const modalDisplayName = document.getElementById('modal-display-name');
-        const modalUsername = document.getElementById('modal-username');
-        const modalAvatarUrl = document.getElementById('modal-avatar-url');
-        const modalBio = document.getElementById('modal-bio');
-
-        // Rules Helper Modal Elements
-        const rulesModal = document.getElementById('rules-modal');
-        const copyRulesCodeBtn = document.getElementById('copy-rules-code-btn');
-
-        // Delete Modal Elements
-        const deleteModal = document.getElementById('delete-modal');
-        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-
-        // Set default recorded date input to current date
-        postRecordedDate.value = new Date().toISOString().split('T')[0];
-
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toast-message');
-            const toastIcon = document.getElementById('toast-icon');
-
-            toastMessage.textContent = message;
-            if (type === 'error') {
-                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400';
-            } else if (type === 'info') {
-                toastIcon.className = 'fa-solid fa-circle-info text-blue-400';
-            } else {
-                toastIcon.className = 'fa-solid fa-circle-check text-brand-400';
-            }
-
-            toast.classList.remove('translate-y-20', 'opacity-0');
-            toast.classList.add('translate-y-0', 'opacity-100');
-
-            setTimeout(() => {
-                toast.classList.remove('translate-y-0', 'opacity-100');
-                toast.classList.add('translate-y-20', 'opacity-0');
-            }, 3500);
+    profileTabBtns.forEach((b, i) => b.classList.toggle("active", i === activeProfileTab));
+    profileTabPanels.forEach((p, i) => {
+        p.classList.toggle("active", i === activeProfileTab);
+        if (i === activeProfileTab) {
+            p.classList.remove("collapsed");
         }
+    });
 
-        function getDefaultAvatar(seed) {
-            return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(seed || 'user')}`;
-        }
+    if (!animate) {
+        profileSwipeTrack.classList.add("dragging");
+        profileTabIndicator.style.transition = "none";
+    } else {
+        profileSwipeTrack.classList.remove("dragging");
+        profileTabIndicator.style.transition = "";
+    }
 
-        function triggerPermissionErrorNotice() {
-            rulesWarningBanner.classList.remove('hidden');
-            showToast("Firestore Permission Denied! Click 'Firebase Rules Helper' to fix.", "error");
-        }
+    profileSwipeTrack.style.transform = `translate3d(-${activeProfileTab * 100}%, 0, 0)`;
+    profileTabIndicator.style.left = `calc(${activeProfileTab * 25}% + 12.5%)`;
 
-        async function handleGoogleSignIn() {
-            try {
-                const provider = new GoogleAuthProvider();
-                await signInWithPopup(auth, provider);
-                showToast('Signed in successfully!');
-            } catch (error) {
-                console.error("Google Sign-in Error:", error);
-                if (error.code === 'auth/popup-blocked' || error.code === 'auth/popup-closed-by-user') {
-                    showToast('Popup closed. Trying guest login...', 'info');
-                    tryGuestSignIn();
-                } else {
-                    showToast('Sign-in failed: ' + error.message, 'error');
-                }
-            }
-        }
-
-        async function tryGuestSignIn() {
-            try {
-                await signInAnonymously(auth);
-                showToast('Signed in as Guest!');
-            } catch (err) {
-                showToast('Guest sign-in error: ' + err.message, 'error');
-            }
-        }
-
-        onAuthStateChanged(auth, async (user) => {
-            navLoadingSkeleton.classList.add('hidden');
-            if (user) {
-                currentUser = user;
-                loggedOutNav.classList.add('hidden');
-                welcomeContainer.classList.add('hidden');
-                loggedInNav.classList.remove('hidden');
-                dashboardContainer.classList.remove('hidden');
-
-                await loadUserProfile();
-                subscribeToFeed();
-            } else {
-                currentUser = null;
-                currentUserProfile = null;
-                loggedInNav.classList.add('hidden');
-                dashboardContainer.classList.add('hidden');
-                loggedOutNav.classList.remove('hidden');
-                welcomeContainer.classList.remove('hidden');
-            }
+    // Collapse non-active panels after slide finishes so page height stays aligned
+    clearTimeout(collapseTimer);
+    collapseTimer = setTimeout(() => {
+        profileTabPanels.forEach((p, i) => {
+            p.classList.toggle("collapsed", i !== activeProfileTab);
         });
 
-        async function loadUserProfile() {
-            if (!currentUser) return;
-            const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.uid);
-
-            try {
-                const docSnap = await getDoc(userDocRef);
-                if (docSnap.exists()) {
-                    currentUserProfile = docSnap.data();
-                } else {
-                    const defaultName = currentUser.displayName || (currentUser.isAnonymous ? 'Guest Echoer' : 'Pulse User');
-                    const defaultHandle = (currentUser.email ? currentUser.email.split('@')[0] : 'user_' + currentUser.uid.slice(0, 5)).replace(/[^a-zA-Z0-9_]/g, '');
-                    const defaultPhoto = currentUser.photoURL || getDefaultAvatar(currentUser.uid);
-
-                    currentUserProfile = {
-                        uid: currentUser.uid,
-                        displayName: defaultName,
-                        username: defaultHandle,
-                        photoURL: defaultPhoto,
-                        bio: 'Hey there! I am using EchoPulse.',
-                        createdAt: new Date().toISOString()
-                    };
-
-                    await setDoc(userDocRef, currentUserProfile);
-                    openProfileModal();
-                }
-                updateUserUI();
-            } catch (err) {
-                console.error("Error loading profile:", err);
-                if (err.code === 'permission-denied') {
-                    triggerPermissionErrorNotice();
-                }
+        // If tabs were docked at the top, keep them smoothly docked without jumping
+        if (currentY >= heroHeight && heroHeight > 0) {
+            const newScrollY = window.pageYOffset || document.documentElement.scrollTop || 0;
+            if (newScrollY < heroHeight) {
+                window.scrollTo(0, heroHeight);
             }
         }
+    }, animate ? 330 : 0);
+}
 
-        function updateUserUI() {
-            if (!currentUserProfile) return;
+profileTabBtns.forEach((btn, idx) => {
+    btn.addEventListener("click", () => {
+        // Reveal target panel immediately for smooth slide
+        profileTabPanels[idx].classList.remove("collapsed");
+        setProfileTab(idx, true);
+    });
+});
 
-            const name = currentUserProfile.displayName || 'User';
-            const handle = '@' + (currentUserProfile.username || 'username');
-            const avatar = currentUserProfile.photoURL || getDefaultAvatar(currentUserProfile.uid);
-            const bio = currentUserProfile.bio || 'No bio set yet.';
+// Touch & Pointer Swipe Gesture on Profile Content
+let swipeStartX = 0;
+let swipeStartY = 0;
+let swipeStartTime = 0;
+let swipeAxis = null; // "x" | "y" | null
+let isSwiping = false;
+let currentDeltaX = 0;
 
-            navUserAvatar.src = avatar;
-            navUserName.textContent = name;
-            navUserHandle.textContent = handle;
+function onSwipeStart(clientX, clientY) {
+    if (activeIndex !== 4) return;
+    swipeStartX = clientX;
+    swipeStartY = clientY;
+    swipeStartTime = Date.now();
+    swipeAxis = null;
+    isSwiping = true;
+    currentDeltaX = 0;
+    clearTimeout(collapseTimer);
+}
 
-            sidebarUserAvatar.src = avatar;
-            sidebarUserName.textContent = name;
-            sidebarUserHandle.textContent = handle;
-            sidebarUserBio.textContent = bio;
+function onSwipeMove(clientX, clientY, e) {
+    if (!isSwiping || activeIndex !== 4) return;
 
-            composerUserAvatar.src = avatar;
-        }
+    const dx = clientX - swipeStartX;
+    const dy = clientY - swipeStartY;
 
-        function openProfileModal() {
-            if (!currentUserProfile) return;
-            modalDisplayName.value = currentUserProfile.displayName || '';
-            modalUsername.value = currentUserProfile.username || '';
-            modalAvatarUrl.value = currentUserProfile.photoURL || '';
-            modalBio.value = currentUserProfile.bio || '';
-            profileModal.classList.remove('hidden');
-        }
+    if (!swipeAxis) {
+        if (Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+        swipeAxis = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
 
-        profileForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            if (!currentUser) return;
-
-            const cleanHandle = modalUsername.value.trim().replace(/[^a-zA-Z0-9_]/g, '');
-            if (!cleanHandle) {
-                showToast('Please enter a valid username.', 'error');
-                return;
+        if (swipeAxis === "x") {
+            profileSwipeTrack.classList.add("dragging");
+            profileTabIndicator.style.transition = "none";
+            // Reveal adjacent panels while sliding
+            if (activeProfileTab > 0) {
+                profileTabPanels[activeProfileTab - 1].classList.remove("collapsed");
             }
-
-            const updatedProfile = {
-                ...currentUserProfile,
-                displayName: modalDisplayName.value.trim(),
-                username: cleanHandle,
-                photoURL: modalAvatarUrl.value.trim() || currentUserProfile.photoURL || getDefaultAvatar(currentUser.uid),
-                bio: modalBio.value.trim(),
-                updatedAt: new Date().toISOString()
-            };
-
-            try {
-                const userDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'users', currentUser.uid);
-                await setDoc(userDocRef, updatedProfile, { merge: true });
-                currentUserProfile = updatedProfile;
-                updateUserUI();
-                profileModal.classList.add('hidden');
-                showToast('Profile updated!');
-            } catch (err) {
-                console.error("Save profile error:", err);
-                if (err.code === 'permission-denied') triggerPermissionErrorNotice();
-                else showToast('Failed to save profile: ' + err.message, 'error');
-            }
-        });
-
-        postInputText.addEventListener('input', () => {
-            const length = postInputText.value.length;
-            charCount.textContent = `${length}/280`;
-            if (length > 280) {
-                charCount.classList.add('text-red-400');
-                createPostBtn.disabled = true;
-            } else {
-                charCount.classList.remove('text-red-400');
-                createPostBtn.disabled = false;
-            }
-        });
-
-        async function createPost() {
-            const text = postInputText.value.trim();
-            const dateVal = postRecordedDate.value;
-
-            if (!text) {
-                showToast('Please enter post content!', 'error');
-                return;
-            }
-
-            if (!currentUser || !currentUserProfile) {
-                showToast('Must be signed in to post.', 'error');
-                return;
-            }
-
-            createPostBtn.disabled = true;
-            createPostBtn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin text-xs"></i> Posting...`;
-
-            try {
-                const newPostData = {
-                    authorUid: currentUser.uid,
-                    authorDisplayName: currentUserProfile.displayName,
-                    authorUsername: currentUserProfile.username,
-                    authorPhotoURL: currentUserProfile.photoURL,
-                    content: text,
-                    recordedDate: dateVal || new Date().toISOString().split('T')[0],
-                    createdAt: Date.now(),
-                    likes: []
-                };
-
-                await addDoc(postsCollectionRef, newPostData);
-
-                postInputText.value = '';
-                charCount.textContent = '0/280';
-                showToast('Post published!');
-            } catch (err) {
-                console.error("Error creating post:", err);
-                if (err.code === 'permission-denied') triggerPermissionErrorNotice();
-                else showToast('Failed to post: ' + err.message, 'error');
-            } finally {
-                createPostBtn.disabled = false;
-                createPostBtn.innerHTML = `<i class="fa-solid fa-paper-plane text-xs"></i> <span>Post</span>`;
+            if (activeProfileTab < profileTabPanels.length - 1) {
+                profileTabPanels[activeProfileTab + 1].classList.remove("collapsed");
             }
         }
+    }
 
-        createPostBtn.addEventListener('click', createPost);
+    if (swipeAxis !== "x") return;
 
-        function subscribeToFeed() {
-            onSnapshot(postsCollectionRef, (snapshot) => {
-                const loadedPosts = [];
-                snapshot.forEach((doc) => {
-                    loadedPosts.push({ id: doc.id, ...doc.data() });
-                });
+    if (e && e.cancelable) e.preventDefault();
 
-                allPosts = loadedPosts;
-                rulesWarningBanner.classList.add('hidden');
-                renderFeed();
-            }, (error) => {
-                console.error("Real-time feed error:", error);
-                if (error.code === 'permission-denied') {
-                    triggerPermissionErrorNotice();
-                } else {
-                    showToast('Feed error: ' + error.message, 'error');
-                }
-            });
+    const width = profileSwipeViewport.offsetWidth || 1;
+    let resistedDx = dx;
+
+    // Gentle edge resistance on first/last tab
+    if ((activeProfileTab === 0 && dx > 0) || (activeProfileTab === profileTabPanels.length - 1 && dx < 0)) {
+        resistedDx = dx * 0.28;
+    }
+
+    currentDeltaX = resistedDx;
+    const baseOffsetPx = -activeProfileTab * width;
+    profileSwipeTrack.style.transform = `translate3d(${baseOffsetPx + resistedDx}px, 0, 0)`;
+
+    const progress = -resistedDx / width;
+    const indicatorCenter = ((activeProfileTab + progress) * 25) + 12.5;
+    const clampedCenter = Math.max(10, Math.min(90, indicatorCenter));
+    profileTabIndicator.style.left = `${clampedCenter}%`;
+}
+
+function onSwipeEnd() {
+    if (!isSwiping) return;
+    isSwiping = false;
+
+    if (swipeAxis !== "x") {
+        swipeAxis = null;
+        return;
+    }
+
+    const width = profileSwipeViewport.offsetWidth || 1;
+    const elapsed = Math.max(1, Date.now() - swipeStartTime);
+    const velocity = Math.abs(currentDeltaX) / elapsed;
+    const threshold = width * 0.22;
+
+    let nextTab = activeProfileTab;
+    if (currentDeltaX < -threshold || (currentDeltaX < -24 && velocity > 0.35)) {
+        nextTab = Math.min(profileTabPanels.length - 1, activeProfileTab + 1);
+    } else if (currentDeltaX > threshold || (currentDeltaX > 24 && velocity > 0.35)) {
+        nextTab = Math.max(0, activeProfileTab - 1);
+    }
+
+    swipeAxis = null;
+    setProfileTab(nextTab, true);
+}
+
+profileSwipeViewport.addEventListener("touchstart", (e) => {
+    if (e.touches.length !== 1) return;
+    onSwipeStart(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: true });
+
+profileSwipeViewport.addEventListener("touchmove", (e) => {
+    if (e.touches.length !== 1) return;
+    onSwipeMove(e.touches[0].clientX, e.touches[0].clientY, e);
+}, { passive: false });
+
+profileSwipeViewport.addEventListener("touchend", onSwipeEnd);
+profileSwipeViewport.addEventListener("touchcancel", onSwipeEnd);
+
+// Desktop mouse drag support for testing swipe
+profileSwipeViewport.addEventListener("mousedown", (e) => {
+    if (e.button !== 0) return;
+    onSwipeStart(e.clientX, e.clientY);
+});
+
+window.addEventListener("mousemove", (e) => {
+    if (!isSwiping) return;
+    onSwipeMove(e.clientX, e.clientY, e);
+});
+
+window.addEventListener("mouseup", () => {
+    if (!isSwiping) return;
+    onSwipeEnd();
+});
+
+// ==========================================
+// MAIN TAB SWITCHING
+// ==========================================
+function updateActive(index, isInitial = false) {
+    const targetIndex = Math.max(0, Math.min(items.length - 1, index));
+
+    if (isSearchFocused) {
+        isSearchFocused = false;
+        appRoot.classList.remove("search-focused");
+    } else if (!isInitial) {
+        const currentY = window.pageYOffset || document.documentElement.scrollTop || 0;
+        scrollPositions[activeIndex] = currentY;
+        persistScrollPositions();
+    }
+
+    isRestoringScroll = true;
+    activeIndex = targetIndex;
+    scrollDelta = 0;
+    
+    items.forEach((item, i) => {
+        item.classList.toggle("active", i === activeIndex);
+    });
+
+    viewContainers.forEach((view, i) => {
+        if (view) view.classList.toggle("active", i === activeIndex);
+    });
+
+    homeHeader.style.display = activeIndex === 0 ? "flex" : "none";
+    searchHeader.style.display = activeIndex === 1 ? "block" : "none";
+    profileHeader.style.display = activeIndex === 4 ? "flex" : "none";
+
+    const savedY = Number(scrollPositions[activeIndex]) || 0;
+    window.scrollTo(0, savedY);
+    lastScrollTop = savedY;
+
+    if (activeIndex === 1) {
+        if (savedY > 60) {
+            searchHeader.classList.add("scrolled");
+        } else {
+            searchHeader.classList.remove("scrolled");
         }
+    }
 
-        function renderFeed() {
-            const queryText = feedSearchInput.value.toLowerCase().trim();
-            const sortBy = feedSortSelect.value;
+    requestAnimationFrame(() => {
+        window.scrollTo(0, savedY);
+        lastScrollTop = savedY;
+        isRestoringScroll = false;
+    });
+}
 
-            let filtered = allPosts.filter(post => {
-                const contentMatch = post.content && post.content.toLowerCase().includes(queryText);
-                const userMatch = post.authorUsername && post.authorUsername.toLowerCase().includes(queryText);
-                const nameMatch = post.authorDisplayName && post.authorDisplayName.toLowerCase().includes(queryText);
-                return contentMatch || userMatch || nameMatch;
-            });
+function updateCapsulePosition() {
+    const activeItem = items[activeIndex];
+    if (!activeItem) return;
+    const navRect = nav.getBoundingClientRect();
+    const itemRect = activeItem.getBoundingClientRect();
+    capsule.style.left = (itemRect.left - navRect.left) + "px";
+    capsule.style.width = itemRect.width + "px";
+}
 
-            filtered.sort((a, b) => {
-                if (sortBy === 'oldest') {
-                    return (a.createdAt || 0) - (b.createdAt || 0);
-                } else if (sortBy === 'most-liked') {
-                    const likesA = Array.isArray(a.likes) ? a.likes.length : 0;
-                    const likesB = Array.isArray(b.likes) ? b.likes.length : 0;
-                    return likesB - likesA;
-                } else {
-                    return (b.createdAt || 0) - (a.createdAt || 0);
-                }
-            });
+items.forEach((item, index) => {
+    item.addEventListener("click", () => {
+        updateActive(index);
+        updateCapsulePosition();
+    });
+});
 
-            if (currentUser) {
-                const myPosts = allPosts.filter(p => p.authorUid === currentUser.uid);
-                userPostCount.textContent = myPosts.length;
+window.addEventListener("resize", updateCapsulePosition);
+updateActive(0, true);
+updateCapsulePosition();
+
+// ==========================================
+// SCROLL DETECTION (SAVE POSITION & SMOOTH HIDE/SHOW TAGS)
+// ==========================================
+window.addEventListener("scroll", () => {
+    if (isRestoringScroll || isSearchFocused) return;
+
+    let st = window.pageYOffset || document.documentElement.scrollTop;
+    st = st <= 0 ? 0 : st;
+
+    scrollPositions[activeIndex] = st;
+    persistScrollPositions();
+
+    if (activeIndex === 1) {
+        const diff = st - lastScrollTop;
+        const isAtBottom = (window.innerHeight + st) >= (document.documentElement.scrollHeight - 8);
+
+        if (st <= 40) {
+            searchHeader.classList.remove("scrolled");
+            scrollDelta = 0;
+        } else if (!isAtBottom) {
+            if ((diff > 0 && scrollDelta < 0) || (diff < 0 && scrollDelta > 0)) {
+                scrollDelta = 0;
             }
-            totalFeedCount.textContent = allPosts.length;
+            scrollDelta += diff;
 
-            if (filtered.length === 0) {
-                postsContainer.innerHTML = `
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-500 space-y-2">
-                        <i class="fa-regular fa-comment-dots text-3xl mb-2 text-slate-600 block"></i>
-                        <p class="font-medium text-slate-300">No posts found</p>
-                        <p class="text-xs">Be the first to share an update!</p>
-                    </div>
-                `;
-                return;
+            if (scrollDelta > SCROLL_THRESHOLD && st > 60) {
+                searchHeader.classList.add("scrolled");
+                scrollDelta = 0;
+            } else if (scrollDelta < -SCROLL_THRESHOLD) {
+                searchHeader.classList.remove("scrolled");
+                scrollDelta = 0;
             }
-
-            postsContainer.innerHTML = filtered.map(post => {
-                const isMyPost = currentUser && post.authorUid === currentUser.uid;
-                const likes = Array.isArray(post.likes) ? post.likes : [];
-                const isLiked = currentUser && likes.includes(currentUser.uid);
-                const formattedTime = post.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, {
-                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                }) : 'Just now';
-
-                const recordedDateFormatted = post.recordedDate ? new Date(post.recordedDate + 'T00:00:00').toLocaleDateString(undefined, {
-                    weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
-                }) : 'No date';
-
-                return `
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg space-y-3 hover:border-slate-700/80 transition">
-                        <div class="flex items-start justify-between gap-3">
-                            <div class="flex items-center gap-3">
-                                <img src="${escapeHtml(post.authorPhotoURL || getDefaultAvatar(post.authorUid))}" onerror="this.src='${getDefaultAvatar('user')}'" class="w-10 h-10 rounded-full border border-slate-700 object-cover">
-                                <div>
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-bold text-sm text-slate-100">${escapeHtml(post.authorDisplayName || 'Anonymous')}</span>
-                                        <span class="text-xs text-brand-400 font-medium">@${escapeHtml(post.authorUsername || 'user')}</span>
-                                    </div>
-                                    <span class="text-[11px] text-slate-500">${formattedTime}</span>
-                                </div>
-                            </div>
-
-                            ${isMyPost ? `
-                                <button onclick="window.triggerDeletePost('${post.id}')" class="p-1.5 text-slate-500 hover:text-red-400 hover:bg-slate-800 rounded-lg transition" title="Delete post">
-                                    <i class="fa-regular fa-trash-can text-sm"></i>
-                                </button>
-                            ` : ''}
-                        </div>
-
-                        <!-- Recorded Date Badge -->
-                        <div class="inline-flex items-center gap-2 px-3 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs text-slate-300">
-                            <i class="fa-regular fa-calendar-check text-brand-400"></i>
-                            <span class="text-[10px] text-slate-500 font-medium uppercase tracking-wider">Recorded Date:</span>
-                            <span class="font-semibold text-slate-200">${escapeHtml(recordedDateFormatted)}</span>
-                        </div>
-
-                        <p class="text-sm text-slate-200 whitespace-pre-wrap leading-relaxed">${escapeHtml(post.content)}</p>
-
-                        <div class="pt-3 border-t border-slate-800/60 flex items-center justify-between text-xs text-slate-400">
-                            <button onclick="window.toggleLikePost('${post.id}', ${isLiked})" class="flex items-center gap-2 px-3 py-1.5 rounded-xl transition ${isLiked ? 'text-red-400 bg-red-500/10 font-semibold' : 'hover:bg-slate-800 hover:text-slate-200'}">
-                                <i class="${isLiked ? 'fa-solid fa-heart' : 'fa-regular fa-heart'} text-sm"></i>
-                                <span>${likes.length} ${likes.length === 1 ? 'Like' : 'Likes'}</span>
-                            </button>
-
-                            <button onclick="window.copyPostLink('${post.id}')" class="flex items-center gap-1.5 px-3 py-1.5 hover:bg-slate-800 hover:text-slate-200 rounded-xl transition">
-                                <i class="fa-regular fa-share-from-square"></i>
-                                <span>Share</span>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
         }
+    }
+    
+    lastScrollTop = st;
+}, { passive: true });
+</script>
 
-        function escapeHtml(str) {
-            if (!str) return '';
-            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-        }
-
-        window.toggleLikePost = async function(postId, currentlyLiked) {
-            if (!currentUser) {
-                showToast('Please sign in to like posts.', 'error');
-                return;
-            }
-
-            try {
-                const postDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', postId);
-                const post = allPosts.find(p => p.id === postId);
-                if (!post) return;
-
-                let currentLikes = Array.isArray(post.likes) ? [...post.likes] : [];
-                if (currentlyLiked) {
-                    currentLikes = currentLikes.filter(uid => uid !== currentUser.uid);
-                } else {
-                    if (!currentLikes.includes(currentUser.uid)) {
-                        currentLikes.push(currentUser.uid);
-                    }
-                }
-
-                await updateDoc(postDocRef, { likes: currentLikes });
-            } catch (err) {
-                console.error("Error toggling like:", err);
-                if (err.code === 'permission-denied') triggerPermissionErrorNotice();
-                else showToast('Like update failed: ' + err.message, 'error');
-            }
-        };
-
-        window.triggerDeletePost = function(postId) {
-            postToDeleteId = postId;
-            deleteModal.classList.remove('hidden');
-        };
-
-        confirmDeleteBtn.addEventListener('click', async () => {
-            if (!postToDeleteId) return;
-
-            try {
-                const postDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', postToDeleteId);
-                await deleteDoc(postDocRef);
-                showToast('Post deleted successfully.');
-            } catch (err) {
-                console.error("Error deleting post:", err);
-                if (err.code === 'permission-denied') triggerPermissionErrorNotice();
-                else showToast('Delete failed: ' + err.message, 'error');
-            } finally {
-                postToDeleteId = null;
-                deleteModal.classList.add('hidden');
-            }
-        });
-
-        cancelDeleteBtn.addEventListener('click', () => {
-            postToDeleteId = null;
-            deleteModal.classList.add('hidden');
-        });
-
-        window.copyPostLink = function(postId) {
-            const dummy = document.createElement('input');
-            document.body.appendChild(dummy);
-            dummy.value = window.location.href;
-            dummy.select();
-            document.execCommand('copy');
-            document.body.removeChild(dummy);
-            showToast('Link copied to clipboard!');
-        };
-
-        document.getElementById('google-login-btn-header').addEventListener('click', handleGoogleSignIn);
-        document.getElementById('google-login-hero').addEventListener('click', handleGoogleSignIn);
-        document.getElementById('guest-login-hero').addEventListener('click', tryGuestSignIn);
-        document.getElementById('logout-btn').addEventListener('click', () => {
-            signOut(auth);
-            showToast('Signed out');
-        });
-
-        document.getElementById('edit-profile-btn-nav').addEventListener('click', openProfileModal);
-        document.getElementById('edit-profile-btn-sidebar').addEventListener('click', openProfileModal);
-        document.getElementById('close-profile-modal-btn').addEventListener('click', () => profileModal.classList.add('hidden'));
-
-        // Rules Helper Modal triggers
-        document.getElementById('rules-help-btn').addEventListener('click', () => rulesModal.classList.remove('hidden'));
-        document.getElementById('fix-rules-banner-btn').addEventListener('click', () => rulesModal.classList.remove('hidden'));
-        document.getElementById('close-rules-modal-btn').addEventListener('click', () => rulesModal.classList.add('hidden'));
-        document.getElementById('understood-rules-btn').addEventListener('click', () => rulesModal.classList.add('hidden'));
-
-        copyRulesCodeBtn.addEventListener('click', () => {
-            const codeText = document.getElementById('rules-code-block').innerText;
-            const dummy = document.createElement('textarea');
-            document.body.appendChild(dummy);
-            dummy.value = codeText;
-            dummy.select();
-            document.execCommand('copy');
-            document.body.removeChild(dummy);
-            showToast('Rules code copied to clipboard!');
-        });
-
-        feedSearchInput.addEventListener('input', renderFeed);
-        feedSortSelect.addEventListener('change', renderFeed);
-
-    </script>
 </body>
 </html>
