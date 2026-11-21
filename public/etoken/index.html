@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Idem — Personal Banking</title>
+  <title>Idem — Wallet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,23 +12,20 @@
 
   <style>
     :root {
-      --bg: #F5F5F7;
+      --bg: #F6F6F8;
       --surface: #FFFFFF;
-      --surface-muted: #EFEFF4;
-      --ink: #111113;
-      --ink-secondary: #6E6E73;
-      --ink-tertiary: #8E8E93;
-      --border: rgba(0, 0, 0, 0.065);
-      --blue: #0071E3;
-      --green: #15803D;
-      --green-bright: #16A34A;
-      --red: #DC2626;
-      --radius-xl: 26px;
-      --radius-lg: 22px;
-      --radius-md: 15px;
-      --radius-sm: 11px;
-      --shadow-card: 0 26px 50px -14px rgba(0, 0, 0, 0.24), 0 4px 14px rgba(0, 0, 0, 0.07);
-      --shadow-surface: 0 2px 16px rgba(0, 0, 0, 0.03);
+      --surface-muted: #EFEFF2;
+      --ink: #141416;
+      --ink-secondary: #8A8A8E;
+      --ink-tertiary: #AEAEB2;
+      --border: rgba(0, 0, 0, 0.055);
+      --coral: #D94E4E;
+      --green: #16A34A;
+      --blue: #0066DB;
+      --leather-dark: #2C180C;
+      --leather-mid: #432614;
+      --leather-light: #56321C;
+      --stitch: rgba(214, 178, 142, 0.55);
       --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
       --font-mono: "SF Mono", "JetBrains Mono", monospace;
     }
@@ -45,7 +42,7 @@
       background-color: var(--bg);
       color: var(--ink);
       min-height: 100vh;
-      line-height: 1.45;
+      line-height: 1.4;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -61,120 +58,677 @@
     .liquid-glass {
       background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.74) 0%,
-        rgba(255, 255, 255, 0.45) 100%
+        rgba(255, 255, 255, 0.78) 0%,
+        rgba(255, 255, 255, 0.48) 100%
       );
-      backdrop-filter: blur(24px) saturate(190%);
-      -webkit-backdrop-filter: blur(24px) saturate(190%);
-      border: 1px solid rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(22px) saturate(185%);
+      -webkit-backdrop-filter: blur(22px) saturate(185%);
+      border: 1px solid rgba(255, 255, 255, 0.85);
       box-shadow:
-        inset 0 1px 0 0 rgba(255, 255, 255, 0.92),
-        inset 0 -1px 0 0 rgba(0, 0, 0, 0.04),
+        inset 0 1px 0 rgba(255, 255, 255, 0.95),
         0 8px 24px -6px rgba(0, 0, 0, 0.07);
     }
 
-    /* Top Bar */
-    header.topbar {
-      position: sticky;
-      top: 0;
-      z-index: 30;
-      border-top: none;
-      border-left: none;
-      border-right: none;
-      border-radius: 0;
+    /* ---------- App Shell ---------- */
+    .app-container {
+      max-width: 460px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 16px 20px 112px;
+      position: relative;
     }
 
-    .topbar-inner {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 13px 20px;
+    /* ---------- Minimal Top Header (Matching Reference) ---------- */
+    .wallet-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      padding: 6px 0 22px;
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 9px;
-      font-weight: 700;
-      font-size: 18px;
-      letter-spacing: -0.03em;
+    .header-circle-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: none;
+      background: #ECECEE;
       color: var(--ink);
-    }
-
-    .brand-mark {
-      width: 26px;
-      height: 26px;
-      border-radius: 8px;
-      background: var(--ink);
       display: grid;
       place-items: center;
-      color: #fff;
+      cursor: pointer;
+      transition: background 0.15s ease, transform 0.12s ease;
     }
 
-    .topbar-actions {
+    .header-circle-btn:hover {
+      background: #E2E2E6;
+    }
+
+    .header-circle-btn:active {
+      transform: scale(0.95);
+    }
+
+    .header-menu-btn {
+      width: 38px;
+      height: 38px;
+      border: none;
+      background: transparent;
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .admin-dot-indicator {
+      position: absolute;
+      top: 7px;
+      right: 6px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--blue);
+    }
+
+    .header-title-group {
+      text-align: center;
+    }
+
+    .header-title-group h1 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+      line-height: 1.2;
+    }
+
+    .header-title-group p {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink-secondary);
+      margin-top: 2px;
+    }
+
+    /* ---------- Stitched Leather Wallet Centerpiece ---------- */
+    .wallet-hero-wrap {
+      perspective: 1200px;
+      margin-bottom: 26px;
+      user-select: none;
+    }
+
+    .leather-wallet {
+      position: relative;
+      width: 100%;
+      max-width: 360px;
+      height: 232px;
+      margin: 0 auto;
+      border-radius: 26px;
+      transform-style: preserve-3d;
+      transition: transform 0.22s ease-out;
+      cursor: pointer;
+    }
+
+    /* Back leather backing plate with physical thickness */
+    .wallet-back-plate {
+      position: absolute;
+      inset: 0;
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.07), transparent 55%),
+        repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.06) 0, rgba(0,0,0,0.06) 1px, transparent 1px, transparent 3px),
+        linear-gradient(160deg, #3C2212 0%, #27150A 100%);
+      box-shadow:
+        0 20px 38px -12px rgba(28, 14, 5, 0.38),
+        0 4px 10px rgba(0, 0, 0, 0.14),
+        inset 0 1px 1px rgba(255, 255, 255, 0.16);
+    }
+
+    /* Thick Layered Cards Slotted Inside the Wallet */
+    .wallet-cards-stack {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      top: 10px;
+      height: 150px;
+    }
+
+    .slot-card {
+      position: absolute;
+      left: 0;
+      right: 0;
+      height: 124px;
+      border-radius: 16px;
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      /* Thick machined card edge */
+      border-top: 2.5px solid rgba(255, 255, 255, 0.42);
+      box-shadow:
+        0 -2px 6px rgba(0, 0, 0, 0.22),
+        0 4px 12px rgba(0, 0, 0, 0.32);
+    }
+
+    .leather-wallet:hover .slot-card.card-tier-1 {
+      transform: translateY(-4px);
+    }
+    .leather-wallet:hover .slot-card.card-tier-2 {
+      transform: translateY(-2px);
+    }
+
+    /* Top Magenta Card */
+    .slot-card.card-tier-1 {
+      top: 0;
+      background: linear-gradient(135deg, #F43F8E 0%, #DB1D72 60%, #BE125D 100%);
+      z-index: 1;
+    }
+
+    /* Middle Dark Obsidian Card with Vertical Metallic Contacts */
+    .slot-card.card-tier-2 {
+      top: 14px;
+      background: linear-gradient(135deg, #272B33 0%, #15181E 100%);
+      border-top-color: rgba(255, 255, 255, 0.28);
+      z-index: 2;
+      overflow: hidden;
+    }
+
+    .slot-card.card-tier-2::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 42px;
+      width: 72px;
+      height: 16px;
+      background: repeating-linear-gradient(
+        90deg,
+        rgba(255, 255, 255, 0.34) 0px,
+        rgba(255, 255, 255, 0.34) 2px,
+        transparent 2px,
+        transparent 11px
+      );
+    }
+
+    /* Front Cobalt Blue Idem Cash Debit Card */
+    .slot-card.card-tier-3 {
+      top: 28px;
+      background: linear-gradient(135deg, #0A6CE8 0%, #0051C3 65%, #003E9C 100%);
+      border-top-color: rgba(147, 197, 253, 0.65);
+      z-index: 3;
+      padding: 13px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      color: #FFFFFF;
+    }
+
+    .idem-card-wordmark {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: baseline;
+      gap: 5px;
+    }
+
+    .idem-card-wordmark span {
+      font-weight: 400;
+      font-style: italic;
+      opacity: 0.92;
+      font-size: 15px;
+    }
+
+    .idem-card-debit {
+      font-size: 13px;
+      font-weight: 500;
+      opacity: 0.85;
+      letter-spacing: -0.01em;
+    }
+
+    /* Front Stitched Brown Leather Pocket Overlay */
+    .leather-pocket-front {
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    .leather-pocket-svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+      filter: drop-shadow(0 -4px 8px rgba(0, 0, 0, 0.35));
+    }
+
+    /* Balance & Eye Button Embossed on Front Leather */
+    .wallet-pocket-content {
+      position: absolute;
+      left: 24px;
+      right: 22px;
+      bottom: 22px;
+      z-index: 6;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+    }
+
+    .wallet-bal-label {
+      font-size: 12px;
+      font-weight: 500;
+      color: rgba(235, 218, 202, 0.78);
+      margin-bottom: 3px;
+      letter-spacing: -0.01em;
+    }
+
+    .wallet-bal-value {
+      font-size: 29px;
+      font-weight: 700;
+      color: #FFFFFF;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+    }
+
+    .leather-eye-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(214, 178, 142, 0.42);
+      background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.16), rgba(24, 12, 5, 0.68));
+      box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.2),
+        0 3px 8px rgba(0, 0, 0, 0.45);
+      color: #F5EDE6;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .leather-eye-btn:hover {
+      transform: scale(1.06);
+    }
+
+    .leather-eye-btn:active {
+      transform: scale(0.94);
+    }
+
+    .wallet-hint-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: space-between;
+      max-width: 360px;
+      margin: 10px auto 0;
+      padding: 0 4px;
     }
 
-    .pill-badge {
+    .wallet-acct-chip {
+      background: transparent;
+      border: none;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .wallet-acct-chip:hover {
+      color: var(--ink);
+    }
+
+    .inspect-3d-link {
+      background: none;
+      border: none;
+      font-family: inherit;
       font-size: 12px;
       font-weight: 600;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: var(--ink);
-      color: #fff;
-      letter-spacing: -0.01em;
+      color: var(--ink);
       cursor: pointer;
-      border: none;
+      opacity: 0.75;
     }
 
-    .icon-btn {
-      background: rgba(255, 255, 255, 0.88);
-      border: 1px solid var(--border);
-      color: var(--ink);
-      height: 34px;
-      padding: 0 13px;
-      border-radius: 999px;
+    .inspect-3d-link:hover {
+      opacity: 1;
+    }
+
+    /* ---------- Transactions List (Grouped by Month, Matching Reference) ---------- */
+    .tx-section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .tx-section-head h2 {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .tx-hide-btn {
+      border: none;
+      background: transparent;
+      color: var(--ink-secondary);
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 500;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      transition: background 0.15s ease, transform 0.12s ease;
+      gap: 5px;
     }
 
-    .icon-btn:hover {
-      background: #FFFFFF;
-    }
-
-    .icon-btn:active {
-      transform: scale(0.97);
-    }
-
-    .eye-toggle {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: 1px solid var(--border);
-      background: var(--surface-muted);
-      color: var(--ink-secondary);
-      display: inline-grid;
-      place-items: center;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-
-    .eye-toggle:hover {
+    .tx-hide-btn:hover {
       color: var(--ink);
-      background: #E5E5EA;
     }
 
-    /* Auth Screen */
+    .month-group-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink-secondary);
+      margin: 14px 0 8px;
+    }
+
+    .month-card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 4px 16px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.025);
+    }
+
+    .tx-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.045);
+    }
+
+    .tx-row:last-child {
+      border-bottom: none;
+    }
+
+    .tx-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .tx-badge {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #EFEFF2;
+      color: var(--ink);
+      font-size: 13.5px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .tx-badge.dark {
+      background: #1C1C1E;
+      color: #FFFFFF;
+    }
+
+    .tx-name {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .tx-time {
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+      margin-top: 1px;
+    }
+
+    .tx-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+      margin-left: 10px;
+    }
+
+    .tx-val-group {
+      text-align: right;
+    }
+
+    .tx-val {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--ink);
+    }
+
+    .tx-val.debit {
+      color: var(--coral);
+    }
+
+    .tx-val.credit {
+      color: var(--ink);
+    }
+
+    .tx-cat {
+      font-size: 11px;
+      color: var(--ink-secondary);
+      margin-top: 1px;
+    }
+
+    .tx-chevron {
+      color: var(--ink-tertiary);
+      font-size: 14px;
+    }
+
+    .tx-empty-card {
+      background: var(--surface);
+      border-radius: 20px;
+      padding: 32px 20px;
+      text-align: center;
+      color: var(--ink-secondary);
+      font-size: 13.5px;
+    }
+
+    /* ---------- Floating Dark Pill Bottom Dock (Matching Reference) ---------- */
+    .floating-dock-wrap {
+      position: fixed;
+      bottom: 20px;
+      left: 0;
+      right: 0;
+      z-index: 40;
+      display: flex;
+      justify-content: center;
+      padding: 0 20px;
+      pointer-events: none;
+    }
+
+    .floating-dock {
+      pointer-events: auto;
+      background: rgba(24, 24, 26, 0.94);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 999px;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
+    }
+
+    .dock-item {
+      border: none;
+      background: transparent;
+      color: rgba(255, 255, 255, 0.58);
+      height: 42px;
+      padding: 0 14px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .dock-item:hover {
+      color: #FFFFFF;
+    }
+
+    .dock-item.active {
+      background: #3A3A3D;
+      color: #FFFFFF;
+      padding: 0 18px;
+    }
+
+    .dock-badge {
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #38BDF8;
+    }
+
+    /* ---------- Volumetric 360° Thick 3D Card Modal ---------- */
+    .thick-card-stage {
+      perspective: 1400px;
+      width: 100%;
+      aspect-ratio: 1.586 / 1;
+      margin: 8px 0 14px;
+      user-select: none;
+      touch-action: pan-y;
+    }
+
+    .thick-card-3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      cursor: grab;
+      will-change: transform;
+    }
+
+    .thick-card-3d.smooth-spin {
+      transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* Machined 3D Extrusion Thickness Layers (-4px to +4px = 8px solid slab) */
+    .card-edge-slab {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      pointer-events: none;
+    }
+
+    .thick-card-3d.cobalt .card-edge-slab {
+      background: linear-gradient(90deg, #003580, #1D4ED8, #002B66);
+      border: 1px solid rgba(147, 197, 253, 0.35);
+    }
+
+    .thick-card-3d.obsidian .card-edge-slab {
+      background: linear-gradient(90deg, #27272A, #52525B, #18181B);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+    }
+
+    .thick-card-3d.titanium .card-edge-slab {
+      background: linear-gradient(90deg, #A1A1AA, #E4E4E7, #71717A);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+    }
+
+    .thick-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 20px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+    }
+
+    .thick-front {
+      transform: translateZ(4.5px);
+    }
+
+    .thick-back {
+      transform: rotateY(180deg) translateZ(4.5px);
+      padding: 0;
+    }
+
+    .thick-card-3d.cobalt .thick-face {
+      background: linear-gradient(138deg, #0E74F0 0%, #0052CC 55%, #003894 100%);
+      color: #FFFFFF;
+      border: 1px solid rgba(191, 219, 254, 0.45);
+    }
+
+    .thick-card-3d.obsidian .thick-face {
+      background: linear-gradient(142deg, #262629 0%, #141416 55%, #09090B 100%);
+      color: #F5F5F7;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .thick-card-3d.titanium .thick-face {
+      background: linear-gradient(142deg, #F8F8FA 0%, #E2E2E7 55%, #CBCBD2 100%);
+      color: #141416;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
+    .card-sheen {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(
+        circle at var(--mx, 50%) var(--my, 50%),
+        rgba(255, 255, 255, 0.28) 0%,
+        rgba(255, 255, 255, 0.05) 38%,
+        transparent 70%
+      );
+      mix-blend-mode: overlay;
+    }
+
+    .emv-chip {
+      width: 40px;
+      height: 30px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #E4E4E7 0%, #A1A1AA 50%, #F4F4F5 100%);
+      position: relative;
+      border: 1px solid rgba(0, 0, 0, 0.15);
+    }
+
+    .emv-chip::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(0, 0, 0, 0.22);
+      border-radius: 3px;
+    }
+
+    .magstripe {
+      width: 100%;
+      height: 38px;
+      background: #09090B;
+      margin-top: 22px;
+    }
+
+    .card-back-body {
+      padding: 14px 24px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1;
+    }
+
+    /* ---------- Auth Screen ---------- */
     .auth-shell {
       min-height: 100vh;
       display: flex;
@@ -185,29 +739,31 @@
 
     .auth-card {
       width: 100%;
-      max-width: 400px;
+      max-width: 390px;
       background: var(--surface);
-      border-radius: var(--radius-xl);
-      padding: 32px 28px;
+      border-radius: 26px;
+      padding: 30px 26px;
       border: 1px solid var(--border);
-      box-shadow: var(--shadow-surface);
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
     }
 
-    .auth-header {
-      margin-bottom: 22px;
-    }
-
-    .auth-header h1 {
-      font-size: 24px;
+    .brand-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
       font-weight: 700;
+      font-size: 18px;
       letter-spacing: -0.03em;
-      margin-top: 14px;
     }
 
-    .auth-header p {
-      font-size: 14px;
-      color: var(--ink-secondary);
-      margin-top: 4px;
+    .brand-mark {
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: var(--ink);
+      display: grid;
+      place-items: center;
+      color: #fff;
     }
 
     .google-btn {
@@ -225,25 +781,21 @@
       justify-content: center;
       gap: 10px;
       cursor: pointer;
-      transition: background 0.15s ease, transform 0.1s ease;
+      margin-top: 20px;
     }
 
     .google-btn:hover {
       background: #F9F9FB;
     }
 
-    .google-btn:active {
-      transform: scale(0.99);
-    }
-
     .divider-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin: 18px 0;
+      margin: 16px 0;
       color: var(--ink-tertiary);
-      font-size: 12px;
-      font-weight: 500;
+      font-size: 11.5px;
+      font-weight: 600;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -262,7 +814,7 @@
       background: var(--surface-muted);
       padding: 3px;
       border-radius: 11px;
-      margin-bottom: 18px;
+      margin-bottom: 16px;
     }
 
     .segmented button {
@@ -275,7 +827,6 @@
       color: var(--ink-secondary);
       border-radius: 9px;
       cursor: pointer;
-      transition: all 0.2s ease;
     }
 
     .segmented button.active {
@@ -285,7 +836,7 @@
     }
 
     .field {
-      margin-bottom: 14px;
+      margin-bottom: 13px;
     }
 
     .field label {
@@ -293,21 +844,20 @@
       font-size: 12px;
       font-weight: 600;
       color: var(--ink-secondary);
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
 
     .input {
       width: 100%;
-      height: 45px;
+      height: 44px;
       padding: 0 14px;
-      border-radius: var(--radius-sm);
+      border-radius: 11px;
       border: 1px solid rgba(0, 0, 0, 0.11);
       background: #FAFAFC;
       font-family: inherit;
       font-size: 15px;
       color: var(--ink);
       outline: none;
-      transition: border-color 0.15s ease, background 0.15s ease;
     }
 
     .input:focus {
@@ -325,23 +875,12 @@
       font-family: inherit;
       font-size: 15px;
       font-weight: 600;
-      letter-spacing: -0.01em;
       cursor: pointer;
-      transition: opacity 0.15s ease, transform 0.1s ease;
       margin-top: 4px;
-    }
-
-    .btn-primary:hover {
-      opacity: 0.92;
-    }
-
-    .btn-primary:active {
-      transform: scale(0.99);
     }
 
     .btn-primary:disabled {
       opacity: 0.45;
-      cursor: not-allowed;
     }
 
     .error-banner {
@@ -350,510 +889,15 @@
       font-size: 13px;
       padding: 10px 12px;
       border-radius: 10px;
-      margin-bottom: 14px;
-      line-height: 1.4;
-    }
-
-    /* Main Workspace */
-    .workspace {
-      max-width: 960px;
-      margin: 0 auto;
-      padding: 24px 20px 72px;
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 24px;
-    }
-
-    @media (min-width: 840px) {
-      .workspace {
-        grid-template-columns: 396px 1fr;
-        align-items: start;
-        padding-top: 30px;
-      }
-    }
-
-    .panel {
-      background: var(--surface);
-      border-radius: var(--radius-lg);
-      padding: 22px;
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow-surface);
-    }
-
-    /* 360° 3D Idem Card */
-    .card-stage {
-      perspective: 1300px;
-      width: 100%;
-      aspect-ratio: 1.586 / 1;
       margin-bottom: 12px;
-      user-select: none;
-      touch-action: pan-y;
     }
 
-    .card-3d {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      transform-style: preserve-3d;
-      cursor: grab;
-      will-change: transform;
-    }
-
-    .card-3d:active {
-      cursor: grabbing;
-    }
-
-    .card-3d.smooth-spin {
-      transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    .card-face {
-      position: absolute;
-      inset: 0;
-      border-radius: 21px;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      overflow: hidden;
-      padding: 22px 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-shadow: var(--shadow-card);
-      border: 1px solid rgba(255, 255, 255, 0.16);
-    }
-
-    .card-3d.obsidian .card-face {
-      background: linear-gradient(142deg, #252528 0%, #141416 54%, #0B0B0D 100%);
-      color: #F5F5F7;
-    }
-
-    .card-3d.titanium .card-face {
-      background: linear-gradient(142deg, #F7F7F9 0%, #E1E1E6 54%, #CCCCD3 100%);
-      color: #111113;
-      border: 1px solid rgba(0, 0, 0, 0.08);
-    }
-
-    .card-sheen {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: radial-gradient(
-        circle at var(--mx, 50%) var(--my, 50%),
-        rgba(255, 255, 255, 0.28) 0%,
-        rgba(255, 255, 255, 0.06) 36%,
-        transparent 68%
-      );
-      mix-blend-mode: overlay;
-    }
-
-    .card-back {
-      transform: rotateY(180deg);
-      padding: 0;
-    }
-
-    .magstripe {
-      width: 100%;
-      height: 38px;
-      background: #09090B;
-      margin-top: 22px;
-    }
-
-    .card-back-body {
-      padding: 15px 24px 22px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      flex: 1;
-    }
-
-    .emv-chip {
-      width: 40px;
-      height: 30px;
-      border-radius: 6px;
-      background: linear-gradient(135deg, #D4D4D8 0%, #A1A1AA 50%, #E4E4E7 100%);
-      position: relative;
-      overflow: hidden;
-      border: 1px solid rgba(0, 0, 0, 0.14);
-    }
-
-    .emv-chip::after {
-      content: "";
-      position: absolute;
-      inset: 6px;
-      border: 1px solid rgba(0, 0, 0, 0.22);
-      border-radius: 3px;
-    }
-
-    .card-top-row, .card-bottom-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      position: relative;
-      z-index: 2;
-    }
-
-    .card-holder-name {
-      font-size: 15px;
-      font-weight: 500;
-      letter-spacing: 0.01em;
-    }
-
-    .card-sub-digits {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      opacity: 0.72;
-      letter-spacing: 0.05em;
-    }
-
-    /* Liquid Glass Card Control Bar */
-    .card-controls-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 7px 14px;
-      border-radius: 999px;
-      margin-bottom: 16px;
-    }
-
-    .finish-dots {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .dot-btn {
-      width: 18px;
-      height: 18px;
-      border-radius: 50%;
-      border: 1.5px solid rgba(0, 0, 0, 0.15);
-      cursor: pointer;
-    }
-
-    .dot-btn.active {
-      box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3.5px var(--ink);
-    }
-
-    .card-spin-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .mini-ctrl-btn {
-      background: none;
-      border: none;
-      color: var(--ink);
-      font-family: inherit;
-      font-size: 12.5px;
-      font-weight: 600;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      opacity: 0.85;
-      transition: opacity 0.15s ease;
-    }
-
-    .mini-ctrl-btn:hover {
-      opacity: 1;
-    }
-
-    /* Balance & Actions */
-    .balance-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .balance-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--ink-secondary);
-    }
-
-    .balance-amount {
-      font-size: 38px;
-      font-weight: 700;
-      letter-spacing: -0.035em;
-      margin: 2px 0 6px;
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-    }
-
-    .account-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      background: var(--surface-muted);
-      padding: 6px 11px;
-      border-radius: 9px;
-      font-family: var(--font-mono);
-      font-size: 12.5px;
-      color: var(--ink-secondary);
-      cursor: pointer;
-      border: none;
-      margin-bottom: 18px;
-    }
-
-    .account-pill:hover {
-      background: #E5E5EA;
-      color: var(--ink);
-    }
-
-    .action-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .action-tile {
-      background: var(--surface-muted);
-      border: none;
-      border-radius: var(--radius-md);
-      padding: 13px 6px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 7px;
-      cursor: pointer;
-      color: var(--ink);
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      position: relative;
-      transition: background 0.15s ease, transform 0.1s ease;
-    }
-
-    .action-tile:hover {
-      background: #E5E5EA;
-    }
-
-    .action-tile:active {
-      transform: scale(0.96);
-    }
-
-    .action-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: var(--surface);
-      display: grid;
-      place-items: center;
-      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-    }
-
-    .notif-dot {
-      position: absolute;
-      top: 8px;
-      right: 10px;
-      min-width: 17px;
-      height: 17px;
-      padding: 0 5px;
-      border-radius: 999px;
-      background: var(--blue);
-      color: #fff;
-      font-size: 10.5px;
-      font-weight: 700;
-      display: grid;
-      place-items: center;
-    }
-
-    /* Transactions */
-    .section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 14px;
-    }
-
-    .section-head h2 {
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    .tx-list {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .tx-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 13px 0;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .tx-item:last-child {
-      border-bottom: none;
-      padding-bottom: 2px;
-    }
-
-    .tx-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .tx-avatar {
-      width: 38px;
-      height: 38px;
-      border-radius: 12px;
-      background: var(--surface-muted);
-      display: grid;
-      place-items: center;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--ink);
-      flex-shrink: 0;
-    }
-
-    .tx-title {
-      font-size: 14.5px;
-      font-weight: 600;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .tx-meta {
-      font-size: 12.5px;
-      color: var(--ink-secondary);
-    }
-
-    .tx-amount {
-      font-size: 15px;
-      font-weight: 600;
-      flex-shrink: 0;
-      margin-left: 12px;
-    }
-
-    .tx-amount.credit {
-      color: var(--green-bright);
-    }
-
-    .tx-hidden-box {
-      padding: 36px 16px;
-      text-align: center;
-      background: var(--surface-muted);
-      border-radius: var(--radius-md);
-      color: var(--ink-secondary);
-      font-size: 13.5px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* Liquid Glass Slide to Pay */
-    .slide-track {
-      position: relative;
-      width: 100%;
-      height: 62px;
-      border-radius: 999px;
-      background: linear-gradient(180deg, rgba(236, 236, 241, 0.94) 0%, rgba(246, 246, 249, 0.98) 100%);
-      border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow:
-        inset 0 2px 5px rgba(0, 0, 0, 0.05),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.9);
-      overflow: hidden;
-      user-select: none;
-      touch-action: none;
-      margin-top: 12px;
-    }
-
-    .slide-fill {
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 62px;
-      background: linear-gradient(90deg, #1F1F23 0%, #111113 100%);
-      border-radius: 999px;
-      pointer-events: none;
-    }
-
-    .slide-label {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      font-size: 14.5px;
-      font-weight: 600;
-      color: var(--ink);
-      letter-spacing: -0.01em;
-      pointer-events: none;
-      padding-left: 34px;
-    }
-
-    .slide-chevrons {
-      display: inline-flex;
-      opacity: 0.45;
-      animation: chevronPulse 1.8s infinite ease-in-out;
-    }
-
-    @keyframes chevronPulse {
-      0%, 100% { transform: translateX(0); opacity: 0.35; }
-      50% { transform: translateX(4px); opacity: 0.85; }
-    }
-
-    .slide-thumb {
-      position: absolute;
-      top: 5px;
-      left: 5px;
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(242, 242, 247, 0.84));
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.96);
-      color: var(--ink);
-      display: grid;
-      place-items: center;
-      cursor: grab;
-      box-shadow:
-        0 4px 12px rgba(0, 0, 0, 0.18),
-        inset 0 1px 1px rgba(255, 255, 255, 1);
-      z-index: 2;
-    }
-
-    .slide-thumb:active {
-      cursor: grabbing;
-      transform: scale(0.97);
-    }
-
-    .slide-track.confirmed {
-      background: var(--green-bright);
-      border-color: var(--green-bright);
-      box-shadow: 0 6px 20px rgba(22, 163, 74, 0.28);
-    }
-
-    .slide-track.confirmed .slide-fill {
-      width: 100% !important;
-      background: var(--green-bright);
-    }
-
-    .slide-track.confirmed .slide-label {
-      color: #FFFFFF;
-      padding-left: 0;
-    }
-
-    .slide-track.confirmed .slide-thumb {
-      color: var(--green-bright);
-    }
-
-    /* Modals & Sheets */
+    /* ---------- Modals / Sheets ---------- */
     .modal-backdrop {
       position: fixed;
       inset: 0;
       z-index: 60;
-      background: rgba(0, 0, 0, 0.32);
+      background: rgba(0, 0, 0, 0.34);
       backdrop-filter: blur(6px);
       -webkit-backdrop-filter: blur(6px);
       display: flex;
@@ -870,14 +914,14 @@
 
     .sheet {
       width: 100%;
-      max-width: 440px;
+      max-width: 430px;
       background: var(--surface);
       border-radius: 28px 28px 0 0;
       padding: 24px 24px 30px;
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
       max-height: 92vh;
       overflow-y: auto;
-      animation: sheetUp 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+      animation: sheetUp 0.24s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
     @media (min-width: 600px) {
@@ -887,7 +931,7 @@
     }
 
     @keyframes sheetUp {
-      from { transform: translateY(22px); opacity: 0; }
+      from { transform: translateY(20px); opacity: 0; }
       to { transform: translateY(0); opacity: 1; }
     }
 
@@ -917,10 +961,41 @@
       place-items: center;
     }
 
+    .icon-btn {
+      background: var(--surface-muted);
+      border: none;
+      color: var(--ink);
+      height: 34px;
+      padding: 0 13px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-btn:hover {
+      background: #E4E4E8;
+    }
+
+    .pill-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 13px;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      cursor: pointer;
+      border: none;
+    }
+
     .detail-box {
       background: var(--surface-muted);
-      border-radius: var(--radius-md);
-      padding: 13px 16px;
+      border-radius: 14px;
+      padding: 12px 15px;
       margin-bottom: 10px;
       display: flex;
       align-items: center;
@@ -935,28 +1010,103 @@
 
     .detail-v {
       font-family: var(--font-mono);
-      font-size: 14.5px;
+      font-size: 14px;
       font-weight: 600;
       color: var(--ink);
     }
 
-    .qr-frame {
-      background: #FFFFFF;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 20px;
+    .menu-action-item {
+      width: 100%;
+      background: var(--surface-muted);
+      border: none;
+      border-radius: 15px;
+      padding: 14px 16px;
+      margin-bottom: 9px;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      margin: 12px 0 16px;
+      justify-content: space-between;
+      font-family: inherit;
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--ink);
+      cursor: pointer;
+      text-align: left;
     }
 
-    #qrReader {
+    .menu-action-item:hover {
+      background: #E6E6EA;
+    }
+
+    /* Slide to Pay */
+    .slide-track {
+      position: relative;
       width: 100%;
-      border-radius: 16px;
+      height: 62px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(236, 236, 241, 0.94) 0%, rgba(246, 246, 249, 0.98) 100%);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
       overflow: hidden;
-      background: #000;
-      margin-bottom: 14px;
+      user-select: none;
+      touch-action: none;
+      margin-top: 12px;
+    }
+
+    .slide-fill {
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 62px;
+      background: var(--ink);
+      border-radius: 999px;
+      pointer-events: none;
+    }
+
+    .slide-label {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--ink);
+      pointer-events: none;
+      padding-left: 34px;
+    }
+
+    .slide-thumb {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(242, 242, 247, 0.86));
+      border: 1px solid rgba(255, 255, 255, 0.96);
+      color: var(--ink);
+      display: grid;
+      place-items: center;
+      cursor: grab;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+      z-index: 2;
+    }
+
+    .slide-track.confirmed {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    .slide-track.confirmed .slide-fill {
+      width: 100% !important;
+      background: var(--green);
+    }
+
+    .slide-track.confirmed .slide-label {
+      color: #FFFFFF;
+      padding-left: 0;
     }
 
     .amount-hero {
@@ -965,7 +1115,7 @@
       background: transparent;
       text-align: center;
       font-family: var(--font-sans);
-      font-size: 42px;
+      font-size: 40px;
       font-weight: 700;
       letter-spacing: -0.03em;
       color: var(--ink);
@@ -973,41 +1123,18 @@
       margin: 6px 0 14px;
     }
 
-    .chip-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 14px;
-    }
-
-    .chip {
-      border: 1px solid var(--border);
-      background: var(--surface-muted);
-      padding: 6px 12px;
-      border-radius: 999px;
-      font-size: 12.5px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .chip:hover {
-      background: #E5E5EA;
-    }
-
-    /* Payment Near Me (<= 5 cm Range) */
+    /* Payment Near Me (<= 5 cm) */
     .proximity-stage {
       border-radius: 22px;
-      padding: 22px 18px;
+      padding: 20px 16px;
       text-align: center;
-      position: relative;
-      overflow: hidden;
       margin-bottom: 14px;
     }
 
     .radar-rings {
-      width: 132px;
-      height: 132px;
-      margin: 4px auto 14px;
+      width: 120px;
+      height: 120px;
+      margin: 4px auto 12px;
       position: relative;
       display: grid;
       place-items: center;
@@ -1017,17 +1144,12 @@
       position: absolute;
       inset: 0;
       border-radius: 50%;
-      border: 1.5px solid rgba(0, 113, 227, 0.28);
+      border: 1.5px solid rgba(0, 102, 219, 0.28);
       animation: pulse5cm 2.2s infinite ease-out;
     }
 
-    .radar-ring:nth-child(2) {
-      animation-delay: 0.7s;
-    }
-
-    .radar-ring:nth-child(3) {
-      animation-delay: 1.4s;
-    }
+    .radar-ring:nth-child(2) { animation-delay: 0.7s; }
+    .radar-ring:nth-child(3) { animation-delay: 1.4s; }
 
     @keyframes pulse5cm {
       0% { transform: scale(0.45); opacity: 0.9; }
@@ -1035,8 +1157,8 @@
     }
 
     .radar-core {
-      width: 58px;
-      height: 58px;
+      width: 54px;
+      height: 54px;
       border-radius: 50%;
       background: var(--ink);
       color: #FFFFFF;
@@ -1044,7 +1166,6 @@
       place-items: center;
       position: relative;
       z-index: 2;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
     }
 
     .distance-badge {
@@ -1054,7 +1175,7 @@
       padding: 5px 12px;
       border-radius: 999px;
       font-family: var(--font-mono);
-      font-size: 12px;
+      font-size: 11.5px;
       font-weight: 600;
       background: rgba(0, 0, 0, 0.06);
       color: var(--ink);
@@ -1063,7 +1184,7 @@
 
     .distance-badge.locked {
       background: rgba(22, 163, 74, 0.14);
-      color: var(--green);
+      color: #15803D;
     }
 
     .cm-meter-bar {
@@ -1085,15 +1206,34 @@
 
     .nearby-shop-card {
       background: #FFFFFF;
-      border: 1.5px solid var(--green-bright);
+      border: 1.5px solid var(--green);
       border-radius: 18px;
-      padding: 14px 16px;
+      padding: 13px 15px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       text-align: left;
       margin-top: 12px;
-      box-shadow: 0 8px 24px rgba(22, 163, 74, 0.12);
+      box-shadow: 0 8px 22px rgba(22, 163, 74, 0.12);
+    }
+
+    .qr-frame {
+      background: #FFFFFF;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 12px 0 14px;
+    }
+
+    #qrReader {
+      width: 100%;
+      border-radius: 16px;
+      overflow: hidden;
+      background: #000;
+      margin-bottom: 14px;
     }
 
     .req-card {
@@ -1106,6 +1246,23 @@
       align-items: center;
       justify-content: space-between;
       gap: 10px;
+    }
+
+    .chip-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 14px;
+    }
+
+    .chip {
+      border: 1px solid var(--border);
+      background: var(--surface-muted);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
     }
 
     .admin-user-row {
@@ -1125,23 +1282,17 @@
 
     .toast {
       position: fixed;
-      bottom: 24px;
+      bottom: 84px;
       left: 50%;
       transform: translateX(-50%);
       background: var(--ink);
       color: #FFFFFF;
-      padding: 10px 18px;
+      padding: 9px 17px;
       border-radius: 999px;
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 500;
       z-index: 100;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22);
-      animation: fadeToast 0.2s ease;
-    }
-
-    @keyframes fadeToast {
-      from { opacity: 0; transform: translate(-50%, 8px); }
-      to { opacity: 1; transform: translate(-50%, 0); }
     }
   </style>
 </head>
@@ -1150,21 +1301,19 @@
   <!-- ==================== 1. AUTH / ACCOUNT CREATION ==================== -->
   <div id="authView" class="auth-shell">
     <div class="auth-card">
-      <div class="auth-header">
-        <div class="brand">
-          <div class="brand-mark">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
-              <circle cx="12" cy="12" r="7"/>
-              <line x1="12" y1="5" x2="12" y2="19"/>
-            </svg>
-          </div>
-          <span>Idem</span>
+      <div class="brand-row">
+        <div class="brand-mark">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
+            <circle cx="12" cy="12" r="7"/>
+            <line x1="12" y1="5" x2="12" y2="19"/>
+          </svg>
         </div>
-        <h1 id="authTitle">Open an Idem account</h1>
-        <p id="authSubtitle">Instant 10-digit account number and virtual titanium card.</p>
+        <span>Idem</span>
       </div>
+      <h1 id="authTitle" style="font-size:23px; font-weight:700; letter-spacing:-0.03em; margin-top:14px;">Open an Idem wallet</h1>
+      <p id="authSubtitle" style="font-size:13.5px; color:var(--ink-secondary); margin-top:3px;">Instant 10-digit account number and thick virtual debit card.</p>
 
-      <div id="authError" class="error-banner hidden"></div>
+      <div id="authError" class="error-banner hidden" style="margin-top:14px;"></div>
 
       <button type="button" id="googleAuthBtn" class="google-btn">
         <svg width="18" height="18" viewBox="0 0 48 48">
@@ -1912,7 +2061,6 @@
       return { profile: profileData, isNew: true };
     }
 
-    // Handle Google redirect return on mobile browsers
     getRedirectResult(auth).then(async (result) => {
       if (result && result.user) {
         const { profile, isNew } = await ensureUserProfile(result.user);
@@ -2338,7 +2486,6 @@
       }
     }
 
-    // Live recipient lookup as user types in Pay modal
     $("payRecipientInput").addEventListener("input", () => {
       clearTimeout(recipientLookupTimer);
       const val = $("payRecipientInput").value.trim();
@@ -2641,7 +2788,6 @@
       $("nearStatusTitle").textContent = "Hold within 5 cm of shop terminal";
       $("nearStatusSub").textContent = "Accounts further than 5 cm are blocked. Bring phones within 5 cm.";
 
-      // 1. Hardware Web NFC (0-4 cm physical range on supported mobile browsers)
       if ("NDEFReader" in window) {
         try {
           nfcAbortController = new AbortController();
@@ -2663,7 +2809,6 @@
         } catch (_) {}
       }
 
-      // 2. Close-Range 19.2 kHz Acoustic Amplitude Gate (Strict <= 5 cm threshold)
       try {
         nearMicStream = await navigator.mediaDevices.getUserMedia({ audio: true });
         nearAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -2713,7 +2858,6 @@
       await publishBeacon();
       nearBeaconHeartbeat = setInterval(publishBeacon, 6000);
 
-      // Ultra-low-gain 19.2 kHz micro-chirp calibrated so only a microphone within <= 5 cm registers > 145
       try {
         nearAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const osc = nearAudioCtx.createOscillator();
