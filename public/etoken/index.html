@@ -325,6 +325,8 @@
       padding: 3px;
       border-radius: 11px;
       margin-bottom: 18px;
+      position: relative;
+      isolation: isolate;
     }
 
     .segmented button {
@@ -344,6 +346,43 @@
       background: var(--surface);
       color: var(--ink);
       box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .segmented.near-segmented {
+      height: 46px;
+      border-radius: 999px;
+      padding: 4px;
+      background: rgba(0, 0, 0, 0.055);
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.045);
+    }
+
+    .segmented.near-segmented::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      top: 4px;
+      bottom: 4px;
+      left: 4px;
+      width: calc(50% - 4px);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.09);
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .segmented.near-segmented.near-active-receive::before {
+      transform: translateX(100%);
+    }
+
+    .airdrop-sheet.tap-terminal-dark .segmented.near-segmented {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .airdrop-sheet.tap-terminal-dark .segmented.near-segmented::before {
+      background: rgba(255, 255, 255, 0.16);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
     }
 
     .field {
@@ -1037,7 +1076,7 @@
     /* ==================== LIGHT LIQUID-GLASS BOTTOM DOCK ==================== */
     .floating-dock-wrap {
       position: fixed;
-      bottom: 18px;
+      bottom: calc(18px + env(safe-area-inset-bottom, 0px));
       left: 0;
       right: 0;
       z-index: 40;
@@ -1049,11 +1088,19 @@
 
     .floating-dock {
       pointer-events: auto;
-      background: rgba(255, 255, 255, 0.78);
-      backdrop-filter: blur(24px) saturate(190%);
-      -webkit-backdrop-filter: blur(24px) saturate(190%);
-      border: 1px solid rgba(255, 255, 255, 0.86);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 12px 34px rgba(30, 30, 35, 0.14);
+      width: min(430px, calc(100vw - 32px));
+      justify-content: space-between;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.82), rgba(238, 240, 246, 0.62)),
+        rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(28px) saturate(210%);
+      -webkit-backdrop-filter: blur(28px) saturate(210%);
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 1),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.38),
+        0 14px 38px rgba(30, 30, 35, 0.12),
+        0 3px 10px rgba(30, 30, 35, 0.06);
       border-radius: 999px;
       padding: 7px;
       display: flex;
@@ -1086,9 +1133,10 @@
     }
 
     .dock-btn.active {
-      background: rgba(17, 17, 19, 0.08);
+      background: rgba(255, 255, 255, 0.68);
       color: var(--ink);
       padding: 0 14px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 8px rgba(0, 0, 0, 0.055);
     }
 
     .dock-btn.scan-dock-btn {
@@ -1097,14 +1145,18 @@
       min-width: 48px;
       padding: 0;
       margin: 0 2px;
-      background: linear-gradient(145deg, #167AF7, #0A66D8);
-      color: #FFFFFF;
-      box-shadow: 0 8px 18px rgba(10, 132, 255, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.88);
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(225, 228, 235, 0.82));
+      color: #25252A;
+      box-shadow:
+        inset 0 1px 0 #FFFFFF,
+        0 8px 18px rgba(55, 60, 75, 0.16),
+        0 2px 5px rgba(0, 0, 0, 0.08);
     }
 
     .dock-btn.scan-dock-btn:hover {
-      color: #FFFFFF;
-      background: linear-gradient(145deg, #2788FF, #0A70E6);
+      color: #111113;
+      background: linear-gradient(145deg, #FFFFFF, rgba(235, 237, 242, 0.92));
     }
 
     /* =========================================================================
@@ -1256,6 +1308,52 @@
     .slide-track.confirmed .slide-thumb {
       color: var(--green-bright);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+    }
+
+    .pay-send-orb {
+      position: absolute;
+      left: 11px;
+      top: 9px;
+      height: 46px;
+      min-width: 46px;
+      padding: 0 13px;
+      border-radius: 999px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, #FFFFFF 0%, #EAF3FF 55%, #B8D8FF 100%);
+      border: 1px solid rgba(255, 255, 255, 0.92);
+      color: #1768B8;
+      font-size: 12px;
+      font-weight: 750;
+      box-shadow: 0 8px 18px rgba(10, 132, 255, 0.26), inset 0 1px 0 #FFFFFF;
+      opacity: 0;
+      pointer-events: none;
+      z-index: 5;
+      white-space: nowrap;
+    }
+
+    .pay-send-orb.launch {
+      animation: paymentOrbIntoButton 0.82s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes paymentOrbIntoButton {
+      0% {
+        opacity: 0;
+        transform: translateX(-15px) scale(0.72);
+      }
+      18% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+      }
+      58% {
+        opacity: 1;
+        transform: translateX(42px) scale(1.06);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(calc(var(--orb-travel, 260px))) scale(0.18);
+        filter: blur(3px);
+      }
     }
 
     /* ==================== MODALS & SHEETS ==================== */
@@ -1626,16 +1724,16 @@
       transform: translate(-50%, -50%) scale(0.25);
       padding: 12px 26px;
       border-radius: 999px;
-      background: linear-gradient(135deg, #34D399 0%, #0A84FF 60%, #2563EB 100%);
-      color: #FFFFFF;
+      background: linear-gradient(135deg, #FFFFFF 0%, #EAF3FF 52%, #A9CCF7 100%);
+      color: #1768B8;
       font-family: var(--font-sans);
       font-size: 22px;
       font-weight: 700;
       letter-spacing: -0.02em;
       box-shadow:
-        0 14px 36px rgba(10, 132, 255, 0.6),
-        0 0 28px rgba(52, 211, 153, 0.8),
-        inset 0 1px 1px rgba(255, 255, 255, 0.8);
+        0 14px 36px rgba(10, 132, 255, 0.42),
+        0 0 28px rgba(168, 211, 255, 0.72),
+        inset 0 1px 1px rgba(255, 255, 255, 0.96);
       opacity: 0;
       pointer-events: none;
       z-index: 12;
@@ -2443,7 +2541,7 @@
         <button type="button" class="close-btn" id="closeNearMeBtn">&times;</button>
       </div>
 
-      <div class="segmented" style="position:relative; z-index:4;">
+      <div class="segmented near-segmented near-active-pay" id="nearSegmentedControl" style="position:relative; z-index:4;">
         <button type="button" id="nearTabPay" class="active">Pay Shop / Nearby</button>
         <button type="button" id="nearTabReceive">Receive (Tap Terminal)</button>
       </div>
@@ -2623,6 +2721,7 @@
 
       <div class="slide-track" id="paySlideTrack">
         <div class="slide-fill" id="paySlideFill"></div>
+        <div class="pay-send-orb tabular" id="paySendOrb">$0.00</div>
         <div class="slide-label" id="paySlideLabel">
           <span class="slide-shimmer-text">Slide to Pay</span>
           <span class="slide-chevrons">
@@ -3913,6 +4012,31 @@
       });
     }
 
+    function triggerStandardSendAnimation(amount) {
+      return new Promise((resolve) => {
+        const track = $("paySlideTrack");
+        const orb = $("paySendOrb");
+        if (!track || !orb) {
+          resolve();
+          return;
+        }
+
+        const travel = Math.max(180, track.offsetWidth - 58);
+        orb.style.setProperty("--orb-travel", `${travel}px`);
+        orb.textContent = formatCurrency(amount);
+        orb.classList.remove("launch");
+        void orb.offsetWidth;
+        orb.classList.add("launch");
+        playAirDropChime();
+        if (navigator.vibrate) navigator.vibrate([20, 28, 35]);
+
+        setTimeout(() => {
+          orb.classList.remove("launch");
+          resolve();
+        }, 850);
+      });
+    }
+
     function lockNearbyAccount(shopUser, distanceCm, methodLabel) {
       lockedNearMerchant = shopUser;
       updateCmMeter(distanceCm, true);
@@ -4196,6 +4320,8 @@
     $("openNearMeBtn").addEventListener("click", async () => {
       $("nearTabPay").classList.add("active");
       $("nearTabReceive").classList.remove("active");
+      $("nearSegmentedControl").classList.add("near-active-pay");
+      $("nearSegmentedControl").classList.remove("near-active-receive");
       $("nearReceivePane").classList.add("hidden");
       $("nearPayPane").classList.remove("hidden");
       openModal("nearMeModal");
@@ -4205,6 +4331,8 @@
     $("nearTabPay").addEventListener("click", async () => {
       $("nearTabPay").classList.add("active");
       $("nearTabReceive").classList.remove("active");
+      $("nearSegmentedControl").classList.add("near-active-pay");
+      $("nearSegmentedControl").classList.remove("near-active-receive");
       $("nearReceivePane").classList.add("hidden");
       $("nearPayPane").classList.remove("hidden");
       await startNearPayScanner();
@@ -4213,6 +4341,8 @@
     $("nearTabReceive").addEventListener("click", async () => {
       $("nearTabReceive").classList.add("active");
       $("nearTabPay").classList.remove("active");
+      $("nearSegmentedControl").classList.add("near-active-receive");
+      $("nearSegmentedControl").classList.remove("near-active-pay");
       $("nearPayPane").classList.add("hidden");
       $("nearReceivePane").classList.remove("hidden");
       await startNearReceiveShopBeacon();
@@ -4335,6 +4465,7 @@
           const recipient = await executeAccountTransfer(recipientQuery, amount, note, activeRequestIdToFulfill);
           activeRequestIdToFulfill = null;
           playAirDropChime();
+          await triggerStandardSendAnimation(amount);
           showToast(`Paid ${formatCurrency(amount)} to ${recipient.name}`);
           setTimeout(() => closeModal("payModal"), 700);
           return true;
