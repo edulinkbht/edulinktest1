@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Idem — Wallet</title>
+  <title>Idem — Personal Banking</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -12,20 +12,23 @@
 
   <style>
     :root {
-      --bg: #F6F6F8;
+      --bg: #F5F5F7;
       --surface: #FFFFFF;
-      --surface-muted: #EFEFF2;
-      --ink: #141416;
-      --ink-secondary: #8A8A8E;
-      --ink-tertiary: #AEAEB2;
-      --border: rgba(0, 0, 0, 0.055);
-      --coral: #D94E4E;
-      --green: #16A34A;
-      --blue: #0066DB;
-      --leather-dark: #2C180C;
-      --leather-mid: #432614;
-      --leather-light: #56321C;
-      --stitch: rgba(214, 178, 142, 0.55);
+      --surface-muted: #EFEFF4;
+      --ink: #111113;
+      --ink-secondary: #6E6E73;
+      --ink-tertiary: #8E8E93;
+      --border: rgba(0, 0, 0, 0.065);
+      --blue: #007AFF;
+      --green: #15803D;
+      --green-bright: #16A34A;
+      --red: #DC2626;
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 15px;
+      --radius-sm: 11px;
+      --shadow-card: 0 26px 50px -14px rgba(0, 0, 0, 0.24), 0 4px 14px rgba(0, 0, 0, 0.07);
+      --shadow-surface: 0 2px 16px rgba(0, 0, 0, 0.03);
       --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
       --font-mono: "SF Mono", "JetBrains Mono", monospace;
     }
@@ -42,7 +45,7 @@
       background-color: var(--bg);
       color: var(--ink);
       min-height: 100vh;
-      line-height: 1.4;
+      line-height: 1.45;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -58,702 +61,46 @@
     .liquid-glass {
       background: linear-gradient(
         135deg,
-        rgba(255, 255, 255, 0.78) 0%,
-        rgba(255, 255, 255, 0.48) 100%
+        rgba(255, 255, 255, 0.76) 0%,
+        rgba(255, 255, 255, 0.46) 100%
       );
-      backdrop-filter: blur(22px) saturate(185%);
-      -webkit-backdrop-filter: blur(22px) saturate(185%);
-      border: 1px solid rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(24px) saturate(190%);
+      -webkit-backdrop-filter: blur(24px) saturate(190%);
+      border: 1px solid rgba(255, 255, 255, 0.82);
       box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.95),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.92),
+        inset 0 -1px 0 0 rgba(0, 0, 0, 0.04),
         0 8px 24px -6px rgba(0, 0, 0, 0.07);
     }
 
-    /* ---------- App Shell ---------- */
-    .app-container {
-      max-width: 460px;
-      margin: 0 auto;
-      min-height: 100vh;
-      padding: 16px 20px 112px;
-      position: relative;
-    }
-
-    /* ---------- Minimal Top Header (Matching Reference) ---------- */
-    .wallet-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 6px 0 22px;
-    }
-
-    .header-circle-btn {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      border: none;
-      background: #ECECEE;
-      color: var(--ink);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      transition: background 0.15s ease, transform 0.12s ease;
-    }
-
-    .header-circle-btn:hover {
-      background: #E2E2E6;
-    }
-
-    .header-circle-btn:active {
-      transform: scale(0.95);
-    }
-
-    .header-menu-btn {
-      width: 38px;
-      height: 38px;
-      border: none;
-      background: transparent;
-      color: var(--ink);
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      position: relative;
-    }
-
-    .admin-dot-indicator {
-      position: absolute;
-      top: 7px;
-      right: 6px;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: var(--blue);
-    }
-
-    .header-title-group {
-      text-align: center;
-    }
-
-    .header-title-group h1 {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      color: var(--ink);
-      line-height: 1.2;
-    }
-
-    .header-title-group p {
-      font-size: 12px;
-      font-weight: 500;
-      color: var(--ink-secondary);
-      margin-top: 2px;
-    }
-
-    /* ---------- Stitched Leather Wallet Centerpiece ---------- */
-    .wallet-hero-wrap {
-      perspective: 1200px;
-      margin-bottom: 26px;
-      user-select: none;
-    }
-
-    .leather-wallet {
-      position: relative;
-      width: 100%;
-      max-width: 360px;
-      height: 232px;
-      margin: 0 auto;
-      border-radius: 26px;
-      transform-style: preserve-3d;
-      transition: transform 0.22s ease-out;
-      cursor: pointer;
-    }
-
-    /* Back leather backing plate with physical thickness */
-    .wallet-back-plate {
-      position: absolute;
-      inset: 0;
-      border-radius: 26px;
-      background:
-        radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.07), transparent 55%),
-        repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,0.06) 0, rgba(0,0,0,0.06) 1px, transparent 1px, transparent 3px),
-        linear-gradient(160deg, #3C2212 0%, #27150A 100%);
-      box-shadow:
-        0 20px 38px -12px rgba(28, 14, 5, 0.38),
-        0 4px 10px rgba(0, 0, 0, 0.14),
-        inset 0 1px 1px rgba(255, 255, 255, 0.16);
-    }
-
-    /* Thick Layered Cards Slotted Inside the Wallet */
-    .wallet-cards-stack {
-      position: absolute;
-      left: 14px;
-      right: 14px;
-      top: 10px;
-      height: 150px;
-    }
-
-    .slot-card {
-      position: absolute;
-      left: 0;
-      right: 0;
-      height: 124px;
-      border-radius: 16px;
-      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-      /* Thick machined card edge */
-      border-top: 2.5px solid rgba(255, 255, 255, 0.42);
-      box-shadow:
-        0 -2px 6px rgba(0, 0, 0, 0.22),
-        0 4px 12px rgba(0, 0, 0, 0.32);
-    }
-
-    .leather-wallet:hover .slot-card.card-tier-1 {
-      transform: translateY(-4px);
-    }
-    .leather-wallet:hover .slot-card.card-tier-2 {
-      transform: translateY(-2px);
-    }
-
-    /* Top Magenta Card */
-    .slot-card.card-tier-1 {
+    /* Top Bar */
+    header.topbar {
+      position: sticky;
       top: 0;
-      background: linear-gradient(135deg, #F43F8E 0%, #DB1D72 60%, #BE125D 100%);
-      z-index: 1;
+      z-index: 30;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+      border-radius: 0;
     }
 
-    /* Middle Dark Obsidian Card with Vertical Metallic Contacts */
-    .slot-card.card-tier-2 {
-      top: 14px;
-      background: linear-gradient(135deg, #272B33 0%, #15181E 100%);
-      border-top-color: rgba(255, 255, 255, 0.28);
-      z-index: 2;
-      overflow: hidden;
-    }
-
-    .slot-card.card-tier-2::after {
-      content: "";
-      position: absolute;
-      top: 0;
-      right: 42px;
-      width: 72px;
-      height: 16px;
-      background: repeating-linear-gradient(
-        90deg,
-        rgba(255, 255, 255, 0.34) 0px,
-        rgba(255, 255, 255, 0.34) 2px,
-        transparent 2px,
-        transparent 11px
-      );
-    }
-
-    /* Front Cobalt Blue Idem Cash Debit Card */
-    .slot-card.card-tier-3 {
-      top: 28px;
-      background: linear-gradient(135deg, #0A6CE8 0%, #0051C3 65%, #003E9C 100%);
-      border-top-color: rgba(147, 197, 253, 0.65);
-      z-index: 3;
-      padding: 13px 18px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      color: #FFFFFF;
-    }
-
-    .idem-card-wordmark {
-      font-size: 16px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-      display: flex;
-      align-items: baseline;
-      gap: 5px;
-    }
-
-    .idem-card-wordmark span {
-      font-weight: 400;
-      font-style: italic;
-      opacity: 0.92;
-      font-size: 15px;
-    }
-
-    .idem-card-debit {
-      font-size: 13px;
-      font-weight: 500;
-      opacity: 0.85;
-      letter-spacing: -0.01em;
-    }
-
-    /* Front Stitched Brown Leather Pocket Overlay */
-    .leather-pocket-front {
-      position: absolute;
-      inset: 0;
-      z-index: 5;
-      pointer-events: none;
-    }
-
-    .leather-pocket-svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-      filter: drop-shadow(0 -4px 8px rgba(0, 0, 0, 0.35));
-    }
-
-    /* Balance & Eye Button Embossed on Front Leather */
-    .wallet-pocket-content {
-      position: absolute;
-      left: 24px;
-      right: 22px;
-      bottom: 22px;
-      z-index: 6;
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-    }
-
-    .wallet-bal-label {
-      font-size: 12px;
-      font-weight: 500;
-      color: rgba(235, 218, 202, 0.78);
-      margin-bottom: 3px;
-      letter-spacing: -0.01em;
-    }
-
-    .wallet-bal-value {
-      font-size: 29px;
-      font-weight: 700;
-      color: #FFFFFF;
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-    }
-
-    .leather-eye-btn {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      border: 1.5px solid rgba(214, 178, 142, 0.42);
-      background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.16), rgba(24, 12, 5, 0.68));
-      box-shadow:
-        inset 0 1px 2px rgba(255, 255, 255, 0.2),
-        0 3px 8px rgba(0, 0, 0, 0.45);
-      color: #F5EDE6;
-      display: grid;
-      place-items: center;
-      cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease;
-    }
-
-    .leather-eye-btn:hover {
-      transform: scale(1.06);
-    }
-
-    .leather-eye-btn:active {
-      transform: scale(0.94);
-    }
-
-    .wallet-hint-row {
+    .topbar-inner {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 13px 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      max-width: 360px;
-      margin: 10px auto 0;
-      padding: 0 4px;
     }
 
-    .wallet-acct-chip {
-      background: transparent;
-      border: none;
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-      color: var(--ink-secondary);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .wallet-acct-chip:hover {
-      color: var(--ink);
-    }
-
-    .inspect-3d-link {
-      background: none;
-      border: none;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--ink);
-      cursor: pointer;
-      opacity: 0.75;
-    }
-
-    .inspect-3d-link:hover {
-      opacity: 1;
-    }
-
-    /* ---------- Transactions List (Grouped by Month, Matching Reference) ---------- */
-    .tx-section-head {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-    }
-
-    .tx-section-head h2 {
-      font-size: 17px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
-    }
-
-    .tx-hide-btn {
-      border: none;
-      background: transparent;
-      color: var(--ink-secondary);
-      font-family: inherit;
-      font-size: 12.5px;
-      font-weight: 500;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .tx-hide-btn:hover {
-      color: var(--ink);
-    }
-
-    .month-group-label {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--ink-secondary);
-      margin: 14px 0 8px;
-    }
-
-    .month-card {
-      background: var(--surface);
-      border-radius: 20px;
-      padding: 4px 16px;
-      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.025);
-    }
-
-    .tx-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 13px 0;
-      border-bottom: 1px solid rgba(0, 0, 0, 0.045);
-    }
-
-    .tx-row:last-child {
-      border-bottom: none;
-    }
-
-    .tx-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      min-width: 0;
-    }
-
-    .tx-badge {
-      width: 38px;
-      height: 38px;
-      border-radius: 50%;
-      background: #EFEFF2;
-      color: var(--ink);
-      font-size: 13.5px;
-      font-weight: 700;
-      display: grid;
-      place-items: center;
-      flex-shrink: 0;
-    }
-
-    .tx-badge.dark {
-      background: #1C1C1E;
-      color: #FFFFFF;
-    }
-
-    .tx-name {
-      font-size: 14.5px;
-      font-weight: 600;
-      color: var(--ink);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .tx-time {
-      font-size: 11.5px;
-      color: var(--ink-secondary);
-      margin-top: 1px;
-    }
-
-    .tx-right {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-shrink: 0;
-      margin-left: 10px;
-    }
-
-    .tx-val-group {
-      text-align: right;
-    }
-
-    .tx-val {
-      font-size: 14.5px;
-      font-weight: 700;
-      color: var(--ink);
-    }
-
-    .tx-val.debit {
-      color: var(--coral);
-    }
-
-    .tx-val.credit {
-      color: var(--ink);
-    }
-
-    .tx-cat {
-      font-size: 11px;
-      color: var(--ink-secondary);
-      margin-top: 1px;
-    }
-
-    .tx-chevron {
-      color: var(--ink-tertiary);
-      font-size: 14px;
-    }
-
-    .tx-empty-card {
-      background: var(--surface);
-      border-radius: 20px;
-      padding: 32px 20px;
-      text-align: center;
-      color: var(--ink-secondary);
-      font-size: 13.5px;
-    }
-
-    /* ---------- Floating Dark Pill Bottom Dock (Matching Reference) ---------- */
-    .floating-dock-wrap {
-      position: fixed;
-      bottom: 20px;
-      left: 0;
-      right: 0;
-      z-index: 40;
-      display: flex;
-      justify-content: center;
-      padding: 0 20px;
-      pointer-events: none;
-    }
-
-    .floating-dock {
-      pointer-events: auto;
-      background: rgba(24, 24, 26, 0.94);
-      backdrop-filter: blur(20px) saturate(180%);
-      -webkit-backdrop-filter: blur(20px) saturate(180%);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 999px;
-      padding: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.28);
-    }
-
-    .dock-item {
-      border: none;
-      background: transparent;
-      color: rgba(255, 255, 255, 0.58);
-      height: 42px;
-      padding: 0 14px;
-      border-radius: 999px;
-      font-family: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      cursor: pointer;
-      position: relative;
-      transition: all 0.2s ease;
-    }
-
-    .dock-item:hover {
-      color: #FFFFFF;
-    }
-
-    .dock-item.active {
-      background: #3A3A3D;
-      color: #FFFFFF;
-      padding: 0 18px;
-    }
-
-    .dock-badge {
-      position: absolute;
-      top: 6px;
-      right: 8px;
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #38BDF8;
-    }
-
-    /* ---------- Volumetric 360° Thick 3D Card Modal ---------- */
-    .thick-card-stage {
-      perspective: 1400px;
-      width: 100%;
-      aspect-ratio: 1.586 / 1;
-      margin: 8px 0 14px;
-      user-select: none;
-      touch-action: pan-y;
-    }
-
-    .thick-card-3d {
-      width: 100%;
-      height: 100%;
-      position: relative;
-      transform-style: preserve-3d;
-      cursor: grab;
-      will-change: transform;
-    }
-
-    .thick-card-3d.smooth-spin {
-      transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    /* Machined 3D Extrusion Thickness Layers (-4px to +4px = 8px solid slab) */
-    .card-edge-slab {
-      position: absolute;
-      inset: 0;
-      border-radius: 20px;
-      pointer-events: none;
-    }
-
-    .thick-card-3d.cobalt .card-edge-slab {
-      background: linear-gradient(90deg, #003580, #1D4ED8, #002B66);
-      border: 1px solid rgba(147, 197, 253, 0.35);
-    }
-
-    .thick-card-3d.obsidian .card-edge-slab {
-      background: linear-gradient(90deg, #27272A, #52525B, #18181B);
-      border: 1px solid rgba(255, 255, 255, 0.18);
-    }
-
-    .thick-card-3d.titanium .card-edge-slab {
-      background: linear-gradient(90deg, #A1A1AA, #E4E4E7, #71717A);
-      border: 1px solid rgba(255, 255, 255, 0.6);
-    }
-
-    .thick-face {
-      position: absolute;
-      inset: 0;
-      border-radius: 20px;
-      backface-visibility: hidden;
-      -webkit-backface-visibility: hidden;
-      overflow: hidden;
-      padding: 22px 24px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
-    }
-
-    .thick-front {
-      transform: translateZ(4.5px);
-    }
-
-    .thick-back {
-      transform: rotateY(180deg) translateZ(4.5px);
-      padding: 0;
-    }
-
-    .thick-card-3d.cobalt .thick-face {
-      background: linear-gradient(138deg, #0E74F0 0%, #0052CC 55%, #003894 100%);
-      color: #FFFFFF;
-      border: 1px solid rgba(191, 219, 254, 0.45);
-    }
-
-    .thick-card-3d.obsidian .thick-face {
-      background: linear-gradient(142deg, #262629 0%, #141416 55%, #09090B 100%);
-      color: #F5F5F7;
-      border: 1px solid rgba(255, 255, 255, 0.16);
-    }
-
-    .thick-card-3d.titanium .thick-face {
-      background: linear-gradient(142deg, #F8F8FA 0%, #E2E2E7 55%, #CBCBD2 100%);
-      color: #141416;
-      border: 1px solid rgba(0, 0, 0, 0.1);
-    }
-
-    .card-sheen {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: radial-gradient(
-        circle at var(--mx, 50%) var(--my, 50%),
-        rgba(255, 255, 255, 0.28) 0%,
-        rgba(255, 255, 255, 0.05) 38%,
-        transparent 70%
-      );
-      mix-blend-mode: overlay;
-    }
-
-    .emv-chip {
-      width: 40px;
-      height: 30px;
-      border-radius: 6px;
-      background: linear-gradient(135deg, #E4E4E7 0%, #A1A1AA 50%, #F4F4F5 100%);
-      position: relative;
-      border: 1px solid rgba(0, 0, 0, 0.15);
-    }
-
-    .emv-chip::after {
-      content: "";
-      position: absolute;
-      inset: 6px;
-      border: 1px solid rgba(0, 0, 0, 0.22);
-      border-radius: 3px;
-    }
-
-    .magstripe {
-      width: 100%;
-      height: 38px;
-      background: #09090B;
-      margin-top: 22px;
-    }
-
-    .card-back-body {
-      padding: 14px 24px 22px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      flex: 1;
-    }
-
-    /* ---------- Auth Screen ---------- */
-    .auth-shell {
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
-    }
-
-    .auth-card {
-      width: 100%;
-      max-width: 390px;
-      background: var(--surface);
-      border-radius: 26px;
-      padding: 30px 26px;
-      border: 1px solid var(--border);
-      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.04);
-    }
-
-    .brand-row {
+    .brand {
       display: flex;
       align-items: center;
       gap: 9px;
       font-weight: 700;
       font-size: 18px;
       letter-spacing: -0.03em;
+      color: var(--ink);
     }
 
     .brand-mark {
@@ -764,6 +111,108 @@
       display: grid;
       place-items: center;
       color: #fff;
+    }
+
+    .topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pill-badge {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 13px;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      letter-spacing: -0.01em;
+      cursor: pointer;
+      border: none;
+      transition: transform 0.12s ease, opacity 0.15s ease;
+    }
+
+    .pill-badge:active {
+      transform: scale(0.96);
+    }
+
+    .icon-btn {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid var(--border);
+      color: var(--ink);
+      height: 34px;
+      padding: 0 13px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.12s ease;
+    }
+
+    .icon-btn:hover {
+      background: #FFFFFF;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.97);
+    }
+
+    .eye-toggle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface-muted);
+      color: var(--ink-secondary);
+      display: inline-grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .eye-toggle:hover {
+      color: var(--ink);
+      background: #E5E5EA;
+    }
+
+    /* Auth Screen */
+    .auth-shell {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 400px;
+      background: var(--surface);
+      border-radius: var(--radius-xl);
+      padding: 32px 28px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-surface);
+    }
+
+    .auth-header {
+      margin-bottom: 22px;
+    }
+
+    .auth-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-top: 14px;
+    }
+
+    .auth-header p {
+      font-size: 14px;
+      color: var(--ink-secondary);
+      margin-top: 4px;
     }
 
     .google-btn {
@@ -781,21 +230,25 @@
       justify-content: center;
       gap: 10px;
       cursor: pointer;
-      margin-top: 20px;
+      transition: background 0.15s ease, transform 0.1s ease;
     }
 
     .google-btn:hover {
       background: #F9F9FB;
     }
 
+    .google-btn:active {
+      transform: scale(0.99);
+    }
+
     .divider-row {
       display: flex;
       align-items: center;
       gap: 12px;
-      margin: 16px 0;
+      margin: 18px 0;
       color: var(--ink-tertiary);
-      font-size: 11.5px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 500;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -814,7 +267,7 @@
       background: var(--surface-muted);
       padding: 3px;
       border-radius: 11px;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .segmented button {
@@ -827,6 +280,7 @@
       color: var(--ink-secondary);
       border-radius: 9px;
       cursor: pointer;
+      transition: all 0.2s ease;
     }
 
     .segmented button.active {
@@ -836,7 +290,7 @@
     }
 
     .field {
-      margin-bottom: 13px;
+      margin-bottom: 14px;
     }
 
     .field label {
@@ -844,20 +298,21 @@
       font-size: 12px;
       font-weight: 600;
       color: var(--ink-secondary);
-      margin-bottom: 5px;
+      margin-bottom: 6px;
     }
 
     .input {
       width: 100%;
-      height: 44px;
+      height: 45px;
       padding: 0 14px;
-      border-radius: 11px;
+      border-radius: var(--radius-sm);
       border: 1px solid rgba(0, 0, 0, 0.11);
       background: #FAFAFC;
       font-family: inherit;
       font-size: 15px;
       color: var(--ink);
       outline: none;
+      transition: border-color 0.15s ease, background 0.15s ease;
     }
 
     .input:focus {
@@ -875,12 +330,23 @@
       font-family: inherit;
       font-size: 15px;
       font-weight: 600;
+      letter-spacing: -0.01em;
       cursor: pointer;
+      transition: opacity 0.15s ease, transform 0.1s ease;
       margin-top: 4px;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.92;
+    }
+
+    .btn-primary:active {
+      transform: scale(0.99);
     }
 
     .btn-primary:disabled {
       opacity: 0.45;
+      cursor: not-allowed;
     }
 
     .error-banner {
@@ -889,155 +355,405 @@
       font-size: 13px;
       padding: 10px 12px;
       border-radius: 10px;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
+      line-height: 1.4;
     }
 
-    /* ---------- Modals / Sheets ---------- */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      z-index: 60;
-      background: rgba(0, 0, 0, 0.34);
-      backdrop-filter: blur(6px);
-      -webkit-backdrop-filter: blur(6px);
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
+    /* Main Workspace */
+    .workspace {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 20px 72px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
     }
 
-    @media (min-width: 600px) {
-      .modal-backdrop {
-        align-items: center;
-        padding: 20px;
+    @media (min-width: 840px) {
+      .workspace {
+        grid-template-columns: 396px 1fr;
+        align-items: start;
+        padding-top: 30px;
       }
     }
 
-    .sheet {
-      width: 100%;
-      max-width: 430px;
+    .panel {
       background: var(--surface);
-      border-radius: 28px 28px 0 0;
-      padding: 24px 24px 30px;
-      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.24);
-      max-height: 92vh;
-      overflow-y: auto;
-      animation: sheetUp 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-surface);
     }
 
-    @media (min-width: 600px) {
-      .sheet {
-        border-radius: 28px;
-      }
+    /* 360° 3D Idem Card */
+    .card-stage {
+      perspective: 1300px;
+      width: 100%;
+      aspect-ratio: 1.586 / 1;
+      margin-bottom: 12px;
+      user-select: none;
+      touch-action: pan-y;
     }
 
-    @keyframes sheetUp {
-      from { transform: translateY(20px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
+    .card-3d {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      cursor: grab;
+      will-change: transform;
     }
 
-    .sheet-head {
+    .card-3d:active {
+      cursor: grabbing;
+    }
+
+    .card-3d.smooth-spin {
+      transition: transform 0.72s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .card-face {
+      position: absolute;
+      inset: 0;
+      border-radius: 21px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      overflow: hidden;
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: var(--shadow-card);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+    }
+
+    .card-3d.obsidian .card-face {
+      background: linear-gradient(142deg, #252528 0%, #141416 54%, #0B0B0D 100%);
+      color: #F5F5F7;
+    }
+
+    .card-3d.titanium .card-face {
+      background: linear-gradient(142deg, #F7F7F9 0%, #E1E1E6 54%, #CCCCD3 100%);
+      color: #111113;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .card-sheen {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(
+        circle at var(--mx, 50%) var(--my, 50%),
+        rgba(255, 255, 255, 0.28) 0%,
+        rgba(255, 255, 255, 0.06) 36%,
+        transparent 68%
+      );
+      mix-blend-mode: overlay;
+    }
+
+    .card-back {
+      transform: rotateY(180deg);
+      padding: 0;
+    }
+
+    .magstripe {
+      width: 100%;
+      height: 38px;
+      background: #09090B;
+      margin-top: 22px;
+    }
+
+    .card-back-body {
+      padding: 15px 24px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      flex: 1;
+    }
+
+    .emv-chip {
+      width: 40px;
+      height: 30px;
+      border-radius: 6px;
+      background: linear-gradient(135deg, #D4D4D8 0%, #A1A1AA 50%, #E4E4E7 100%);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.14);
+    }
+
+    .emv-chip::after {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 1px solid rgba(0, 0, 0, 0.22);
+      border-radius: 3px;
+    }
+
+    .card-top-row, .card-bottom-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: relative;
+      z-index: 2;
+    }
+
+    .card-holder-name {
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: 0.01em;
+    }
+
+    .card-sub-digits {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      opacity: 0.72;
+      letter-spacing: 0.05em;
+    }
+
+    /* Liquid Glass Card Control Bar */
+    .card-controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 14px;
+      border-radius: 999px;
       margin-bottom: 16px;
     }
 
-    .sheet-head h3 {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.02em;
+    .finish-dots {
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
 
-    .close-btn {
-      width: 30px;
-      height: 30px;
+    .dot-btn {
+      width: 18px;
+      height: 18px;
       border-radius: 50%;
-      border: none;
-      background: var(--surface-muted);
-      color: var(--ink-secondary);
-      font-size: 17px;
+      border: 1.5px solid rgba(0, 0, 0, 0.15);
       cursor: pointer;
-      display: grid;
-      place-items: center;
     }
 
-    .icon-btn {
-      background: var(--surface-muted);
+    .dot-btn.active {
+      box-shadow: 0 0 0 2px #FFFFFF, 0 0 0 3.5px var(--ink);
+    }
+
+    .card-spin-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .mini-ctrl-btn {
+      background: none;
       border: none;
       color: var(--ink);
-      height: 34px;
-      padding: 0 13px;
-      border-radius: 999px;
       font-family: inherit;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
+      opacity: 0.85;
+      transition: opacity 0.15s ease;
     }
 
-    .icon-btn:hover {
-      background: #E4E4E8;
+    .mini-ctrl-btn:hover {
+      opacity: 1;
     }
 
-    .pill-badge {
-      font-size: 12px;
-      font-weight: 600;
-      padding: 6px 13px;
-      border-radius: 999px;
-      background: var(--ink);
-      color: #fff;
-      cursor: pointer;
-      border: none;
-    }
-
-    .detail-box {
-      background: var(--surface-muted);
-      border-radius: 14px;
-      padding: 12px 15px;
-      margin-bottom: 10px;
+    /* Balance & Actions */
+    .balance-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
     }
 
-    .detail-k {
-      font-size: 11.5px;
+    .balance-label {
+      font-size: 13px;
+      font-weight: 500;
       color: var(--ink-secondary);
-      margin-bottom: 2px;
     }
 
-    .detail-v {
+    .balance-amount {
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: -0.035em;
+      margin: 2px 0 6px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+    }
+
+    .account-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-muted);
+      padding: 6px 11px;
+      border-radius: 9px;
       font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: var(--ink-secondary);
+      cursor: pointer;
+      border: none;
+      margin-bottom: 18px;
+    }
+
+    .account-pill:hover {
+      background: #E5E5EA;
+      color: var(--ink);
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .action-tile {
+      background: var(--surface-muted);
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 13px 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      color: var(--ink);
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      position: relative;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .action-tile:hover {
+      background: #E5E5EA;
+    }
+
+    .action-tile:active {
+      transform: scale(0.96);
+    }
+
+    .action-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--surface);
+      display: grid;
+      place-items: center;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    }
+
+    .notif-dot {
+      position: absolute;
+      top: 8px;
+      right: 10px;
+      min-width: 17px;
+      height: 17px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 10.5px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+    }
+
+    /* Transactions */
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+
+    .section-head h2 {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .tx-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .tx-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tx-item:last-child {
+      border-bottom: none;
+      padding-bottom: 2px;
+    }
+
+    .tx-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .tx-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      background: var(--surface-muted);
+      display: grid;
+      place-items: center;
       font-size: 14px;
       font-weight: 600;
       color: var(--ink);
+      flex-shrink: 0;
     }
 
-    .menu-action-item {
-      width: 100%;
-      background: var(--surface-muted);
-      border: none;
-      border-radius: 15px;
-      padding: 14px 16px;
-      margin-bottom: 9px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-family: inherit;
+    .tx-title {
       font-size: 14.5px;
       font-weight: 600;
-      color: var(--ink);
-      cursor: pointer;
-      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
-    .menu-action-item:hover {
-      background: #E6E6EA;
+    .tx-meta {
+      font-size: 12.5px;
+      color: var(--ink-secondary);
     }
 
-    /* Slide to Pay */
+    .tx-amount {
+      font-size: 15px;
+      font-weight: 600;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    .tx-amount.credit {
+      color: var(--green-bright);
+    }
+
+    .tx-hidden-box {
+      padding: 36px 16px;
+      text-align: center;
+      background: var(--surface-muted);
+      border-radius: var(--radius-md);
+      color: var(--ink-secondary);
+      font-size: 13.5px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Liquid Glass Slide to Pay */
     .slide-track {
       position: relative;
       width: 100%;
@@ -1045,7 +761,9 @@
       border-radius: 999px;
       background: linear-gradient(180deg, rgba(236, 236, 241, 0.94) 0%, rgba(246, 246, 249, 0.98) 100%);
       border: 1px solid rgba(0, 0, 0, 0.08);
-      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.05);
+      box-shadow:
+        inset 0 2px 5px rgba(0, 0, 0, 0.05),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.9);
       overflow: hidden;
       user-select: none;
       touch-action: none;
@@ -1058,7 +776,7 @@
       top: 0;
       bottom: 0;
       width: 62px;
-      background: var(--ink);
+      background: linear-gradient(90deg, #1F1F23 0%, #111113 100%);
       border-radius: 999px;
       pointer-events: none;
     }
@@ -1073,8 +791,20 @@
       font-size: 14.5px;
       font-weight: 600;
       color: var(--ink);
+      letter-spacing: -0.01em;
       pointer-events: none;
       padding-left: 34px;
+    }
+
+    .slide-chevrons {
+      display: inline-flex;
+      opacity: 0.45;
+      animation: chevronPulse 1.8s infinite ease-in-out;
+    }
+
+    @keyframes chevronPulse {
+      0%, 100% { transform: translateX(0); opacity: 0.35; }
+      50% { transform: translateX(4px); opacity: 0.85; }
     }
 
     .slide-thumb {
@@ -1084,24 +814,34 @@
       width: 50px;
       height: 50px;
       border-radius: 50%;
-      background: linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(242, 242, 247, 0.86));
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(242, 242, 247, 0.84));
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
       border: 1px solid rgba(255, 255, 255, 0.96);
       color: var(--ink);
       display: grid;
       place-items: center;
       cursor: grab;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.18),
+        inset 0 1px 1px rgba(255, 255, 255, 1);
       z-index: 2;
     }
 
+    .slide-thumb:active {
+      cursor: grabbing;
+      transform: scale(0.97);
+    }
+
     .slide-track.confirmed {
-      background: var(--green);
-      border-color: var(--green);
+      background: var(--green-bright);
+      border-color: var(--green-bright);
+      box-shadow: 0 6px 20px rgba(22, 163, 74, 0.28);
     }
 
     .slide-track.confirmed .slide-fill {
       width: 100% !important;
-      background: var(--green);
+      background: var(--green-bright);
     }
 
     .slide-track.confirmed .slide-label {
@@ -1109,123 +849,114 @@
       padding-left: 0;
     }
 
-    .amount-hero {
-      width: 100%;
-      border: none;
-      background: transparent;
-      text-align: center;
-      font-family: var(--font-sans);
-      font-size: 40px;
-      font-weight: 700;
-      letter-spacing: -0.03em;
-      color: var(--ink);
-      outline: none;
-      margin: 6px 0 14px;
+    .slide-track.confirmed .slide-thumb {
+      color: var(--green-bright);
     }
 
-    /* Payment Near Me (<= 5 cm) */
-    .proximity-stage {
-      border-radius: 22px;
-      padding: 20px 16px;
-      text-align: center;
-      margin-bottom: 14px;
-    }
-
-    .radar-rings {
-      width: 120px;
-      height: 120px;
-      margin: 4px auto 12px;
-      position: relative;
-      display: grid;
-      place-items: center;
-    }
-
-    .radar-ring {
-      position: absolute;
+    /* Modals & Sheets */
+    .modal-backdrop {
+      position: fixed;
       inset: 0;
-      border-radius: 50%;
-      border: 1.5px solid rgba(0, 102, 219, 0.28);
-      animation: pulse5cm 2.2s infinite ease-out;
+      z-index: 60;
+      background: rgba(0, 0, 0, 0.34);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
     }
 
-    .radar-ring:nth-child(2) { animation-delay: 0.7s; }
-    .radar-ring:nth-child(3) { animation-delay: 1.4s; }
-
-    @keyframes pulse5cm {
-      0% { transform: scale(0.45); opacity: 0.9; }
-      100% { transform: scale(1.15); opacity: 0; }
+    @media (min-width: 600px) {
+      .modal-backdrop {
+        align-items: center;
+        padding: 20px;
+      }
     }
 
-    .radar-core {
-      width: 54px;
-      height: 54px;
-      border-radius: 50%;
-      background: var(--ink);
-      color: #FFFFFF;
-      display: grid;
-      place-items: center;
-      position: relative;
-      z-index: 2;
-    }
-
-    .distance-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 12px;
-      border-radius: 999px;
-      font-family: var(--font-mono);
-      font-size: 11.5px;
-      font-weight: 600;
-      background: rgba(0, 0, 0, 0.06);
-      color: var(--ink);
-      margin-bottom: 8px;
-    }
-
-    .distance-badge.locked {
-      background: rgba(22, 163, 74, 0.14);
-      color: #15803D;
-    }
-
-    .cm-meter-bar {
+    .sheet {
       width: 100%;
-      height: 6px;
-      background: rgba(0, 0, 0, 0.08);
-      border-radius: 999px;
-      overflow: hidden;
-      margin: 12px 0 4px;
+      max-width: 440px;
+      background: var(--surface);
+      border-radius: 30px 30px 0 0;
+      padding: 24px 24px 30px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.22);
+      max-height: 92vh;
+      overflow-y: auto;
+      position: relative;
+      animation: sheetUp 0.28s cubic-bezier(0.22, 1, 0.36, 1);
     }
 
-    .cm-meter-fill {
-      height: 100%;
-      width: 12%;
-      background: var(--blue);
-      border-radius: 999px;
-      transition: width 0.25s ease, background 0.25s ease;
+    @media (min-width: 600px) {
+      .sheet {
+        border-radius: 30px;
+      }
     }
 
-    .nearby-shop-card {
-      background: #FFFFFF;
-      border: 1.5px solid var(--green);
-      border-radius: 18px;
-      padding: 13px 15px;
+    @keyframes sheetUp {
+      from { transform: translateY(24px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .sheet-head {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      text-align: left;
-      margin-top: 12px;
-      box-shadow: 0 8px 22px rgba(22, 163, 74, 0.12);
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 3;
+    }
+
+    .sheet-head h3 {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .close-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(142, 142, 147, 0.16);
+      color: var(--ink-secondary);
+      font-size: 17px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+    }
+
+    .detail-box {
+      background: var(--surface-muted);
+      border-radius: var(--radius-md);
+      padding: 13px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .detail-k {
+      font-size: 11.5px;
+      color: var(--ink-secondary);
+      margin-bottom: 2px;
+    }
+
+    .detail-v {
+      font-family: var(--font-mono);
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--ink);
     }
 
     .qr-frame {
       background: #FFFFFF;
       border: 1px solid var(--border);
       border-radius: 20px;
-      padding: 18px;
+      padding: 20px;
       display: flex;
       flex-direction: column;
       align-items: center;
-      margin: 12px 0 14px;
+      margin: 12px 0 16px;
     }
 
     #qrReader {
@@ -1236,16 +967,18 @@
       margin-bottom: 14px;
     }
 
-    .req-card {
-      border: 1px solid var(--border);
-      background: #FAFAFC;
-      border-radius: 16px;
-      padding: 13px 14px;
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 10px;
+    .amount-hero {
+      width: 100%;
+      border: none;
+      background: transparent;
+      text-align: center;
+      font-family: var(--font-sans);
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      outline: none;
+      margin: 6px 0 14px;
     }
 
     .chip-row {
@@ -1265,6 +998,300 @@
       cursor: pointer;
     }
 
+    .chip:hover {
+      background: #E5E5EA;
+    }
+
+    /* =========================================================================
+       APPLE AIRDROP / NAMEDROP ANIMATION FOR PAYMENT NEAR ME (<= 5 CM)
+       ========================================================================= */
+    .airdrop-sheet {
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(36px) saturate(210%);
+      -webkit-backdrop-filter: blur(36px) saturate(210%);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      overflow: hidden;
+      padding-top: 14px;
+    }
+
+    /* Dynamic Island / Top-Edge NameDrop Light Spill */
+    .namedrop-bezel-pill {
+      width: 96px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.14);
+      margin: 0 auto 14px;
+      position: relative;
+      z-index: 3;
+      transition: all 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .airdrop-sheet.airdrop-locked .namedrop-bezel-pill {
+      width: 140px;
+      background: linear-gradient(90deg, #38BDF8, #007AFF, #34D399);
+      box-shadow: 0 0 18px rgba(0, 122, 255, 0.75);
+    }
+
+    .namedrop-aurora {
+      position: absolute;
+      top: -90px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 340px;
+      height: 210px;
+      border-radius: 50%;
+      background: radial-gradient(
+        circle at 50% 25%,
+        rgba(0, 122, 255, 0.28) 0%,
+        rgba(56, 189, 248, 0.14) 42%,
+        rgba(255, 255, 255, 0) 74%
+      );
+      filter: blur(18px);
+      pointer-events: none;
+      z-index: 1;
+      animation: auroraBreathe 3.4s ease-in-out infinite;
+      transition: all 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes auroraBreathe {
+      0%, 100% { transform: translateX(-50%) scale(0.94); opacity: 0.72; }
+      50% { transform: translateX(-50%) scale(1.08); opacity: 1; }
+    }
+
+    /* Intense NameDrop light surge when devices touch within <= 5 cm */
+    .airdrop-sheet.airdrop-locked .namedrop-aurora {
+      top: -65px;
+      width: 440px;
+      height: 290px;
+      background: radial-gradient(
+        circle at 50% 20%,
+        rgba(56, 189, 248, 0.56) 0%,
+        rgba(0, 122, 255, 0.34) 36%,
+        rgba(52, 211, 153, 0.16) 60%,
+        rgba(255, 255, 255, 0) 78%
+      );
+      animation: nameDropSurge 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes nameDropSurge {
+      0% { transform: translateX(-50%) scale(0.7); opacity: 0.4; }
+      45% { transform: translateX(-50%) scale(1.22); opacity: 1; }
+      100% { transform: translateX(-50%) scale(1.06); opacity: 0.92; }
+    }
+
+    /* Top-edge ripple wave ring (Apple NameDrop top-screen wave) */
+    .namedrop-ripple-wave {
+      position: absolute;
+      top: -120px;
+      left: 50%;
+      width: 240px;
+      height: 240px;
+      margin-left: -120px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 122, 255, 0.45);
+      box-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
+      opacity: 0;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .airdrop-sheet.airdrop-locked .namedrop-ripple-wave {
+      animation: topWaveExpand 1.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes topWaveExpand {
+      0% { transform: scale(0.3); opacity: 0.95; }
+      100% { transform: scale(2.35); opacity: 0; }
+    }
+
+    .airdrop-stage {
+      position: relative;
+      z-index: 2;
+      padding: 12px 10px 18px;
+      text-align: center;
+    }
+
+    /* Concentric Apple AirDrop Sonar Field */
+    .airdrop-field {
+      width: 196px;
+      height: 196px;
+      margin: 4px auto 14px;
+      position: relative;
+      display: grid;
+      place-items: center;
+    }
+
+    .airdrop-ring {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      border: 1.5px solid rgba(0, 122, 255, 0.32);
+      background: radial-gradient(circle, rgba(0, 122, 255, 0.04) 0%, transparent 70%);
+      opacity: 0;
+      animation: airDropSonar 3.2s cubic-bezier(0.2, 0.65, 0.35, 1) infinite;
+    }
+
+    .airdrop-ring:nth-child(2) { animation-delay: 0.8s; }
+    .airdrop-ring:nth-child(3) { animation-delay: 1.6s; }
+    .airdrop-ring:nth-child(4) { animation-delay: 2.4s; }
+
+    @keyframes airDropSonar {
+      0% {
+        transform: scale(0.32);
+        opacity: 0.85;
+      }
+      70% {
+        opacity: 0.28;
+      }
+      100% {
+        transform: scale(1.18);
+        opacity: 0;
+      }
+    }
+
+    .airdrop-sheet.airdrop-locked .airdrop-ring {
+      border-color: rgba(22, 163, 74, 0.38);
+      animation-duration: 2.2s;
+    }
+
+    /* Frosted Glass Center AirDrop Orb */
+    .airdrop-orb {
+      width: 74px;
+      height: 74px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(242, 242, 247, 0.82));
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 1);
+      box-shadow:
+        0 12px 28px -6px rgba(0, 122, 255, 0.25),
+        inset 0 1px 1px rgba(255, 255, 255, 1);
+      display: grid;
+      place-items: center;
+      color: var(--blue);
+      position: relative;
+      z-index: 3;
+      transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .airdrop-sheet.airdrop-locked .airdrop-orb {
+      transform: scale(0.84) translateY(8px);
+      color: var(--green-bright);
+      box-shadow:
+        0 10px 24px -6px rgba(22, 163, 74, 0.28),
+        inset 0 1px 1px rgba(255, 255, 255, 1);
+    }
+
+    .distance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 600;
+      background: rgba(0, 122, 255, 0.09);
+      color: var(--blue);
+      margin-bottom: 8px;
+      transition: all 0.25s ease;
+    }
+
+    .distance-badge.locked {
+      background: rgba(22, 163, 74, 0.13);
+      color: var(--green);
+    }
+
+    .cm-meter-bar {
+      width: 82%;
+      max-width: 280px;
+      height: 5px;
+      background: rgba(0, 0, 0, 0.07);
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 12px auto 5px;
+    }
+
+    .cm-meter-fill {
+      height: 100%;
+      width: 14%;
+      background: var(--blue);
+      border-radius: 999px;
+      transition: width 0.25s ease, background 0.25s ease;
+    }
+
+    /* NameDrop Floating Merchant Contact Bubble */
+    .airdrop-arrival-card {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border-radius: 22px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.96), rgba(248, 248, 250, 0.88));
+      border: 1px solid rgba(255, 255, 255, 0.95);
+      box-shadow:
+        0 16px 36px -10px rgba(0, 0, 0, 0.14),
+        0 2px 8px rgba(0, 122, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      text-align: left;
+      animation: nameDropArrive 0.56s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes nameDropArrive {
+      0% {
+        opacity: 0;
+        transform: translateY(-34px) scale(0.84);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .airdrop-avatar {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #1D1D1F, #3A3A3C);
+      color: #FFFFFF;
+      font-size: 17px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .airdrop-pay-btn {
+      background: var(--blue);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 999px;
+      padding: 9px 18px;
+      font-family: inherit;
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0, 122, 255, 0.28);
+      transition: transform 0.12s ease, opacity 0.15s ease;
+    }
+
+    .airdrop-pay-btn:active {
+      transform: scale(0.95);
+    }
+
+    .req-card {
+      border: 1px solid var(--border);
+      background: #FAFAFC;
+      border-radius: 16px;
+      padding: 13px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
     .admin-user-row {
       display: flex;
       align-items: center;
@@ -1282,17 +1309,23 @@
 
     .toast {
       position: fixed;
-      bottom: 84px;
+      bottom: 24px;
       left: 50%;
       transform: translateX(-50%);
       background: var(--ink);
       color: #FFFFFF;
-      padding: 9px 17px;
+      padding: 10px 18px;
       border-radius: 999px;
-      font-size: 13px;
+      font-size: 13.5px;
       font-weight: 500;
       z-index: 100;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.22);
+      animation: fadeToast 0.2s ease;
+    }
+
+    @keyframes fadeToast {
+      from { opacity: 0; transform: translate(-50%, 8px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
     }
   </style>
 </head>
@@ -1301,19 +1334,21 @@
   <!-- ==================== 1. AUTH / ACCOUNT CREATION ==================== -->
   <div id="authView" class="auth-shell">
     <div class="auth-card">
-      <div class="brand-row">
-        <div class="brand-mark">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
-            <circle cx="12" cy="12" r="7"/>
-            <line x1="12" y1="5" x2="12" y2="19"/>
-          </svg>
+      <div class="auth-header">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6">
+              <circle cx="12" cy="12" r="7"/>
+              <line x1="12" y1="5" x2="12" y2="19"/>
+            </svg>
+          </div>
+          <span>Idem</span>
         </div>
-        <span>Idem</span>
+        <h1 id="authTitle">Open an Idem account</h1>
+        <p id="authSubtitle">Instant 10-digit account number and virtual titanium card.</p>
       </div>
-      <h1 id="authTitle" style="font-size:23px; font-weight:700; letter-spacing:-0.03em; margin-top:14px;">Open an Idem wallet</h1>
-      <p id="authSubtitle" style="font-size:13.5px; color:var(--ink-secondary); margin-top:3px;">Instant 10-digit account number and thick virtual debit card.</p>
 
-      <div id="authError" class="error-banner hidden" style="margin-top:14px;"></div>
+      <div id="authError" class="error-banner hidden"></div>
 
       <button type="button" id="googleAuthBtn" class="google-btn">
         <svg width="18" height="18" viewBox="0 0 48 48">
@@ -1503,10 +1538,12 @@
             <button type="button" class="action-tile" id="openNearMeBtn">
               <div class="action-icon">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <path d="M2 12a10 10 0 0 1 18-6"/>
-                  <path d="M5 12a7 7 0 0 1 12.6-4.2"/>
-                  <path d="M8.5 12a3.5 3.5 0 0 1 6.3-2.1"/>
-                  <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+                  <path d="M4.9 16.1C1 12.2 1 5.8 4.9 1.9"/>
+                  <path d="M7.8 13.2a6 6 0 0 1 0-8.4"/>
+                  <circle cx="12" cy="9" r="2" fill="currentColor"/>
+                  <path d="M16.2 4.8a6 6 0 0 1 0 8.4"/>
+                  <path d="M19.1 1.9c3.9 3.9 3.9 10.3 0 14.2"/>
+                  <path d="M12 11v9"/>
                 </svg>
               </div>
               <span>Near Me</span>
@@ -1655,74 +1692,98 @@
     </div>
   </div>
 
-  <!-- ==================== MODAL: PAYMENT NEAR ME (<= 5 CM STRICT RANGE) ==================== -->
+  <!-- ==================== MODAL: APPLE AIRDROP / NAMEDROP PAYMENT NEAR ME (<= 5 CM) ==================== -->
   <div id="nearMeModal" class="modal-backdrop hidden">
-    <div class="sheet">
+    <div class="sheet airdrop-sheet" id="airdropSheet">
+      <!-- Top-edge NameDrop Bezel & Light Surge Layers -->
+      <div class="namedrop-bezel-pill"></div>
+      <div class="namedrop-aurora"></div>
+      <div class="namedrop-ripple-wave"></div>
+
       <div class="sheet-head">
         <h3>Payment Near Me</h3>
         <button type="button" class="close-btn" id="closeNearMeBtn">&times;</button>
       </div>
 
-      <div class="segmented">
+      <div class="segmented" style="position:relative; z-index:3;">
         <button type="button" id="nearTabPay" class="active">Pay Shop / Nearby</button>
         <button type="button" id="nearTabReceive">Receive (Shop Mode)</button>
       </div>
 
-      <div id="nearPayPane">
-        <div class="proximity-stage liquid-glass">
-          <div class="distance-badge" id="proximityRangeBadge">Range Gate: ≤ 5.0 cm only</div>
+      <!-- Pay Nearby Shop / User (Strictly <= 5 cm) -->
+      <div id="nearPayPane" class="airdrop-stage">
+        <div class="distance-badge" id="proximityRangeBadge">Range Gate · ≤ 5.0 cm</div>
 
-          <div class="radar-rings">
-            <div class="radar-ring"></div>
-            <div class="radar-ring"></div>
-            <div class="radar-ring"></div>
-            <div class="radar-core">
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M2 12a10 10 0 0 1 18-6"/>
-                <path d="M5 12a7 7 0 0 1 12.6-4.2"/>
-                <path d="M8.5 12a3.5 3.5 0 0 1 6.3-2.1"/>
-                <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-              </svg>
-            </div>
+        <div class="airdrop-field">
+          <div class="airdrop-ring"></div>
+          <div class="airdrop-ring"></div>
+          <div class="airdrop-ring"></div>
+          <div class="airdrop-ring"></div>
+          <div class="airdrop-orb" id="airdropOrb">
+            <!-- Apple-style AirDrop / Proximity Icon -->
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M5.6 18.4A9 9 0 1 1 18.4 18.4"/>
+              <path d="M8.5 15.5a5 5 0 1 1 7 0"/>
+              <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+              <path d="M12 13.8V21"/>
+            </svg>
           </div>
-
-          <div id="nearStatusTitle" style="font-size:15.5px; font-weight:700; letter-spacing:-0.02em;">
-            Hold within 5 cm of shop terminal
-          </div>
-          <div id="nearStatusSub" style="font-size:12.5px; color:var(--ink-secondary); margin-top:4px;">
-            Accounts further than 5 cm are blocked. Bring phones within 5 cm to unlock payment.
-          </div>
-
-          <div class="cm-meter-bar">
-            <div class="cm-meter-fill" id="cmMeterFill"></div>
-          </div>
-          <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10.5px; color:var(--ink-secondary);">
-            <span>0 cm (Touch)</span>
-            <span>5 cm Gate</span>
-            <span>&gt; 5 cm (Blocked)</span>
-          </div>
-
-          <div id="detectedNearbyContainer" class="hidden"></div>
         </div>
 
-        <button type="button" class="icon-btn" id="simulate5cmTapBtn" style="width:100%; height:44px; justify-content:center; border-radius:13px; font-weight:600;">
-          Touch / Tap Devices (≤ 5 cm Check)
+        <div id="nearStatusTitle" style="font-size:17px; font-weight:700; letter-spacing:-0.025em;">
+          Bring Devices Within 5 cm
+        </div>
+        <div id="nearStatusSub" style="font-size:13px; color:var(--ink-secondary); margin-top:4px; max-width:300px; margin-left:auto; margin-right:auto;">
+          Hold the top of your device within 5 cm of the shop terminal. Anything further is blocked.
+        </div>
+
+        <div class="cm-meter-bar">
+          <div class="cm-meter-fill" id="cmMeterFill"></div>
+        </div>
+        <div style="display:flex; justify-content:space-between; width:82%; max-width:280px; margin:0 auto 14px; font-family:var(--font-mono); font-size:10px; color:var(--ink-secondary);">
+          <span>0 cm</span>
+          <span>5 cm Gate</span>
+          <span>&gt; 5 cm</span>
+        </div>
+
+        <!-- NameDrop Arrival Card (appears when <= 5 cm) -->
+        <div id="detectedNearbyContainer" class="hidden"></div>
+
+        <button type="button" class="icon-btn" id="simulate5cmTapBtn" style="width:100%; height:44px; justify-content:center; border-radius:14px; font-weight:600; margin-top:10px;">
+          Bring Top Edge Together (≤ 5 cm Tap)
         </button>
       </div>
 
-      <div id="nearReceivePane" class="hidden">
-        <div class="proximity-stage liquid-glass">
-          <div class="distance-badge locked">Shop Beacon Ready · 5 cm Radius</div>
-          <p style="font-size:13.5px; color:var(--ink-secondary); margin:8px 0 14px;">
-            Keep this screen open at the counter. Only devices placed within <strong>5 cm</strong> of this device will detect your Idem account.
-          </p>
-          <div class="detail-box" style="background:rgba(255,255,255,0.84); margin-bottom:0;">
-            <div style="text-align:left;">
-              <div class="detail-k">Broadcasting Account</div>
-              <div class="detail-v tabular" id="nearSelfAcct">0000 0000 00</div>
-            </div>
-            <span style="font-size:12px; font-weight:600; color:var(--green);">Active</span>
+      <!-- Receive Mode (Shop / Counter Terminal within 5 cm) -->
+      <div id="nearReceivePane" class="airdrop-stage hidden">
+        <div class="distance-badge locked">Broadcasting · 5 cm AirDrop Radius</div>
+
+        <div class="airdrop-field">
+          <div class="airdrop-ring"></div>
+          <div class="airdrop-ring"></div>
+          <div class="airdrop-ring"></div>
+          <div class="airdrop-ring"></div>
+          <div class="airdrop-orb" style="color:var(--green-bright);">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M5.6 18.4A9 9 0 1 1 18.4 18.4"/>
+              <path d="M8.5 15.5a5 5 0 1 1 7 0"/>
+              <circle cx="12" cy="12" r="1.8" fill="currentColor"/>
+              <path d="M12 13.8V21"/>
+            </svg>
           </div>
+        </div>
+
+        <div style="font-size:16px; font-weight:700; letter-spacing:-0.02em;">Ready to Receive Within 5 cm</div>
+        <p style="font-size:13px; color:var(--ink-secondary); margin:4px auto 14px; max-width:300px;">
+          Keep this screen open. Only a customer device held within <strong>5 cm</strong> of this phone can connect.
+        </p>
+
+        <div class="detail-box" style="background:rgba(255,255,255,0.85); margin-bottom:0; border:1px solid rgba(0,0,0,0.06);">
+          <div style="text-align:left;">
+            <div class="detail-k">Shop / Receiver Account</div>
+            <div class="detail-v tabular" id="nearSelfAcct">0000 0000 00</div>
+          </div>
+          <span style="font-size:12px; font-weight:600; color:var(--green);">Live</span>
         </div>
       </div>
     </div>
@@ -2012,6 +2073,28 @@
     document.querySelectorAll("[data-close]").forEach((btn) => {
       btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close")));
     });
+
+    // Subtle Apple-style harmonic chime for NameDrop / AirDrop lock
+    function playAirDropChime() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const now = ctx.currentTime;
+        const notes = [587.33, 880.0]; // D5 -> A5 clean harmonic interval
+        notes.forEach((freq, idx) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(freq, now + idx * 0.08);
+          gain.gain.setValueAtTime(0.001, now + idx * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.06, now + idx * 0.08 + 0.03);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + idx * 0.08 + 0.45);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + idx * 0.08);
+          osc.stop(now + idx * 0.08 + 0.48);
+        });
+      } catch (_) {}
+    }
 
     // ---------- Privacy Toggles ----------
     const EYE_OPEN_SVG = `<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>`;
@@ -2686,7 +2769,7 @@
       }
     });
 
-    // ---------- Payment Near Me (<= 5 cm Strict Proximity Gate) ----------
+    // ---------- Apple AirDrop / NameDrop Payment Near Me (<= 5 cm) ----------
     async function stopNearMeSensors() {
       if (nearScanInterval) {
         clearInterval(nearScanInterval);
@@ -2718,41 +2801,54 @@
     function updateCmMeter(distanceCm, locked = false) {
       const fill = $("cmMeterFill");
       const badge = $("proximityRangeBadge");
+      const sheet = $("airdropSheet");
+
       if (locked) {
+        sheet.classList.add("airdrop-locked");
         fill.style.width = "100%";
         fill.style.background = "var(--green-bright)";
-        badge.textContent = `Locked · ${distanceCm.toFixed(1)} cm (≤ 5.0 cm)`;
+        badge.textContent = `Connected · ${distanceCm.toFixed(1)} cm (≤ 5.0 cm)`;
         badge.classList.add("locked");
       } else {
-        const pct = Math.max(8, Math.min(72, Math.round((5 / Math.max(distanceCm, 5.1)) * 75)));
+        sheet.classList.remove("airdrop-locked");
+        const pct = Math.max(10, Math.min(72, Math.round((5 / Math.max(distanceCm, 5.1)) * 75)));
         fill.style.width = `${pct}%`;
         fill.style.background = "var(--blue)";
         badge.textContent = distanceCm > 50
-          ? "Range Gate: ≤ 5.0 cm only"
-          : `Distance: ~${distanceCm.toFixed(0)} cm (Move within 5 cm)`;
+          ? "Range Gate · ≤ 5.0 cm"
+          : `Distance ~${distanceCm.toFixed(0)} cm · Move within 5 cm`;
         badge.classList.remove("locked");
       }
     }
 
     function lockNearbyAccount(shopUser, distanceCm, methodLabel) {
       updateCmMeter(distanceCm, true);
-      $("nearStatusTitle").textContent = "Device within 5 cm range";
-      $("nearStatusSub").textContent = "Physical 5 cm tap verified. Ready to pay shop.";
+      playAirDropChime();
+      if (navigator.vibrate) navigator.vibrate([25, 35, 25]);
 
+      $("nearStatusTitle").textContent = "Connected Within 5 cm";
+      $("nearStatusSub").textContent = "AirDrop proximity verified. Tap Pay to complete.";
+
+      const initial = (shopUser.name || "S").charAt(0).toUpperCase();
       const box = $("detectedNearbyContainer");
       box.classList.remove("hidden");
       box.innerHTML = `
-        <div class="nearby-shop-card">
-          <div>
-            <div style="font-size:11.5px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.04em;">
-              ${escapeHtml(methodLabel)} · ${distanceCm.toFixed(1)} cm
-            </div>
-            <div style="font-size:15.5px; font-weight:700; margin-top:2px;">${escapeHtml(shopUser.name)}</div>
-            <div class="tabular" style="font-family:var(--font-mono); font-size:12px; color:var(--ink-secondary);">
-              ACCT ${formatAccountNumber(shopUser.accountNumber)}
+        <div class="airdrop-arrival-card">
+          <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+            <div class="airdrop-avatar">${escapeHtml(initial)}</div>
+            <div style="min-width:0;">
+              <div style="font-size:11px; font-weight:700; color:var(--green); text-transform:uppercase; letter-spacing:0.04em;">
+                ${escapeHtml(methodLabel)} · ${distanceCm.toFixed(1)} cm
+              </div>
+              <div style="font-size:15.5px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+                ${escapeHtml(shopUser.name)}
+              </div>
+              <div class="tabular" style="font-family:var(--font-mono); font-size:12px; color:var(--ink-secondary);">
+                ACCT ${formatAccountNumber(shopUser.accountNumber)}
+              </div>
             </div>
           </div>
-          <button type="button" class="pill-badge" id="payDetectedNearBtn" style="padding:9px 16px; font-size:13px;">
+          <button type="button" class="airdrop-pay-btn" id="payDetectedNearBtn">
             Pay
           </button>
         </div>
@@ -2765,7 +2861,7 @@
       });
     }
 
-    async function queryActive5cmBeacon(measuredCm = 2.6) {
+    async function queryActive5cmBeacon(measuredCm = 2.4) {
       const cutoff = Date.now() - 25000;
       const snap = await getDocs(collection(db, "nearby_beacons"));
       const candidates = snap.docs
@@ -2774,8 +2870,7 @@
         .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
       if (candidates.length > 0) {
-        lockNearbyAccount(candidates[0], measuredCm, "5 cm Tap Verified");
-        if (navigator.vibrate) navigator.vibrate([25, 30, 25]);
+        lockNearbyAccount(candidates[0], measuredCm, "AirDrop 5 cm");
         return true;
       }
       return false;
@@ -2785,8 +2880,8 @@
       await stopNearMeSensors();
       $("detectedNearbyContainer").classList.add("hidden");
       updateCmMeter(60, false);
-      $("nearStatusTitle").textContent = "Hold within 5 cm of shop terminal";
-      $("nearStatusSub").textContent = "Accounts further than 5 cm are blocked. Bring phones within 5 cm.";
+      $("nearStatusTitle").textContent = "Bring Devices Within 5 cm";
+      $("nearStatusSub").textContent = "Hold the top of your device within 5 cm of the shop terminal. Anything further is blocked.";
 
       if ("NDEFReader" in window) {
         try {
@@ -2842,6 +2937,7 @@
 
     async function startNearReceiveShopBeacon() {
       await stopNearMeSensors();
+      $("airdropSheet").classList.add("airdrop-locked");
       if (!currentProfile) return;
 
       const publishBeacon = async () => {
@@ -2908,11 +3004,11 @@
     });
 
     $("simulate5cmTapBtn").addEventListener("click", async () => {
-      $("nearStatusTitle").textContent = "Checking 5 cm tap range...";
-      const found = await queryActive5cmBeacon(2.4);
+      $("nearStatusTitle").textContent = "Checking 5 cm proximity...";
+      const found = await queryActive5cmBeacon(2.1);
       if (!found) {
         updateCmMeter(60, false);
-        $("nearStatusTitle").textContent = "No device within 5 cm";
+        $("nearStatusTitle").textContent = "No Device Within 5 cm";
         $("nearStatusSub").textContent = "Ask the shop or receiver to open Near Me → Receive (Shop Mode) and hold within 5 cm.";
         showToast("No active receiver within 5 cm");
       }
