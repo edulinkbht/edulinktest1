@@ -1067,21 +1067,14 @@
       margin-top: 8px;
     }
 
-    .tx-actions-capsule {
+    .tx-actions-row {
       display: flex;
-      align-items: stretch;
-      min-height: 50px;
-      border: 1px solid rgba(255, 255, 255, 0.94);
-      border-radius: 999px;
-      background:
-        linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(237, 239, 244, 0.68)),
-        rgba(255, 255, 255, 0.72);
-      backdrop-filter: blur(18px) saturate(180%);
-      -webkit-backdrop-filter: blur(18px) saturate(180%);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.98),
-        0 5px 14px rgba(30, 30, 35, 0.07);
-      overflow: hidden;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .tx-actions-row-download-only {
+      justify-content: flex-end;
     }
 
     .tx-view-full-btn {
@@ -1089,19 +1082,28 @@
       min-width: 0;
       min-height: 48px;
       padding: 0 16px;
-      border: 0;
-      border-radius: 999px 0 0 999px;
-      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.94);
+      border-radius: 999px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(237, 239, 244, 0.68)),
+        rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(18px) saturate(180%);
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
       color: var(--ink);
       font-family: inherit;
       font-size: 13.5px;
       font-weight: 700;
       cursor: pointer;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.98),
+        0 5px 14px rgba(30, 30, 35, 0.07);
       transition: background 0.15s ease, transform 0.12s ease;
     }
 
     .tx-view-full-btn:hover {
-      background: rgba(255, 255, 255, 0.58);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.98), rgba(243, 244, 247, 0.86)),
+        rgba(255, 255, 255, 0.9);
     }
 
     .tx-view-full-btn:active {
@@ -1109,34 +1111,34 @@
     }
 
     .tx-download-btn {
-      width: 54px;
-      min-width: 54px;
-      min-height: 48px;
-      border: 0;
-      border-left: 1px solid rgba(0, 0, 0, 0.055);
-      background: transparent;
+      width: 50px;
+      min-width: 50px;
+      height: 50px;
+      border: 1px solid rgba(255, 255, 255, 0.94);
+      border-radius: 50%;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(237, 239, 244, 0.72)),
+        rgba(255, 255, 255, 0.76);
+      backdrop-filter: blur(18px) saturate(180%);
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
       color: var(--ink);
       display: grid;
       place-items: center;
       cursor: pointer;
-      transition: background 0.15s ease, transform 0.12s ease;
-    }
-
-    .tx-actions-capsule-download-only {
-      width: 54px;
-      margin-left: auto;
-    }
-
-    .tx-actions-capsule-download-only .tx-download-btn {
-      width: 52px;
-      min-width: 52px;
-      border-left: 0;
-      border-radius: 999px;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.98),
+        0 5px 14px rgba(30, 30, 35, 0.07);
+      transition: background 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease;
     }
 
     .tx-download-btn:hover,
     .tx-download-btn[aria-expanded="true"] {
-      background: rgba(255, 255, 255, 0.58);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(243, 244, 247, 0.88)),
+        rgba(255, 255, 255, 0.9);
+      box-shadow:
+        inset 0 1px 0 #FFFFFF,
+        0 6px 16px rgba(30, 30, 35, 0.11);
     }
 
     .tx-download-btn:active {
@@ -3661,40 +3663,132 @@
         return;
       }
 
-      const csvText = (value) => {
-        let text = String(value == null ? "" : value);
-        if (/^[\t\r ]*[=+\-@]/.test(text)) text = `'${text}`;
-        return `"${text.replace(/"/g, '""')}"`;
+      const pdfText = (value) => String(value == null ? "" : value)
+        .normalize("NFKD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^\x20-\x7E]/g, " ")
+        .replace(/\\/g, "\\\\")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)");
+      const truncatePdfText = (value, maxLength) => {
+        const text = pdfText(value);
+        return text.length > maxLength ? `${text.slice(0, maxLength - 3)}...` : text;
       };
-      const rows = [
-        "Date,Direction,Counterparty,Account,Amount (USD),Type,Note,Reference",
-        ...selected.map(({ tx, date }) => {
-          const isIncoming = tx.toUid === currentUser.uid;
-          const amount = Math.abs(Number(tx.amount || 0)) * (isIncoming ? 1 : -1);
-          const direction = isIncoming ? "Received" : "Sent";
-          const counterparty = isIncoming
-            ? (tx.fromName || "Idem Treasury")
-            : (tx.toName || tx.toAccount || "Recipient");
-          const account = isIncoming ? (tx.fromAccount || "") : (tx.toAccount || "");
-          const type = tx.type === "admin_grant"
-            ? "Treasury deposit"
-            : (isIncoming ? "Money received" : "Money sent");
+      const reportRows = selected.map(({ tx, date }) => {
+        const isIncoming = tx.toUid === currentUser.uid;
+        const amount = Math.abs(Number(tx.amount || 0));
+        return {
+          date,
+          otherParty: isIncoming
+            ? `From ${tx.fromName || "Idem Treasury"}`
+            : `To ${tx.toName || tx.toAccount || "Recipient"}`,
+          direction: isIncoming ? "Received" : "Sent",
+          amount: isIncoming ? amount : -amount,
+          reason: tx.note || "No note"
+        };
+      });
+      const totalReceived = reportRows
+        .filter((row) => row.amount > 0)
+        .reduce((sum, row) => sum + row.amount, 0);
+      const totalSent = reportRows
+        .filter((row) => row.amount < 0)
+        .reduce((sum, row) => sum + Math.abs(row.amount), 0);
+      const generatedAt = now.toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+      const pageWidth = 842;
+      const pageHeight = 595;
+      const rowsPerPage = 11;
+      const pageCount = Math.ceil(reportRows.length / rowsPerPage);
+      const textCommand = (x, y, size, value, color, font = "F1") =>
+        `${color} rg BT /${font} ${size} Tf 1 0 0 1 ${x} ${y} Tm (${pdfText(value)}) Tj ET\n`;
+      const fillRect = (x, y, width, height, color) =>
+        `${color} rg ${x} ${y} ${width} ${height} re f\n`;
+      const pages = [];
 
-          return [
-            csvText(date ? date.toISOString() : ""),
-            csvText(direction),
-            csvText(counterparty),
-            csvText(account),
-            amount.toFixed(2),
-            csvText(type),
-            csvText(tx.note || ""),
-            csvText(tx.id || "")
-          ].join(",");
-        })
-      ].join("\r\n");
+      for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+        const pageRows = reportRows.slice(pageIndex * rowsPerPage, (pageIndex + 1) * rowsPerPage);
+        let content = "";
+        content += fillRect(0, 548, pageWidth, 47, "0.10 0.13 0.19");
+        content += textCommand(32, 570, 17, "IDEM WALLET - TRANSACTION REPORT", "1 1 1", "F2");
+        content += textCommand(32, 532, 9, `Period: ${range === "all" ? "All transactions" : range === "week" ? "This week" : "This month"}   Generated: ${generatedAt}`, "0.31 0.34 0.40");
 
-      const csvBlob = new Blob(["\uFEFF", rows], { type: "text/csv;charset=utf-8" });
-      const url = URL.createObjectURL(csvBlob);
+        content += fillRect(32, 480, 250, 40, "0.95 0.96 0.98");
+        content += fillRect(296, 480, 250, 40, "0.92 0.97 0.94");
+        content += fillRect(560, 480, 250, 40, "0.99 0.93 0.93");
+        content += textCommand(44, 504, 8, "TRANSACTIONS", "0.42 0.45 0.50", "F2");
+        content += textCommand(44, 488, 13, String(reportRows.length), "0.12 0.14 0.18", "F2");
+        content += textCommand(308, 504, 8, "TOTAL RECEIVED", "0.12 0.48 0.28", "F2");
+        content += textCommand(308, 488, 13, formatCurrency(totalReceived), "0.12 0.48 0.28", "F2");
+        content += textCommand(572, 504, 8, "TOTAL SENT", "0.72 0.20 0.22", "F2");
+        content += textCommand(572, 488, 13, formatCurrency(totalSent), "0.72 0.20 0.22", "F2");
+
+        content += fillRect(32, 432, 778, 28, "0.12 0.15 0.21");
+        content += textCommand(42, 442, 8, "SENDER / RECIPIENT", "1 1 1", "F2");
+        content += textCommand(200, 442, 8, "AMOUNT", "1 1 1", "F2");
+        content += textCommand(288, 442, 8, "DIRECTION", "1 1 1", "F2");
+        content += textCommand(382, 442, 8, "REASON", "1 1 1", "F2");
+        content += textCommand(612, 442, 8, "DATE", "1 1 1", "F2");
+        content += textCommand(712, 442, 8, "TIME", "1 1 1", "F2");
+
+        pageRows.forEach((row, rowIndex) => {
+          const y = 414 - rowIndex * 30;
+          const rowColor = rowIndex % 2 === 0 ? "0.97 0.98 0.99" : "1 1 1";
+          const directionColor = row.amount >= 0 ? "0.10 0.50 0.29" : "0.75 0.20 0.22";
+          const dateText = row.date
+            ? row.date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "2-digit" })
+            : "Unknown";
+          const timeText = row.date
+            ? row.date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
+            : "Unknown";
+
+          content += fillRect(32, y - 10, 778, 28, rowColor);
+          content += textCommand(42, y, 8, truncatePdfText(row.otherParty, 23), "0.12 0.14 0.18");
+          content += textCommand(200, y, 8, formatCurrency(Math.abs(row.amount)), directionColor, "F2");
+          content += textCommand(288, y, 8, row.direction.toUpperCase(), directionColor, "F2");
+          content += textCommand(382, y, 8, truncatePdfText(row.reason, 34), "0.30 0.33 0.38");
+          content += textCommand(612, y, 8, dateText, "0.30 0.33 0.38");
+          content += textCommand(712, y, 8, timeText, "0.30 0.33 0.38");
+        });
+
+        content += textCommand(32, 30, 8, `Private wallet statement - Page ${pageIndex + 1} of ${pageCount}`, "0.48 0.50 0.55");
+        pages.push(content);
+      }
+
+      const objects = [
+        "<< /Type /Catalog /Pages 2 0 R >>",
+        `<< /Type /Pages /Kids [${pages.map((_, index) => `${5 + index * 2} 0 R`).join(" ")}] /Count ${pageCount} >>`,
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>"
+      ];
+      pages.forEach((content, index) => {
+        const pageId = 5 + index * 2;
+        const streamId = pageId + 1;
+        objects.push(
+          `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageWidth} ${pageHeight}] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${streamId} 0 R >>`,
+          `<< /Length ${content.length} >>\nstream\n${content}endstream`
+        );
+      });
+
+      let pdf = "%PDF-1.4\n";
+      const offsets = [0];
+      objects.forEach((object, index) => {
+        offsets.push(pdf.length);
+        pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+      });
+      const xrefOffset = pdf.length;
+      pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+      offsets.slice(1).forEach((offset) => {
+        pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
+      });
+      pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+      const pdfBlob = new Blob([pdf], { type: "application/pdf" });
+      const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       const dateStamp = [
         now.getFullYear(),
@@ -3702,13 +3796,13 @@
         String(now.getDate()).padStart(2, "0")
       ].join("-");
       link.href = url;
-      link.download = `idem-transactions-${range}-${dateStamp}.csv`;
+      link.download = `idem-transactions-${range}-${dateStamp}.pdf`;
       link.hidden = true;
       document.body.appendChild(link);
       link.click();
       link.remove();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
-      showToast(`Downloaded ${selected.length} transactions`);
+      showToast(`Downloaded ${selected.length} transactions as PDF`);
     }
 
     function renderTransactions() {
@@ -3801,20 +3895,20 @@
 
       html += `
         <div class="tx-actions-group">
-          <div class="tx-actions-capsule ${all.length > 7 ? "" : "tx-actions-capsule-download-only"}">
+          <div class="tx-actions-row ${all.length > 7 ? "" : "tx-actions-row-download-only"}">
             ${all.length > 7 ? `
               <button type="button" class="tx-view-full-btn" id="txViewFullBtn">
                 ${txFullShown ? "Show latest 7" : `View full · ${all.length} transactions`}
               </button>
             ` : ""}
-            <button type="button" class="tx-download-btn" id="txDownloadBtn" title="Download transactions" aria-label="Download transactions" aria-expanded="false" aria-controls="txExportMenu">
+            <button type="button" class="tx-download-btn" id="txDownloadBtn" title="Download PDF" aria-label="Download PDF" aria-expanded="false" aria-controls="txExportMenu">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 15c0 2.76 2.24 5 5 5h8c2.76 0 5-2.24 5-5M9 12.19c.74.99 1.6 1.88 2.56 2.65.13.11.28.16.44.16m3-2.81c-.74.99-1.6 1.88-2.56 2.65-.13.11-.28.16-.44.16m0 0V4"/>
               </svg>
             </button>
           </div>
-          <div class="tx-export-menu hidden" id="txExportMenu" role="group" aria-label="Download transaction period">
-            <div class="tx-export-heading">Download transactions</div>
+          <div class="tx-export-menu hidden" id="txExportMenu" role="group" aria-label="Download PDF period">
+            <div class="tx-export-heading">Download PDF</div>
             <button type="button" class="tx-export-option" data-tx-export-range="week">This week</button>
             <button type="button" class="tx-export-option" data-tx-export-range="month">This month</button>
             <button type="button" class="tx-export-option" data-tx-export-range="all">All transactions</button>
