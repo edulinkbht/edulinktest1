@@ -2068,11 +2068,6 @@
       color: var(--ink);
     }
 
-    .scan-header-placeholder {
-      width: 42px;
-      height: 42px;
-    }
-
     .scan-back-icon {
       display: none;
     }
@@ -2234,7 +2229,7 @@
       position: absolute;
       z-index: 0;
       inset: 0;
-      border: 1px solid rgba(50, 45, 37, 0.18);
+      border: 1px solid rgba(50, 45, 37, 0.38);
       background:
         linear-gradient(90deg, rgba(57, 52, 42, 0.08), transparent 14px, transparent calc(100% - 14px), rgba(57, 52, 42, 0.08)),
         repeating-linear-gradient(0deg, rgba(43, 41, 36, 0.012) 0 1px, transparent 1px 5px),
@@ -4035,8 +4030,13 @@
         <div class="top-center-title">
           <h1 id="scanPageTitle">Scan QR</h1>
         </div>
-        <div class="top-right-slot" aria-hidden="true">
-          <span class="scan-header-placeholder"></span>
+        <div class="top-right-slot">
+          <button type="button" id="downloadMyQrBtn" class="circle-icon-btn hidden" aria-label="Download my QR code" title="Download QR code">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 3v12m0 0 4-4m-4 4-4-4"/>
+              <path d="M5 17v4h14v-4"/>
+            </svg>
+          </button>
         </div>
       </div>
     </header>
@@ -6314,6 +6314,7 @@
     function closeScanPage() {
       $("scanPage").classList.add("hidden");
       $("scanPage").classList.remove("show-my-qr");
+      $("downloadMyQrBtn").classList.add("hidden");
       document.body.classList.remove("scan-open");
       $("scanCameraPane").classList.remove("hidden");
       $("scanMyQrPane").classList.add("hidden");
@@ -6372,6 +6373,46 @@
       return true;
     }
 
+    function downloadMyAccountQr() {
+      const accountNumber = String(currentProfile?.accountNumber || "");
+      const source = $("myQrCode").querySelector("canvas") || $("myQrCode").querySelector("img");
+      if (!accountNumber || !source) {
+        showToast("Your QR code is not ready yet.");
+        return;
+      }
+
+      const sourceWidth = source instanceof HTMLCanvasElement ? source.width : source.naturalWidth;
+      const sourceHeight = source instanceof HTMLCanvasElement ? source.height : source.naturalHeight;
+      if (!sourceWidth || !sourceHeight || (source instanceof HTMLImageElement && !source.complete)) {
+        showToast("Your QR code is not ready yet.");
+        return;
+      }
+
+      const quietZone = Math.ceil(Math.max(sourceWidth, sourceHeight) * 0.2);
+      const exportCanvas = document.createElement("canvas");
+      exportCanvas.width = sourceWidth + quietZone * 2;
+      exportCanvas.height = sourceHeight + quietZone * 2;
+      const context = exportCanvas.getContext("2d");
+      if (!context) {
+        showToast("Unable to prepare the QR code download.");
+        return;
+      }
+
+      context.fillStyle = "#FFFFFF";
+      context.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+      context.imageSmoothingEnabled = false;
+      context.drawImage(source, quietZone, quietZone, sourceWidth, sourceHeight);
+
+      const link = document.createElement("a");
+      link.href = exportCanvas.toDataURL("image/png");
+      link.download = `idem-qr-${accountNumber.replace(/[^a-zA-Z0-9_-]/g, "")}.png`;
+      link.hidden = true;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      showToast("QR code downloaded");
+    }
+
     async function handleDecodedQr(decodedText) {
       let acc = decodedText.trim();
       let name = "";
@@ -6394,6 +6435,7 @@
     $("openScanBtn").addEventListener("click", async () => {
       $("scanPage").classList.remove("hidden");
       $("scanPage").classList.remove("show-my-qr");
+      $("downloadMyQrBtn").classList.add("hidden");
       document.body.classList.add("scan-open");
       $("scanPageTitle").textContent = "Scan QR";
       $("closeScanBtn").setAttribute("aria-label", "Close QR scanner");
@@ -6406,6 +6448,7 @@
     $("closeScanBtn").addEventListener("click", async () => {
       if ($("scanPage").classList.contains("show-my-qr")) {
         $("scanPage").classList.remove("show-my-qr");
+        $("downloadMyQrBtn").classList.add("hidden");
         $("scanCameraPane").classList.remove("hidden");
         $("scanMyQrPane").classList.add("hidden");
         $("scanPageTitle").textContent = "Scan QR";
@@ -6427,12 +6470,15 @@
       $("scanCameraPane").classList.add("hidden");
       $("scanMyQrPane").classList.remove("hidden");
       $("scanPage").classList.add("show-my-qr");
+      $("downloadMyQrBtn").classList.remove("hidden");
       $("scanPageTitle").textContent = "My QR";
       $("closeScanBtn").setAttribute("aria-label", "Back to scanner");
       $("closeScanBtn").title = "Back to scanner";
       renderMyAccountQr();
       scheduleQrBadgeCordSync();
     });
+
+    $("downloadMyQrBtn").addEventListener("click", downloadMyAccountQr);
 
     $("qrFileInput").addEventListener("change", async (e) => {
       const file = e.target.files?.[0];
