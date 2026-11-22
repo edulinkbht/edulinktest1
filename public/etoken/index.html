@@ -1852,6 +1852,13 @@
       color: var(--ink);
     }
 
+    .tx-detail-direction {
+      margin-top: 3px;
+      color: var(--ink-secondary);
+      font-size: 12.5px;
+      font-weight: 500;
+    }
+
     .tx-detail-amount {
       font-size: 30px;
       line-height: 1.1;
@@ -1909,6 +1916,69 @@
       text-align: right;
       font-weight: 650;
       overflow-wrap: anywhere;
+    }
+
+    .modal-backdrop.tx-detail-modal {
+      align-items: flex-end;
+      padding: 12px 0 0;
+      transition: opacity 0.22s ease;
+    }
+
+    .modal-backdrop .tx-detail-sheet {
+      max-height: min(88vh, 720px);
+      padding-top: 12px;
+      border-radius: 30px 30px 0 0;
+      transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: transform;
+    }
+
+    .tx-detail-grabber {
+      width: 42px;
+      height: 5px;
+      margin: 0 auto 16px;
+      border-radius: 999px;
+      background: rgba(91, 94, 99, 0.24);
+      cursor: grab;
+      touch-action: none;
+    }
+
+    .tx-detail-grabber:active {
+      cursor: grabbing;
+    }
+
+    .tx-detail-sheet.is-dragging {
+      transition: none;
+    }
+
+    .tx-detail-sheet.is-dismissed {
+      transform: translateY(110%);
+    }
+
+    .modal-backdrop.tx-detail-modal.is-closing {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    @media (min-width: 600px) {
+      .modal-backdrop.tx-detail-modal {
+        align-items: center;
+        padding: 20px;
+      }
+
+      .modal-backdrop .tx-detail-sheet {
+        border-radius: 30px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .modal-backdrop.tx-detail-modal,
+      .modal-backdrop .tx-detail-sheet {
+        transition-duration: 0.01ms;
+      }
+
+      .modal-backdrop .tx-detail-sheet {
+        animation-duration: 0.01ms;
+      }
     }
 
     /* ==================== LIGHT LIQUID-GLASS BOTTOM DOCK ==================== */
@@ -4487,16 +4557,18 @@
   </div>
 
   <!-- ==================== MODAL: TRANSACTION DETAILS ==================== -->
-  <div id="transactionDetailModal" class="modal-backdrop hidden">
-    <div class="sheet">
+  <div id="transactionDetailModal" class="modal-backdrop tx-detail-modal hidden" role="dialog" aria-modal="true" aria-labelledby="txDetailHeading">
+    <div class="sheet tx-detail-sheet" id="txDetailSheet">
+      <div class="tx-detail-grabber" id="txDetailGrabber" aria-hidden="true"></div>
       <div class="sheet-head">
-        <h3>Transaction Details</h3>
+        <h3 id="txDetailHeading">Transaction Details</h3>
         <button type="button" class="close-btn" data-close="transactionDetailModal">&times;</button>
       </div>
 
       <div class="tx-detail-hero">
         <div class="tx-detail-avatar" id="txDetailAvatar">I</div>
         <div id="txDetailName" style="font-size:14px; font-weight:650;">Idem Transfer</div>
+        <div class="tx-detail-direction" id="txDetailDirection">Money sent to</div>
         <div class="tx-detail-amount tabular" id="txDetailAmount">$0.00</div>
         <div class="tx-detail-status" id="txDetailStatus">Completed</div>
       </div>
@@ -4921,7 +4993,14 @@
     }
 
     document.querySelectorAll("[data-close]").forEach((btn) => {
-      btn.addEventListener("click", () => closeModal(btn.getAttribute("data-close")));
+      btn.addEventListener("click", () => {
+        const modalId = btn.getAttribute("data-close");
+        if (modalId === "transactionDetailModal") {
+          closeTransactionDetail();
+        } else {
+          closeModal(modalId);
+        }
+      });
     });
 
     // Apple Pay / AirDrop Harmonic Chimes
@@ -6005,11 +6084,82 @@
       }
     });
 
+    let txDetailCloseTimer = null;
+    let txDetailDragStartY = null;
+    let txDetailDragStartTime = 0;
+    const txDetailSheet = $("txDetailSheet");
+    const txDetailGrabber = $("txDetailGrabber");
+    const txDetailModal = $("transactionDetailModal");
+
+    function closeTransactionDetail() {
+      if (txDetailModal.classList.contains("hidden") || txDetailModal.classList.contains("is-closing")) return;
+
+      txDetailDragStartY = null;
+      txDetailSheet.classList.remove("is-dragging");
+      txDetailSheet.style.transform = "";
+      txDetailModal.classList.add("is-closing");
+      txDetailSheet.classList.add("is-dismissed");
+      txDetailCloseTimer = window.setTimeout(() => {
+        closeModal("transactionDetailModal");
+        txDetailModal.classList.remove("is-closing");
+        txDetailSheet.classList.remove("is-dismissed");
+        txDetailSheet.style.transform = "";
+        txDetailCloseTimer = null;
+      }, 240);
+    }
+
+    function finishTransactionDetailDrag(event, allowDismiss) {
+      if (txDetailDragStartY === null) return;
+
+      const distance = Math.max(0, event.clientY - txDetailDragStartY);
+      const elapsed = Math.max(1, performance.now() - txDetailDragStartTime);
+      const shouldDismiss = allowDismiss && (distance > 96 || (distance > 32 && distance / elapsed > 0.65));
+      txDetailDragStartY = null;
+
+      if (shouldDismiss) {
+        closeTransactionDetail();
+      } else {
+        txDetailSheet.classList.remove("is-dragging");
+        txDetailSheet.style.transform = "";
+      }
+    }
+
+    txDetailGrabber.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0 || txDetailModal.classList.contains("hidden")) return;
+      txDetailDragStartY = event.clientY;
+      txDetailDragStartTime = performance.now();
+      txDetailSheet.classList.add("is-dragging");
+      txDetailGrabber.setPointerCapture(event.pointerId);
+    });
+    txDetailGrabber.addEventListener("pointermove", (event) => {
+      if (txDetailDragStartY === null) return;
+      const distance = Math.max(0, event.clientY - txDetailDragStartY);
+      txDetailSheet.style.transform = `translateY(${distance}px)`;
+    });
+    txDetailGrabber.addEventListener("pointerup", (event) => finishTransactionDetailDrag(event, true));
+    txDetailGrabber.addEventListener("pointercancel", (event) => finishTransactionDetailDrag(event, false));
+    txDetailModal.addEventListener("click", (event) => {
+      if (event.target === txDetailModal) closeTransactionDetail();
+    });
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && !txDetailModal.classList.contains("hidden")) {
+        closeTransactionDetail();
+      }
+    });
+
     function openTransactionDetail(txId) {
       const map = new Map();
       [...sentDocs, ...recvDocs].forEach((tx) => map.set(tx.id, tx));
       const tx = map.get(txId);
       if (!tx) return;
+
+      if (txDetailCloseTimer !== null) {
+        clearTimeout(txDetailCloseTimer);
+        txDetailCloseTimer = null;
+      }
+      txDetailModal.classList.remove("is-closing");
+      txDetailSheet.classList.remove("is-dismissed", "is-dragging");
+      txDetailSheet.style.transform = "";
 
       const isIncoming = tx.toUid === currentUser.uid;
       const counterparty = isIncoming ? (tx.fromName || "Idem Treasury") : (tx.toName || tx.toAccount || "Recipient");
@@ -6018,6 +6168,7 @@
 
       $("txDetailAvatar").textContent = initial;
       $("txDetailName").textContent = counterparty;
+      $("txDetailDirection").textContent = isIncoming ? "Received from" : "Sent to";
       $("txDetailAmount").textContent = `${isIncoming ? "+" : "-"} ${formatCurrency(amount)}`;
       $("txDetailAmount").style.color = isIncoming ? "var(--green)" : "var(--coral)";
       $("txDetailStatus").textContent = "Completed";
