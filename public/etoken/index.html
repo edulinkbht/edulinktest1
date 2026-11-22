@@ -1065,6 +1065,7 @@
 
     .tx-actions-group {
       margin-top: 8px;
+      position: relative;
     }
 
     .tx-actions-row {
@@ -1150,60 +1151,90 @@
       height: 22px;
     }
 
+    .tx-export-backdrop {
+      display: none;
+    }
+
     .tx-export-menu {
-      margin-top: 10px;
-      padding: 12px;
-      border: 1px solid var(--border);
+      position: fixed;
+      z-index: 81;
+      width: 244px;
+      padding: 10px;
+      border: 1px solid rgba(30, 32, 36, 0.08);
       border-radius: 18px;
-      background: rgba(255, 255, 255, 0.88);
-      box-shadow: 0 5px 16px rgba(30, 30, 35, 0.05);
+      background: #F1F1F2;
+      box-shadow: 0 14px 36px rgba(20, 22, 26, 0.16);
     }
 
     .tx-export-heading {
-      margin: 0 2px 8px;
+      padding: 7px 10px 9px;
+      border-bottom: 1px solid rgba(30, 32, 36, 0.1);
       color: var(--ink-secondary);
-      font-size: 11.5px;
+      font-size: 12px;
       font-weight: 600;
     }
 
     .tx-export-options {
       display: grid;
-      gap: 6px;
     }
 
     .tx-export-option {
       width: 100%;
-      min-height: 40px;
+      min-height: 46px;
       padding: 0 10px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      background: rgba(255, 255, 255, 0.7);
+      border: 0;
+      border-bottom: 1px solid rgba(30, 32, 36, 0.08);
+      border-radius: 0;
+      background: transparent;
       color: var(--ink);
       font-family: inherit;
-      font-size: 12.5px;
-      font-weight: 550;
+      font-size: 13px;
+      font-weight: 500;
       text-align: left;
       cursor: pointer;
       display: flex;
       align-items: center;
-      gap: 9px;
-      transition: background 0.15s ease, border-color 0.15s ease;
+      gap: 10px;
+      transition: background 0.15s ease;
     }
 
-    .tx-export-option:hover {
-      background: #FFFFFF;
-      border-color: rgba(30, 35, 45, 0.2);
+    .tx-export-option:last-child {
+      border-bottom: 0;
     }
 
-    .tx-export-option:active {
-      background: var(--surface-muted);
+    .tx-export-option:hover,
+    .tx-export-option:focus-visible {
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.72);
+      outline: none;
     }
 
     .tx-export-option svg {
-      width: 17px;
-      height: 17px;
+      width: 18px;
+      height: 18px;
       flex: 0 0 auto;
       color: var(--ink-secondary);
+    }
+
+    @media (max-width: 600px) {
+      .tx-export-backdrop:not(.hidden) {
+        display: block;
+        position: fixed;
+        inset: 0;
+        z-index: 80;
+        background: rgba(18, 19, 22, 0.22);
+        backdrop-filter: blur(2px);
+        -webkit-backdrop-filter: blur(2px);
+      }
+
+      .tx-export-menu:not(.hidden) {
+        top: 50% !important;
+        left: 50% !important;
+        width: min(320px, calc(100vw - 36px));
+        max-height: calc(100vh - 48px);
+        overflow-y: auto;
+        transform: translate(-50%, -50%);
+      }
     }
 
     .tx-detail-hero {
@@ -3944,6 +3975,7 @@
               </svg>
             </button>
           </div>
+          <div class="tx-export-backdrop hidden" id="txExportBackdrop" aria-hidden="true"></div>
           <div class="tx-export-menu hidden" id="txExportMenu" role="group" aria-label="Download PDF period">
             <div class="tx-export-heading">Download PDF</div>
             <div class="tx-export-options">
@@ -3982,16 +4014,28 @@
 
       const downloadBtn = $("txDownloadBtn");
       const exportMenu = $("txExportMenu");
+      const exportBackdrop = $("txExportBackdrop");
       downloadBtn.addEventListener("click", () => {
         const isExpanded = downloadBtn.getAttribute("aria-expanded") === "true";
-        downloadBtn.setAttribute("aria-expanded", String(!isExpanded));
-        exportMenu.classList.toggle("hidden", isExpanded);
+        if (isExpanded) {
+          closeTxExportMenu();
+          return;
+        }
+
+        exportMenu.classList.remove("hidden");
+        downloadBtn.setAttribute("aria-expanded", "true");
+        if (window.matchMedia("(max-width: 600px)").matches) {
+          exportBackdrop.classList.remove("hidden");
+        }
+        positionTxExportMenu(exportMenu, downloadBtn);
+        const firstOption = exportMenu.querySelector("[data-tx-export-range]");
+        if (firstOption) firstOption.focus({ preventScroll: true });
       });
 
+      exportBackdrop.addEventListener("click", closeTxExportMenu);
       container.querySelectorAll("[data-tx-export-range]").forEach((option) => {
         option.addEventListener("click", () => {
-          exportMenu.classList.add("hidden");
-          downloadBtn.setAttribute("aria-expanded", "false");
+          closeTxExportMenu();
           exportTransactions(option.dataset.txExportRange, all);
         });
       });
@@ -4000,6 +4044,59 @@
         row.addEventListener("click", () => openTransactionDetail(row.dataset.txId));
       });
     }
+
+    function closeTxExportMenu() {
+      const menu = $("txExportMenu");
+      const backdrop = $("txExportBackdrop");
+      const downloadBtn = $("txDownloadBtn");
+      if (menu) menu.classList.add("hidden");
+      if (backdrop) backdrop.classList.add("hidden");
+      if (downloadBtn) downloadBtn.setAttribute("aria-expanded", "false");
+    }
+
+    function positionTxExportMenu(menu, trigger) {
+      if (window.matchMedia("(max-width: 600px)").matches) {
+        menu.style.left = "";
+        menu.style.top = "";
+        return;
+      }
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const menuWidth = menu.offsetWidth;
+      const menuHeight = menu.offsetHeight;
+      const gap = 12;
+      let left = triggerRect.right + gap;
+      if (left + menuWidth > window.innerWidth - gap) {
+        left = triggerRect.left - menuWidth - gap;
+      }
+      left = Math.max(gap, Math.min(left, window.innerWidth - menuWidth - gap));
+      const top = Math.max(gap, Math.min(triggerRect.top, window.innerHeight - menuHeight - gap));
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+    }
+
+    document.addEventListener("click", (event) => {
+      const menu = $("txExportMenu");
+      const downloadBtn = $("txDownloadBtn");
+      if (!menu || menu.classList.contains("hidden") || !(event.target instanceof Element)) return;
+      if (menu.contains(event.target) || (downloadBtn && downloadBtn.contains(event.target))) return;
+      closeTxExportMenu();
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") closeTxExportMenu();
+    });
+
+    window.addEventListener("resize", () => {
+      const menu = $("txExportMenu");
+      const downloadBtn = $("txDownloadBtn");
+      if (menu && !menu.classList.contains("hidden") && downloadBtn) {
+        const backdrop = $("txExportBackdrop");
+        const isSmallScreen = window.matchMedia("(max-width: 600px)").matches;
+        if (backdrop) backdrop.classList.toggle("hidden", !isSmallScreen);
+        positionTxExportMenu(menu, downloadBtn);
+      }
+    });
 
     function openTransactionDetail(txId) {
       const map = new Map();
