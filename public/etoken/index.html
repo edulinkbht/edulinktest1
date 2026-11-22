@@ -2108,7 +2108,7 @@
     .scan-reader-frame {
       width: 100%;
       max-width: 440px;
-      min-height: 280px;
+      aspect-ratio: 4 / 3;
       margin: 0 auto;
       overflow: hidden;
       border: 1px solid rgba(255, 255, 255, 0.14);
@@ -2119,13 +2119,18 @@
 
     #qrReader {
       width: 100%;
-      min-height: 280px;
+      height: 100%;
       overflow: hidden;
       border: 0 !important;
       border-radius: inherit;
+      background: #10151D;
+      box-sizing: border-box;
     }
 
     #qrReader video {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
       object-fit: cover;
     }
 
@@ -2221,7 +2226,7 @@
       margin: 14px auto;
       padding: 6px;
       overflow: hidden;
-      border: 1px solid var(--border);
+      border: 0;
       border-radius: 18px;
       background: #FFFFFF;
     }
@@ -2275,14 +2280,11 @@
         border-radius: inherit;
         background-image:
           linear-gradient(
-            180deg,
-            rgba(248, 248, 250, 0.94) 0%,
-            rgba(248, 248, 250, 0.14) 24%,
-            transparent 43%,
-            transparent 70%,
-            rgba(248, 248, 250, 0.9) 100%
+            0deg,
+            rgba(248, 248, 250, 0.9) 0%,
+            transparent 38%
           ),
-          url("https://i.pinimg.com/1200x/ab/33/d3/ab33d323656173da190e4233482b7f48.jpg");
+          url("https://i.pinimg.com/1200x/a7/53/44/a753444b5a0a75ec7d53cd00d43f1a35.jpg");
         background-position: 43% center;
         background-size: cover;
         pointer-events: none;
@@ -2329,14 +2331,6 @@
       flex-direction: column;
       align-items: center;
       margin: 12px 0 16px;
-    }
-
-    #qrReader {
-      width: 100%;
-      border-radius: 16px;
-      overflow: hidden;
-      background: #000;
-      margin-bottom: 14px;
     }
 
     .amount-hero {
@@ -5844,7 +5838,13 @@
       try {
         await scanner.start(
           { facingMode: "environment" },
-          { fps: 10, qrbox: { width: 220, height: 220 } },
+          {
+            fps: 10,
+            qrbox: (viewfinderWidth, viewfinderHeight) => {
+              const size = Math.floor(Math.min(viewfinderWidth, viewfinderHeight) * 0.84);
+              return { width: size, height: size };
+            }
+          },
           (decodedText) => handleDecodedQr(decodedText),
           () => {}
         );
