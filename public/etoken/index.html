@@ -1372,7 +1372,7 @@
       position: absolute;
       z-index: -1;
       inset: 6px -4px -5px 4px;
-      transform: rotate(0.9deg);
+      transform: rotate(0.2deg);
       border: 1px solid rgba(115, 104, 82, 0.16);
       border-radius: 4px 5px 3px 5px;
       background: linear-gradient(145deg, #F8F6EE 0%, #EEEBDD 100%);
@@ -1401,7 +1401,7 @@
       position: absolute;
       z-index: 3;
       top: 46%;
-      right: -9px;
+      right: -14px;
       width: 17px;
       height: 44px;
       transform: translateY(-50%);
@@ -1583,7 +1583,7 @@
     }
 
     .tx-actions-group {
-      margin-top: 8px;
+      margin: 16px 2px 0;
       position: relative;
     }
 
@@ -4182,6 +4182,7 @@
             </div>
           </div>
         </div>
+        <div id="txActionsContainer"></div>
       </section>
     </main>
 
@@ -5698,11 +5699,13 @@
       [...sentDocs, ...recvDocs].forEach((tx) => map.set(tx.id, tx));
       const all = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       renderHomeActivity(all);
-      const visibleTransactions = txFullShown ? all : all.slice(0, 7);
+      const visibleTransactions = txFullShown ? all : all.slice(0, 5);
 
       const container = $("txList");
+      const actionsContainer = $("txActionsContainer");
 
       if (hideTransactions) {
+        actionsContainer.innerHTML = "";
         container.innerHTML = `
           <div class="tx-hidden-box">
             <div>Latest transactions are hidden for privacy.</div>
@@ -5718,6 +5721,7 @@
       }
 
       if (all.length === 0) {
+        actionsContainer.innerHTML = "";
         container.innerHTML = `
           <div class="tx-card-group" style="padding:34px 16px; text-align:center; color:var(--ink-secondary); font-size:14px;">
             No transactions yet.
@@ -5776,12 +5780,12 @@
         `;
       });
 
-      html += `
+      const actionsHtml = `
         <div class="tx-actions-group">
-          <div class="tx-actions-row ${all.length > 7 ? "" : "tx-actions-row-download-only"}">
-            ${all.length > 7 ? `
+          <div class="tx-actions-row ${all.length > 5 ? "" : "tx-actions-row-download-only"}">
+            ${all.length > 5 ? `
               <button type="button" class="tx-view-full-btn" id="txViewFullBtn">
-                ${txFullShown ? "Show latest 7" : `View full · ${all.length} transactions`}
+                ${txFullShown ? "Show latest 5" : `View all · ${all.length} transactions`}
               </button>
             ` : ""}
             <button type="button" class="tx-download-btn" id="txDownloadBtn" title="Download PDF" aria-label="Download PDF" aria-expanded="false" aria-controls="txExportMenu">
@@ -5819,6 +5823,7 @@
       `;
 
       container.innerHTML = html;
+      actionsContainer.innerHTML = actionsHtml;
 
       const viewFullBtn = $("txViewFullBtn");
       if (viewFullBtn) {
@@ -5886,7 +5891,7 @@
       };
       exportMenu.addEventListener("pointerup", finishExportMenuDrag);
       exportMenu.addEventListener("pointercancel", finishExportMenuDrag);
-      container.querySelectorAll("[data-tx-export-range]").forEach((option) => {
+      actionsContainer.querySelectorAll("[data-tx-export-range]").forEach((option) => {
         option.addEventListener("click", () => {
           closeTxExportMenu();
           exportTransactions(option.dataset.txExportRange, all);
