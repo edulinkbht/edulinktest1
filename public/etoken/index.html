@@ -1577,7 +1577,7 @@
       to { opacity: 1; }
     }
 
-    @media (prefers-reduced-motion: reduce) {
+    @media (min-width: 600px) and (prefers-reduced-motion: reduce) {
       .tx-export-menu,
       .tx-export-backdrop {
         animation: none;
@@ -2385,6 +2385,7 @@
 
     @media (min-width: 600px) {
       #scanPage.show-my-qr .scan-my-qr-pane {
+        position: relative;
         min-height: 100%;
         align-items: center;
         justify-content: center;
@@ -2415,19 +2416,53 @@
         isolation: isolate;
         display: flex;
         flex-direction: column;
+        flex: 0 0 auto;
         width: 340px;
         max-width: calc(100vw - 48px);
-        padding: 18px 18px 12px;
+        padding: 26px 18px 12px;
         overflow: visible;
-        border: 1px solid rgba(50, 45, 37, 0.14);
-        border-radius: 18px;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        text-align: left;
+        transform-origin: 50% 0;
+        animation: qrBadgeSwing 5.6s ease-in-out infinite;
+        will-change: transform;
+      }
+
+      #scanPage.show-my-qr .scan-my-qr-card::before {
+        content: "";
+        position: absolute;
+        z-index: 0;
+        inset: 0;
+        border: 1px solid rgba(50, 45, 37, 0.18);
         background:
+          linear-gradient(90deg, rgba(57, 52, 42, 0.08), transparent 14px, transparent calc(100% - 14px), rgba(57, 52, 42, 0.08)),
           repeating-linear-gradient(0deg, rgba(43, 41, 36, 0.012) 0 1px, transparent 1px 5px),
           #F7F5ED;
-        box-shadow: 0 20px 55px rgba(28, 31, 35, 0.2);
-        text-align: left;
-        transform: rotate(-1deg);
-        transform-origin: center top;
+        clip-path: polygon(
+          0 30px,
+          12px 30px,
+          12px 14px,
+          26px 0,
+          calc(100% - 26px) 0,
+          calc(100% - 12px) 14px,
+          calc(100% - 12px) 30px,
+          100% 30px,
+          100% calc(100% - 15px),
+          calc(100% - 15px) 100%,
+          15px 100%,
+          0 calc(100% - 15px)
+        );
+        filter:
+          drop-shadow(0 20px 24px rgba(28, 31, 35, 0.2))
+          drop-shadow(0 2px 3px rgba(35, 31, 24, 0.18));
+        pointer-events: none;
+      }
+
+      #scanPage.show-my-qr .scan-my-qr-card > *:not(.qr-badge-lanyard) {
+        position: relative;
+        z-index: 1;
       }
 
       .qr-badge-header {
@@ -2463,29 +2498,8 @@
         order: 8;
         display: block;
         height: 0;
-        margin: 7px -18px 10px;
+        margin: 7px 0 10px;
         border-top: 1px dashed rgba(41, 39, 34, 0.34);
-      }
-
-      .qr-badge-perforation::before,
-      .qr-badge-perforation::after {
-        content: "";
-        position: absolute;
-        z-index: 2;
-        top: -9px;
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        background: var(--bg);
-        pointer-events: none;
-      }
-
-      .qr-badge-perforation::before {
-        left: -9px;
-      }
-
-      .qr-badge-perforation::after {
-        right: -9px;
       }
 
       .qr-badge-account-label {
@@ -2502,15 +2516,17 @@
 
       .qr-badge-lanyard {
         position: absolute;
-        z-index: -1;
-        top: min(-24px, calc(300px - 50vh));
+        z-index: 2;
+        top: 0;
         left: 50%;
         display: block;
         width: 7px;
-        height: max(24px, calc(50vh - 300px));
-        transform: translateX(-50%);
+        height: var(--qr-badge-cord-height, 100px);
+        transform: translateX(-50%) rotate(var(--qr-badge-cord-angle, 0deg));
+        transform-origin: top center;
         background: linear-gradient(90deg, #171819 0 22%, #6E6A64 43%, #242424 58%, #77736D 72%, #171819);
         box-shadow: 0 1px 2px rgba(0, 0, 0, 0.22);
+        pointer-events: none;
       }
 
       .qr-badge-lanyard span {
@@ -2616,82 +2632,20 @@
       .qr-badge-art {
         position: relative;
         display: block;
-        height: 88px;
+        width: 100%;
+        aspect-ratio: 16 / 9;
         margin-top: 12px;
         overflow: hidden;
         border-radius: 10px;
-        background: linear-gradient(135deg, #171A20, #282D36);
+        background: #171A20;
       }
 
-      .qr-badge-art-copy {
-        position: absolute;
-        z-index: 1;
-        top: 10px;
-        left: 12px;
-        color: #FFFFFF;
-      }
-
-      .qr-badge-art-copy span {
+      .qr-badge-art-image {
         display: block;
-        margin-bottom: 5px;
-        color: rgba(255, 255, 255, 0.68);
-        font-size: 7px;
-        font-weight: 700;
-        letter-spacing: 0.13em;
-      }
-
-      .qr-badge-art-copy strong {
-        display: block;
-        font-size: 17px;
-        font-weight: 700;
-        letter-spacing: -0.04em;
-        line-height: 1.05;
-      }
-
-      .qr-badge-art-shapes {
-        position: absolute;
-        inset: 0;
-      }
-
-      .qr-badge-art-shapes i {
-        position: absolute;
-        display: block;
-      }
-
-      .qr-badge-art-shapes i:nth-child(1) {
-        top: -18px;
-        right: -7px;
-        width: 83px;
-        height: 72px;
-        border-radius: 50% 0 0 50%;
-        background: #F15A3B;
-      }
-
-      .qr-badge-art-shapes i:nth-child(2) {
-        right: 46px;
-        bottom: -29px;
-        width: 60px;
-        height: 77px;
-        border-radius: 32px 32px 0 0;
-        background: #7450E8;
-      }
-
-      .qr-badge-art-shapes i:nth-child(3) {
-        right: 0;
-        bottom: -24px;
-        width: 45px;
-        height: 65px;
-        border-radius: 28px 0 0;
-        background: #087C60;
-      }
-
-      .qr-badge-art-shapes i:nth-child(4) {
-        right: 92px;
-        bottom: -16px;
-        width: 42px;
-        height: 42px;
-        border-radius: 50%;
-        background: #1687E8;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
       }
 
       .qr-badge-qr-label {
@@ -2749,6 +2703,23 @@
           #2C2B28 3px 5px,
           transparent 5px 7px
         );
+      }
+    }
+
+    @keyframes qrBadgeSwing {
+      0%,
+      100% {
+        transform: rotate(-1.1deg);
+      }
+      50% {
+        transform: rotate(0.7deg);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #scanPage.show-my-qr .scan-my-qr-card {
+        animation: none;
+        transform: rotate(-0.4deg);
       }
     }
 
@@ -4110,8 +4081,8 @@
       </section>
 
       <section id="scanMyQrPane" class="scan-my-qr-pane hidden">
+        <div class="qr-badge-lanyard" aria-hidden="true"><span></span></div>
         <div class="scan-my-qr-card">
-          <div class="qr-badge-lanyard" aria-hidden="true"><span></span></div>
           <div class="qr-badge-header">
             <div class="qr-badge-brand">Idem<span>PAYMENT PASS</span></div>
             <div class="qr-badge-mark" aria-hidden="true">
@@ -4129,13 +4100,7 @@
             <div id="myQrName" class="scan-my-qr-name"></div>
           </div>
           <div class="qr-badge-art" aria-hidden="true">
-            <div class="qr-badge-art-copy">
-              <span>IDEM WALLET</span>
-              <strong>Pay your<br />way.</strong>
-            </div>
-            <div class="qr-badge-art-shapes">
-              <i></i><i></i><i></i><i></i>
-            </div>
+            <img class="qr-badge-art-image" src="https://i.pinimg.com/originals/45/bf/82/45bf82cc5bc8e8919586ea072f0567c8.gif" alt="" />
           </div>
           <div class="qr-badge-qr-label">
             <span>SCAN TO PAY</span>
@@ -6291,6 +6256,54 @@
     });
 
     // ---------- QR Scanner ----------
+    let qrBadgeCordSyncFrame = 0;
+
+    function syncQrBadgeCord() {
+      const scanPage = $("scanPage");
+      const qrPane = $("scanMyQrPane");
+      const cord = qrPane.querySelector(".qr-badge-lanyard");
+      const card = qrPane.querySelector(".scan-my-qr-card");
+      const title = scanPage.querySelector(".top-center-title");
+
+      if (!scanPage.classList.contains("show-my-qr") || window.innerWidth < 600) {
+        cord.style.display = "none";
+        return;
+      }
+
+      const paneRect = qrPane.getBoundingClientRect();
+      const titleRect = title.getBoundingClientRect();
+      const titleAnchorStyle = getComputedStyle(title, "::after");
+      const anchorY = titleRect.bottom - parseFloat(titleAnchorStyle.bottom);
+      const anchorX = titleRect.left + titleRect.width / 2;
+      const cardY = paneRect.top + card.offsetTop;
+      const cardX = paneRect.left + card.offsetLeft + card.offsetWidth / 2;
+      const cordHeight = cardY - anchorY;
+
+      cord.style.display = cordHeight > 0 ? "block" : "none";
+      cord.style.left = `${anchorX - paneRect.left}px`;
+      cord.style.top = `${anchorY - paneRect.top}px`;
+      cord.style.setProperty("--qr-badge-cord-height", `${Math.max(0, cordHeight)}px`);
+      cord.style.setProperty(
+        "--qr-badge-cord-angle",
+        `${Math.atan2(cardX - anchorX, Math.max(1, cordHeight)) * (180 / Math.PI)}deg`
+      );
+    }
+
+    function scheduleQrBadgeCordSync() {
+      if (qrBadgeCordSyncFrame) return;
+      qrBadgeCordSyncFrame = requestAnimationFrame(() => {
+        qrBadgeCordSyncFrame = 0;
+        syncQrBadgeCord();
+      });
+    }
+
+    $("scanPage").querySelector(".scan-page-body").addEventListener(
+      "scroll",
+      scheduleQrBadgeCordSync,
+      { passive: true }
+    );
+    window.addEventListener("resize", scheduleQrBadgeCordSync);
+
     async function stopQrScanner() {
       qrScannerGeneration += 1;
       const scanner = html5QrScanner;
@@ -6425,6 +6438,7 @@
       $("closeScanBtn").setAttribute("aria-label", "Back to scanner");
       $("closeScanBtn").title = "Back to scanner";
       renderMyAccountQr();
+      scheduleQrBadgeCordSync();
     });
 
     $("qrFileInput").addEventListener("change", async (e) => {
