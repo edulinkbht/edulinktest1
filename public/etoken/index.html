@@ -6,7 +6,7 @@
   <title>Idem — Wallet</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
@@ -33,6 +33,7 @@
       --shadow-wallet: 0 24px 44px -14px rgba(28, 18, 10, 0.34), 0 6px 16px rgba(0, 0, 0, 0.08);
       --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", sans-serif;
       --font-mono: "SF Mono", "JetBrains Mono", monospace;
+      --font-title: "Merriweather", Georgia, serif;
 
       /* Dynamic Wallet Theme Defaults (Saddle Brown) */
       --wallet-top: #583621;
@@ -54,6 +55,12 @@
       display: none;
       width: 0;
       height: 0;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: var(--font-title);
     }
 
     body {
@@ -695,6 +702,42 @@
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
+    }
+
+    .home-update-read {
+      min-height: 34px;
+      padding: 0 11px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border: 1px solid rgba(0, 0, 0, 0.07);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.84);
+      color: var(--ink-secondary);
+      font: inherit;
+      font-size: 12px;
+      font-weight: 650;
+      text-decoration: none;
+      box-shadow: 0 3px 10px rgba(20, 24, 30, 0.06);
+      transition: transform 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+    }
+
+    .home-update-read:hover {
+      transform: translateY(-1px);
+      color: var(--ink);
+      box-shadow: 0 5px 13px rgba(20, 24, 30, 0.1);
+    }
+
+    .home-update-read:focus-visible {
+      outline: 3px solid rgba(10, 132, 255, 0.42);
+      outline-offset: 3px;
+    }
+
+    .home-update-read svg {
+      width: 17px;
+      height: 17px;
+      flex: 0 0 auto;
     }
 
     .home-updates-track {
@@ -3782,6 +3825,21 @@
         <section class="home-section">
           <div class="home-section-heading">
             <h2>Updates</h2>
+            <a
+              class="home-update-read"
+              id="homeUpdateReadBtn"
+              href="https://i.pinimg.com/736x/08/91/69/08916951fd232a3f504172c43497ae16.jpg"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Read update 1"
+              title="Open the selected update"
+            >
+              <span>Read</span>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 15.6c0 2.24 0 3.36.44 4.22.38.75.99 1.36 1.74 1.74.86.44 1.98.44 4.22.44h3.2c2.24 0 3.36 0 4.22-.44.75-.38 1.36-.99 1.74-1.74.44-.86.44-1.98.44-4.22V9.65c0-.79 0-1.26-.06-1.65-.01-.1-.03-.19-.05-.28-.1-.41-.26-.8-.48-1.15-.25-.41-.59-.75-1.28-1.44l-1.26-1.26c-.69-.69-1.03-1.03-1.44-1.28-.35-.22-.74-.38-1.15-.48-.09-.02-.18-.04-.28-.05C13.61 2 13.14 2 12.35 2H10.4c-2.24 0-3.36 0-4.22.44-.75.38-1.36.99-1.74 1.74C4 5.04 4 6.16 4 8.4z"/>
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 2.06V3.2c0 1.68 0 2.52.33 3.16.28.57.74 1.03 1.31 1.31.64.33 1.48.33 3.16.33h1.14"/>
+              </svg>
+            </a>
           </div>
           <div class="home-updates" role="region" aria-label="Wallet updates">
             <div class="home-updates-track" id="homeUpdatesTrack" tabindex="0" aria-label="Updates carousel">
@@ -4881,6 +4939,7 @@
     const homeUpdatesTrack = $("homeUpdatesTrack");
     const homeUpdateSlides = Array.from(homeUpdatesTrack.querySelectorAll(".home-update-slide"));
     const homeUpdateDots = Array.from(document.querySelectorAll(".home-update-dot"));
+    const homeUpdateReadBtn = $("homeUpdateReadBtn");
 
     function setActiveHomeUpdate(index) {
       homeUpdateDots.forEach((dot, dotIndex) => {
@@ -4892,7 +4951,14 @@
           dot.removeAttribute("aria-current");
         }
       });
+      const activeImage = homeUpdateSlides[index] && homeUpdateSlides[index].querySelector("img");
+      if (activeImage) {
+        homeUpdateReadBtn.href = activeImage.src;
+        homeUpdateReadBtn.setAttribute("aria-label", `Read update ${index + 1}`);
+      }
     }
+
+    setActiveHomeUpdate(0);
 
     function goToHomeUpdate(index) {
       if (!homeUpdateSlides[index]) return;
