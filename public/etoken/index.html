@@ -1929,7 +1929,41 @@
       padding-top: 12px;
       border-radius: 30px 30px 0 0;
       transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+      touch-action: none;
       will-change: transform;
+    }
+
+    .tx-detail-sheet .close-btn {
+      width: 36px;
+      height: 36px;
+      border: 1px solid rgba(255, 255, 255, 0.94);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(237, 239, 244, 0.68)),
+        rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(16px) saturate(180%);
+      -webkit-backdrop-filter: blur(16px) saturate(180%);
+      color: var(--ink);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.98),
+        0 4px 12px rgba(30, 30, 35, 0.08);
+      transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+    }
+
+    .tx-detail-sheet .close-btn:hover {
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.99), rgba(243, 244, 247, 0.88)),
+        rgba(255, 255, 255, 0.92);
+      box-shadow:
+        inset 0 1px 0 #FFFFFF,
+        0 6px 16px rgba(30, 30, 35, 0.12);
+    }
+
+    .tx-detail-sheet .close-btn:active {
+      transform: scale(0.94);
+    }
+
+    .tx-detail-sheet .close-btn svg {
+      display: block;
     }
 
     .tx-detail-grabber {
@@ -4562,7 +4596,11 @@
       <div class="tx-detail-grabber" id="txDetailGrabber" aria-hidden="true"></div>
       <div class="sheet-head">
         <h3 id="txDetailHeading">Transaction Details</h3>
-        <button type="button" class="close-btn" data-close="transactionDetailModal">&times;</button>
+        <button type="button" class="close-btn" data-close="transactionDetailModal" title="Close transaction details" aria-label="Close transaction details">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+            <path d="m18 6-12 12M6 6l12 12"/>
+          </svg>
+        </button>
       </div>
 
       <div class="tx-detail-hero">
@@ -6085,16 +6123,19 @@
     });
 
     let txDetailCloseTimer = null;
-    let txDetailDragStartY = null;
-    let txDetailDragStartTime = 0;
+    let txDetailGestureStartY = null;
+    let txDetailGestureAnchorY = 0;
+    let txDetailGestureStartTime = 0;
+    let txDetailGestureStartScrollTop = 0;
+    let txDetailGestureMode = null;
     const txDetailSheet = $("txDetailSheet");
-    const txDetailGrabber = $("txDetailGrabber");
     const txDetailModal = $("transactionDetailModal");
 
     function closeTransactionDetail() {
       if (txDetailModal.classList.contains("hidden") || txDetailModal.classList.contains("is-closing")) return;
 
-      txDetailDragStartY = null;
+      txDetailGestureStartY = null;
+      txDetailGestureMode = null;
       txDetailSheet.classList.remove("is-dragging");
       txDetailSheet.style.transform = "";
       txDetailModal.classList.add("is-closing");
@@ -6109,12 +6150,16 @@
     }
 
     function finishTransactionDetailDrag(event, allowDismiss) {
-      if (txDetailDragStartY === null) return;
+      if (txDetailGestureStartY === null) return;
 
-      const distance = Math.max(0, event.clientY - txDetailDragStartY);
-      const elapsed = Math.max(1, performance.now() - txDetailDragStartTime);
-      const shouldDismiss = allowDismiss && (distance > 96 || (distance > 32 && distance / elapsed > 0.65));
-      txDetailDragStartY = null;
+      const distance = txDetailGestureMode === "dismiss"
+        ? Math.max(0, event.clientY - txDetailGestureAnchorY)
+        : 0;
+      const elapsed = Math.max(1, performance.now() - txDetailGestureStartTime);
+      const shouldDismiss = allowDismiss && txDetailGestureMode === "dismiss"
+        && (distance > 96 || (distance > 32 && distance / elapsed > 0.65));
+      txDetailGestureStartY = null;
+      txDetailGestureMode = null;
 
       if (shouldDismiss) {
         closeTransactionDetail();
@@ -6124,20 +6169,42 @@
       }
     }
 
-    txDetailGrabber.addEventListener("pointerdown", (event) => {
+    txDetailSheet.addEventListener("pointerdown", (event) => {
       if (event.button !== 0 || txDetailModal.classList.contains("hidden")) return;
-      txDetailDragStartY = event.clientY;
-      txDetailDragStartTime = performance.now();
+      if (event.target instanceof Element && event.target.closest("button, a, input, select, textarea, [contenteditable=\"true\"]")) return;
+      txDetailGestureStartY = event.clientY;
+      txDetailGestureAnchorY = event.clientY;
+      txDetailGestureStartTime = performance.now();
+      txDetailGestureStartScrollTop = txDetailSheet.scrollTop;
+      txDetailGestureMode = null;
       txDetailSheet.classList.add("is-dragging");
-      txDetailGrabber.setPointerCapture(event.pointerId);
+      txDetailSheet.setPointerCapture(event.pointerId);
     });
-    txDetailGrabber.addEventListener("pointermove", (event) => {
-      if (txDetailDragStartY === null) return;
-      const distance = Math.max(0, event.clientY - txDetailDragStartY);
+    txDetailSheet.addEventListener("pointermove", (event) => {
+      if (txDetailGestureStartY === null) return;
+      const deltaY = event.clientY - txDetailGestureStartY;
+      if (txDetailGestureMode === null) {
+        if (Math.abs(deltaY) < 6) return;
+        const maxScrollTop = Math.max(0, txDetailSheet.scrollHeight - txDetailSheet.clientHeight);
+        txDetailGestureMode = deltaY > 0 && txDetailGestureStartScrollTop === 0
+          ? "dismiss"
+          : (maxScrollTop > 0 ? "scroll" : "dismiss");
+      }
+
+      if (txDetailGestureMode === "scroll") {
+        const maxScrollTop = Math.max(0, txDetailSheet.scrollHeight - txDetailSheet.clientHeight);
+        const requestedScrollTop = txDetailGestureStartScrollTop - deltaY;
+        txDetailSheet.scrollTop = Math.max(0, Math.min(maxScrollTop, requestedScrollTop));
+        if (deltaY <= 0 || requestedScrollTop >= 0) return;
+        txDetailGestureMode = "dismiss";
+        txDetailGestureAnchorY = txDetailGestureStartY + txDetailGestureStartScrollTop;
+      }
+
+      const distance = Math.max(0, event.clientY - txDetailGestureAnchorY);
       txDetailSheet.style.transform = `translateY(${distance}px)`;
     });
-    txDetailGrabber.addEventListener("pointerup", (event) => finishTransactionDetailDrag(event, true));
-    txDetailGrabber.addEventListener("pointercancel", (event) => finishTransactionDetailDrag(event, false));
+    txDetailSheet.addEventListener("pointerup", (event) => finishTransactionDetailDrag(event, true));
+    txDetailSheet.addEventListener("pointercancel", (event) => finishTransactionDetailDrag(event, false));
     txDetailModal.addEventListener("click", (event) => {
       if (event.target === txDetailModal) closeTransactionDetail();
     });
