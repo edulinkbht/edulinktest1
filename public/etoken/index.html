@@ -1150,45 +1150,66 @@
       height: 22px;
     }
 
-    .tx-export-menu {
-      margin-top: 8px;
-      padding: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.92);
-      border-radius: 20px;
-      background:
-        linear-gradient(145deg, rgba(255, 255, 255, 0.91), rgba(237, 239, 244, 0.78)),
-        rgba(255, 255, 255, 0.82);
-      backdrop-filter: blur(20px) saturate(185%);
-      -webkit-backdrop-filter: blur(20px) saturate(185%);
-      box-shadow:
-        inset 0 1px 0 rgba(255, 255, 255, 0.98),
-        0 8px 20px rgba(30, 30, 35, 0.08);
-    }
-
-    .tx-export-heading {
-      padding: 2px 6px 9px;
-      color: var(--ink-secondary);
-      font-size: 12px;
-      font-weight: 600;
-    }
-
     .tx-export-option {
       width: 100%;
-      min-height: 42px;
-      padding: 0 12px;
-      border: 0;
-      border-radius: 13px;
-      background: transparent;
+      min-height: 62px;
+      padding: 10px 12px;
+      border: 1px solid rgba(30, 35, 45, 0.08);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.72);
       color: var(--ink);
       font-family: inherit;
       font-size: 13px;
       font-weight: 600;
       text-align: left;
       cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
     }
 
     .tx-export-option:hover {
-      background: rgba(255, 255, 255, 0.72);
+      background: #FFFFFF;
+      border-color: rgba(30, 35, 45, 0.14);
+    }
+
+    .tx-export-option:active {
+      transform: scale(0.985);
+    }
+
+    .tx-export-option svg {
+      width: 21px;
+      height: 21px;
+      flex: 0 0 auto;
+      color: var(--ink-secondary);
+    }
+
+    .tx-export-option-copy {
+      display: grid;
+      gap: 3px;
+    }
+
+    .tx-export-option-copy small {
+      color: var(--ink-secondary);
+      font-size: 11.5px;
+      font-weight: 450;
+    }
+
+    .tx-export-sheet {
+      padding-bottom: 22px;
+    }
+
+    .tx-export-intro {
+      margin: -7px 0 14px;
+      color: var(--ink-secondary);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .tx-export-options {
+      display: grid;
+      gap: 8px;
     }
 
     .tx-detail-hero {
@@ -2888,6 +2909,37 @@
     </div>
   </div>
 
+  <!-- ==================== MODAL: DOWNLOAD TRANSACTIONS ==================== -->
+  <div id="txExportModal" class="modal-backdrop hidden">
+    <div class="sheet tx-export-sheet" role="dialog" aria-modal="true" aria-labelledby="txExportTitle">
+      <div class="sheet-head">
+        <h3 id="txExportTitle">Download transactions</h3>
+        <button type="button" class="close-btn" id="closeTxExportModalBtn" data-close="txExportModal" aria-label="Close">&times;</button>
+      </div>
+      <p class="tx-export-intro">Choose a period to prepare your PDF statement.</p>
+      <div class="tx-export-options">
+        <button type="button" class="tx-export-option" id="txExportWeekBtn" data-tx-export-range="week">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 10h18"/>
+          </svg>
+          <span class="tx-export-option-copy"><span>This week</span><small>From Monday through today</small></span>
+        </button>
+        <button type="button" class="tx-export-option" data-tx-export-range="month">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="16" rx="3"/><path d="M16 3v4M8 3v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01"/>
+          </svg>
+          <span class="tx-export-option-copy"><span>This month</span><small>From the first day of this month</small></span>
+        </button>
+        <button type="button" class="tx-export-option" data-tx-export-range="all">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 5h16M4 10h16M4 15h10M4 20h10"/><path d="m17 17 2 2 3-4"/>
+          </svg>
+          <span class="tx-export-option-copy"><span>All transactions</span><small>Your complete transaction history</small></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ==================== MODAL: SCAN QR TO PAY ==================== -->
   <div id="scanModal" class="modal-backdrop hidden">
     <div class="sheet">
@@ -3708,26 +3760,32 @@
         `${color} rg BT /${font} ${size} Tf 1 0 0 1 ${x} ${y} Tm (${pdfText(value)}) Tj ET\n`;
       const fillRect = (x, y, width, height, color) =>
         `${color} rg ${x} ${y} ${width} ${height} re f\n`;
+      const roundRect = (x, y, width, height, radius, color) => {
+        const curve = radius * 0.55228475;
+        return `${color} rg ${x + radius} ${y} m ${x + width - radius} ${y} l ${x + width - radius + curve} ${y} ${x + width} ${y + radius - curve} ${x + width} ${y + radius} c ${x + width} ${y + height - radius} l ${x + width} ${y + height - radius + curve} ${x + width - radius + curve} ${y + height} ${x + width - radius} ${y + height} c ${x + radius} ${y + height} l ${x + radius - curve} ${y + height} ${x} ${y + height - radius + curve} ${x} ${y + height - radius} c ${x} ${y + radius} l ${x} ${y + radius - curve} ${x + radius - curve} ${y} ${x + radius} ${y} c h f\n`;
+      };
       const pages = [];
 
       for (let pageIndex = 0; pageIndex < pageCount; pageIndex++) {
         const pageRows = reportRows.slice(pageIndex * rowsPerPage, (pageIndex + 1) * rowsPerPage);
         let content = "";
-        content += fillRect(0, 548, pageWidth, 47, "0.10 0.13 0.19");
-        content += textCommand(32, 570, 17, "IDEM WALLET - TRANSACTION REPORT", "1 1 1", "F2");
-        content += textCommand(32, 532, 9, `Period: ${range === "all" ? "All transactions" : range === "week" ? "This week" : "This month"}   Generated: ${generatedAt}`, "0.31 0.34 0.40");
+        content += fillRect(0, 536, pageWidth, 59, "0.12 0.15 0.20");
+        content += textCommand(32, 570, 18, "Idem Wallet", "1 1 1", "F2");
+        content += textCommand(32, 552, 8, "TRANSACTION STATEMENT", "0.82 0.85 0.89", "F2");
+        content += textCommand(618, 570, 9, range === "all" ? "All transactions" : range === "week" ? "This week" : "This month", "1 1 1", "F2");
+        content += textCommand(618, 552, 8, `Prepared ${generatedAt}`, "0.82 0.85 0.89");
 
-        content += fillRect(32, 480, 250, 40, "0.95 0.96 0.98");
-        content += fillRect(296, 480, 250, 40, "0.92 0.97 0.94");
-        content += fillRect(560, 480, 250, 40, "0.99 0.93 0.93");
+        content += roundRect(32, 478, 250, 42, 8, "0.95 0.96 0.97");
+        content += roundRect(296, 478, 250, 42, 8, "0.92 0.96 0.93");
+        content += roundRect(560, 478, 250, 42, 8, "0.99 0.94 0.93");
         content += textCommand(44, 504, 8, "TRANSACTIONS", "0.42 0.45 0.50", "F2");
-        content += textCommand(44, 488, 13, String(reportRows.length), "0.12 0.14 0.18", "F2");
-        content += textCommand(308, 504, 8, "TOTAL RECEIVED", "0.12 0.48 0.28", "F2");
-        content += textCommand(308, 488, 13, formatCurrency(totalReceived), "0.12 0.48 0.28", "F2");
-        content += textCommand(572, 504, 8, "TOTAL SENT", "0.72 0.20 0.22", "F2");
-        content += textCommand(572, 488, 13, formatCurrency(totalSent), "0.72 0.20 0.22", "F2");
+        content += textCommand(44, 488, 14, String(reportRows.length), "0.12 0.14 0.18", "F2");
+        content += textCommand(308, 504, 8, "TOTAL RECEIVED", "0.20 0.43 0.29", "F2");
+        content += textCommand(308, 488, 14, formatCurrency(totalReceived), "0.16 0.40 0.25", "F2");
+        content += textCommand(572, 504, 8, "TOTAL SENT", "0.62 0.28 0.27", "F2");
+        content += textCommand(572, 488, 14, formatCurrency(totalSent), "0.62 0.28 0.27", "F2");
 
-        content += fillRect(32, 432, 778, 28, "0.12 0.15 0.21");
+        content += roundRect(32, 430, 778, 28, 7, "0.14 0.17 0.22");
         content += textCommand(42, 442, 8, "SENDER / RECIPIENT", "1 1 1", "F2");
         content += textCommand(200, 442, 8, "AMOUNT", "1 1 1", "F2");
         content += textCommand(288, 442, 8, "DIRECTION", "1 1 1", "F2");
@@ -3737,8 +3795,10 @@
 
         pageRows.forEach((row, rowIndex) => {
           const y = 414 - rowIndex * 30;
-          const rowColor = rowIndex % 2 === 0 ? "0.97 0.98 0.99" : "1 1 1";
-          const directionColor = row.amount >= 0 ? "0.10 0.50 0.29" : "0.75 0.20 0.22";
+          const rowColor = rowIndex % 2 === 0 ? "0.97 0.97 0.96" : "0.99 0.99 0.98";
+          const isReceived = row.amount >= 0;
+          const directionColor = isReceived ? "0.16 0.43 0.28" : "0.63 0.25 0.24";
+          const directionFill = isReceived ? "0.88 0.95 0.89" : "0.98 0.91 0.90";
           const dateText = row.date
             ? row.date.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "2-digit" })
             : "Unknown";
@@ -3746,10 +3806,11 @@
             ? row.date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" })
             : "Unknown";
 
-          content += fillRect(32, y - 10, 778, 28, rowColor);
+          content += roundRect(32, y - 10, 778, 28, 5, rowColor);
           content += textCommand(42, y, 8, truncatePdfText(row.otherParty, 23), "0.12 0.14 0.18");
           content += textCommand(200, y, 8, formatCurrency(Math.abs(row.amount)), directionColor, "F2");
-          content += textCommand(288, y, 8, row.direction.toUpperCase(), directionColor, "F2");
+          content += roundRect(284, y - 6, 79, 17, 7, directionFill);
+          content += textCommand(292, y, 7.5, row.direction.toUpperCase(), directionColor, "F2");
           content += textCommand(382, y, 8, truncatePdfText(row.reason, 34), "0.30 0.33 0.38");
           content += textCommand(612, y, 8, dateText, "0.30 0.33 0.38");
           content += textCommand(712, y, 8, timeText, "0.30 0.33 0.38");
@@ -3762,8 +3823,8 @@
       const objects = [
         "<< /Type /Catalog /Pages 2 0 R >>",
         `<< /Type /Pages /Kids [${pages.map((_, index) => `${5 + index * 2} 0 R`).join(" ")}] /Count ${pageCount} >>`,
-        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
-        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>"
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman >>",
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold >>"
       ];
       pages.forEach((content, index) => {
         const pageId = 5 + index * 2;
@@ -3901,17 +3962,11 @@
                 ${txFullShown ? "Show latest 7" : `View full · ${all.length} transactions`}
               </button>
             ` : ""}
-            <button type="button" class="tx-download-btn" id="txDownloadBtn" title="Download PDF" aria-label="Download PDF" aria-expanded="false" aria-controls="txExportMenu">
+            <button type="button" class="tx-download-btn" id="txDownloadBtn" title="Download PDF" aria-label="Download PDF" aria-expanded="false" aria-controls="txExportModal">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 15c0 2.76 2.24 5 5 5h8c2.76 0 5-2.24 5-5M9 12.19c.74.99 1.6 1.88 2.56 2.65.13.11.28.16.44.16m3-2.81c-.74.99-1.6 1.88-2.56 2.65-.13.11-.28.16-.44.16m0 0V4"/>
               </svg>
             </button>
-          </div>
-          <div class="tx-export-menu hidden" id="txExportMenu" role="group" aria-label="Download PDF period">
-            <div class="tx-export-heading">Download PDF</div>
-            <button type="button" class="tx-export-option" data-tx-export-range="week">This week</button>
-            <button type="button" class="tx-export-option" data-tx-export-range="month">This month</button>
-            <button type="button" class="tx-export-option" data-tx-export-range="all">All transactions</button>
           </div>
         </div>
       `;
@@ -3927,24 +3982,33 @@
       }
 
       const downloadBtn = $("txDownloadBtn");
-      const exportMenu = $("txExportMenu");
       downloadBtn.addEventListener("click", () => {
-        const isExpanded = downloadBtn.getAttribute("aria-expanded") === "true";
-        downloadBtn.setAttribute("aria-expanded", String(!isExpanded));
-        exportMenu.classList.toggle("hidden", isExpanded);
-      });
-      container.querySelectorAll("[data-tx-export-range]").forEach((option) => {
-        option.addEventListener("click", () => {
-          exportMenu.classList.add("hidden");
-          downloadBtn.setAttribute("aria-expanded", "false");
-          exportTransactions(option.dataset.txExportRange, all);
-        });
+        downloadBtn.setAttribute("aria-expanded", "true");
+        openModal("txExportModal");
+        $("txExportWeekBtn").focus({ preventScroll: true });
       });
 
       container.querySelectorAll("[data-tx-id]").forEach((row) => {
         row.addEventListener("click", () => openTransactionDetail(row.dataset.txId));
       });
     }
+
+    $("closeTxExportModalBtn").addEventListener("click", () => {
+      const downloadBtn = $("txDownloadBtn");
+      if (downloadBtn) downloadBtn.setAttribute("aria-expanded", "false");
+    });
+
+    document.querySelectorAll("[data-tx-export-range]").forEach((option) => {
+      option.addEventListener("click", () => {
+        closeModal("txExportModal");
+        const downloadBtn = $("txDownloadBtn");
+        if (downloadBtn) downloadBtn.setAttribute("aria-expanded", "false");
+        const map = new Map();
+        [...sentDocs, ...recvDocs].forEach((tx) => map.set(tx.id, tx));
+        const all = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+        exportTransactions(option.dataset.txExportRange, all);
+      });
+    });
 
     function openTransactionDetail(txId) {
       const map = new Map();
@@ -4554,7 +4618,7 @@
           }
 
           try {
-            await executeAccountTransfer(lockedNearMerchant.accountNumber, amount, "Tap to Pay (5cm)");
+            await executeAccountTransfer(lockedNearMerchant.accountNumber, amount, "Tap to Pay");
             $("nearStatusTitle").textContent = `Sending ${formatCurrency(amount)}...`;
             $("nearStatusSub").textContent = "Beaming across top device edge.";
             await triggerMoneyToDeviceEdgeAnimation(amount);
@@ -4598,7 +4662,7 @@
         .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
 
       if (candidates.length > 0) {
-        lockNearbyAccount(candidates[0], measuredCm, "Tap to Pay 5 cm");
+        lockNearbyAccount(candidates[0], measuredCm, "Tap to Pay");
         return true;
       }
       return false;
