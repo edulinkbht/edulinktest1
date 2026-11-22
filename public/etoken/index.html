@@ -697,35 +697,100 @@
       cursor: pointer;
     }
 
-    .home-shortcuts {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 9px;
+    .home-updates-track {
+      display: flex;
+      overflow-x: auto;
+      border-radius: 20px;
+      overscroll-behavior-x: contain;
+      scroll-behavior: smooth;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
 
-    .home-shortcut {
-      min-height: 88px;
-      padding: 13px 8px 11px;
+    .home-updates-track::-webkit-scrollbar {
+      display: none;
+    }
+
+    .home-update-slide {
+      position: relative;
+      isolation: isolate;
+      flex: 0 0 100%;
+      min-width: 0;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.86);
+      border-radius: 20px;
+      background: #E8E9EB;
+      box-shadow: 0 9px 24px rgba(24, 34, 45, 0.12), 0 2px 6px rgba(24, 34, 45, 0.06);
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+    }
+
+    .home-update-slide img {
+      position: absolute;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .home-update-slide::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.2), transparent 34%),
+        linear-gradient(180deg, transparent 62%, rgba(12, 21, 31, 0.16));
+      pointer-events: none;
+    }
+
+    .home-update-dots {
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.86);
-      color: var(--ink);
-      font: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: var(--shadow-soft);
+      gap: 10px;
+      padding: 13px 0 2px;
     }
 
-    .home-shortcut svg {
-      width: 21px;
-      height: 21px;
-      color: var(--ink-secondary);
+    .home-update-dot {
+      width: 8px;
+      height: 8px;
+      padding: 0;
+      border: 0;
+      border-radius: 50%;
+      background: rgba(17, 17, 19, 0.2);
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+
+    .home-update-dot.active {
+      transform: scale(1.2);
+      background: var(--ink);
+    }
+
+    .home-update-dot:focus-visible {
+      outline: 3px solid rgba(10, 132, 255, 0.42);
+      outline-offset: 4px;
+    }
+
+    @media (hover: hover) and (prefers-reduced-motion: no-preference) {
+      .home-update-slide:hover img {
+        transform: scale(1.035);
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .home-updates-track {
+        scroll-behavior: auto;
+      }
+
+      .home-update-slide img,
+      .home-update-dot {
+        transition: none;
+      }
     }
 
     .home-activity-list {
@@ -3716,30 +3781,33 @@
       <div class="home-content">
         <section class="home-section">
           <div class="home-section-heading">
-            <h2>Quick actions</h2>
+            <h2>Updates</h2>
           </div>
-          <div class="home-shortcuts">
-            <button type="button" class="home-shortcut" id="homeRequestBtn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M7 17 17 7M7 7h10v10"/>
-              </svg>
-              <span>Request</span>
-            </button>
-            <button type="button" class="home-shortcut" id="homeScanBtn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/>
-                <path d="M7 12h10"/>
-              </svg>
-              <span>Scan QR</span>
-            </button>
-            <button type="button" class="home-shortcut" id="homeTapPayBtn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M4.9 16.1C1 12.2 1 5.8 4.9 1.9M7.8 13.2a6 6 0 0 1 0-8.4"/>
-                <circle cx="12" cy="9" r="2" fill="currentColor" stroke="none"/>
-                <path d="M16.2 4.8a6 6 0 0 1 0 8.4M19.1 1.9c3.9 3.9 3.9 10.3 0 14.2M12 11v9"/>
-              </svg>
-              <span>Tap to Pay</span>
-            </button>
+          <div class="home-updates" role="region" aria-label="Wallet updates">
+            <div class="home-updates-track" id="homeUpdatesTrack" tabindex="0" aria-label="Updates carousel">
+              <article class="home-update-slide" aria-label="Update 1 of 2">
+                <img
+                  src="https://i.pinimg.com/736x/08/91/69/08916951fd232a3f504172c43497ae16.jpg"
+                  alt="Wallet update"
+                  loading="lazy"
+                  decoding="async"
+                  draggable="false"
+                />
+              </article>
+              <article class="home-update-slide" aria-label="Update 2 of 2">
+                <img
+                  src="https://i.pinimg.com/736x/ea/69/74/ea697422b44829e4ebca5289df899541.jpg"
+                  alt="Wallet update"
+                  loading="lazy"
+                  decoding="async"
+                  draggable="false"
+                />
+              </article>
+            </div>
+            <div class="home-update-dots" role="group" aria-label="Choose an update">
+              <button type="button" class="home-update-dot active" data-update-index="0" aria-label="Show update 1" aria-current="true"></button>
+              <button type="button" class="home-update-dot" data-update-index="1" aria-label="Show update 2"></button>
+            </div>
           </div>
         </section>
 
@@ -4807,11 +4875,53 @@
     });
 
     $("homePayBtn").addEventListener("click", () => $("openPayBtn").click());
-    $("homeRequestBtn").addEventListener("click", () => $("openRequestBtn").click());
-    $("homeScanBtn").addEventListener("click", () => $("openScanBtn").click());
-    $("homeTapPayBtn").addEventListener("click", () => $("openNearMeBtn").click());
     $("homeOpenWalletBtn").addEventListener("click", () => showWorkspace("wallet"));
     $("homeViewWalletBtn").addEventListener("click", () => showWorkspace("wallet"));
+
+    const homeUpdatesTrack = $("homeUpdatesTrack");
+    const homeUpdateSlides = Array.from(homeUpdatesTrack.querySelectorAll(".home-update-slide"));
+    const homeUpdateDots = Array.from(document.querySelectorAll(".home-update-dot"));
+
+    function setActiveHomeUpdate(index) {
+      homeUpdateDots.forEach((dot, dotIndex) => {
+        const isActive = dotIndex === index;
+        dot.classList.toggle("active", isActive);
+        if (isActive) {
+          dot.setAttribute("aria-current", "true");
+        } else {
+          dot.removeAttribute("aria-current");
+        }
+      });
+    }
+
+    function goToHomeUpdate(index) {
+      if (!homeUpdateSlides[index]) return;
+      homeUpdatesTrack.scrollTo({
+        left: index * homeUpdatesTrack.clientWidth,
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth"
+      });
+      setActiveHomeUpdate(index);
+    }
+
+    homeUpdateDots.forEach((dot) => {
+      dot.addEventListener("click", () => {
+        goToHomeUpdate(Number(dot.dataset.updateIndex));
+      });
+    });
+
+    let homeUpdateScrollFrame = 0;
+    homeUpdatesTrack.addEventListener("scroll", () => {
+      if (homeUpdateScrollFrame) return;
+      homeUpdateScrollFrame = requestAnimationFrame(() => {
+        homeUpdateScrollFrame = 0;
+        if (!homeUpdatesTrack.clientWidth) return;
+        const activeIndex = Math.max(
+          0,
+          Math.min(homeUpdateSlides.length - 1, Math.round(homeUpdatesTrack.scrollLeft / homeUpdatesTrack.clientWidth))
+        );
+        setActiveHomeUpdate(activeIndex);
+      });
+    }, { passive: true });
 
     $("dockNearMeBtn").addEventListener("click", () => {
       $("openNearMeBtn").click();
