@@ -1158,26 +1158,28 @@
     .tx-export-menu {
       position: fixed;
       z-index: 81;
-      top: 20px;
-      right: 20px;
+      top: 0;
+      left: 0;
       width: 244px;
       padding: 12px;
       border: 1px solid rgba(30, 32, 36, 0.08);
       border-radius: 20px;
       background: #F2F2F3;
       box-shadow: 0 18px 48px rgba(20, 22, 26, 0.18);
-      animation: txExportMenuIn 0.2s ease-out both;
+      animation: txExportPopoverIn 0.18s ease-out both;
     }
 
-    @keyframes txExportMenuIn {
+    @keyframes txExportPopoverIn {
       from {
         opacity: 0;
-        transform: translateX(14px);
       }
       to {
         opacity: 1;
-        transform: translateX(0);
       }
+    }
+
+    .tx-export-grab-handle {
+      display: none;
     }
 
     .tx-export-heading {
@@ -1236,19 +1238,80 @@
         position: fixed;
         inset: 0;
         z-index: 80;
-        background: rgba(18, 19, 22, 0.22);
-        backdrop-filter: blur(2px);
-        -webkit-backdrop-filter: blur(2px);
+        background: rgba(18, 19, 22, 0.3);
+        animation: txExportBackdropIn 0.24s ease-out both;
+        touch-action: none;
       }
 
       .tx-export-menu:not(.hidden) {
-        top: max(12px, env(safe-area-inset-top)) !important;
-        right: 12px !important;
-        left: auto !important;
-        width: min(320px, calc(100vw - 24px));
-        max-height: calc(100vh - 48px);
+        top: auto !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100%;
+        max-height: min(72vh, 520px);
         overflow-y: auto;
-        border-radius: 20px;
+        padding: 10px 20px max(20px, env(safe-area-inset-bottom));
+        border: 1px solid rgba(30, 32, 36, 0.08);
+        border-bottom: 0;
+        border-radius: 28px 28px 0 0;
+        background: #F5F5F6;
+        box-shadow: 0 -12px 40px rgba(20, 22, 26, 0.16);
+        animation: none;
+        transform: translateY(0);
+        transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+        touch-action: pan-y;
+      }
+
+      .tx-export-menu.is-opening {
+        transform: translateY(105%);
+      }
+
+      .tx-export-menu.is-dragging {
+        transition: none;
+      }
+
+      .tx-export-menu.is-closing {
+        transform: translateY(105%);
+      }
+
+      .tx-export-backdrop.is-closing {
+        animation: none;
+        opacity: 0;
+        transition: opacity 0.26s ease;
+      }
+
+      .tx-export-grab-handle {
+        display: block;
+        width: 38px;
+        height: 5px;
+        margin: 0 auto 14px;
+        border-radius: 999px;
+        background: #C7C7CC;
+        touch-action: none;
+      }
+
+      .tx-export-heading {
+        padding: 0 8px 12px;
+        font-size: 16px;
+        touch-action: none;
+      }
+
+      .tx-export-option {
+        min-height: 52px;
+      }
+    }
+
+    @keyframes txExportBackdropIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .tx-export-menu,
+      .tx-export-backdrop {
+        animation: none;
+        transition-duration: 0.01ms;
       }
     }
 
@@ -3991,7 +4054,8 @@
             </button>
           </div>
           <div class="tx-export-backdrop hidden" id="txExportBackdrop" aria-hidden="true"></div>
-          <div class="tx-export-menu hidden" id="txExportMenu" role="group" aria-label="Download PDF period">
+          <div class="tx-export-menu hidden" id="txExportMenu" role="dialog" aria-label="Download PDF period">
+            <div class="tx-export-grab-handle" aria-hidden="true"></div>
             <div class="tx-export-heading">Download PDF</div>
             <div class="tx-export-options">
               <button type="button" class="tx-export-option" data-tx-export-range="week">
@@ -4033,20 +4097,58 @@
       downloadBtn.addEventListener("click", () => {
         const isExpanded = downloadBtn.getAttribute("aria-expanded") === "true";
         if (isExpanded) {
-          closeTxExportMenu();
+          dismissTxExportMenu();
           return;
         }
 
+        closeTxExportMenu();
         exportMenu.classList.remove("hidden");
         downloadBtn.setAttribute("aria-expanded", "true");
-        if (window.matchMedia("(max-width: 600px)").matches) {
+        const isSmallScreen = window.matchMedia("(max-width: 600px)").matches;
+        positionTxExportMenu(exportMenu, downloadBtn);
+        if (isSmallScreen) {
+          exportMenu.setAttribute("aria-modal", "true");
           exportBackdrop.classList.remove("hidden");
+          exportMenu.classList.add("is-opening");
+          void exportMenu.offsetHeight;
+          requestAnimationFrame(() => exportMenu.classList.remove("is-opening"));
+        } else {
+          exportMenu.removeAttribute("aria-modal");
         }
         const firstOption = exportMenu.querySelector("[data-tx-export-range]");
         if (firstOption) firstOption.focus({ preventScroll: true });
       });
 
-      exportBackdrop.addEventListener("click", closeTxExportMenu);
+      exportBackdrop.addEventListener("click", dismissTxExportMenu);
+      exportMenu.addEventListener("pointerdown", (event) => {
+        if (!window.matchMedia("(max-width: 600px)").matches) return;
+        if (!(event.target instanceof Element) || !event.target.closest(".tx-export-grab-handle, .tx-export-heading")) return;
+        exportMenu.classList.remove("is-closing");
+        exportMenu.classList.add("is-dragging");
+        exportMenu.setPointerCapture(event.pointerId);
+        exportMenu.dataset.dragStartY = String(event.clientY);
+        exportMenu.dataset.dragStartTime = String(performance.now());
+      });
+      exportMenu.addEventListener("pointermove", (event) => {
+        if (!exportMenu.classList.contains("is-dragging")) return;
+        const startY = Number(exportMenu.dataset.dragStartY);
+        const distance = Math.max(0, event.clientY - startY);
+        exportMenu.style.transform = `translateY(${distance}px)`;
+        exportBackdrop.style.opacity = String(Math.max(0.2, 1 - distance / 220));
+      });
+      const finishExportMenuDrag = (event) => {
+        if (!exportMenu.classList.contains("is-dragging")) return;
+        const distance = Math.max(0, event.clientY - Number(exportMenu.dataset.dragStartY));
+        const elapsed = Math.max(1, performance.now() - Number(exportMenu.dataset.dragStartTime));
+        exportMenu.classList.remove("is-dragging");
+        exportMenu.style.transform = "";
+        exportBackdrop.style.opacity = "";
+        if (distance > 90 || (distance > 30 && distance / elapsed > 0.65)) {
+          dismissTxExportMenu();
+        }
+      };
+      exportMenu.addEventListener("pointerup", finishExportMenuDrag);
+      exportMenu.addEventListener("pointercancel", finishExportMenuDrag);
       container.querySelectorAll("[data-tx-export-range]").forEach((option) => {
         option.addEventListener("click", () => {
           closeTxExportMenu();
@@ -4059,13 +4161,73 @@
       });
     }
 
+    let txExportCloseTimer = null;
+
     function closeTxExportMenu() {
+      if (txExportCloseTimer !== null) {
+        clearTimeout(txExportCloseTimer);
+        txExportCloseTimer = null;
+      }
       const menu = $("txExportMenu");
       const backdrop = $("txExportBackdrop");
       const downloadBtn = $("txDownloadBtn");
-      if (menu) menu.classList.add("hidden");
-      if (backdrop) backdrop.classList.add("hidden");
+      if (menu) {
+        menu.classList.add("hidden");
+        menu.classList.remove("is-opening", "is-dragging", "is-closing");
+        menu.removeAttribute("aria-modal");
+        menu.style.transform = "";
+      }
+      if (backdrop) {
+        backdrop.classList.add("hidden");
+        backdrop.classList.remove("is-closing");
+        backdrop.style.opacity = "";
+      }
+      if (downloadBtn) {
+        downloadBtn.setAttribute("aria-expanded", "false");
+        if (menu && menu.contains(document.activeElement)) {
+          downloadBtn.focus({ preventScroll: true });
+        }
+      }
+    }
+
+    function dismissTxExportMenu() {
+      const menu = $("txExportMenu");
+      const backdrop = $("txExportBackdrop");
+      const downloadBtn = $("txDownloadBtn");
+      if (!menu || menu.classList.contains("hidden") || menu.classList.contains("is-closing")) return;
+      if (!window.matchMedia("(max-width: 600px)").matches) {
+        closeTxExportMenu();
+        return;
+      }
+      menu.classList.add("is-closing");
+      if (backdrop) backdrop.classList.add("is-closing");
       if (downloadBtn) downloadBtn.setAttribute("aria-expanded", "false");
+      txExportCloseTimer = window.setTimeout(closeTxExportMenu, 280);
+    }
+
+    function positionTxExportMenu(menu, trigger) {
+      if (window.matchMedia("(max-width: 600px)").matches) {
+        menu.style.left = "";
+        menu.style.top = "";
+        menu.style.right = "";
+        menu.style.bottom = "";
+        return;
+      }
+
+      const triggerRect = trigger.getBoundingClientRect();
+      const gap = 12;
+      const menuWidth = menu.offsetWidth;
+      const menuHeight = menu.offsetHeight;
+      let left = triggerRect.right + gap;
+      if (left + menuWidth > window.innerWidth - gap) {
+        left = triggerRect.left - menuWidth - gap;
+      }
+      left = Math.max(gap, Math.min(left, window.innerWidth - menuWidth - gap));
+      const top = Math.max(gap, Math.min(triggerRect.top, window.innerHeight - menuHeight - gap));
+      menu.style.left = `${left}px`;
+      menu.style.top = `${top}px`;
+      menu.style.right = "auto";
+      menu.style.bottom = "auto";
     }
 
     document.addEventListener("click", (event) => {
@@ -4073,18 +4235,26 @@
       const downloadBtn = $("txDownloadBtn");
       if (!menu || menu.classList.contains("hidden") || !(event.target instanceof Element)) return;
       if (menu.contains(event.target) || (downloadBtn && downloadBtn.contains(event.target))) return;
-      closeTxExportMenu();
+      dismissTxExportMenu();
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") closeTxExportMenu();
+      if (event.key === "Escape") dismissTxExportMenu();
     });
 
     window.addEventListener("resize", () => {
       const menu = $("txExportMenu");
       const backdrop = $("txExportBackdrop");
+      const downloadBtn = $("txDownloadBtn");
       if (menu && !menu.classList.contains("hidden") && backdrop) {
-        backdrop.classList.toggle("hidden", !window.matchMedia("(max-width: 600px)").matches);
+        const isSmallScreen = window.matchMedia("(max-width: 600px)").matches;
+        backdrop.classList.toggle("hidden", !isSmallScreen);
+        if (isSmallScreen) {
+          menu.setAttribute("aria-modal", "true");
+        } else {
+          menu.removeAttribute("aria-modal");
+        }
+        if (downloadBtn) positionTxExportMenu(menu, downloadBtn);
       }
     });
 
